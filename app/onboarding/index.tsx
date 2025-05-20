@@ -114,6 +114,8 @@ const Onboarding = () => {
   const handleStartNow = () => {
     // markSeen();
     // router.replace('/login');
+
+    router.push("/role-select" as any);
   };
 
   return (
