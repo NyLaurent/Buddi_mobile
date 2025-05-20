@@ -320,42 +320,86 @@ const RegistrationStep = ({ onLogin }: { onLogin: () => void }) => {
 
 // Step 2: Academic Details
 const AcademicStep = () => (
-  <View className="w-full items-center">
-    <Text className="text-xl font-comfortaa-bold text-center text-gray-800 mb-2">
-      Fill In Your Academic Details
-    </Text>
-    {/* ... Add your form fields here ... */}
-  </View>
+  <ScrollView
+    contentContainerStyle={{
+      flexGrow: 1,
+      paddingHorizontal: 24,
+      paddingTop: 32,
+      paddingBottom: 32,
+    }}
+    keyboardShouldPersistTaps="handled"
+    showsVerticalScrollIndicator={false}
+  >
+    <View className="w-full items-center">
+      <Text className="text-xl font-comfortaa-bold text-center text-gray-800 mb-2">
+        Fill In Your Academic Details
+      </Text>
+      {/* ... Add your form fields here ... */}
+    </View>
+  </ScrollView>
 );
 
 // Step 3: Resume Upload
 const ResumeStep = () => (
-  <View className="w-full items-center">
-    <Text className="text-xl font-comfortaa-bold text-center text-gray-800 mb-2">
-      Provide Your Resume
-    </Text>
-    {/* ... Add your upload UI here ... */}
-  </View>
+  <ScrollView
+    contentContainerStyle={{
+      flexGrow: 1,
+      paddingHorizontal: 24,
+      paddingTop: 32,
+      paddingBottom: 32,
+    }}
+    keyboardShouldPersistTaps="handled"
+    showsVerticalScrollIndicator={false}
+  >
+    <View className="w-full items-center">
+      <Text className="text-xl font-comfortaa-bold text-center text-gray-800 mb-2">
+        Provide Your Resume
+      </Text>
+      {/* ... Add your upload UI here ... */}
+    </View>
+  </ScrollView>
 );
 
 // Step 4: Availability Preferences
 const AvailabilityStep = () => (
-  <View className="w-full items-center">
-    <Text className="text-xl font-comfortaa-bold text-center text-gray-800 mb-2">
-      Availability Preferences
-    </Text>
-    {/* ... Add your form fields here ... */}
-  </View>
+  <ScrollView
+    contentContainerStyle={{
+      flexGrow: 1,
+      paddingHorizontal: 24,
+      paddingTop: 32,
+      paddingBottom: 32,
+    }}
+    keyboardShouldPersistTaps="handled"
+    showsVerticalScrollIndicator={false}
+  >
+    <View className="w-full items-center">
+      <Text className="text-xl font-comfortaa-bold text-center text-gray-800 mb-2">
+        Availability Preferences
+      </Text>
+      {/* ... Add your form fields here ... */}
+    </View>
+  </ScrollView>
 );
 
 // Step 5: References
 const ReferencesStep = () => (
-  <View className="w-full items-center">
-    <Text className="text-xl font-comfortaa-bold text-center text-gray-800 mb-2">
-      Add References
-    </Text>
-    {/* ... Add your form fields here ... */}
-  </View>
+  <ScrollView
+    contentContainerStyle={{
+      flexGrow: 1,
+      paddingHorizontal: 24,
+      paddingTop: 32,
+      paddingBottom: 32,
+    }}
+    keyboardShouldPersistTaps="handled"
+    showsVerticalScrollIndicator={false}
+  >
+    <View className="w-full items-center">
+      <Text className="text-xl font-comfortaa-bold text-center text-gray-800 mb-2">
+        Add References
+      </Text>
+      {/* ... Add your form fields here ... */}
+    </View>
+  </ScrollView>
 );
 
 const StepComponents = [
