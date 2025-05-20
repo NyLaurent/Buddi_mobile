@@ -2,6 +2,7 @@ import { useRouter } from "expo-router";
 import React, { useRef, useState } from "react";
 import {
   Dimensions,
+  Image,
   ScrollView,
   Text,
   TouchableOpacity,
@@ -17,27 +18,27 @@ const ONBOARDING_PAGES = [
     subtitle: "Support Beyond Pickup",
     description:
       "From helping with homework to escorting to afterschool activities, Buddis are more than babysitters—they are buddies.",
-    image: require("../../assets/images/onboarding/onboarding_1.svg"),
+    image: require("../../assets/images/onboarding/onboarding_1.png"),
   },
   {
     title: "Pickup Buddi",
     subtitle: "Safe pickups, happy journeys.",
     description:
       "Trusted student companions walking your child safely home—with heart and care.",
-    image: require("../../assets/images/onboarding/onboarding_2.svg"),
+    image: require("../../assets/images/onboarding/onboarding_2.png"),
   },
   {
     title: "Pickup Buddi",
     subtitle: "We Put Safety First.",
     description:
       "Our Buddis go through background checks, interviews, school verification, and teacher recommendations—so you never have to worry.",
-    image: require("../../assets/images/onboarding/onboarding_3.svg"),
+    image: require("../../assets/images/onboarding/onboarding_3.png"),
   },
   {
     title: "Pickup Buddi",
     subtitle: "",
     description: "",
-    image: require("../../assets/images/onboarding/onboarding_4.svg"),
+    image: require("../../assets/images/onboarding/onboarding_4.png"),
     isFinal: true,
   },
 ];
@@ -57,7 +58,7 @@ const Onboarding = () => {
   const [page, setPage] = useState(0);
   const router = useRouter();
 
-  // Uncomment this logic to show onboarding only once
+  // Uncomment this logic to show onboarding only once, when you're new on the app
   // useEffect(() => {
   //   const seen = await AsyncStorage.getItem('onboarding_seen');
   //   if (seen) router.replace('/login');
@@ -83,10 +84,18 @@ const Onboarding = () => {
     <SafeAreaView className="flex-1 bg-white">
       {/* Background SVGs */}
       <View className="absolute left-0 top-0">
-        {/* TODO: Add your own background image here */}
+        <Image
+          source={require("../../assets/images/onboarding/left.png")}
+          className="w-32 h-32"
+          resizeMode="contain"
+        />
       </View>
       <View className="absolute right-0 bottom-0">
-        {/* TODO: Add your own background image here */}
+        <Image
+          source={require("../../assets/images/onboarding/bottom_right.png")}
+          className="w-32 h-32"
+          resizeMode="contain"
+        />
       </View>
       <ScrollView
         ref={scrollRef}
@@ -107,10 +116,14 @@ const Onboarding = () => {
             className="items-center justify-center px-6 pt-12 pb-8"
           >
             <View className="rounded-full overflow-hidden w-56 h-56 mb-4">
-              {/* TODO: Add your own main onboarding image here */}
+              <Image
+                source={item.image}
+                className="w-full h-full"
+                resizeMode="contain"
+              />
             </View>
             <Text
-              className="text-3xl font-bold text-center"
+              className="text-3xl font-comfortaa-bold text-center"
               style={{
                 color: PRIMARY_COLOR,
                 textShadowColor: "#fff",
@@ -120,12 +133,12 @@ const Onboarding = () => {
               {item.title}
             </Text>
             {item.subtitle ? (
-              <Text className="text-lg font-semibold text-center mt-2 text-gray-700">
+              <Text className="text-lg font-comfortaa-medium text-center mt-2 text-gray-700">
                 {item.subtitle}
               </Text>
             ) : null}
             {item.description ? (
-              <Text className="text-center text-gray-500 mt-2 mb-4">
+              <Text className="text-center font-comfortaa text-gray-500 mt-2 mb-4">
                 {item.description}
               </Text>
             ) : null}
@@ -138,7 +151,7 @@ const Onboarding = () => {
                   }}
                 >
                   <Text
-                    className="text-center font-semibold"
+                    className="text-center font-comfortaa-medium"
                     style={{ color: BUTTON_TEXT_COLOR_SECONDARY }}
                   >
                     Login
@@ -149,7 +162,7 @@ const Onboarding = () => {
                   onPress={handleStartNow}
                 >
                   <Text
-                    className="text-center font-semibold"
+                    className="text-center font-comfortaa-medium"
                     style={{ color: BUTTON_TEXT_COLOR }}
                   >
                     Start Now
@@ -184,7 +197,7 @@ const Onboarding = () => {
             onPress={handleSkip}
           >
             <Text
-              className="font-semibold"
+              className="font-comfortaa-medium"
               style={{ color: BUTTON_TEXT_COLOR_SECONDARY }}
             >
               Skip
@@ -195,7 +208,7 @@ const Onboarding = () => {
             onPress={handleNext}
           >
             <Text
-              className="font-semibold"
+              className="font-comfortaa-medium"
               style={{ color: BUTTON_TEXT_COLOR }}
             >
               Next →

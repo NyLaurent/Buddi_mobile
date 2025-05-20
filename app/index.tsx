@@ -1,17 +1,12 @@
-import { useRouter } from "expo-router";
-import { useEffect } from "react";
+import { Redirect } from "expo-router";
 
 const Index = () => {
-  const router = useRouter();
+  // Uncomment for conditional onboarding logic:
+  // const seen = await AsyncStorage.getItem('onboarding_seen');
+  // if (!seen) return <Redirect href="/onboarding" />;
+  // return <Redirect href="/login" />;
 
-  useEffect(() => {
-    router.replace("/onboarding");
-    // Uncomment for conditional onboarding logic:
-    // const seen = await AsyncStorage.getItem('onboarding_seen');
-    // if (!seen) router.replace('/onboarding');
-    // else router.replace('/login');
-  }, []);
-  return null;
+  return <Redirect href="/onboarding" />;
 };
 
 export default Index;
