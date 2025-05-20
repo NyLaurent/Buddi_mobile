@@ -102,7 +102,13 @@ const Onboarding = () => {
   };
 
   const handleSkip = () => {
-    // router.replace('/login');
+    if (scrollRef.current) {
+      scrollRef.current.scrollTo({
+        x: width * (ONBOARDING_PAGES.length - 1),
+        animated: true,
+      });
+      setPage(ONBOARDING_PAGES.length - 1);
+    }
   };
 
   const handleStartNow = () => {
@@ -165,32 +171,17 @@ const Onboarding = () => {
               </Text>
             ) : null}
             {item.isFinal && (
-              <View className="w-full mt-4 flex-row justify-center space-x-4">
+              <View className="w-full mt-4 px-4">
                 <TouchableOpacity
-                  className="flex-1 py-3 rounded-full border border-primary bg-white flex-row items-center justify-center"
-                  onPress={() => {
-                    /* router.replace('/login') */
-                  }}
-                >
-                  <Text
-                    className="text-center font-comfortaa-medium mr-2"
-                    style={{ color: BUTTON_TEXT_COLOR_SECONDARY }}
-                  >
-                    Login
-                  </Text>
-                  <LogOut size={20} color={BUTTON_TEXT_COLOR_SECONDARY} />
-                </TouchableOpacity>
-                <TouchableOpacity
-                  className="flex-1 py-3 rounded-full bg-primary flex-row items-center justify-center"
+                  className="w-full py-3 rounded-lg bg-primary items-center justify-center"
                   onPress={handleStartNow}
                 >
                   <Text
-                    className="text-center font-comfortaa-medium mr-2"
+                    className="text-center font-comfortaa-bold"
                     style={{ color: BUTTON_TEXT_COLOR }}
                   >
                     Start Now
                   </Text>
-                  <LogOut size={20} color={BUTTON_TEXT_COLOR} />
                 </TouchableOpacity>
               </View>
             )}
