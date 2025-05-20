@@ -7,6 +7,10 @@ module.exports = {
     presets: [require("nativewind/preset")],
     theme: {
         extend: {
+            colors: {
+                primary: '#FF932E',
+                gray:'#CBD5E1'
+            },
             fontFamily: {
                 'comfortaa': ['Comfortaa-Regular'],
                 'comfortaa-medium': ['Comfortaa-Medium'],
