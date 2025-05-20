@@ -1,13 +1,17 @@
-import { View, Text } from 'react-native'
-import React from 'react'
-import { SafeAreaView } from 'react-native-safe-area-context'
+import { useRouter } from "expo-router";
+import { useEffect } from "react";
 
-const index = () => {
-  return (
-    <SafeAreaView>
-      <Text className='text-red-500'>index</Text>
-    </SafeAreaView>
-  )
-}
+const Index = () => {
+  const router = useRouter();
 
-export default index
+  useEffect(() => {
+    router.replace("/onboarding");
+    // Uncomment for conditional onboarding logic:
+    // const seen = await AsyncStorage.getItem('onboarding_seen');
+    // if (!seen) router.replace('/onboarding');
+    // else router.replace('/login');
+  }, []);
+  return null;
+};
+
+export default Index;

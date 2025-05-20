@@ -10,6 +10,7 @@ module.exports = {
   theme: {
     extend: {
       colors: {
+        
         // Add your custom colors here
       },
     },
