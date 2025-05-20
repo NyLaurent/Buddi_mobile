@@ -107,7 +107,8 @@ const RoleSelect = () => {
               <TouchableOpacity
                 onPress={() => setSelected(role.key)}
                 style={{
-                  backgroundColor: selected === role.key ? PRIMARY_COLOR : "",
+                  backgroundColor:
+                    selected === role.key ? PRIMARY_COLOR : "none",
                   borderRadius: 9999,
                   paddingHorizontal: 22,
                   borderWidth: 1,
@@ -167,7 +168,10 @@ const RoleSelect = () => {
           }}
           disabled={!selected}
           onPress={() => {
-            /* handle next navigation here */
+            if (selected === "buddi") {
+              router.push("/auth/signup/buddi" as any);
+            }
+            // Add logic for other roles here later
           }}
         >
           <Text className="font-comfortaa-bold text-white mr-2 text-base">
