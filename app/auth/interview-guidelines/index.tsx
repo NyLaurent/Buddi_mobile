@@ -19,13 +19,8 @@ const VideoGuidelinesScreen = () => {
   const router = useRouter();
 
   const handleStartRecording = () => {
-    // In a real app, this would navigate to a recording screen
-    // For now, we'll just show an alert or go back
-    console.log("Start recording - this would open a camera/recording screen");
-    // You could navigate to a recording screen like:
-    // router.push("/auth/recording");
-    // For now, let's just go back
-    router.back();
+    // Navigate to recording screen
+    router.push("/auth/recording" as any);
   };
 
   return (
@@ -56,9 +51,14 @@ const VideoGuidelinesScreen = () => {
               <Ionicons name="chevron-back" size={24} color="#555" />
             </TouchableOpacity>
 
-            <Text className="text-white text-lg font-comfortaa-bold">
-              Record Your Buddi Interview
-            </Text>
+            <View className="items-center">
+              <Text className="text-white text-lg font-comfortaa-bold text-center">
+                Record Your Buddi
+              </Text>
+              <Text className="text-white text-lg font-comfortaa-bold text-center">
+                Interview
+              </Text>
+            </View>
 
             <TouchableOpacity className="bg-white rounded-full p-2">
               <Ionicons name="ellipsis-vertical" size={20} color="#555" />
