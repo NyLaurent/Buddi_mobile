@@ -140,6 +140,7 @@ const RoleSelect = () => {
                   >
                     Select
                   </Text>
+
                   <Ionicons
                     name="arrow-forward"
                     size={18}

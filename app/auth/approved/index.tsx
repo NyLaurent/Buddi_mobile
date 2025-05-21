@@ -1,4 +1,5 @@
 import { Ionicons } from "@expo/vector-icons";
+import { useRouter } from "expo-router";
 import React from "react";
 import { Image, ScrollView, Text, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -6,6 +7,12 @@ import { SafeAreaView } from "react-native-safe-area-context";
 const PRIMARY_COLOR = "#FF932E";
 
 const ApprovedPage = () => {
+  const router = useRouter();
+
+  const handleStartInterview = () => {
+    router.push("/auth/interview-guidelines");
+  };
+
   return (
     <SafeAreaView className="flex-1 bg-white">
       <ScrollView
@@ -133,9 +140,8 @@ const ApprovedPage = () => {
             </View>
           </View>
         </View>
-        {/* Interview Section - updated to match image exactly */}{" "}
+        {/* Interview Section - updated to match image exactly */}
         <View className="mx-4 mb-12 mt-14">
-          {" "}
           <View
             className="bg-[#F9F9F9] rounded-3xl overflow-hidden relative p-5"
             style={{
@@ -188,6 +194,7 @@ const ApprovedPage = () => {
               <TouchableOpacity
                 className="py-3 rounded-full w-full"
                 style={{ backgroundColor: PRIMARY_COLOR }}
+                onPress={handleStartInterview}
               >
                 <View className="flex-row items-center justify-center">
                   <Text className="font-comfortaa-bold text-white text-center text-base mr-2">
