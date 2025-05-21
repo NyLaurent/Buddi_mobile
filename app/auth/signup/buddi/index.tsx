@@ -1,6 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { Picker } from "@react-native-picker/picker";
+import * as DocumentPicker from "expo-document-picker";
 import * as ImagePicker from "expo-image-picker";
 import React, { useState } from "react";
 import {
@@ -19,7 +20,6 @@ const STEPS = [
   "Registration",
   "Academic Details",
   "Resume Upload",
-  "Availability Preferences",
   "References",
 ];
 
@@ -57,7 +57,7 @@ const RegistrationStep = ({ onLogin }: { onLogin: () => void }) => {
       <ScrollView
         contentContainerStyle={{
           flexGrow: 1,
-          paddingHorizontal: 24,
+          paddingHorizontal: 16,
           paddingTop: 32,
           paddingBottom: 32,
         }}
@@ -101,35 +101,35 @@ const RegistrationStep = ({ onLogin }: { onLogin: () => void }) => {
         {/* Form fields */}
         <View style={{ flexDirection: "row", gap: 16, marginBottom: 20 }}>
           <View style={{ flex: 1 }}>
-            <Text className="font-comfortaa text-xs text-gray-500 mb-1">
+            <Text className="font-comfortaa-bold text-xs text-gray-500 mb-1">
               First Name
             </Text>
             <TextInput
-              className="bg-white border border-gray-200 rounded-2xl px-4 py-3 font-comfortaa text-gray-700 text-base"
+              className="bg-white border border-[#CBD5E1] rounded-2xl px-4 py-3 font-comfortaa text-gray-700 text-base"
               value={firstName}
               onChangeText={setFirstName}
-              placeholder="John"
+              placeholder="John Doe"
               placeholderTextColor="#A0A0A0"
             />
           </View>
           <View style={{ flex: 1 }}>
-            <Text className="font-comfortaa text-xs text-gray-500 mb-1">
+            <Text className="font-comfortaa-bold text-xs text-gray-500 mb-1">
               Last Name
             </Text>
             <TextInput
-              className="bg-white border border-gray-200 rounded-2xl px-4 py-3 font-comfortaa text-gray-700 text-base"
+              className="bg-white border border-[#CBD5E1] rounded-2xl px-4 py-3 font-comfortaa text-gray-700 text-base"
               value={lastName}
               onChangeText={setLastName}
-              placeholder="Smith"
+              placeholder="John Doe"
               placeholderTextColor="#A0A0A0"
             />
           </View>
         </View>
         <View style={{ marginBottom: 20 }}>
-          <Text className="font-comfortaa text-xs text-gray-500 mb-1">
+          <Text className="font-comfortaa-bold text-xs text-gray-500 mb-1">
             Email
           </Text>
-          <View className="flex-row items-center bg-white border border-gray-200 rounded-2xl px-4 py-3">
+          <View className="flex-row items-center bg-white border border-[#CBD5E1] rounded-2xl px-4 py-3">
             <Ionicons
               name="mail"
               size={20}
@@ -152,10 +152,10 @@ const RegistrationStep = ({ onLogin }: { onLogin: () => void }) => {
         </View>
         <View style={{ flexDirection: "row", gap: 16, marginBottom: 20 }}>
           <View style={{ flex: 1 }}>
-            <Text className="font-comfortaa text-xs text-gray-500 mb-1">
+            <Text className="font-comfortaa-bold text-xs text-gray-500 mb-1">
               Password
             </Text>
-            <View className="flex-row items-center bg-white border border-gray-200 rounded-2xl px-4">
+            <View className="flex-row items-center bg-white border border-[#CBD5E1] rounded-2xl px-4">
               <TextInput
                 className="flex-1 font-comfortaa text-gray-700 text-base py-3"
                 value={password}
@@ -175,10 +175,10 @@ const RegistrationStep = ({ onLogin }: { onLogin: () => void }) => {
             </View>
           </View>
           <View style={{ flex: 1 }}>
-            <Text className="font-comfortaa text-xs text-gray-500 mb-1">
+            <Text className="font-comfortaa-bold text-xs text-gray-500 mb-1">
               Confirm Password
             </Text>
-            <View className="flex-row items-center bg-white border border-gray-200 rounded-2xl px-4">
+            <View className="flex-row items-center bg-white border border-[#CBD5E1] rounded-2xl px-4">
               <TextInput
                 className="flex-1 font-comfortaa text-gray-700 text-base py-3"
                 value={confirmPassword}
@@ -202,7 +202,7 @@ const RegistrationStep = ({ onLogin }: { onLogin: () => void }) => {
         </View>
         <View style={{ flexDirection: "row", gap: 16, marginBottom: 20 }}>
           <View style={{ flex: 1 }}>
-            <Text className="font-comfortaa text-xs text-gray-500 mb-1">
+            <Text className="font-comfortaa-bold text-xs text-gray-500 mb-1">
               Date Of Birth
             </Text>
             <TouchableOpacity
@@ -210,7 +210,7 @@ const RegistrationStep = ({ onLogin }: { onLogin: () => void }) => {
               style={{
                 backgroundColor: "#fff",
                 borderWidth: 1,
-                borderColor: "#E5E7EB",
+                borderColor: "#CBD5E1",
                 borderRadius: 16,
                 paddingHorizontal: 16,
                 paddingVertical: 12,
@@ -220,7 +220,7 @@ const RegistrationStep = ({ onLogin }: { onLogin: () => void }) => {
               }}
             >
               <Text className="font-comfortaa text-gray-700 flex-1 text-base">
-                {dob ? dob.toLocaleDateString() : "00 / 00 / 0000"}
+                {dob ? dob.toLocaleDateString() : "00/00/0000"}
               </Text>
               <Ionicons name="calendar" size={20} color="#A0A0A0" />
             </TouchableOpacity>
@@ -238,18 +238,19 @@ const RegistrationStep = ({ onLogin }: { onLogin: () => void }) => {
             )}
           </View>
           <View style={{ flex: 1 }}>
-            <Text className="font-comfortaa text-xs text-gray-500 mb-1">
+            <Text className="font-comfortaa-bold text-xs text-gray-500 mb-1">
               Gender
             </Text>
             <View
               style={{
                 backgroundColor: "#fff",
                 borderWidth: 1,
-                borderColor: "#E5E7EB",
+                borderColor: "#CBD5E1",
                 borderRadius: 16,
                 paddingHorizontal: 8,
                 height: 52,
                 justifyContent: "center",
+                overflow: "hidden",
               }}
             >
               <Picker
@@ -260,8 +261,11 @@ const RegistrationStep = ({ onLogin }: { onLogin: () => void }) => {
                   color: gender === GENDERS[0] ? "#A0A0A0" : "#374151",
                   height: 48,
                   width: "100%",
+                  marginLeft: -8,
+                  marginBottom: 9,
                 }}
                 dropdownIconColor="#A0A0A0"
+                itemStyle={{ fontFamily: "Comfortaa" }}
               >
                 {GENDERS.map((g, idx) => (
                   <Picker.Item
@@ -275,29 +279,43 @@ const RegistrationStep = ({ onLogin }: { onLogin: () => void }) => {
             </View>
           </View>
         </View>
-        <View style={{ flexDirection: "row", gap: 16, marginBottom: 20 }}>
+        <View style={{ marginBottom: 20 }}>
           <View style={{ flex: 1 }}>
-            <Text className="font-comfortaa text-xs text-gray-500 mb-1">
+            <Text className="font-comfortaa-bold text-xs text-gray-500 mb-1">
               Phone Number
             </Text>
-            <TextInput
-              value={phone}
-              onChangeText={setPhone}
-              placeholder="+44 Phone Number"
-              keyboardType="phone-pad"
+            <View
               style={{
+                flexDirection: "row",
+                alignItems: "center",
                 backgroundColor: "#fff",
                 borderRadius: 16,
                 borderWidth: 1,
-                borderColor: "#E5E7EB",
-                width: "100%",
+                borderColor: "#CBD5E1",
                 height: 52,
                 paddingHorizontal: 16,
-                fontFamily: "Comfortaa",
-                color: "#374151",
-                fontSize: 16,
+                width: "100%",
               }}
-            />
+            >
+              <Ionicons
+                name="call-outline"
+                size={20}
+                color="#A0A0A0"
+                style={{ marginRight: 8 }}
+              />
+              <TextInput
+                value={phone}
+                onChangeText={setPhone}
+                placeholder="+44 Phone Number"
+                keyboardType="phone-pad"
+                style={{
+                  flex: 1,
+                  fontFamily: "comfortaa-medium",
+                  color: "#374151",
+                  fontSize: 14,
+                }}
+              />
+            </View>
           </View>
         </View>
         {/* Login link */}
@@ -319,94 +337,341 @@ const RegistrationStep = ({ onLogin }: { onLogin: () => void }) => {
 };
 
 // Step 2: Academic Details
-const AcademicStep = () => (
-  <ScrollView
-    contentContainerStyle={{
-      flexGrow: 1,
-      paddingHorizontal: 24,
-      paddingTop: 32,
-      paddingBottom: 32,
-    }}
-    keyboardShouldPersistTaps="handled"
-    showsVerticalScrollIndicator={false}
-  >
-    <View className="w-full items-center">
-      <Text className="text-xl font-comfortaa-bold text-center text-gray-800 mb-2">
-        Fill In Your Academic Details
-      </Text>
-      {/* ... Add your form fields here ... */}
-    </View>
-  </ScrollView>
-);
+const AcademicStep = () => {
+  const [school, setSchool] = useState("");
+  const [major, setMajor] = useState("");
+  const [gpa, setGpa] = useState("");
+  const [gradYear, setGradYear] = useState<Date | null>(null);
+  const [showGradDate, setShowGradDate] = useState(false);
+
+  return (
+    <ScrollView
+      contentContainerStyle={{
+        flexGrow: 1,
+        paddingHorizontal: 16,
+        paddingTop: 32,
+        paddingBottom: 32,
+      }}
+      keyboardShouldPersistTaps="handled"
+      showsVerticalScrollIndicator={false}
+    >
+      <View className="items-center mb-6">
+        <Image
+          source={require("../../../../assets/images/logo.png")}
+          className="w-40 h-12 mb-4"
+          resizeMode="contain"
+        />
+        <Text className="text-xl font-comfortaa-bold text-center text-gray-800 mb-2">
+          Fill In Your Academic Details
+        </Text>
+        <Text className="font-comfortaa text-center text-gray-500 mb-6 px-6">
+          Tell us about your current studies and academic background.
+        </Text>
+      </View>
+
+      <View style={{ marginBottom: 20 }}>
+        <Text className="font-comfortaa-bold text-xs text-gray-500 mb-1">
+          Current School
+        </Text>
+        <TextInput
+          className="bg-white border border-[#CBD5E1] rounded-2xl px-4 py-3 font-comfortaa text-gray-700 text-base"
+          value={school}
+          onChangeText={setSchool}
+          placeholder="University of Edinburgh"
+          placeholderTextColor="#A0A0A0"
+        />
+      </View>
+
+      <View style={{ marginBottom: 20 }}>
+        <Text className="font-comfortaa-bold text-xs text-gray-500 mb-1">
+          Area Of Study (Major)
+        </Text>
+        <TextInput
+          className="bg-white border border-[#CBD5E1] rounded-2xl px-4 py-3 font-comfortaa text-gray-700 text-base"
+          value={major}
+          onChangeText={setMajor}
+          placeholder="Computer Science"
+          placeholderTextColor="#A0A0A0"
+        />
+      </View>
+
+      <View style={{ marginBottom: 20 }}>
+        <Text className="font-comfortaa-bold text-xs text-gray-500 mb-1">
+          GPA (Optional)
+        </Text>
+        <View className="flex-row items-center bg-white border border-[#CBD5E1] rounded-2xl px-4 py-3">
+          <TextInput
+            className="flex-1 font-comfortaa text-gray-700 text-base"
+            value={gpa}
+            onChangeText={setGpa}
+            placeholder="3.5"
+            placeholderTextColor="#A0A0A0"
+            keyboardType="decimal-pad"
+          />
+        </View>
+      </View>
+
+      <View style={{ marginBottom: 20 }}>
+        <Text className="font-comfortaa-bold text-xs text-gray-500 mb-1">
+          Graduation Year
+        </Text>
+        <TouchableOpacity
+          onPress={() => setShowGradDate(true)}
+          style={{
+            backgroundColor: "#fff",
+            borderWidth: 1,
+            borderColor: "#CBD5E1",
+            borderRadius: 16,
+            paddingHorizontal: 16,
+            paddingVertical: 12,
+            flexDirection: "row",
+            alignItems: "center",
+            height: 52,
+          }}
+        >
+          <Text className="font-comfortaa text-gray-700 flex-1 text-base">
+            {gradYear ? gradYear.toLocaleDateString() : "00/00/0000"}
+          </Text>
+          <Ionicons name="calendar" size={20} color="#A0A0A0" />
+        </TouchableOpacity>
+        {showGradDate && (
+          <DateTimePicker
+            value={gradYear || new Date()}
+            mode="date"
+            display={Platform.OS === "ios" ? "spinner" : "default"}
+            onChange={(event, date) => {
+              setShowGradDate(false);
+              if (date) setGradYear(date);
+            }}
+          />
+        )}
+      </View>
+    </ScrollView>
+  );
+};
 
 // Step 3: Resume Upload
-const ResumeStep = () => (
-  <ScrollView
-    contentContainerStyle={{
-      flexGrow: 1,
-      paddingHorizontal: 24,
-      paddingTop: 32,
-      paddingBottom: 32,
-    }}
-    keyboardShouldPersistTaps="handled"
-    showsVerticalScrollIndicator={false}
-  >
-    <View className="w-full items-center">
-      <Text className="text-xl font-comfortaa-bold text-center text-gray-800 mb-2">
-        Provide Your Resume
-      </Text>
-      {/* ... Add your upload UI here ... */}
-    </View>
-  </ScrollView>
-);
+const ResumeStep = () => {
+  const [resumeFile, setResumeFile] = useState<any>(null);
 
-// Step 4: Availability Preferences
-const AvailabilityStep = () => (
-  <ScrollView
-    contentContainerStyle={{
-      flexGrow: 1,
-      paddingHorizontal: 24,
-      paddingTop: 32,
-      paddingBottom: 32,
-    }}
-    keyboardShouldPersistTaps="handled"
-    showsVerticalScrollIndicator={false}
-  >
-    <View className="w-full items-center">
-      <Text className="text-xl font-comfortaa-bold text-center text-gray-800 mb-2">
-        Availability Preferences
-      </Text>
-      {/* ... Add your form fields here ... */}
-    </View>
-  </ScrollView>
-);
+  const pickDocument = async () => {
+    try {
+      const result = await DocumentPicker.getDocumentAsync({
+        type: [
+          "application/pdf",
+          "application/msword",
+          "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        ],
+        copyToCacheDirectory: true,
+      });
 
-// Step 5: References
-const ReferencesStep = () => (
-  <ScrollView
-    contentContainerStyle={{
-      flexGrow: 1,
-      paddingHorizontal: 24,
-      paddingTop: 32,
-      paddingBottom: 32,
-    }}
-    keyboardShouldPersistTaps="handled"
-    showsVerticalScrollIndicator={false}
-  >
-    <View className="w-full items-center">
-      <Text className="text-xl font-comfortaa-bold text-center text-gray-800 mb-2">
-        Add References
+      // Handle new API format (Expo SDK 46+)
+      if (
+        "canceled" in result &&
+        !result.canceled &&
+        result.assets &&
+        result.assets.length > 0
+      ) {
+        setResumeFile(result.assets[0]);
+      }
+      // Handle old API format (before Expo SDK 46)
+      else if ("type" in result && result.type === "success") {
+        setResumeFile(result);
+      }
+    } catch (error) {
+      console.log("Error picking document:", error);
+    }
+  };
+
+  return (
+    <ScrollView
+      contentContainerStyle={{
+        flexGrow: 1,
+        paddingHorizontal: 16,
+        paddingTop: 32,
+        paddingBottom: 32,
+      }}
+      keyboardShouldPersistTaps="handled"
+      showsVerticalScrollIndicator={false}
+    >
+      <View className="items-center mb-6">
+        <Image
+          source={require("../../../../assets/images/logo.png")}
+          className="w-40 h-12 mb-4"
+          resizeMode="contain"
+        />
+        <Text className="text-xl font-comfortaa-bold text-center text-gray-800 mb-2">
+          Provide Your Resume
+        </Text>
+        <Text className="font-comfortaa text-center text-gray-500 mb-8 px-6">
+          Help us understand your background better by uploading your most
+          recent resume.
+        </Text>
+      </View>
+
+      <TouchableOpacity
+        onPress={pickDocument}
+        style={{
+          borderWidth: 1,
+          borderColor: "#CBD5E1",
+          borderStyle: "dashed",
+          borderRadius: 16,
+          padding: 24,
+          marginHorizontal: 24,
+          marginBottom: 32,
+          alignItems: "center",
+          justifyContent: "center",
+        }}
+      >
+        <View style={{ marginBottom: 16 }}>
+          {resumeFile ? (
+            <View style={{ alignItems: "center" }}>
+              <Ionicons name="document-text" size={64} color="#A0A0A0" />
+              <Text className="font-comfortaa text-sm text-gray-700 mt-2">
+                {resumeFile.name ||
+                  resumeFile.uri?.split("/").pop() ||
+                  "Selected file"}
+              </Text>
+            </View>
+          ) : (
+            <View
+              style={{
+                width: 80,
+                height: 80,
+                borderRadius: 16,
+                backgroundColor: "#A0A0A0",
+                alignItems: "center",
+                justifyContent: "center",
+                marginBottom: 8,
+              }}
+            >
+              <Ionicons name="arrow-up" size={40} color="#FFFFFF" />
+            </View>
+          )}
+        </View>
+        <Text className="font-comfortaa-bold text-gray-700 text-base mb-2">
+          Upload Your Resume here
+        </Text>
+        <Text className="font-comfortaa text-xs text-gray-500">
+          Allowed formats: .pdf, .doc, .docx
+        </Text>
+      </TouchableOpacity>
+
+      <Text className="font-comfortaa text-center text-gray-500 px-8 mt-4">
+        Your resume helps us understand your background and experience. Make
+        sure it reflects your strengths clearly.
       </Text>
-      {/* ... Add your form fields here ... */}
-    </View>
-  </ScrollView>
-);
+    </ScrollView>
+  );
+};
+
+// Step 4: References
+const ReferencesStep = () => {
+  const [selectedReferral, setSelectedReferral] = useState(
+    "No referral selected"
+  );
+  const [showPicker, setShowPicker] = useState(false);
+
+  return (
+    <ScrollView
+      contentContainerStyle={{
+        flexGrow: 1,
+        paddingHorizontal: 16,
+        paddingTop: 32,
+        paddingBottom: 32,
+      }}
+      keyboardShouldPersistTaps="handled"
+      showsVerticalScrollIndicator={false}
+    >
+      <View className="items-center mb-6">
+        <Image
+          source={require("../../../../assets/images/logo.png")}
+          className="w-40 h-12 mb-4"
+          resizeMode="contain"
+        />
+        <Text className="text-xl font-comfortaa-bold text-center text-gray-800 mb-2">
+          Add References
+        </Text>
+        <Text className="font-comfortaa text-center text-gray-500 mb-6 px-6">
+          Please provide at least two academic or professional references to
+          support your qualifications.
+        </Text>
+      </View>
+
+      <View style={{ marginBottom: 24 }}>
+        <Text className="font-comfortaa-bold text-xs text-gray-500 mb-3">
+          Select Referral Person
+        </Text>
+        <TouchableOpacity
+          onPress={() => setShowPicker(true)}
+          style={{
+            backgroundColor: "#fff",
+            borderWidth: 1,
+            borderColor: "#CBD5E1",
+            borderRadius: 16,
+            paddingHorizontal: 16,
+            paddingVertical: 12,
+            flexDirection: "row",
+            alignItems: "center",
+            height: 52,
+          }}
+        >
+          <Ionicons
+            name="person-outline"
+            size={20}
+            color="#A0A0A0"
+            style={{ marginRight: 12 }}
+          />
+          <Text className="font-comfortaa text-gray-700 flex-1">
+            {selectedReferral}
+          </Text>
+          <Ionicons name="chevron-down" size={20} color="#A0A0A0" />
+        </TouchableOpacity>
+      </View>
+
+      <View
+        style={{
+          alignItems: "center",
+          justifyContent: "center",
+          marginVertical: 40,
+        }}
+      >
+        <View
+          style={{
+            width: 120,
+            height: 120,
+            borderRadius: 60,
+            backgroundColor: "#E5E7EB",
+            alignItems: "center",
+            justifyContent: "center",
+          }}
+        >
+          <Ionicons
+            name="close"
+            size={64}
+            color="#A0A0A0"
+            style={{ opacity: 0.5 }}
+          />
+        </View>
+        <Text className="font-comfortaa-bold text-gray-700 text-lg mt-4 mb-1">
+          No Reference Type Selected
+        </Text>
+        <Text className="font-comfortaa text-gray-500 text-sm text-center">
+          Select a reference above
+        </Text>
+      </View>
+
+      <Text className="font-comfortaa text-center text-gray-500 px-8 mt-8">
+        Your references help us ensure the best match for families.
+      </Text>
+    </ScrollView>
+  );
+};
 
 const StepComponents = [
   RegistrationStep,
   AcademicStep,
   ResumeStep,
-  AvailabilityStep,
   ReferencesStep,
 ];
 
@@ -442,7 +707,7 @@ const BuddiSignup = () => {
             ))}
           </View>
           {/* Navigation Buttons */}
-          <View className="flex-row justify-between items-center px-6 mb-8 w-full">
+          <View className="flex-row justify-between items-center px-4 mb-8 w-full">
             {step !== 0 && (
               <TouchableOpacity
                 className="flex-row items-center px-6 py-3 rounded-full border border-gray bg-white"

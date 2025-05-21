@@ -128,7 +128,10 @@ const Onboarding = () => {
           resizeMode="contain"
         />
       </View>
-      <View className="absolute right-0 bottom-0 opacity-50">
+      <View
+        className="absolute right-0 bottom-0 opacity-50"
+        style={{ zIndex: -1 }}
+      >
         <Image
           source={require("../../assets/images/onboarding/bottom_right.png")}
           className="w-40 h-40"
@@ -175,7 +178,7 @@ const Onboarding = () => {
             {item.isFinal && (
               <View className="w-full mt-4 px-4">
                 <TouchableOpacity
-                  className="w-full py-3 rounded-lg bg-primary items-center justify-center"
+                  className="w-full py-3 rounded-full bg-primary items-center justify-center"
                   onPress={handleStartNow}
                 >
                   <Text

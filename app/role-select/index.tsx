@@ -23,13 +23,13 @@ const ROLES = [
   {
     key: "buddi",
     label: "Buddi",
-    description: "Pick up and assist younger students after school.",
+    description: "Pick up and assist younger students.",
     icon: <FontAwesome5 name="users" size={32} color="#fff" />,
   },
   {
     key: "teacher",
-    label: "Header Teacher",
-    description: "View all references and provide about the Buddis.",
+    label: "Head Teacher",
+    description: "View references and provide info about Buddis.",
     icon: <FontAwesome5 name="user-tie" size={28} color="#fff" />,
   },
 ];
@@ -105,7 +105,10 @@ const RoleSelect = () => {
                 }}
               >
                 <View style={{ flex: 1 }}>
-                  <Text className="font-comfortaa-bold text-lg text-gray-900 mb-1">
+                  <Text
+                    className="font-comfortaa-bold text-lg text-gray-900 mb-1"
+                    numberOfLines={1}
+                  >
                     {role.label}
                   </Text>
                   <Text className="font-comfortaa text-gray-500 text-sm">
@@ -116,11 +119,12 @@ const RoleSelect = () => {
                   onPress={() => setSelected(role.key)}
                   style={{
                     backgroundColor:
-                      selected === role.key ? PRIMARY_COLOR : "none",
+                      selected === role.key ? PRIMARY_COLOR : "#fff",
                     borderRadius: 9999,
                     paddingHorizontal: 22,
                     borderWidth: 1,
-                    borderColor: "#F8FAFC",
+                    borderColor:
+                      selected === role.key ? PRIMARY_COLOR : "#E5E7EB",
                     paddingVertical: 10,
                     flexDirection: "row",
                     alignItems: "center",
