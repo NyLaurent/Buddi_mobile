@@ -1,4 +1,5 @@
 import { Ionicons } from "@expo/vector-icons";
+import { useRouter } from "expo-router";
 import React from "react";
 import { Image, ScrollView, Text, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -6,6 +7,13 @@ import { SafeAreaView } from "react-native-safe-area-context";
 const PRIMARY_COLOR = "#FF932E";
 
 const WaitlistScreen = () => {
+  const router = useRouter();
+
+  // Handler to navigate to approved page
+  const handleNavigateToApproved = () => {
+    router.replace("../approved");
+  };
+
   return (
     <SafeAreaView className="flex-1 bg-white">
       <ScrollView contentContainerStyle={{ flexGrow: 1, paddingBottom: 24 }}>
@@ -109,6 +117,7 @@ const WaitlistScreen = () => {
                   borderColor: "#EAEBF0",
                   backgroundColor: "#fff",
                 }}
+                onPress={handleNavigateToApproved}
               >
                 <Ionicons
                   name="arrow-back"

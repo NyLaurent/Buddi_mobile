@@ -18,6 +18,7 @@ import CountryPicker, {
   CountryCode,
 } from "react-native-country-picker-modal";
 import { SafeAreaView } from "react-native-safe-area-context";
+import SuccessScreen from "../../../../components/commons/SuccessScreen";
 
 const PRIMARY_COLOR = "#FF932E";
 const STEPS = [
@@ -785,82 +786,6 @@ const ReferencesStep = () => {
   );
 };
 
-// Success Screen after signup completion
-const SuccessScreen = ({ onContinue }: { onContinue: () => void }) => {
-  return (
-    <View className="flex-1 bg-white">
-      <View className="flex-1 items-center justify-center px-6">
-        <Image
-          source={require("../../../../assets/images/logo.png")}
-          className="w-40 h-12 mb-12"
-          resizeMode="contain"
-        />
-
-        {/* Empty placeholder for success image */}
-        <View
-          style={{
-            width: 150,
-            height: 150,
-            marginBottom: 24,
-            alignItems: "center",
-            justifyContent: "center",
-          }}
-        >
-          <Image
-            source={require("../../../../assets/images/onboarding/success.png")}
-            style={{ width: 200, height: 200 }}
-            resizeMode="contain"
-          />
-
-          {/* Image will be added by the user later */}
-        </View>
-
-        <Text className="text-2xl font-comfortaa-bold text-center text-primary mb-2">
-          You&apos;re All Set!
-        </Text>
-
-        <Text className="font-comfortaa text-center text-gray-500 mb-8">
-          Your account is ready, let&apos;s start for your better financial
-          experience
-        </Text>
-
-        {/* Continue Button */}
-        <TouchableOpacity
-          className="py-3 rounded-full w-64 mt-4"
-          style={{
-            backgroundColor: PRIMARY_COLOR,
-            paddingHorizontal: 20,
-          }}
-          onPress={onContinue}
-        >
-          <Text className="font-comfortaa-bold text-white text-center text-lg">
-            Continue
-          </Text>
-        </TouchableOpacity>
-      </View>
-
-      {/* Decorative Orange Element - positioned exactly like other screens */}
-      <View
-        style={{
-          position: "absolute",
-          right: -30,
-          bottom: 0,
-          opacity: 0.5,
-          zIndex: -10,
-          width: 160,
-          height: 160,
-        }}
-      >
-        <Image
-          source={require("../../../../assets/images/onboarding/bottom_right.png")}
-          style={{ width: "100%", height: "100%" }}
-          resizeMode="contain"
-        />
-      </View>
-    </View>
-  );
-};
-
 const StepComponents = [
   RegistrationStep,
   AcademicStep,
@@ -897,7 +822,13 @@ export default function BuddiSignup() {
   }
 
   if (showSuccess) {
-    return <SuccessScreen onContinue={handleContinue} />;
+    return (
+      <SuccessScreen
+        onContinue={handleContinue}
+        primaryColor={PRIMARY_COLOR}
+        imagePath={require("../../../../assets/images/onboarding/success.png")}
+      />
+    );
   }
 
   return (
