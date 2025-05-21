@@ -13,6 +13,10 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import CountryPicker, {
+  Country,
+  CountryCode,
+} from "react-native-country-picker-modal";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 const PRIMARY_COLOR = "#FF932E";
@@ -38,7 +42,9 @@ const RegistrationStep = ({ onLogin }: { onLogin: () => void }) => {
   const [showDate, setShowDate] = useState(false);
   const [gender, setGender] = useState(GENDERS[0]);
   const [phone, setPhone] = useState("");
-  const [countryCode, setCountryCode] = useState("GB");
+  const [countryCode, setCountryCode] = useState<CountryCode>("GB");
+  const [callingCode, setCallingCode] = useState("+44");
+  const [showCountryPicker, setShowCountryPicker] = useState(false);
 
   const pickImage = async () => {
     let result = await ImagePicker.launchImageLibraryAsync({
@@ -284,37 +290,89 @@ const RegistrationStep = ({ onLogin }: { onLogin: () => void }) => {
             <Text className="font-comfortaa-bold text-xs text-gray-500 mb-1">
               Phone Number
             </Text>
-            <View
-              style={{
-                flexDirection: "row",
-                alignItems: "center",
-                backgroundColor: "#fff",
-                borderRadius: 16,
-                borderWidth: 1,
-                borderColor: "#CBD5E1",
-                height: 52,
-                paddingHorizontal: 16,
-                width: "100%",
-              }}
-            >
-              <Ionicons
-                name="call-outline"
-                size={20}
-                color="#A0A0A0"
-                style={{ marginRight: 8 }}
-              />
-              <TextInput
-                value={phone}
-                onChangeText={setPhone}
-                placeholder="+44 Phone Number"
-                keyboardType="phone-pad"
+            <View className="flex-row items-center">
+              <TouchableOpacity
+                onPress={() => setShowCountryPicker(true)}
+                style={{
+                  flexDirection: "row",
+                  alignItems: "center",
+                  backgroundColor: "#fff",
+                  borderWidth: 1,
+                  borderColor: "#CBD5E1",
+                  borderRadius: 16,
+                  height: 52,
+                  paddingLeft: 16,
+                  paddingRight: 12,
+                  marginRight: 12,
+                  width: 130,
+                  justifyContent: "space-between",
+                }}
+              >
+                <View style={{ flexDirection: "row", alignItems: "center" }}>
+                  <CountryPicker
+                    countryCode={countryCode}
+                    withFlag
+                    withEmoji={false}
+                    withFilter
+                    withCallingCode
+                    withCallingCodeButton={false}
+                    onSelect={(country: Country) => {
+                      setCountryCode(country.cca2);
+                      if (
+                        country.callingCode &&
+                        country.callingCode.length > 0
+                      ) {
+                        setCallingCode(`+${country.callingCode[0]}`);
+                      }
+                    }}
+                    visible={showCountryPicker}
+                    onClose={() => setShowCountryPicker(false)}
+                    containerButtonStyle={{
+                      alignItems: "center",
+                      justifyContent: "center",
+                      padding: 4,
+                    }}
+                  />
+                  <Text
+                    style={{
+                      marginLeft: 10,
+                      fontFamily: "comfortaa-medium",
+                      fontSize: 16,
+                      color: "#374151",
+                      fontWeight: "500",
+                    }}
+                  >
+                    {callingCode}
+                  </Text>
+                </View>
+                <Ionicons name="chevron-down" size={16} color="#A0A0A0" />
+              </TouchableOpacity>
+              <View
                 style={{
                   flex: 1,
-                  fontFamily: "comfortaa-medium",
-                  color: "#374151",
-                  fontSize: 14,
+                  flexDirection: "row",
+                  alignItems: "center",
+                  backgroundColor: "#fff",
+                  borderRadius: 16,
+                  borderWidth: 1,
+                  borderColor: "#CBD5E1",
+                  height: 52,
+                  paddingHorizontal: 16,
                 }}
-              />
+              >
+                <TextInput
+                  value={phone}
+                  onChangeText={setPhone}
+                  placeholder="(000)000-0000"
+                  keyboardType="phone-pad"
+                  style={{
+                    flex: 1,
+                    fontFamily: "comfortaa-medium",
+                    color: "#374151",
+                    fontSize: 14,
+                  }}
+                />
+              </View>
             </View>
           </View>
         </View>
@@ -567,10 +625,11 @@ const ResumeStep = () => {
 
 // Step 4: References
 const ReferencesStep = () => {
-  const [selectedReferral, setSelectedReferral] = useState(
-    "No referral selected"
-  );
-  const [showPicker, setShowPicker] = useState(false);
+  const [referralEmail, setReferralEmail] = useState("");
+  const [referralPhone, setReferralPhone] = useState("");
+  const [countryCode, setCountryCode] = useState<CountryCode>("GB");
+  const [callingCode, setCallingCode] = useState("+44");
+  const [showCountryPicker, setShowCountryPicker] = useState(false);
 
   return (
     <ScrollView
@@ -598,67 +657,125 @@ const ReferencesStep = () => {
         </Text>
       </View>
 
-      <View style={{ marginBottom: 24 }}>
-        <Text className="font-comfortaa-bold text-xs text-gray-500 mb-3">
-          Select Referral Person
+      <View style={{ marginTop: 20 }}>
+        <Text className="font-comfortaa-bold text-center text-gray-700 text-lg mb-4">
+          Add Head Teacher&apos;s Contact Info
         </Text>
-        <TouchableOpacity
-          onPress={() => setShowPicker(true)}
-          style={{
-            backgroundColor: "#fff",
-            borderWidth: 1,
-            borderColor: "#CBD5E1",
-            borderRadius: 16,
-            paddingHorizontal: 16,
-            paddingVertical: 12,
-            flexDirection: "row",
-            alignItems: "center",
-            height: 52,
-          }}
-        >
-          <Ionicons
-            name="person-outline"
-            size={20}
-            color="#A0A0A0"
-            style={{ marginRight: 12 }}
-          />
-          <Text className="font-comfortaa text-gray-700 flex-1">
-            {selectedReferral}
-          </Text>
-          <Ionicons name="chevron-down" size={20} color="#A0A0A0" />
-        </TouchableOpacity>
-      </View>
 
-      <View
-        style={{
-          alignItems: "center",
-          justifyContent: "center",
-          marginVertical: 40,
-        }}
-      >
-        <View
-          style={{
-            width: 120,
-            height: 120,
-            borderRadius: 60,
-            backgroundColor: "#E5E7EB",
-            alignItems: "center",
-            justifyContent: "center",
-          }}
-        >
-          <Ionicons
-            name="close"
-            size={64}
-            color="#A0A0A0"
-            style={{ opacity: 0.5 }}
-          />
+        {/* Email Field */}
+        <View style={{ marginBottom: 20 }}>
+          <Text className="font-comfortaa-bold text-xs text-gray-500 mb-1">
+            Referral&apos;s Email
+          </Text>
+          <View className="flex-row items-center bg-white border border-[#CBD5E1] rounded-2xl px-4 py-3">
+            <Ionicons
+              name="mail"
+              size={20}
+              color="#A0A0A0"
+              style={{ marginRight: 8 }}
+            />
+            <TextInput
+              className="flex-1 font-comfortaa text-gray-700 text-base"
+              value={referralEmail}
+              onChangeText={setReferralEmail}
+              placeholder="*****************"
+              placeholderTextColor="#A0A0A0"
+              keyboardType="email-address"
+              autoCapitalize="none"
+            />
+          </View>
+          <Text className="font-comfortaa text-xs text-gray-400 mt-1 italic">
+            .edu email required for Head Teacher
+          </Text>
         </View>
-        <Text className="font-comfortaa-bold text-gray-700 text-lg mt-4 mb-1">
-          No Reference Type Selected
-        </Text>
-        <Text className="font-comfortaa text-gray-500 text-sm text-center">
-          Select a reference above
-        </Text>
+
+        {/* Phone Number Field */}
+        <View style={{ marginBottom: 20 }}>
+          <Text className="font-comfortaa-bold text-xs text-gray-500 mb-1">
+            Phone Number
+          </Text>
+          <View className="flex-row items-center">
+            <TouchableOpacity
+              onPress={() => setShowCountryPicker(true)}
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                backgroundColor: "#fff",
+                borderWidth: 1,
+                borderColor: "#CBD5E1",
+                borderRadius: 16,
+                height: 52,
+                paddingLeft: 16,
+                paddingRight: 12,
+                marginRight: 12,
+                width: 130,
+                justifyContent: "space-between",
+              }}
+            >
+              <View style={{ flexDirection: "row", alignItems: "center" }}>
+                <CountryPicker
+                  countryCode={countryCode}
+                  withFlag
+                  withEmoji={false}
+                  withFilter
+                  withCallingCode
+                  withCallingCodeButton={false}
+                  onSelect={(country: Country) => {
+                    setCountryCode(country.cca2);
+                    if (country.callingCode && country.callingCode.length > 0) {
+                      setCallingCode(`+${country.callingCode[0]}`);
+                    }
+                  }}
+                  visible={showCountryPicker}
+                  onClose={() => setShowCountryPicker(false)}
+                  containerButtonStyle={{
+                    alignItems: "center",
+                    justifyContent: "center",
+                    padding: 4,
+                  }}
+                />
+                <Text
+                  style={{
+                    marginLeft: 10,
+                    fontFamily: "comfortaa-medium",
+                    fontSize: 16,
+                    color: "#374151",
+                    fontWeight: "500",
+                  }}
+                >
+                  {callingCode}
+                </Text>
+              </View>
+              <Ionicons name="chevron-down" size={16} color="#A0A0A0" />
+            </TouchableOpacity>
+            <View
+              style={{
+                flex: 1,
+                flexDirection: "row",
+                alignItems: "center",
+                backgroundColor: "#fff",
+                borderRadius: 16,
+                borderWidth: 1,
+                borderColor: "#CBD5E1",
+                height: 52,
+                paddingHorizontal: 16,
+              }}
+            >
+              <TextInput
+                value={referralPhone}
+                onChangeText={setReferralPhone}
+                placeholder="(000)000-0000"
+                keyboardType="phone-pad"
+                style={{
+                  flex: 1,
+                  fontFamily: "comfortaa-medium",
+                  color: "#374151",
+                  fontSize: 14,
+                }}
+              />
+            </View>
+          </View>
+        </View>
       </View>
 
       <Text className="font-comfortaa text-center text-gray-500 px-8 mt-8">
