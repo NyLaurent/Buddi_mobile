@@ -868,9 +868,10 @@ const StepComponents = [
   ReferencesStep,
 ];
 
-const BuddiSignup = () => {
+export default function BuddiSignup() {
   const [step, setStep] = useState(0);
   const [showSuccess, setShowSuccess] = useState(false);
+  const [showWaitlist, setShowWaitlist] = useState(false);
   const StepComponent = StepComponents[step];
 
   const handleNext = () => {
@@ -884,9 +885,16 @@ const BuddiSignup = () => {
   };
 
   const handleContinue = () => {
-    // Navigate to the main app (implement actual navigation later)
-    console.log("Continue to main app");
+    // Navigate to waitlist screen
+    setShowSuccess(false);
+    setShowWaitlist(true);
   };
+
+  if (showWaitlist) {
+    // Import WaitlistScreen dynamically
+    const WaitlistScreen = require("../../waitlist").default;
+    return <WaitlistScreen />;
+  }
 
   if (showSuccess) {
     return <SuccessScreen onContinue={handleContinue} />;
@@ -978,6 +986,4 @@ const BuddiSignup = () => {
       </View>
     </SafeAreaView>
   );
-};
-
-export default BuddiSignup;
+}
