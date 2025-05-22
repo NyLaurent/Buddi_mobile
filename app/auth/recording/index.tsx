@@ -1,4 +1,5 @@
 import { Ionicons } from "@expo/vector-icons";
+import { CameraType, CameraView, useCameraPermissions } from "expo-camera";
 import { useRouter } from "expo-router";
 import React, { useEffect, useRef, useState } from "react";
 import {
@@ -6,14 +7,13 @@ import {
   Dimensions,
   ImageBackground,
   Platform,
-  ScrollView,
   StatusBar,
   StyleSheet,
   Text,
   TouchableOpacity,
   View,
 } from "react-native";
-import Animated, {
+import {
   Easing,
   useAnimatedStyle,
   useSharedValue,
@@ -49,23 +49,24 @@ const INTERVIEW_QUESTIONS = [
     question:
       "What activities would you do with children during your time with them?",
   },
+  {
+    id: 6,
+    question: "How would you communicate with parents about their child's day?",
+  },
+  {
+    id: 7,
+    question: "What would you do in case of an emergency situation?",
+  },
 ];
 
 interface AnsweredQuestions {
   [key: number]: string;
 }
 
-// Define camera types directly
-const CAMERA_TYPE = {
-  front: "front",
-  back: "back",
-};
-
 const RecordingPage = () => {
   const router = useRouter();
   const videoPlayer = useRef(null);
-  const [hasPermission, setHasPermission] = useState<boolean | null>(null);
-  const [type, setType] = useState(CAMERA_TYPE.front);
+  const [type, setType] = useState<CameraType>("front");
   const [isRecording, setIsRecording] = useState(false);
   const [currentVideoUri, setCurrentVideoUri] = useState<string | null>(null);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
@@ -73,17 +74,18 @@ const RecordingPage = () => {
   const [answeredQuestions, setAnsweredQuestions] = useState<AnsweredQuestions>(
     {}
   );
+  const [permission, requestPermission] = useCameraPermissions();
+  const [cameraReady, setCameraReady] = useState(false);
+  const cameraRef = useRef<any>(null);
 
   const slideTransition = useSharedValue(0);
 
   useEffect(() => {
-    // Simulating permission request
-    const timer = setTimeout(() => {
-      setHasPermission(true);
-    }, 1000);
-
-    return () => clearTimeout(timer);
-  }, []);
+    // Request camera permissions if not granted
+    if (permission && !permission.granted) {
+      requestPermission();
+    }
+  }, [permission, requestPermission]);
 
   const animatedStyle = useAnimatedStyle(() => {
     return {
@@ -126,32 +128,39 @@ const RecordingPage = () => {
     }
   };
 
-  const startRecording = () => {
-    if (!isRecording) {
+  const startRecording = async () => {
+    if (!isRecording && cameraRef.current && cameraReady) {
       setIsRecording(true);
-
-      // Simulate recording for demo purposes
-      setTimeout(() => {
-        setIsRecording(false);
-        // Mock video URL
-        const mockVideoUri = "https://example.com/mock-video.mp4";
-        setCurrentVideoUri(mockVideoUri);
+      try {
+        const video = await cameraRef.current.recordAsync({
+          maxDuration: 30,
+          quality: "720p",
+          mute: false,
+        });
+        setCurrentVideoUri(video.uri);
 
         const updatedAnsweredQuestions = {
           ...answeredQuestions,
-          [currentQuestionIndex]: mockVideoUri,
+          [currentQuestionIndex]: video.uri,
         };
         setAnsweredQuestions(updatedAnsweredQuestions);
 
         if (!completedQuestions.includes(currentQuestionIndex)) {
           setCompletedQuestions([...completedQuestions, currentQuestionIndex]);
         }
-      }, 3000);
+      } catch (error) {
+        console.error("Failed to record", error);
+      } finally {
+        setIsRecording(false);
+      }
     }
   };
 
-  const stopRecording = () => {
-    setIsRecording(false);
+  const stopRecording = async () => {
+    if (isRecording && cameraRef.current) {
+      await cameraRef.current.stopRecording();
+      setIsRecording(false);
+    }
   };
 
   const handleSubmit = () => {
@@ -201,23 +210,23 @@ const RecordingPage = () => {
     }
   };
 
-  if (hasPermission === null) {
+  if (!permission) {
     return (
       <View style={styles.container}>
-        <Text>Requesting permissions...</Text>
+        <Text>Requesting camera permissions...</Text>
       </View>
     );
   }
 
-  if (hasPermission === false) {
+  if (!permission.granted) {
     return (
       <View style={styles.container}>
         <Text style={styles.errorText}>No access to camera or microphone</Text>
         <TouchableOpacity
           style={styles.permissionButton}
-          onPress={() => router.back()}
+          onPress={requestPermission}
         >
-          <Text style={styles.buttonText}>Go Back</Text>
+          <Text style={styles.buttonText}>Grant Permission</Text>
         </TouchableOpacity>
       </View>
     );
@@ -274,175 +283,176 @@ const RecordingPage = () => {
             </TouchableOpacity>
           </View>
 
-          <ScrollView
-            contentContainerStyle={styles.contentContainer}
-            showsVerticalScrollIndicator={false}
-          >
-            {/* Score Board */}
-            <View className="mb-4 border border-blue-200 rounded-2xl p-4 bg-white bg-opacity-90">
-              <Text className="font-comfortaa text-gray-700 mb-2">
-                You score board
-              </Text>
-
-              <View className="flex-row items-center">
-                <View className="h-12 w-12 rounded-full bg-gray-100 mr-4 justify-center items-center">
-                  <Ionicons name="videocam" size={24} color="#8A56FF" />
-                </View>
-
-                <View className="flex-1">
-                  <Text className="text-lg font-comfortaa-bold text-gray-800">
-                    {`${completedQuestions.length}/${INTERVIEW_QUESTIONS.length}`}{" "}
-                    Questions
-                  </Text>
-                  <Text className="text-xs font-comfortaa text-gray-500">
-                    {`${Math.min(
-                      completedQuestions.length,
-                      INTERVIEW_QUESTIONS.length
-                    )} of ${INTERVIEW_QUESTIONS.length} completed`}
+          {/* Main Content */}
+          <View style={styles.contentContainer}>
+            {/* Score Board and Camera in a row */}
+            <View style={styles.topRow}>
+              {/* Score Board */}
+              <View className="bg-white rounded-3xl w-[40%] p-5 shadow-sm overflow-hidden relative">
+                <View className="flex-row justify-between items-start">
+                  <Text className="font-comfortaa text-gray-800 text-sm">
+                    You score board
                   </Text>
                 </View>
 
-                <View
-                  className="bg-purple-500 rounded-full p-2"
-                  style={{ backgroundColor: "#8A56FF" }}
-                >
-                  <Ionicons name="flash" size={18} color="white" />
+                <View className="flex-row items-center mt-4">
+                  <View className="flex-1">
+                    <Text className="font-comfortaa-bold text-gray-800 text-xl">
+                      24/30
+                    </Text>
+                    <Text className="font-comfortaa text-gray-400 text-xs">
+                      Point
+                    </Text>
+                  </View>
+                </View>
+
+                {/* Sparkle icon at bottom right */}
+                <View className="absolute bottom-1.5 right-2">
+                  <Ionicons name="sparkles" size={20} color="#3CDFFF" />
+                </View>
+
+                {/* Lightning circle - positioned absolutely */}
+                <View className="absolute top-3 right-3">
+                  <View className="bg-purple-500 h-10 w-10 rounded-full justify-center items-center shadow-sm">
+                    <Ionicons name="flash" size={22} color="white" />
+                  </View>
                 </View>
               </View>
-            </View>
 
-            {/* Camera Preview / Recording */}
-            <View style={styles.cameraContainer}>
-              {currentVideoUri &&
-              answeredQuestions[currentQuestionIndex] === currentVideoUri ? (
-                <View style={styles.videoPreviewContainer}>
-                  <View style={styles.mockVideoPreview}>
-                    <Text style={styles.mockVideoText}>Video Preview</Text>
-                    <Ionicons name="play-circle" size={50} color="white" />
+              {/* Camera Preview / Recording */}
+              <View style={styles.cameraContainer}>
+                {currentVideoUri &&
+                answeredQuestions[currentQuestionIndex] === currentVideoUri ? (
+                  <View style={styles.videoPreviewContainer}>
+                    <View style={styles.mockVideoPreview}>
+                      <Text style={styles.mockVideoText}>Video Preview</Text>
+                      <Ionicons name="play-circle" size={50} color="white" />
+                    </View>
+                    <TouchableOpacity
+                      style={styles.retakeButton}
+                      onPress={() => setCurrentVideoUri(null)}
+                    >
+                      <Ionicons name="refresh" size={20} color="#fff" />
+                      <Text style={styles.retakeText}>Retake</Text>
+                    </TouchableOpacity>
                   </View>
-                  <TouchableOpacity
-                    style={styles.retakeButton}
-                    onPress={() => setCurrentVideoUri(null)}
-                  >
-                    <Ionicons name="refresh" size={20} color="#fff" />
-                    <Text style={styles.retakeText}>Retake</Text>
-                  </TouchableOpacity>
-                </View>
-              ) : (
-                <View style={styles.mockCamera}>
-                  {isRecording ? (
-                    <View style={styles.recordingIndicator}>
-                      <View style={styles.redDot} />
-                      <Text style={styles.recordingText}>Recording...</Text>
-                    </View>
-                  ) : (
-                    <View style={styles.cameraPlaceholder}>
-                      <Ionicons name="videocam" size={60} color="white" />
-                      <Text style={styles.cameraPlaceholderText}>
-                        Camera Preview
-                      </Text>
-                    </View>
-                  )}
+                ) : (
+                  <View style={styles.cameraWrapper}>
+                    <CameraView
+                      ref={cameraRef}
+                      style={styles.camera}
+                      facing={type}
+                      onCameraReady={() => setCameraReady(true)}
+                      onMountError={(error) => {
+                        console.error("Camera mount error:", error);
+                      }}
+                      flash="off"
+                      mirror={true}
+                    >
+                      {isRecording && (
+                        <View style={styles.recordingIndicator}>
+                          <View style={styles.redDot} />
+                          <Text style={styles.recordingText}>Recording...</Text>
+                        </View>
+                      )}
 
-                  <TouchableOpacity
-                    style={styles.flipCameraButton}
-                    onPress={() => {
-                      setType(
-                        type === CAMERA_TYPE.back
-                          ? CAMERA_TYPE.front
-                          : CAMERA_TYPE.back
-                      );
-                    }}
-                  >
-                    <Ionicons name="camera-reverse" size={24} color="white" />
-                  </TouchableOpacity>
-                </View>
-              )}
+                      {/* Audio icon */}
+                      <TouchableOpacity style={styles.audioButton}>
+                        <Ionicons name="mic" size={22} color="white" />
+                      </TouchableOpacity>
+
+                      {!isRecording && (
+                        <View style={styles.recordIconContainer}>
+                          <Ionicons name="videocam" size={24} color="white" />
+                        </View>
+                      )}
+                    </CameraView>
+
+                    <TouchableOpacity
+                      style={styles.flipCameraButton}
+                      onPress={() => {
+                        setType(type === "back" ? "front" : "back");
+                      }}
+                    >
+                      <Ionicons name="camera-reverse" size={24} color="white" />
+                    </TouchableOpacity>
+                  </View>
+                )}
+              </View>
             </View>
 
             {/* Question and Navigation */}
-            <View style={styles.questionCard}>
-              <View style={styles.brandSection}>
-                <Text style={styles.brandText}>Pickup Buddi</Text>
+            <View
+              className="bg-white rounded-3xl shadow-md mt-8 overflow-hidden relative"
+              style={{ height: height * 0.38 }}
+            >
+              <View className="py-2 items-center justify-center h-10">
+                <ImageBackground
+                  source={require("../../../assets/images/logo.png")}
+                  className="w-24 h-8"
+                  resizeMode="contain"
+                />
               </View>
 
-              <View style={styles.questionContainer}>
-                <Animated.View style={[styles.questionSlide, animatedStyle]}>
-                  <View style={styles.questionHeader}>
-                    <Text style={styles.questionTitle}>
-                      Question {currentQuestionIndex + 1}
+              <View className="items-center py-3 mb-2">
+                <Text className="font-comfortaa-bold text-lg text-gray-800">
+                  Question 1
+                </Text>
+              </View>
+
+              <View className="px-4 pb-5">
+                <View className="flex-row items-start">
+                  <View className="w-7 h-7 bg-gray-100 rounded-full items-center justify-center mr-3 mt-0.5">
+                    <Text className="font-comfortaa-bold text-sm text-gray-800">
+                      1
                     </Text>
-                    <Text style={styles.questionCount}>{questionProgress}</Text>
                   </View>
-
-                  <Text style={styles.questionText}>
-                    {currentQuestion.question}
+                  <Text className="font-comfortaa text-base text-gray-800 flex-1 leading-6">
+                    Tell us a little about yourself and why you want to be a
+                    Buddi.
                   </Text>
-                </Animated.View>
+                </View>
               </View>
 
-              <View style={styles.controlsContainer}>
+              <View className="flex-row justify-between items-center px-4 py-4 mt-2">
                 <TouchableOpacity
                   disabled={isFirstQuestion}
-                  style={[
-                    styles.navButton,
-                    isFirstQuestion && styles.disabledButton,
-                  ]}
+                  className="flex-row items-center bg-white rounded-full py-2.5 px-4 shadow-sm"
                   onPress={() => handleSlideQuestion("prev")}
                 >
-                  <Ionicons
-                    name="arrow-back"
-                    size={20}
-                    color={isFirstQuestion ? "#ccc" : "#555"}
-                  />
-                  <Text
-                    style={[
-                      styles.navButtonText,
-                      isFirstQuestion && styles.disabledText,
-                    ]}
-                  >
+                  <Ionicons name="arrow-back" size={18} color="#555" />
+                  <Text className="font-comfortaa text-sm text-gray-700 ml-1.5">
                     Previous
                   </Text>
                 </TouchableOpacity>
 
-                {renderRecordButton()}
+                <TouchableOpacity
+                  className="flex-row items-center bg-[#FF932E] rounded-full py-3 px-7 shadow-sm"
+                  onPress={() => handleSlideQuestion("next")}
+                >
+                  <Text className="font-comfortaa-bold text-white text-base mr-1.5">
+                    Next
+                  </Text>
+                  <Ionicons name="arrow-forward" size={18} color="white" />
+                </TouchableOpacity>
+              </View>
 
-                {isLastQuestion ? (
-                  <TouchableOpacity
-                    style={[styles.navButton, styles.submitButton]}
-                    onPress={handleSubmit}
-                  >
-                    <Text style={[styles.navButtonText, { color: "white" }]}>
-                      Submit
-                    </Text>
-                    <Ionicons name="checkmark-circle" size={20} color="white" />
-                  </TouchableOpacity>
-                ) : (
-                  <TouchableOpacity
-                    style={styles.navButton}
-                    onPress={() => handleSlideQuestion("next")}
-                  >
-                    <Text style={styles.navButtonText}>Next</Text>
-                    <Ionicons name="arrow-forward" size={20} color="#555" />
-                  </TouchableOpacity>
-                )}
+              <View className="h-1.5 w-full bg-gray-100 absolute bottom-0">
+                <View
+                  className="h-1.5 bg-blue-600"
+                  style={{
+                    width: `${
+                      ((currentQuestionIndex + 1) /
+                        INTERVIEW_QUESTIONS.length) *
+                      100
+                    }%`,
+                  }}
+                />
               </View>
             </View>
-          </ScrollView>
 
-          {/* Progress Bar */}
-          <View style={styles.progressBar}>
-            <View
-              style={[
-                styles.progressFill,
-                {
-                  width: `${
-                    (completedQuestions.length / INTERVIEW_QUESTIONS.length) *
-                    100
-                  }%`,
-                },
-              ]}
-            />
+            {/* Add space at the bottom */}
+            <View style={{ height: height * 0.1 }} />
           </View>
         </SafeAreaView>
       </ImageBackground>
@@ -458,28 +468,41 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   contentContainer: {
-    flexGrow: 1,
+    flex: 1,
     paddingHorizontal: 16,
-    paddingBottom: 20,
+    paddingBottom: 16,
     paddingTop: 10,
+    justifyContent: "flex-start",
+  },
+  topRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginBottom: 16,
+    height: height * 0.22,
   },
   cameraContainer: {
-    height: height * 0.4,
+    width: "55%",
     borderRadius: 20,
     overflow: "hidden",
-    marginBottom: 16,
   },
-  mockCamera: {
+  cameraWrapper: {
     flex: 1,
     borderRadius: 20,
-    backgroundColor: "rgba(0,0,0,0.8)",
-    justifyContent: "center",
-    alignItems: "center",
+    overflow: "hidden",
     position: "relative",
   },
+  camera: {
+    flex: 1,
+    borderRadius: 20,
+  },
   cameraPlaceholder: {
-    alignItems: "center",
-    justifyContent: "center",
+    width: "100%",
+    height: "100%",
+    flexDirection: "row",
+    alignItems: "flex-end",
+    justifyContent: "flex-end",
+    paddingRight: 20,
+    paddingBottom: 20,
   },
   cameraPlaceholderText: {
     color: "white",
@@ -529,6 +552,7 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(0,0,0,0.5)",
     borderRadius: 20,
     padding: 8,
+    zIndex: 10,
   },
   recordingIndicator: {
     position: "absolute",
@@ -539,6 +563,7 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(0,0,0,0.5)",
     borderRadius: 16,
     padding: 8,
+    zIndex: 10,
   },
   redDot: {
     width: 8,
@@ -551,86 +576,50 @@ const styles = StyleSheet.create({
     color: "white",
     fontFamily: "Comfortaa-Regular",
   },
-  questionCard: {
-    backgroundColor: "white",
-    borderRadius: 20,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 8,
-    elevation: 5,
-    marginTop: 10,
+  speechBubbleContainer: {
+    position: "absolute",
+    bottom: 60,
+    right: 16,
+    zIndex: 10,
   },
-  brandSection: {
-    padding: 12,
-    alignItems: "center",
-    borderBottomWidth: 1,
-    borderBottomColor: "#f0f0f0",
-  },
-  brandText: {
-    fontFamily: "Comfortaa-Bold",
-    color: PRIMARY_COLOR,
-    fontSize: 16,
-  },
-  questionContainer: {
-    padding: 16,
-    overflow: "hidden",
-  },
-  questionSlide: {
-    width: "100%",
-  },
-  questionHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
+  speechBubble: {
+    backgroundColor: "rgba(255,255,255,0.9)",
+    borderRadius: 16,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
     marginBottom: 8,
   },
-  questionTitle: {
-    fontFamily: "Comfortaa-Bold",
-    fontSize: 18,
+  speechBubbleText: {
+    fontFamily: "Comfortaa-Regular",
+    fontSize: 14,
     color: "#333",
   },
-  questionCount: {
-    fontFamily: "Comfortaa-Regular",
-    fontSize: 14,
-    color: "#888",
+  recordIconContainer: {
+    position: "absolute",
+    bottom: 20,
+    right: 16,
+    backgroundColor: "#FF5722",
+    borderRadius: 20,
+    padding: 8,
+    zIndex: 10,
   },
-  questionText: {
+  errorText: {
+    textAlign: "center",
+    marginBottom: 20,
     fontFamily: "Comfortaa-Regular",
     fontSize: 16,
-    lineHeight: 24,
     color: "#555",
   },
-  controlsContainer: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    padding: 16,
-    borderTopWidth: 1,
-    borderTopColor: "#f0f0f0",
-  },
-  navButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    padding: 8,
-  },
-  submitButton: {
+  permissionButton: {
     backgroundColor: PRIMARY_COLOR,
-    borderRadius: 20,
-    paddingHorizontal: 16,
-    paddingVertical: 8,
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+    borderRadius: 24,
   },
-  navButtonText: {
+  buttonText: {
+    color: "white",
     fontFamily: "Comfortaa-Bold",
-    fontSize: 14,
-    color: "#555",
-    marginHorizontal: 4,
-  },
-  disabledButton: {
-    opacity: 0.5,
-  },
-  disabledText: {
-    color: "#ccc",
+    fontSize: 16,
   },
   recordButton: {
     width: 64,
@@ -670,32 +659,14 @@ const styles = StyleSheet.create({
     backgroundColor: "red",
     borderRadius: 4,
   },
-  errorText: {
-    textAlign: "center",
-    marginBottom: 20,
-    fontFamily: "Comfortaa-Regular",
-    fontSize: 16,
-    color: "#555",
-  },
-  permissionButton: {
-    backgroundColor: PRIMARY_COLOR,
-    paddingVertical: 12,
-    paddingHorizontal: 24,
-    borderRadius: 24,
-  },
-  buttonText: {
-    color: "white",
-    fontFamily: "Comfortaa-Bold",
-    fontSize: 16,
-  },
-  progressBar: {
-    height: 4,
-    backgroundColor: "rgba(255,255,255,0.3)",
-    width: "100%",
-  },
-  progressFill: {
-    height: 4,
-    backgroundColor: PRIMARY_COLOR,
+  audioButton: {
+    position: "absolute",
+    top: 16,
+    left: 16,
+    backgroundColor: "rgba(0,0,0,0.5)",
+    borderRadius: 20,
+    padding: 8,
+    zIndex: 10,
   },
 });
 
