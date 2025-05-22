@@ -3,6 +3,7 @@ import DateTimePicker from "@react-native-community/datetimepicker";
 import { Picker } from "@react-native-picker/picker";
 import * as DocumentPicker from "expo-document-picker";
 import * as ImagePicker from "expo-image-picker";
+import { useRouter } from "expo-router";
 import React, { useState } from "react";
 import {
   Image,
@@ -798,6 +799,7 @@ export default function BuddiSignup() {
   const [showSuccess, setShowSuccess] = useState(false);
   const [showWaitlist, setShowWaitlist] = useState(false);
   const StepComponent = StepComponents[step];
+  const router = useRouter();
 
   const handleNext = () => {
     if (step === STEPS.length - 1) {
@@ -836,7 +838,7 @@ export default function BuddiSignup() {
       <ScrollView contentContainerStyle={{ flexGrow: 1 }}>
         <View className="">
           <View className="">
-            <StepComponent onLogin={() => {}} />
+            <StepComponent onLogin={() => router.push("/auth/login")} />
           </View>
           {/* Stepper */}
           <View className="flex-row justify-center items-center mb-6 mt-4">
