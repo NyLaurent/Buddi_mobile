@@ -183,8 +183,11 @@ const RoleSelect = () => {
             onPress={() => {
               if (selected === "buddi") {
                 router.push("/auth/signup/buddi" as any);
+              } else if (selected === "parent") {
+                router.push("/auth/signup/parent" as any);
+              } else if (selected === "teacher") {
+                router.push("/auth/signup/head-teacher" as any);
               }
-              // Add logic for other roles here later
             }}
           >
             <Text className="font-comfortaa-bold text-white mr-2 text-base">
