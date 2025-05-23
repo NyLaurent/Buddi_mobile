@@ -7,7 +7,6 @@ interface AnalyticsCardProps {
   title: string;
   value: string;
   subtitle?: string;
-  rightIcon?: React.ReactNode;
 }
 
 const AnalyticsCard = ({
@@ -15,46 +14,27 @@ const AnalyticsCard = ({
   title,
   value,
   subtitle,
-  rightIcon,
 }: AnalyticsCardProps) => (
   <View style={styles.card}>
-    <View style={styles.header}>
-      <Text style={styles.title}>{title}</Text>
-    </View>
-
+    <Text style={styles.title}>{title}</Text>
     <View style={styles.content}>
-      <View style={styles.valueContainer}>
-        <Text style={styles.value}>{value}</Text>
-        {subtitle && <Text style={styles.subtitle}>{subtitle}</Text>}
-      </View>
+      <Text style={styles.value}>{value}</Text>
+      {subtitle && <Text style={styles.subtitle}>{subtitle}</Text>}
     </View>
-
-    {/* Right corner icon */}
-    {rightIcon && <View style={styles.rightIconContainer}>{rightIcon}</View>}
-
-    {/* Bottom right icon */}
-    <View style={styles.bottomIconContainer}>{icon}</View>
+    <View style={styles.iconContainer}>{icon}</View>
   </View>
 );
 
 const styles = StyleSheet.create({
   card: {
-    flex: 1,
+    width: "47%",
     backgroundColor: "#fff",
-    borderRadius: 24,
-    padding: 20,
-    margin: 8,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 3,
+    borderRadius: 20,
+    padding: 16,
     position: "relative",
-    minHeight: 120,
-  },
-  header: {
-    flexDirection: "row",
-    justifyContent: "space-between",
+    height: 160,
+    borderWidth: 1,
+    borderColor: "#E8E8E8",
   },
   title: {
     fontSize: 14,
@@ -62,35 +42,25 @@ const styles = StyleSheet.create({
     fontFamily: "Comfortaa-Regular",
   },
   content: {
-    marginTop: 16,
-  },
-  valueContainer: {
-    flex: 1,
+    marginTop: "auto",
+    marginBottom: 16,
   },
   value: {
-    fontSize: 24,
-    fontWeight: "bold",
-    color: "#222",
+    fontSize: 28,
+    fontWeight: "700",
+    color: "#1E1E1E",
     fontFamily: "Comfortaa-Bold",
+    marginBottom: 4,
   },
   subtitle: {
-    fontSize: 12,
-    color: "#999",
-    marginTop: 4,
+    fontSize: 14,
+    color: "#666",
     fontFamily: "Comfortaa-Regular",
   },
-  rightIconContainer: {
+  iconContainer: {
     position: "absolute",
-    top: 12,
-    right: 12,
-    backgroundColor: "#8B5CF6",
-    borderRadius: 20,
-    padding: 10,
-  },
-  bottomIconContainer: {
-    position: "absolute",
-    bottom: 6,
-    right: 8,
+    bottom: 16,
+    right: 16,
   },
 });
 

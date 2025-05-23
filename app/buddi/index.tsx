@@ -113,8 +113,10 @@ export default function BuddiHome() {
   };
 
   return (
-    <View className="flex-1 bg-white px-1">
-      <StatusBar backgroundColor="white" barStyle="dark-content" />
+    <View className="flex-1 bg-white">
+      <View className="absolute top-0 left-0 right-0 z-50 bg-white">
+        <StatusBar backgroundColor="white" barStyle="dark-content" />
+      </View>
       <ScrollView
         showsVerticalScrollIndicator={false}
         className="flex-1 pt-2"
@@ -132,7 +134,7 @@ export default function BuddiHome() {
             className="w-[75px] h-[40px]"
             resizeMode="contain"
           />
-          <View className="flex-row items-center gap-4">
+          <View className="flex-row items-center gap-2 pr-1">
             <TouchableOpacity className="p-2 bg-primary rounded-xl shadow-sm">
               <Ionicons name="search-outline" size={20} color="white" />
             </TouchableOpacity>
@@ -150,12 +152,11 @@ export default function BuddiHome() {
         </Text>
 
         {/* Analytics Cards */}
-        <View className="flex-row justify-between m-4">
+        <View className="flex-row justify-between px-4 pt-4">
           <AnalyticsCard
-            icon={<Ionicons name="sparkles" size={20} color="#3CDFFF" />}
-            rightIcon={
-              <View className="p-2.5 rounded-full bg-[#8B5CF6]">
-                <Ionicons name="flash" size={22} color="white" />
+            icon={
+              <View className="bg-[#8B5CF6] w-10 h-10 rounded-full items-center justify-center">
+                <Ionicons name="flash" size={20} color="white" />
               </View>
             }
             title="Today's Pickups"
@@ -163,10 +164,9 @@ export default function BuddiHome() {
             subtitle="2 Schools"
           />
           <AnalyticsCard
-            icon={<Ionicons name="sparkles" size={20} color="#3CDFFF" />}
-            rightIcon={
-              <View className="p-2.5 rounded-full bg-[#00C6AE]">
-                <Ionicons name="wallet" size={22} color="white" />
+            icon={
+              <View className="bg-[#00C6AE] w-10 h-10 rounded-full items-center justify-center">
+                <Ionicons name="wallet" size={20} color="white" />
               </View>
             }
             title="Total Earnings"
