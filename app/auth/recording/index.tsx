@@ -39,24 +39,6 @@ const INTERVIEW_QUESTIONS = [
     question:
       "How would you handle a situation where a child is upset or misbehaving?",
   },
-  {
-    id: 4,
-    question:
-      "What safety measures would you take when picking up and dropping off a child?",
-  },
-  {
-    id: 5,
-    question:
-      "What activities would you do with children during your time with them?",
-  },
-  {
-    id: 6,
-    question: "How would you communicate with parents about their child's day?",
-  },
-  {
-    id: 7,
-    question: "What would you do in case of an emergency situation?",
-  },
 ];
 
 interface AnsweredQuestions {
@@ -175,9 +157,14 @@ const RecordingPage = () => {
             onPress: () => {
               Alert.alert(
                 "Interview Submitted",
-                "Thank you for completing your interview!"
+                "Thank you for completing your interview!",
+                [
+                  {
+                    text: "OK",
+                    onPress: () => router.replace("/buddi" as any),
+                  },
+                ]
               );
-              router.back();
             },
           },
         ]
@@ -185,9 +172,14 @@ const RecordingPage = () => {
     } else {
       Alert.alert(
         "Interview Submitted",
-        "Thank you for completing your interview!"
+        "Thank you for completing your interview!",
+        [
+          {
+            text: "OK",
+            onPress: () => router.replace("/buddi" as any),
+          },
+        ]
       );
-      router.back();
     }
   };
 
@@ -396,7 +388,7 @@ const RecordingPage = () => {
 
               <View className="items-center py-3 mb-2">
                 <Text className="font-comfortaa-bold text-lg text-gray-800">
-                  Question 1
+                  Question {currentQuestionIndex + 1}
                 </Text>
               </View>
 
@@ -404,12 +396,11 @@ const RecordingPage = () => {
                 <View className="flex-row items-start">
                   <View className="w-7 h-7 bg-gray-100 rounded-full items-center justify-center mr-3 mt-0.5">
                     <Text className="font-comfortaa-bold text-sm text-gray-800">
-                      1
+                      {currentQuestionIndex + 1}
                     </Text>
                   </View>
                   <Text className="font-comfortaa text-base text-gray-800 flex-1 leading-6">
-                    Tell us a little about yourself and why you want to be a
-                    Buddi.
+                    {currentQuestion.question}
                   </Text>
                 </View>
               </View>
@@ -426,15 +417,27 @@ const RecordingPage = () => {
                   </Text>
                 </TouchableOpacity>
 
-                <TouchableOpacity
-                  className="flex-row items-center bg-[#FF932E] rounded-full py-3 px-7 shadow-sm"
-                  onPress={() => handleSlideQuestion("next")}
-                >
-                  <Text className="font-comfortaa-bold text-white text-base mr-1.5">
-                    Next
-                  </Text>
-                  <Ionicons name="arrow-forward" size={18} color="white" />
-                </TouchableOpacity>
+                {isLastQuestion ? (
+                  <TouchableOpacity
+                    className="flex-row items-center bg-[#FF932E] rounded-full py-3 px-7 shadow-sm"
+                    onPress={handleSubmit}
+                  >
+                    <Text className="font-comfortaa-bold text-white text-base mr-1.5">
+                      Submit
+                    </Text>
+                    <Ionicons name="checkmark" size={18} color="white" />
+                  </TouchableOpacity>
+                ) : (
+                  <TouchableOpacity
+                    className="flex-row items-center bg-[#FF932E] rounded-full py-3 px-7 shadow-sm"
+                    onPress={() => handleSlideQuestion("next")}
+                  >
+                    <Text className="font-comfortaa-bold text-white text-base mr-1.5">
+                      Next
+                    </Text>
+                    <Ionicons name="arrow-forward" size={18} color="white" />
+                  </TouchableOpacity>
+                )}
               </View>
 
               <View className="h-1.5 w-full bg-gray-100 absolute bottom-0">

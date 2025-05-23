@@ -1,0 +1,361 @@
+// app/buddi/index.tsx
+import { Ionicons } from "@expo/vector-icons";
+import React, { useState } from "react";
+import {
+  Image,
+  Platform,
+  ScrollView,
+  StatusBar,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import AnalyticsCard from "../../components/commons/AnalyticsCard";
+import PickupCard from "../../components/commons/PickupCard";
+
+export default function BuddiHome() {
+  const [activeTab, setActiveTab] = useState(0);
+  const insets = useSafeAreaInsets();
+
+  const renderBottomTabs = () => {
+    return (
+      <View
+        className="absolute bottom-0 left-0 right-0 bg-white flex-row justify-around items-center border-t border-gray/10 shadow-lg"
+        style={{
+          paddingBottom: Math.max(insets.bottom, 16),
+          height: Platform.select({
+            ios: 80 + insets.bottom,
+            android: 65 + insets.bottom,
+          }),
+        }}
+      >
+        <TouchableOpacity
+          className="items-center justify-center py-2"
+          onPress={() => setActiveTab(0)}
+        >
+          <Ionicons
+            name="home"
+            size={24}
+            color={activeTab === 0 ? "#FF932E" : "#666"}
+          />
+          <Text
+            className={`mt-1 text-xs font-comfortaa ${
+              activeTab === 0 ? "text-primary" : "text-gray-500"
+            }`}
+          >
+            Home
+          </Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          className="items-center justify-center py-2"
+          onPress={() => setActiveTab(1)}
+        >
+          <Ionicons
+            name="calendar-outline"
+            size={24}
+            color={activeTab === 1 ? "#FF932E" : "#666"}
+          />
+          <Text
+            className={`mt-1 text-xs font-comfortaa ${
+              activeTab === 1 ? "text-primary" : "text-gray-500"
+            }`}
+          >
+            Schedule
+          </Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity style={styles.addButton}>
+          <View style={styles.addButtonInner}>
+            <Ionicons name="add" size={32} color="#fff" />
+          </View>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          className="items-center justify-center py-2"
+          onPress={() => setActiveTab(3)}
+        >
+          <Ionicons
+            name="chatbubble-ellipses-outline"
+            size={24}
+            color={activeTab === 3 ? "#FF932E" : "#666"}
+          />
+          <Text
+            className={`mt-1 text-xs font-comfortaa ${
+              activeTab === 3 ? "text-primary" : "text-gray-500"
+            }`}
+          >
+            Messages
+          </Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          className="items-center justify-center py-2"
+          onPress={() => setActiveTab(4)}
+        >
+          <Ionicons
+            name="person-outline"
+            size={24}
+            color={activeTab === 4 ? "#FF932E" : "#666"}
+          />
+          <Text
+            className={`mt-1 text-xs font-comfortaa ${
+              activeTab === 4 ? "text-primary" : "text-gray-500"
+            }`}
+          >
+            Profile
+          </Text>
+        </TouchableOpacity>
+      </View>
+    );
+  };
+
+  return (
+    <View className="flex-1 bg-white px-1">
+      <StatusBar backgroundColor="white" barStyle="dark-content" />
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        className="flex-1 pt-2"
+        contentContainerStyle={{
+          paddingTop: insets.top,
+          paddingBottom: Platform.select({
+            ios: 90 + insets.bottom,
+            android: 80 + insets.bottom,
+          }),
+        }}
+      >
+        <View className="flex-row justify-between px-1 pt-6">
+          <Image
+            source={require("../../assets/images/logo.png")}
+            className="w-[75px] h-[40px]"
+            resizeMode="contain"
+          />
+          <View className="flex-row items-center gap-4">
+            <TouchableOpacity className="p-2 bg-primary rounded-xl shadow-sm">
+              <Ionicons name="search-outline" size={20} color="white" />
+            </TouchableOpacity>
+            <TouchableOpacity className="p-2 bg-primary rounded-xl shadow-sm">
+              <Ionicons name="notifications-outline" size={20} color="white" />
+            </TouchableOpacity>
+          </View>
+        </View>
+
+        <Text className="text-2xl font-comfortaa-bold m-4">
+          Good morning, Jane
+        </Text>
+        <Text className="text-gray-500 font-comfortaa mx-5">
+          Happy that you are back 😊
+        </Text>
+
+        {/* Analytics Cards */}
+        <View className="flex-row justify-between m-4">
+          <AnalyticsCard
+            icon={<Ionicons name="sparkles" size={20} color="#3CDFFF" />}
+            rightIcon={
+              <View className="p-2.5 rounded-full bg-[#8B5CF6]">
+                <Ionicons name="flash" size={22} color="white" />
+              </View>
+            }
+            title="Today's Pickups"
+            value="12"
+            subtitle="2 Schools"
+          />
+          <AnalyticsCard
+            icon={<Ionicons name="sparkles" size={20} color="#3CDFFF" />}
+            rightIcon={
+              <View className="p-2.5 rounded-full bg-[#00C6AE]">
+                <Ionicons name="wallet" size={22} color="white" />
+              </View>
+            }
+            title="Total Earnings"
+            value="$1,234"
+            subtitle="All time"
+          />
+        </View>
+
+        {/* Congratulations */}
+        <View className="m-4 bg-gray-100 rounded-2xl p-4 flex-row justify-between items-center">
+          <View className="flex-1">
+            <Text className="font-comfortaa-bold">Congratulations!</Text>
+            <Text className="text-gray-500 font-comfortaa mt-1">
+              23XP • 23 Reviews
+            </Text>
+          </View>
+          <TouchableOpacity className="flex-row items-center gap-1">
+            <Text className="text-gray-500 font-comfortaa">View history</Text>
+            <Ionicons name="arrow-forward" size={16} color="#666" />
+          </TouchableOpacity>
+        </View>
+
+        {/* Pickups Header */}
+        <View className="flex-row justify-between items-center m-4">
+          <Text className="font-comfortaa-bold text-base">Pickups</Text>
+          <TouchableOpacity>
+            <Text className="text-primary font-comfortaa">View All</Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* Pickup Card */}
+        <PickupCard
+          name="Bryan Smith"
+          time="2:23:04"
+          days="5 Days a Week"
+          school="School Name"
+          home="Senen"
+          onViewDetails={() => {}}
+          onButtonPress={() => {}}
+        />
+      </ScrollView>
+      {renderBottomTabs()}
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: "#fff",
+  },
+  header: {
+    backgroundColor: "#fff",
+    borderBottomWidth: 1,
+    borderBottomColor: "rgba(0,0,0,0.1)",
+  },
+  scrollView: {
+    flex: 1,
+  },
+  logoContainer: {
+    alignItems: "center",
+    marginVertical: 16,
+  },
+  logo: {
+    width: 120,
+    height: 40,
+    resizeMode: "contain",
+  },
+  greeting: {
+    fontSize: 18,
+    fontWeight: "bold",
+    margin: 16,
+    fontFamily: "Comfortaa-Bold",
+  },
+  subGreeting: {
+    color: "#888",
+    marginHorizontal: 16,
+    fontFamily: "Comfortaa-Regular",
+  },
+  cardsContainer: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    margin: 16,
+  },
+  iconCircle: {
+    padding: 10,
+    borderRadius: 20,
+  },
+  congratsContainer: {
+    margin: 16,
+    backgroundColor: "#f5f5f5",
+    borderRadius: 16,
+    padding: 16,
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
+  congratsContent: {
+    flex: 1,
+  },
+  congratsTitle: {
+    fontWeight: "bold",
+    fontFamily: "Comfortaa-Bold",
+  },
+  congratsText: {
+    color: "#666",
+    marginTop: 4,
+    fontFamily: "Comfortaa-Regular",
+  },
+  viewHistoryButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+  },
+  viewHistoryText: {
+    color: "#666",
+    fontFamily: "Comfortaa-Regular",
+  },
+  pickupsHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    margin: 16,
+  },
+  pickupsTitle: {
+    fontWeight: "bold",
+    fontSize: 16,
+    fontFamily: "Comfortaa-Bold",
+  },
+  viewAll: {
+    color: "#FF932E",
+    fontFamily: "Comfortaa-Regular",
+  },
+  bottomTabs: {
+    position: "absolute",
+    bottom: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: "#fff",
+    flexDirection: "row",
+    justifyContent: "space-around",
+    alignItems: "center",
+    borderTopWidth: 1,
+    borderTopColor: "rgba(0,0,0,0.1)",
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: -2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
+    elevation: 10,
+  },
+  tabItem: {
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 8,
+  },
+  tabLabel: {
+    fontSize: 12,
+    color: "#666",
+    marginTop: 4,
+    fontFamily: "Comfortaa-Regular",
+  },
+  activeTabLabel: {
+    color: "#FF932E",
+    fontFamily: "Comfortaa-Medium",
+  },
+  addButton: {
+    marginTop: -30,
+    width: 60,
+    height: 60,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  addButtonInner: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: "#FF932E",
+    justifyContent: "center",
+    alignItems: "center",
+    shadowColor: "#FF932E",
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 8,
+  },
+});
