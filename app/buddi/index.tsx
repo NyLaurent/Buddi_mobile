@@ -1,8 +1,10 @@
 // app/buddi/index.tsx
 import { Ionicons } from "@expo/vector-icons";
-import React, { useState } from "react";
+import React, { useRef, useState } from "react";
 import {
   Image,
+  NativeScrollEvent,
+  NativeSyntheticEvent,
   Platform,
   ScrollView,
   StatusBar,
@@ -13,11 +15,27 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import AnalyticsCard from "../../components/commons/AnalyticsCard";
+import Calendar from "../../components/commons/Calendar";
 import PickupCard from "../../components/commons/PickupCard";
+
+const DOT_SIZE = 8;
+const DOT_SPACING = 12;
+const DOT_COLOR_ACTIVE = "#FF932E";
+const DOT_COLOR_INACTIVE = "#E0E0E0";
 
 export default function BuddiHome() {
   const [activeTab, setActiveTab] = useState(0);
+  const [activeCard, setActiveCard] = useState(0);
+  const [selectedDate, setSelectedDate] = useState(new Date());
+  const scrollViewRef = useRef(null);
   const insets = useSafeAreaInsets();
+
+  const handleScroll = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
+    const contentOffset = event.nativeEvent.contentOffset.x;
+    const cardWidth = 300 + 12; // card width + margin
+    const newIndex = Math.round(contentOffset / cardWidth);
+    setActiveCard(newIndex);
+  };
 
   const renderBottomTabs = () => {
     return (
@@ -176,37 +194,115 @@ export default function BuddiHome() {
         </View>
 
         {/* Congratulations */}
-        <View className="m-4 bg-gray-100 rounded-2xl p-4 flex-row justify-between items-center">
-          <View className="flex-1">
-            <Text className="font-comfortaa-bold">Congratulations!</Text>
-            <Text className="text-gray-500 font-comfortaa mt-1">
-              23XP • 23 Reviews
-            </Text>
+        <View className="mx-4 mt-6 bg-[#FAFBFC] rounded-2xl p-4 flex-row justify-between items-center border border-[#C1C3C7] shadow-sm">
+          <View className="flex-row items-center gap-3">
+            <View className="bg-[#FFE7D3] p-2 rounded-xl">
+              <Ionicons name="trophy" size={24} color="#FF932E" />
+            </View>
+            <View>
+              <Text className="font-comfortaa-bold text-lg">
+                Congratulations! 🎉
+              </Text>
+              <Text className="text-gray-500 font-comfortaa">
+                23XP • 23 Reviews
+              </Text>
+            </View>
           </View>
-          <TouchableOpacity className="flex-row items-center gap-1">
-            <Text className="text-gray-500 font-comfortaa">View history</Text>
+          <TouchableOpacity className="py-2 px-3 rounded-xl flex-row items-center gap-2">
+            <Text className="text-gray-500 font-comfortaa">View</Text>
             <Ionicons name="arrow-forward" size={16} color="#666" />
           </TouchableOpacity>
         </View>
 
         {/* Pickups Header */}
-        <View className="flex-row justify-between items-center m-4">
-          <Text className="font-comfortaa-bold text-base">Pickups</Text>
+        <View className="flex-row justify-between items-center mx-4 mb-2 pt-5">
+          <Text className="font-comfortaa-bold text-xl">Pickups</Text>
           <TouchableOpacity>
             <Text className="text-primary font-comfortaa">View All</Text>
           </TouchableOpacity>
         </View>
 
-        {/* Pickup Card */}
-        <PickupCard
-          name="Bryan Smith"
-          time="2:23:04"
-          days="5 Days a Week"
-          school="School Name"
-          home="Senen"
-          onViewDetails={() => {}}
-          onButtonPress={() => {}}
-        />
+        {/* Pickup Cards Horizontal */}
+        <ScrollView
+          ref={scrollViewRef}
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={{ paddingHorizontal: 12 }}
+          onScroll={handleScroll}
+          scrollEventThrottle={16}
+          pagingEnabled
+          decelerationRate="fast"
+          snapToInterval={312} // card width (300) + margin (12)
+        >
+          <PickupCard
+            name="Bryan Smith"
+            time="2:23:04"
+            days="5 Days a Week"
+            school="School Name"
+            home="Senen"
+            onViewDetails={() => {}}
+            onButtonPress={() => {}}
+          />
+          <PickupCard
+            name="Sarah Johnson"
+            time="3:15:00"
+            days="3 Days a Week"
+            school="Lincoln High"
+            home="Downtown"
+            onViewDetails={() => {}}
+            onButtonPress={() => {}}
+          />
+          <PickupCard
+            name="Mike Wilson"
+            time="1:45:30"
+            days="4 Days a Week"
+            school="St. Mary's"
+            home="Westside"
+            onViewDetails={() => {}}
+            onButtonPress={() => {}}
+          />
+          <PickupCard
+            name="Emma Davis"
+            time="4:00:00"
+            days="2 Days a Week"
+            school="Oak Elementary"
+            home="Eastside"
+            onViewDetails={() => {}}
+            onButtonPress={() => {}}
+          />
+        </ScrollView>
+
+        {/* Pagination Dots */}
+        <View className="flex-row justify-center items-center gap-2 mt-4 mb-6">
+          {[0, 1, 2, 3].map((index) => (
+            <View
+              key={index}
+              style={{
+                width: DOT_SIZE,
+                height: DOT_SIZE,
+                borderRadius: DOT_SIZE / 2,
+                marginHorizontal: DOT_SPACING / 2,
+                backgroundColor:
+                  index === activeCard ? DOT_COLOR_ACTIVE : DOT_COLOR_INACTIVE,
+              }}
+            />
+          ))}
+        </View>
+
+        {/* Calendar Section */}
+        <View className="mb-6">
+          <View className="flex-row justify-between items-center mx-4 mb-2">
+            <Text className="font-comfortaa-bold text-xl">Schedule</Text>
+            <TouchableOpacity>
+              <Text className="text-primary font-comfortaa">View All</Text>
+            </TouchableOpacity>
+          </View>
+          <Calendar
+            selectedDate={selectedDate}
+            onDaySelect={(date) => setSelectedDate(date)}
+            primaryColor="#FF932E"
+          />
+        </View>
       </ScrollView>
       {renderBottomTabs()}
     </View>
