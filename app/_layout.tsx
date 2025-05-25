@@ -34,6 +34,10 @@ const RootLayout = () => {
       <Stack.Screen name="index" />
       <Stack.Screen name="onboarding" />
       <Stack.Screen name="role-select" />
+      <Stack.Screen name="buddi" options={{ headerShown: false }} />
+      <Stack.Screen name="teacher" options={{ headerShown: false }} />
+      <Stack.Screen name="parent" options={{ headerShown: false }} />
+      <Stack.Screen name="auth" options={{ headerShown: false }} />
     </Stack>
   );
 };

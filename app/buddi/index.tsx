@@ -1,5 +1,6 @@
 // app/buddi/index.tsx
 import { Ionicons } from "@expo/vector-icons";
+import { useRouter } from "expo-router";
 import React, { useRef, useState } from "react";
 import {
   Image,
@@ -17,6 +18,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import AnalyticsCard from "../../components/commons/AnalyticsCard";
 import Calendar from "../../components/commons/Calendar";
 import PickupCard from "../../components/commons/PickupCard";
+import SchedulePage from "./schedule";
 
 const DOT_SIZE = 8;
 const DOT_SPACING = 12;
@@ -29,7 +31,7 @@ export default function BuddiHome() {
   const [selectedDate, setSelectedDate] = useState(new Date());
   const scrollViewRef = useRef(null);
   const insets = useSafeAreaInsets();
-
+  const router = useRouter();
   const handleScroll = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
     const contentOffset = event.nativeEvent.contentOffset.x;
     const cardWidth = 300 + 12; // card width + margin
@@ -130,11 +132,8 @@ export default function BuddiHome() {
     );
   };
 
-  return (
-    <View className="flex-1 bg-white">
-      <View className="absolute top-0 left-0 right-0 z-50 bg-white">
-        <StatusBar backgroundColor="white" barStyle="dark-content" />
-      </View>
+  const renderHomeContent = () => {
+    return (
       <ScrollView
         showsVerticalScrollIndicator={false}
         className="flex-1 pt-2"
@@ -170,7 +169,7 @@ export default function BuddiHome() {
         </Text>
 
         {/* Analytics Cards */}
-        <View className="flex-row justify-between px-4 pt-4">
+        <View className="flex-row justify-between px-4 pt-4 gap-3">
           <AnalyticsCard
             icon={
               <View className="bg-[#8B5CF6] w-10 h-10 rounded-full items-center justify-center">
@@ -304,6 +303,39 @@ export default function BuddiHome() {
           />
         </View>
       </ScrollView>
+    );
+  };
+
+  return (
+    <View className="flex-1 bg-white">
+      <View className="absolute top-0 left-0 right-0 z-50 bg-white">
+        <StatusBar backgroundColor="white" barStyle="dark-content" />
+      </View>
+
+      {/* Conditional rendering based on activeTab */}
+      {activeTab === 0 && renderHomeContent()}
+      {activeTab === 1 && (
+        <View className="flex-1">
+          <SchedulePage />
+        </View>
+      )}
+      {activeTab === 3 && (
+        <View className="flex-1 items-center justify-center">
+          <Text className="text-xl font-comfortaa-bold">Messages</Text>
+          <Text className="text-gray-500 font-comfortaa mt-2">
+            Coming soon...
+          </Text>
+        </View>
+      )}
+      {activeTab === 4 && (
+        <View className="flex-1 items-center justify-center">
+          <Text className="text-xl font-comfortaa-bold">Profile</Text>
+          <Text className="text-gray-500 font-comfortaa mt-2">
+            Coming soon...
+          </Text>
+        </View>
+      )}
+
       {renderBottomTabs()}
     </View>
   );

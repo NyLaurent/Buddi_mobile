@@ -27,7 +27,7 @@ const AnalyticsCard = ({
 
 const styles = StyleSheet.create({
   card: {
-    width: "47%",
+    flex: 1,
     backgroundColor: "#fff",
     borderRadius: 20,
     padding: 16,
