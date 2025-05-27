@@ -17,8 +17,10 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import AnalyticsCard from "../../components/commons/AnalyticsCard";
 import Calendar from "../../components/commons/Calendar";
+import CongratulationsCard from "../../components/commons/CongratulationsCard";
 import PickupCard from "../../components/commons/PickupCard";
 import Messages from "./messages";
+import Profile from "./profile";
 import SchedulePage from "./schedule";
 
 const DOT_SIZE = 8;
@@ -195,25 +197,11 @@ export default function BuddiHome() {
         </View>
 
         {/* Congratulations */}
-        <View className="mx-4 mt-6 bg-[#FAFBFC] rounded-2xl p-4 flex-row justify-between items-center border border-[#C1C3C7] shadow-sm">
-          <View className="flex-row items-center gap-3">
-            <View className="bg-[#FFE7D3] p-2 rounded-xl">
-              <Ionicons name="trophy" size={24} color="#FF932E" />
-            </View>
-            <View>
-              <Text className="font-comfortaa-bold text-lg">
-                Congratulations! 🎉
-              </Text>
-              <Text className="text-gray-500 font-comfortaa">
-                23XP • 23 Reviews
-              </Text>
-            </View>
-          </View>
-          <TouchableOpacity className="py-2 px-3 rounded-xl flex-row items-center gap-2">
-            <Text className="text-gray-500 font-comfortaa">View</Text>
-            <Ionicons name="arrow-forward" size={16} color="#666" />
-          </TouchableOpacity>
-        </View>
+        <CongratulationsCard
+          onViewPress={() => {
+            // Handle view press
+          }}
+        />
 
         {/* Pickups Header */}
         <View className="flex-row justify-between items-center mx-4 mb-2 pt-5">
@@ -329,14 +317,7 @@ export default function BuddiHome() {
           />
         </View>
       )}
-      {activeTab === 4 && (
-        <View className="flex-1 items-center justify-center">
-          <Text className="text-xl font-comfortaa-bold">Profile</Text>
-          <Text className="text-gray-500 font-comfortaa mt-2">
-            Coming soon...
-          </Text>
-        </View>
-      )}
+      {activeTab === 4 && <Profile />}
 
       {!chatOpen && renderBottomTabs()}
     </View>

@@ -13,7 +13,10 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
+import {
+  SafeAreaView,
+  useSafeAreaInsets,
+} from "react-native-safe-area-context";
 
 const mockMessages = [
   {
@@ -156,7 +159,7 @@ const Messages: React.FC<MessagesProps> = ({ onChatOpen, onChatClose }) => {
   if (selectedChat) {
     const inputBarHeight = 56; // matches styles.inputBarRow height
     return (
-      <View style={{ flex: 1, backgroundColor: "#fff" }}>
+      <SafeAreaView style={{ flex: 1, backgroundColor: "#fff" }}>
         <StatusBar backgroundColor="#fff" barStyle="dark-content" />
         {/* Chat Header */}
         <View style={styles.chatHeaderRow}>
@@ -170,64 +173,68 @@ const Messages: React.FC<MessagesProps> = ({ onChatOpen, onChatClose }) => {
           />
         </View>
         {/* Chat Messages */}
-        <FlatList
-          data={mockChat}
-          keyExtractor={(item) => item.id}
-          renderItem={({ item }) =>
-            item.isMe ? (
-              <View style={styles.myMsgWrap}>
-                <View style={styles.myMsgBubble}>
-                  <Text style={styles.myMsgSender}>Lucas</Text>
-                  <Text style={styles.myMsgText}>{item.text}</Text>
-                </View>
-                {item.time ? (
-                  <Text style={styles.msgTime}>{item.time}</Text>
-                ) : null}
-                <Text style={styles.msgMenu}>...</Text>
-              </View>
-            ) : (
-              <View style={styles.otherMsgWrap}>
-                <View style={styles.otherMsgBubble}>
-                  <Text style={styles.otherMsgSender}>{item.sender}</Text>
-                  <Text style={styles.otherMsgText}>{item.text}</Text>
-                </View>
-                {item.time ? (
-                  <Text style={styles.msgTime}>{item.time}</Text>
-                ) : null}
-                <Text style={styles.msgMenu}>...</Text>
-              </View>
-            )
-          }
-          contentContainerStyle={{
-            padding: 16,
-            paddingBottom: inputBarHeight + insets.bottom,
-          }}
-          showsVerticalScrollIndicator={false}
-        />
-        {/* Input Bar */}
         <KeyboardAvoidingView
-          behavior={Platform.OS === "ios" ? "padding" : undefined}
-          keyboardVerticalOffset={80}
-          style={[
-            styles.inputBarWrap,
-            { paddingBottom: Math.max(insets.bottom, 8) },
-          ]}
+          behavior={Platform.OS === "ios" ? "padding" : "height"}
+          style={{ flex: 1 }}
+          keyboardVerticalOffset={Platform.OS === "ios" ? 90 : 0}
         >
-          <View style={styles.inputBarRow}>
-            <TouchableOpacity style={styles.inputAddBtn}>
-              <Ionicons name="add" size={24} color="#fff" />
-            </TouchableOpacity>
-            <TextInput
-              style={styles.input}
-              placeholder="Type a message..."
-              placeholderTextColor="#BDBDBD"
-            />
-            <TouchableOpacity style={styles.inputSendBtn}>
-              <Ionicons name="send" size={20} color="#fff" />
-            </TouchableOpacity>
+          <FlatList
+            data={mockChat}
+            keyExtractor={(item) => item.id}
+            renderItem={({ item }) =>
+              item.isMe ? (
+                <View style={styles.myMsgWrap}>
+                  <View style={styles.myMsgBubble}>
+                    <Text style={styles.myMsgSender}>Lucas</Text>
+                    <Text style={styles.myMsgText}>{item.text}</Text>
+                  </View>
+                  {item.time ? (
+                    <Text style={styles.msgTime}>{item.time}</Text>
+                  ) : null}
+                  <Text style={styles.msgMenu}>...</Text>
+                </View>
+              ) : (
+                <View style={styles.otherMsgWrap}>
+                  <View style={styles.otherMsgBubble}>
+                    <Text style={styles.otherMsgSender}>{item.sender}</Text>
+                    <Text style={styles.otherMsgText}>{item.text}</Text>
+                  </View>
+                  {item.time ? (
+                    <Text style={styles.msgTime}>{item.time}</Text>
+                  ) : null}
+                  <Text style={styles.msgMenu}>...</Text>
+                </View>
+              )
+            }
+            contentContainerStyle={{
+              padding: 16,
+              paddingBottom: inputBarHeight + insets.bottom,
+            }}
+            showsVerticalScrollIndicator={false}
+          />
+          {/* Input Bar */}
+          <View
+            style={[
+              styles.inputBarWrap,
+              { paddingBottom: Math.max(insets.bottom, 8) },
+            ]}
+          >
+            <View style={styles.inputBarRow}>
+              <TouchableOpacity style={styles.inputAddBtn}>
+                <Ionicons name="add" size={24} color="#fff" />
+              </TouchableOpacity>
+              <TextInput
+                style={styles.input}
+                placeholder="Type a message..."
+                placeholderTextColor="#BDBDBD"
+              />
+              <TouchableOpacity style={styles.inputSendBtn}>
+                <Ionicons name="send" size={20} color="#fff" />
+              </TouchableOpacity>
+            </View>
           </View>
         </KeyboardAvoidingView>
-      </View>
+      </SafeAreaView>
     );
   }
 
@@ -512,16 +519,10 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    backgroundColor: "transparent",
+    backgroundColor: "#fff",
     padding: 8,
-  },
-  inputBar: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "#F8F9FE",
-    borderRadius: 24,
-    paddingHorizontal: 8,
-    height: 48,
+    borderTopWidth: 1,
+    borderTopColor: "#F0F0F0",
   },
   inputBarRow: {
     flexDirection: "row",
