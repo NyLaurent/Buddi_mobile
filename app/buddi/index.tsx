@@ -18,6 +18,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import AnalyticsCard from "../../components/commons/AnalyticsCard";
 import Calendar from "../../components/commons/Calendar";
 import PickupCard from "../../components/commons/PickupCard";
+import Messages from "./messages";
 import SchedulePage from "./schedule";
 
 const DOT_SIZE = 8;
@@ -320,11 +321,8 @@ export default function BuddiHome() {
         </View>
       )}
       {activeTab === 3 && (
-        <View className="flex-1 items-center justify-center">
-          <Text className="text-xl font-comfortaa-bold">Messages</Text>
-          <Text className="text-gray-500 font-comfortaa mt-2">
-            Coming soon...
-          </Text>
+        <View className="flex-1">
+          <Messages />
         </View>
       )}
       {activeTab === 4 && (

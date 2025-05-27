@@ -7,14 +7,12 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
 import AnalyticsCard from "../../components/commons/AnalyticsCard";
-import CoverageRequestCard from "../../components/commons/CoverageRequestCard";
 import PickupCard from "../../components/commons/PickupCard";
 
 export default function SchedulePage() {
   const [activeTab, setActiveTab] = useState<"pickups" | "coverage">("pickups");
-  const insets = useSafeAreaInsets();
+  // const insets = useSafeAreaInsets();
 
   const pickupData = [
     {
@@ -81,10 +79,10 @@ export default function SchedulePage() {
     <ScrollView
       className="flex-1 bg-gray-50"
       contentContainerStyle={{
-        paddingTop: insets.top + 20,
+        paddingTop: 40,
         paddingBottom: Platform.select({
-          ios: 120 + insets.bottom,
-          android: 110 + insets.bottom,
+          ios: 120,
+          android: 110,
         }),
       }}
       showsVerticalScrollIndicator={false}
@@ -205,7 +203,7 @@ export default function SchedulePage() {
         </View>
 
         {/* Conditional Content */}
-       
+        {activeTab === "pickups" ? (
           <ScrollView
             horizontal
             showsHorizontalScrollIndicator={false}
@@ -229,7 +227,13 @@ export default function SchedulePage() {
               </View>
             ))}
           </ScrollView>
-      
+        ) : (
+          <View className="p-4">
+            <Text className="text-gray-600 font-comfortaa text-center">
+              Coverage requests will be displayed here
+            </Text>
+          </View>
+        )}
       </View>
     </ScrollView>
   );
