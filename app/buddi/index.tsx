@@ -30,6 +30,7 @@ export default function BuddiHome() {
   const [activeTab, setActiveTab] = useState(0);
   const [activeCard, setActiveCard] = useState(0);
   const [selectedDate, setSelectedDate] = useState(new Date());
+  const [chatOpen, setChatOpen] = useState(false);
   const scrollViewRef = useRef(null);
   const insets = useSafeAreaInsets();
   const router = useRouter();
@@ -322,7 +323,10 @@ export default function BuddiHome() {
       )}
       {activeTab === 3 && (
         <View className="flex-1">
-          <Messages />
+          <Messages
+            onChatOpen={() => setChatOpen(true)}
+            onChatClose={() => setChatOpen(false)}
+          />
         </View>
       )}
       {activeTab === 4 && (
@@ -334,7 +338,7 @@ export default function BuddiHome() {
         </View>
       )}
 
-      {renderBottomTabs()}
+      {!chatOpen && renderBottomTabs()}
     </View>
   );
 }

@@ -1,15 +1,19 @@
 import { Ionicons } from "@expo/vector-icons";
-import React, { useState } from "react";
+import * as SystemUI from "expo-system-ui";
+import React, { useEffect, useState } from "react";
 import {
   FlatList,
   Image,
+  KeyboardAvoidingView,
   Platform,
+  StatusBar,
   StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
   View,
 } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 const mockMessages = [
   {
@@ -49,12 +53,80 @@ const mockMessages = [
   },
 ];
 
-const Messages = () => {
+const mockChat = [
+  {
+    id: "1",
+    sender: "Brooke",
+    text: "Hey Lucas!",
+    time: "2 mins ago",
+    isMe: false,
+  },
+  {
+    id: "2",
+    sender: "Brooke",
+    text: "How's your project going?",
+    time: "2 mins ago",
+    isMe: false,
+  },
+  {
+    id: "3",
+    sender: "Lucas",
+    text: "Hi Brooke!",
+    time: "",
+    isMe: true,
+  },
+  {
+    id: "4",
+    sender: "Lucas",
+    text: "It's going well. Thanks for asking!",
+    time: "2 mins ago",
+    isMe: true,
+  },
+  {
+    id: "5",
+    sender: "Brooke",
+    text: "No worries. Let me know if you need any help 😌",
+    time: "2 mins ago",
+    isMe: false,
+  },
+  {
+    id: "6",
+    sender: "Lucas",
+    text: "You're the best!",
+    time: "2 mins ago",
+    isMe: true,
+  },
+];
+
+interface MessagesProps {
+  onChatOpen?: () => void;
+  onChatClose?: () => void;
+}
+
+const Messages: React.FC<MessagesProps> = ({ onChatOpen, onChatClose }) => {
   const [activeTab, setActiveTab] = useState("Parents");
   const [search, setSearch] = useState("");
+  const [selectedChat, setSelectedChat] = useState<null | {
+    name: string;
+    avatar: string;
+  }>(null);
+  const insets = useSafeAreaInsets();
+
+  const handleSelectChat = (chat: { name: string; avatar: string }) => {
+    setSelectedChat(chat);
+    if (onChatOpen) onChatOpen();
+  };
+
+  const handleCloseChat = () => {
+    setSelectedChat(null);
+    if (onChatClose) onChatClose();
+  };
 
   const renderMessage = ({ item }: { item: any }) => (
-    <TouchableOpacity style={styles.messageRow}>
+    <TouchableOpacity
+      style={styles.messageRow}
+      onPress={() => handleSelectChat({ name: item.name, avatar: item.avatar })}
+    >
       <Image source={{ uri: item.avatar }} style={styles.avatar} />
       <View style={{ flex: 1 }}>
         <View style={styles.rowBetween}>
@@ -70,6 +142,94 @@ const Messages = () => {
       )}
     </TouchableOpacity>
   );
+
+  useEffect(() => {
+    if (Platform.OS === "android") {
+      if (selectedChat) {
+        SystemUI.setBackgroundColorAsync("#FF932E");
+      } else {
+        SystemUI.setBackgroundColorAsync("#fff");
+      }
+    }
+  }, [selectedChat]);
+
+  if (selectedChat) {
+    const inputBarHeight = 56; // matches styles.inputBarRow height
+    return (
+      <View style={{ flex: 1, backgroundColor: "#fff" }}>
+        <StatusBar backgroundColor="#fff" barStyle="dark-content" />
+        {/* Chat Header */}
+        <View style={styles.chatHeaderRow}>
+          <TouchableOpacity style={styles.headerIcon} onPress={handleCloseChat}>
+            <Ionicons name="arrow-back" size={22} color="#FF932E" />
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>{selectedChat.name}</Text>
+          <Image
+            source={{ uri: selectedChat.avatar }}
+            style={styles.chatAvatar}
+          />
+        </View>
+        {/* Chat Messages */}
+        <FlatList
+          data={mockChat}
+          keyExtractor={(item) => item.id}
+          renderItem={({ item }) =>
+            item.isMe ? (
+              <View style={styles.myMsgWrap}>
+                <View style={styles.myMsgBubble}>
+                  <Text style={styles.myMsgSender}>Lucas</Text>
+                  <Text style={styles.myMsgText}>{item.text}</Text>
+                </View>
+                {item.time ? (
+                  <Text style={styles.msgTime}>{item.time}</Text>
+                ) : null}
+                <Text style={styles.msgMenu}>...</Text>
+              </View>
+            ) : (
+              <View style={styles.otherMsgWrap}>
+                <View style={styles.otherMsgBubble}>
+                  <Text style={styles.otherMsgSender}>{item.sender}</Text>
+                  <Text style={styles.otherMsgText}>{item.text}</Text>
+                </View>
+                {item.time ? (
+                  <Text style={styles.msgTime}>{item.time}</Text>
+                ) : null}
+                <Text style={styles.msgMenu}>...</Text>
+              </View>
+            )
+          }
+          contentContainerStyle={{
+            padding: 16,
+            paddingBottom: inputBarHeight + insets.bottom,
+          }}
+          showsVerticalScrollIndicator={false}
+        />
+        {/* Input Bar */}
+        <KeyboardAvoidingView
+          behavior={Platform.OS === "ios" ? "padding" : undefined}
+          keyboardVerticalOffset={80}
+          style={[
+            styles.inputBarWrap,
+            { paddingBottom: Math.max(insets.bottom, 8) },
+          ]}
+        >
+          <View style={styles.inputBarRow}>
+            <TouchableOpacity style={styles.inputAddBtn}>
+              <Ionicons name="add" size={24} color="#fff" />
+            </TouchableOpacity>
+            <TextInput
+              style={styles.input}
+              placeholder="Type a message..."
+              placeholderTextColor="#BDBDBD"
+            />
+            <TouchableOpacity style={styles.inputSendBtn}>
+              <Ionicons name="send" size={20} color="#fff" />
+            </TouchableOpacity>
+          </View>
+        </KeyboardAvoidingView>
+      </View>
+    );
+  }
 
   return (
     <View style={{ flex: 1, backgroundColor: "#fff" }}>
@@ -267,6 +427,135 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     fontSize: 13,
     fontFamily: "Comfortaa-Bold",
+  },
+  chatHeaderRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: 16,
+    paddingTop: Platform.OS === "ios" ? 60 : 30,
+    paddingBottom: 16,
+    backgroundColor: "#fff",
+  },
+  chatAvatar: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: "#EEE",
+  },
+  myMsgWrap: {
+    alignItems: "flex-end",
+    marginBottom: 12,
+  },
+  myMsgBubble: {
+    backgroundColor: "#FF932E",
+    borderRadius: 18,
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    maxWidth: "80%",
+    alignSelf: "flex-end",
+    marginBottom: 2,
+  },
+  myMsgSender: {
+    color: "#fff",
+    fontWeight: "bold",
+    fontFamily: "Comfortaa-Bold",
+    fontSize: 13,
+    marginBottom: 2,
+  },
+  myMsgText: {
+    color: "#fff",
+    fontFamily: "Comfortaa-Regular",
+    fontSize: 15,
+  },
+  otherMsgWrap: {
+    alignItems: "flex-start",
+    marginBottom: 12,
+  },
+  otherMsgBubble: {
+    backgroundColor: "#F8F9FE",
+    borderRadius: 18,
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    maxWidth: "80%",
+    alignSelf: "flex-start",
+    marginBottom: 2,
+  },
+  otherMsgSender: {
+    color: "#222",
+    fontWeight: "bold",
+    fontFamily: "Comfortaa-Bold",
+    fontSize: 13,
+    marginBottom: 2,
+  },
+  otherMsgText: {
+    color: "#222",
+    fontFamily: "Comfortaa-Regular",
+    fontSize: 15,
+  },
+  msgTime: {
+    color: "#888",
+    fontSize: 12,
+    marginTop: 2,
+    marginBottom: 2,
+    fontFamily: "Comfortaa-Regular",
+  },
+  msgMenu: {
+    color: "#222",
+    fontSize: 18,
+    marginLeft: 8,
+    marginTop: -18,
+    fontFamily: "Comfortaa-Bold",
+  },
+  inputBarWrap: {
+    position: "absolute",
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: "transparent",
+    padding: 8,
+  },
+  inputBar: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#F8F9FE",
+    borderRadius: 24,
+    paddingHorizontal: 8,
+    height: 48,
+  },
+  inputBarRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#F8F9FE",
+    borderRadius: 32,
+    paddingHorizontal: 8,
+    height: 56,
+  },
+  inputAddBtn: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: "#FF932E",
+    alignItems: "center",
+    justifyContent: "center",
+    marginRight: 8,
+  },
+  inputSendBtn: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: "#FF932E",
+    alignItems: "center",
+    justifyContent: "center",
+    marginLeft: 8,
+  },
+  input: {
+    flex: 1,
+    fontSize: 16,
+    color: "#222",
+    fontFamily: "Comfortaa-Regular",
+    backgroundColor: "transparent",
+    paddingHorizontal: 8,
   },
 });
 
