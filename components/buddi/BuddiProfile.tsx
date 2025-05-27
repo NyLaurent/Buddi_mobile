@@ -1,6 +1,7 @@
 import CongratulationsCard from "@/components/commons/CongratulationsCard";
 import { Ionicons } from "@expo/vector-icons";
 import { useEvent } from "expo";
+import { useRouter } from "expo-router";
 import { useVideoPlayer, VideoView } from "expo-video";
 import React, { useState } from "react";
 import {
@@ -22,6 +23,7 @@ const BuddiProfile = () => {
   const [activeTab, setActiveTab] = useState("General");
   const insets = useSafeAreaInsets();
   const { width } = Dimensions.get("window");
+  const router = useRouter();
 
   const videoSource = require("../../assets/videos/intro.mp4");
   const player = useVideoPlayer(videoSource, (player) => {
@@ -50,7 +52,10 @@ const BuddiProfile = () => {
         <View className="bg-[#FF932E] rounded-b-3xl" style={{ minHeight: 120 }}>
           <SafeAreaView edges={["top", "left", "right"]}>
             <View className="flex-row justify-end items-center px-4 pt-2">
-              <TouchableOpacity className="bg-white rounded-full p-2">
+              <TouchableOpacity
+                className="bg-white rounded-full p-2"
+                onPress={() => router.push("/buddi/settings")}
+              >
                 <Ionicons name="settings-outline" size={22} color="#FF932E" />
               </TouchableOpacity>
             </View>
@@ -255,10 +260,10 @@ const BuddiProfile = () => {
                 <TouchableOpacity className="bg-[#F8F9FE] rounded-full w-12 h-12 items-center justify-center">
                   <Ionicons name="create-outline" size={24} color="#BDBDBD" />
                 </TouchableOpacity>
-                <TouchableOpacity className="bg-[#FFB84C] rounded-full w-12 h-12 items-center justify-center">
+                <TouchableOpacity className="bg-primary rounded-full w-12 h-12 items-center justify-center">
                   <Ionicons name="download-outline" size={24} color="white" />
                 </TouchableOpacity>
-                <TouchableOpacity className="bg-[#FF5C5C] rounded-full w-12 h-12 items-center justify-center">
+                <TouchableOpacity className="bg-[#FF3B30] rounded-full w-12 h-12 items-center justify-center">
                   <Ionicons name="trash-outline" size={24} color="white" />
                 </TouchableOpacity>
               </View>
@@ -284,13 +289,13 @@ const BuddiProfile = () => {
               </View>
               {/* Action Buttons */}
               <View className="justify-center items-center space-y-4 ml-4 gap-5">
-                <TouchableOpacity className="bg-[#F8F9FE] rounded-full w-12 h-12 items-center justify-center">
+                <TouchableOpacity className="bg-[#F8FAFC] rounded-full w-12 h-12 border-1 border-[#EAEBF0] items-center justify-center">
                   <Ionicons name="create-outline" size={24} color="#BDBDBD" />
                 </TouchableOpacity>
-                <TouchableOpacity className="bg-[#FFB84C] rounded-full w-12 h-12 items-center justify-center">
+                <TouchableOpacity className="bg-primary rounded-full w-12 h-12 items-center justify-center">
                   <Ionicons name="download-outline" size={24} color="white" />
                 </TouchableOpacity>
-                <TouchableOpacity className="bg-[#FF5C5C] rounded-full w-12 h-12 items-center justify-center">
+                <TouchableOpacity className="bg-[#FF3B30] rounded-full w-12 h-12 items-center justify-center">
                   <Ionicons name="trash-outline" size={24} color="white" />
                 </TouchableOpacity>
               </View>
