@@ -82,6 +82,7 @@ const BuddiProfile = () => {
           </SafeAreaView>
         </View>
         {/* Toggler Tabs */}
+        
         <View
           className="flex-row bg-[#F8F9FE] rounded-2xl mx-4 mt-4 z-10"
           style={{ position: "relative" }}

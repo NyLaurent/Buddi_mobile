@@ -1,5 +1,5 @@
 import { Ionicons } from "@expo/vector-icons";
-import React, { useState } from "react";
+import React from "react";
 import {
   Platform,
   ScrollView,
@@ -8,12 +8,10 @@ import {
   View,
 } from "react-native";
 import AnalyticsCard from "../../components/commons/AnalyticsCard";
+import CoverageRequestCard from "../../components/commons/CoverageRequestCard";
 import PickupCard from "../../components/commons/PickupCard";
 
 export default function SchedulePage() {
-  const [activeTab, setActiveTab] = useState<"pickups" | "coverage">("pickups");
-  // const insets = useSafeAreaInsets();
-
   const pickupData = [
     {
       name: "Bryan Smith",
@@ -45,33 +43,32 @@ export default function SchedulePage() {
     },
   ];
 
-  const coverageData = [
+  // Tab state for navigator
+  const [activeTab, setActiveTab] = React.useState<"pickups" | "coverage">(
+    "pickups"
+  );
+
+  // Sample data for coverage requests
+  const coverageRequestsData = [
     {
-      studentName: "Bryan Smith",
-      time: "2:23:04",
-      hourlyRate: "$25 per hour",
-      school: "School Name",
-      home: "Senen",
-      requesterName: "Brian Ford",
-      requesterEmail: "brianford@lok.com",
-    },
-    {
-      studentName: "Lisa Anderson",
-      time: "1:45:30",
-      hourlyRate: "$30 per hour",
+      studentName: "Liam Brown",
+      time: "1:45:00",
+      hourlyRate: "$27 per hour",
       school: "Maple Elementary",
-      home: "Northside",
-      requesterName: "Jennifer Miller",
-      requesterEmail: "jennifer.m@school.edu",
+      home: "Greenfield",
+      requesterName: "Olivia Lee",
+      requesterEmail: "olivia.lee@email.com",
+      requesterAvatar: undefined,
     },
     {
-      studentName: "David Brown",
-      time: "3:20:15",
+      studentName: "Sophia Miller",
+      time: "2:30:00",
       hourlyRate: "$26 per hour",
-      school: "Cedar High School",
-      home: "Southside",
-      requesterName: "Robert Taylor",
-      requesterEmail: "r.taylor@education.net",
+      school: "Cedar Middle School",
+      home: "Northside",
+      requesterName: "Noah Kim",
+      requesterEmail: "noah.kim@email.com",
+      requesterAvatar: undefined,
     },
   ];
 
@@ -153,87 +150,107 @@ export default function SchedulePage() {
         </TouchableOpacity>
       </View>
 
-      {/* Tab Navigation */}
-      <View className="px-2 mb-6">
-        <View className="flex-row items-center bg-[#F8F9FE] rounded-2xl p-1">
-          <TouchableOpacity
-            className={`flex-1 py-3 rounded-xl items-center ${
-              activeTab === "pickups" ? "bg-white shadow-sm" : ""
-            }`}
-            onPress={() => setActiveTab("pickups")}
-          >
-            <Text
-              className={`font-comfortaa-bold text-lg ${
-                activeTab === "pickups" ? "text-black" : "text-gray-400"
-              }`}
-            >
-              Your Pickups
-            </Text>
-          </TouchableOpacity>
-
-          <View className="w-0.5 h-6 bg-gray-200" />
-
-          <TouchableOpacity
-            className={`flex-1 py-3 rounded-xl items-center ${
-              activeTab === "coverage" ? "bg-white shadow-sm" : ""
-            }`}
-            onPress={() => setActiveTab("coverage")}
-          >
-            <Text
-              className={`font-comfortaa-bold text-lg ${
-                activeTab === "coverage" ? "text-black" : "text-gray-400"
-              }`}
-            >
-              Coverage requests
-            </Text>
-          </TouchableOpacity>
-        </View>
-      </View>
-
       {/* Content Section */}
-      <View className="px-4">
-        <View className="flex-row items-center justify-between mb-4">
-          <Text className="font-comfortaa-bold text-xl">
-            {activeTab === "pickups" ? "Pickups" : "Coverage Requests"}
-          </Text>
-          <TouchableOpacity className="flex-row items-center gap-1">
-            <Text className="text-primary font-comfortaa">View All</Text>
-            <Ionicons name="arrow-forward" size={16} color="#FF932E" />
-          </TouchableOpacity>
-        </View>
-
-        {/* Conditional Content */}
-        {activeTab === "pickups" ? (
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={{ paddingRight: 16 }}
-          >
-            {pickupData.map((pickup, index) => (
-              <View key={index} className="mr-4">
-                <PickupCard
-                  name={pickup.name}
-                  time={pickup.time}
-                  days={pickup.days}
-                  school={pickup.school}
-                  home={pickup.home}
-                  onViewDetails={() =>
-                    console.log(`View details for ${pickup.name}`)
-                  }
-                  onButtonPress={() =>
-                    console.log(`Clock in for ${pickup.name}`)
-                  }
-                />
-              </View>
-            ))}
-          </ScrollView>
-        ) : (
-          <View className="p-4">
-            <Text className="text-gray-600 font-comfortaa text-center">
-              Coverage requests will be displayed here
-            </Text>
+      <View className="px-4 pb-5">
+        {/* Tab Navigator */}
+        <View>
+          <View className="flex-row bg-[#F8F9FE] rounded-lg mb-6 items-center justify-between w-full min-h-[56px]">
+            <TouchableOpacity
+              className={`flex-1 items-center rounded-lg ${
+                activeTab === "pickups" ? "bg-white mx-1 py-3" : "py-2"
+              }`}
+              onPress={() => setActiveTab("pickups")}
+            >
+              <Text
+                className={`font-comfortaa-bold text-base ${
+                  activeTab === "pickups" ? "text-black" : "text-gray-400"
+                }`}
+              >
+                Your Pickups
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              className={`flex-1 items-center rounded-lg ${
+                activeTab === "coverage" ? "bg-white mx-1 py-3" : "py-2"
+              }`}
+              onPress={() => setActiveTab("coverage")}
+            >
+              <Text
+                className={`font-comfortaa-bold text-base ${
+                  activeTab === "coverage" ? "text-black" : "text-gray-400"
+                }`}
+              >
+                Coverage requests
+              </Text>
+            </TouchableOpacity>
           </View>
-        )}
+          {activeTab === "pickups" ? (
+            <>
+              <View className="flex-row items-center justify-between mb-4">
+                <Text className="font-comfortaa-bold text-xl">
+                  Your Pickups
+                </Text>
+                <TouchableOpacity className="flex-row items-center gap-1">
+                  <Text className="text-primary font-comfortaa">View All</Text>
+                  <Ionicons name="arrow-forward" size={16} color="#FF932E" />
+                </TouchableOpacity>
+              </View>
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={{ paddingRight: 16 }}
+              >
+                {pickupData.map((pickup, index) => (
+                  <View key={index} className="mr-4">
+                    <PickupCard
+                      name={pickup.name}
+                      time={pickup.time}
+                      days={pickup.days}
+                      school={pickup.school}
+                      home={pickup.home}
+                      onViewDetails={() => {}}
+                      onButtonPress={() => {}}
+                    />
+                  </View>
+                ))}
+              </ScrollView>
+            </>
+          ) : (
+            <>
+              <View className="flex-row items-center justify-between mb-4">
+                <Text className="font-comfortaa-bold text-xl">
+                  Coverage Requests
+                </Text>
+                <TouchableOpacity className="flex-row items-center gap-1">
+                  <Text className="text-primary font-comfortaa">View All</Text>
+                  <Ionicons name="arrow-forward" size={16} color="#FF932E" />
+                </TouchableOpacity>
+              </View>
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={{ paddingRight: 16 }}
+              >
+                {coverageRequestsData.map((request, index) => (
+                  <View key={index} className="mr-4">
+                    <CoverageRequestCard
+                      studentName={request.studentName}
+                      time={request.time}
+                      hourlyRate={request.hourlyRate}
+                      school={request.school}
+                      home={request.home}
+                      requesterName={request.requesterName}
+                      requesterEmail={request.requesterEmail}
+                      requesterAvatar={request.requesterAvatar}
+                      onViewDetails={() => {}}
+                      onAccept={() => {}}
+                    />
+                  </View>
+                ))}
+              </ScrollView>
+            </>
+          )}
+        </View>
       </View>
     </ScrollView>
   );
