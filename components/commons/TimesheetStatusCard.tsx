@@ -21,9 +21,10 @@ const getStatusConfig = (status: string) => {
       shiftsText: "#FF932E",
       amountBg: "#FFF3E6",
       amountText: "#FF932E",
-      amountLabel: "Pending: $",
+      amountLabel: "Ongoing",
       rightIcon: null,
       showCheck: false,
+      showAmount: false,
     };
   }
   if (status === "pending") {
@@ -37,6 +38,7 @@ const getStatusConfig = (status: string) => {
       amountLabel: "Pending: $",
       rightIcon: null,
       showCheck: false,
+      showAmount: true,
     };
   }
   if (status === "completed") {
@@ -57,6 +59,28 @@ const getStatusConfig = (status: string) => {
         />
       ),
       showCheck: true,
+      showAmount: true,
+    };
+  }
+  if (status === "flagged") {
+    return {
+      color: "#FF5A5F",
+      icon: "alert-circle",
+      shiftsBg: "#F4F4F4",
+      shiftsText: "#FF5A5F",
+      amountBg: "#F4F4F4",
+      amountText: "#FF5A5F",
+      amountLabel: "Flagged",
+      rightIcon: (
+        <Ionicons
+          name="alert"
+          size={18}
+          color="#FF5A5F"
+          style={{ marginLeft: 4 }}
+        />
+      ),
+      showCheck: false,
+      showAmount: false,
     };
   }
   // Default fallback
@@ -70,6 +94,7 @@ const getStatusConfig = (status: string) => {
     amountLabel: "Pending: $",
     rightIcon: null,
     showCheck: false,
+    showAmount: true,
   };
 };
 
@@ -80,6 +105,7 @@ const TimesheetStatusCard = ({
   shifts,
   amount,
   isLast = false,
+  chevron,
 }: TimesheetStatusCardProps) => {
   const config = getStatusConfig(status);
   return (
@@ -109,13 +135,13 @@ const TimesheetStatusCard = ({
                 />
               )}
               {config.amountLabel}
-              {amount}
+              {config.showAmount ? amount : null}
             </Text>
           </View>
           {config.rightIcon}
         </View>
       </View>
-      <Ionicons name="chevron-forward" size={22} color="#B0B0B0" />
+      {chevron ?? <Ionicons name="chevron-forward" size={22} color="#B0B0B0" />}
     </View>
   );
 };
