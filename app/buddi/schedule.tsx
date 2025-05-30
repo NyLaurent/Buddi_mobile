@@ -1,4 +1,5 @@
 import { Ionicons } from "@expo/vector-icons";
+import { useRouter } from "expo-router";
 import React from "react";
 import {
   Platform,
@@ -10,8 +11,10 @@ import {
 import AnalyticsCard from "../../components/commons/AnalyticsCard";
 import CoverageRequestCard from "../../components/commons/CoverageRequestCard";
 import PickupCard from "../../components/commons/PickupCard";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function SchedulePage() {
+  const router = useRouter();
   const pickupData = [
     {
       name: "Bryan Smith",
@@ -86,7 +89,10 @@ export default function SchedulePage() {
     >
       {/* Header */}
       <View className="flex-row items-center justify-between px-4 mb-6">
-        <TouchableOpacity className="w-10 h-10 bg-primary rounded-xl items-center justify-center">
+        <TouchableOpacity
+          onPress={() => router.back()}
+          className="w-10 h-10 bg-primary rounded-xl items-center justify-center"
+        >
           <Ionicons name="arrow-back" size={20} color="white" />
         </TouchableOpacity>
         <Text className="text-xl font-comfortaa-bold">My Schedule</Text>
@@ -140,7 +146,10 @@ export default function SchedulePage() {
 
       {/* View Timesheet Button */}
       <View className="px-4 mb-6">
-        <TouchableOpacity className="bg-primary rounded-full py-4 items-center">
+        <TouchableOpacity
+          className="bg-primary rounded-full py-4 items-center"
+          onPress={() => router.push("/buddi/timesheet")}
+        >
           <View className="flex-row items-center gap-2">
             <Text className="text-white font-comfortaa-bold text-lg">
               View Timesheet
