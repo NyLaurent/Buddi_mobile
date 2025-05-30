@@ -11,8 +11,8 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import TimeSheetCard from "../../components/commons/TimeSheetCard";
-import TimesheetStatusCard from "../../components/commons/TimesheetStatusCard";
+import TimeSheetCard from "../../../components/commons/TimeSheetCard";
+import TimesheetStatusCard from "../../../components/commons/TimesheetStatusCard";
 
 const timesheetData: {
   week: string;
@@ -281,7 +281,7 @@ export default function TimesheetPage() {
                   chevron={
                     <TouchableOpacity
                       onPress={() => {
-                        /* handle navigation or action here */
+                        router.push(`/buddi/timesheet/${idx}` as any);
                       }}
                     >
                       <Ionicons
