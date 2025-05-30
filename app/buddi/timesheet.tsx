@@ -1,4 +1,5 @@
 import { Ionicons } from "@expo/vector-icons";
+import { useRouter } from "expo-router";
 import React, { useState } from "react";
 import {
   Platform,
@@ -10,43 +11,36 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import TimeSheetCard from "../../components/commons/TimeSheetCard";
+import TimesheetStatusCard from "../../components/commons/TimesheetStatusCard";
 
 const timesheetData = [
   {
     week: "Week 1",
     date: "2-8 th, May, 2025",
     shifts: 23,
+    status: "ongoing",
+    amount: 40,
+  },
+  {
+    week: "Week 1",
+    date: "2-8 th, May, 2025",
+    shifts: 23,
     status: "pending",
     amount: 40,
-    color: "#FF932E",
-    icon: "list",
   },
   {
     week: "Week 1",
     date: "2-8 th, May, 2025",
     shifts: 23,
-    status: "pending-blue",
+    status: "completed",
     amount: 40,
-    color: "#3CB4FF",
-    icon: "list",
   },
   {
     week: "Week 1",
     date: "2-8 th, May, 2025",
     shifts: 23,
-    status: "paid",
+    status: "completed",
     amount: 40,
-    color: "#22C55E",
-    icon: "grid",
-  },
-  {
-    week: "Week 1",
-    date: "2-8 th, May, 2025",
-    shifts: 23,
-    status: "paid",
-    amount: 40,
-    color: "#22C55E",
-    icon: "grid",
   },
 ];
 
@@ -54,6 +48,8 @@ export default function TimesheetPage() {
   const [activeTab, setActiveTab] = useState<"submitted" | "flagged">(
     "submitted"
   );
+  const router = useRouter();
+
   return (
     <SafeAreaView className="flex-1 bg-white">
       <ScrollView
@@ -66,7 +62,10 @@ export default function TimesheetPage() {
       >
         {/* Header */}
         <View className="flex-row items-center justify-between px-2 mb-6">
-          <TouchableOpacity className="w-10 h-10 bg-primary rounded-xl items-center justify-center">
+          <TouchableOpacity
+            className="w-10 h-10 bg-primary rounded-xl items-center justify-center"
+            onPress={() => router.back()}
+          >
             <Ionicons name="arrow-back" size={20} color="white" />
           </TouchableOpacity>
           <Text className="text-xl font-comfortaa-bold">Timesheet Viewer</Text>
@@ -231,80 +230,23 @@ export default function TimesheetPage() {
           </View>
           {/* Timesheet Cards */}
           {timesheetData.map((item, idx) => (
-            <View
+            <TimesheetStatusCard
               key={idx}
-              className="flex-row items-center bg-white rounded-xl mb-3 px-2 py-3 shadow-sm border border-[#F0F0F0]"
-            >
-              <Ionicons
-                name={item.icon === "list" ? "list" : "grid"}
-                size={28}
-                color={item.color}
-                style={{ marginRight: 16 }}
-              />
-              <View className="flex-1">
-                <Text className="font-comfortaa-bold text-base mb-1">
-                  {item.week}
-                </Text>
-                <Text className="text-gray-400 font-comfortaa text-xs mb-2">
-                  {item.date}
-                </Text>
-                <View className="flex-row items-center gap-2">
-                  <View
-                    className={`px-3 py-1 rounded-xl ${
-                      item.status === "pending"
-                        ? "bg-[#FFF3E6]"
-                        : item.status === "pending-blue"
-                        ? "bg-[#E6F4FF]"
-                        : "bg-[#E6FCEB]"
-                    }`}
-                  >
-                    <Text
-                      className={`text-xs font-comfortaa-bold ${
-                        item.status === "pending"
-                          ? "text-[#FF932E]"
-                          : item.status === "pending-blue"
-                          ? "text-[#3CB4FF]"
-                          : "text-[#22C55E]"
-                      }`}
-                    >
-                      Shifts: {item.shifts}
-                    </Text>
-                  </View>
-                  <View
-                    className={`px-3 py-1 rounded-xl ${
-                      item.status === "pending"
-                        ? "bg-[#FFF3E6]"
-                        : item.status === "pending-blue"
-                        ? "bg-[#E6F4FF]"
-                        : "bg-[#E6FCEB]"
-                    }`}
-                  >
-                    <Text
-                      className={`text-xs font-comfortaa-bold ${
-                        item.status === "pending"
-                          ? "text-[#FF932E]"
-                          : item.status === "pending-blue"
-                          ? "text-[#3CB4FF]"
-                          : "text-[#22C55E]"
-                      }`}
-                    >
-                      {item.status === "paid"
-                        ? `Paid: $${item.amount}`
-                        : `Pending: $${item.amount}`}
-                    </Text>
-                  </View>
-                  {item.status === "paid" && (
-                    <Ionicons
-                      name="sparkles"
-                      size={18}
-                      color="#22C55E"
-                      style={{ marginLeft: 4 }}
-                    />
-                  )}
-                </View>
-              </View>
-              <Ionicons name="chevron-forward" size={22} color="#B0B0B0" />
-            </View>
+              status={item.status as "ongoing" | "pending" | "completed"}
+              week={item.week}
+              date={item.date}
+              shifts={item.shifts}
+              amount={item.amount}
+              chevron={
+                <TouchableOpacity
+                  onPress={() => {
+                    /* handle navigation or action here */
+                  }}
+                >
+                  <Ionicons name="chevron-forward" size={22} color="#B0B0B0" />
+                </TouchableOpacity>
+              }
+            />
           ))}
         </View>
       </ScrollView>
