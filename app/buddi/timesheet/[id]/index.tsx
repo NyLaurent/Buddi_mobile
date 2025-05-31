@@ -304,8 +304,8 @@ export default function TimesheetDetail() {
           </Text>
           <Map
             initialRegion={{
-              latitude: -33.8688, // Example coordinates - replace with actual trip coordinates
-              longitude: 151.2093,
+              latitude: 40.7128, // NYC coordinates
+              longitude: -74.006,
               latitudeDelta: 0.0922,
               longitudeDelta: 0.0421,
             }}

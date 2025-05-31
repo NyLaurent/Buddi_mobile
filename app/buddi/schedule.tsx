@@ -11,7 +11,6 @@ import {
 import AnalyticsCard from "../../components/commons/AnalyticsCard";
 import CoverageRequestCard from "../../components/commons/CoverageRequestCard";
 import PickupCard from "../../components/commons/PickupCard";
-import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function SchedulePage() {
   const router = useRouter();
