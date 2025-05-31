@@ -5,6 +5,7 @@ import {
   KeyboardAvoidingView,
   Platform,
   ScrollView,
+  StatusBar,
   Text,
   TextInput,
   TouchableOpacity,
@@ -80,13 +81,14 @@ export default function TimesheetPage() {
 
   return (
     <SafeAreaView className="flex-1 bg-white">
+      {/* <StatusBar barStyle="dark-content" /> */}
       <KeyboardAvoidingView
         style={{ flex: 1 }}
         behavior={Platform.OS === "ios" ? "padding" : "height"}
         keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 20}
       >
         <ScrollView
-          className="flex-1 bg-white"
+          className="flex-1 bg-transparent"
           contentContainerStyle={{
             paddingTop: 40,
             paddingBottom: Platform.OS === "ios" ? 100 : 80,
