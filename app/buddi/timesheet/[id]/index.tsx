@@ -4,6 +4,7 @@ import React from "react";
 import { Image, ScrollView, Text, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import AnalyticsCard from "../../../../components/commons/AnalyticsCard";
+import Map from "../../../../components/commons/Map";
 import PickupDetailsCard from "../../../../components/commons/PickupDetailsCard";
 
 // Mock data (should be replaced with real data source)
@@ -301,22 +302,14 @@ export default function TimesheetDetail() {
           >
             Trip Map
           </Text>
-          <View
-            style={{
-              borderRadius: 16,
-              overflow: "hidden",
-              backgroundColor: "#F4F4F4",
-              height: 180,
-              alignItems: "center",
-              justifyContent: "center",
+          <Map
+            initialRegion={{
+              latitude: -33.8688, // Example coordinates - replace with actual trip coordinates
+              longitude: 151.2093,
+              latitudeDelta: 0.0922,
+              longitudeDelta: 0.0421,
             }}
-          >
-            {/* Placeholder for map image */}
-            <Image
-              source={{ uri: "https://i.imgur.com/6Iej2c3.png" }}
-              style={{ width: "100%", height: 180, resizeMode: "cover" }}
-            />
-          </View>
+          />
         </View>
       </ScrollView>
     </SafeAreaView>
