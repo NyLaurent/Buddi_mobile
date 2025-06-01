@@ -5,7 +5,14 @@ import {
   MaterialIcons,
 } from "@expo/vector-icons";
 import React from "react";
-import { Image, ScrollView, Text, TouchableOpacity, View } from "react-native";
+import {
+  Image,
+  Platform,
+  ScrollView,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
 import AnalyticsCard from "../../components/commons/AnalyticsCard";
 import Calendar from "../../components/commons/Calendar";
 import KidPickupCard from "../../components/parent/KidPickupCard";
@@ -15,144 +22,161 @@ export default function ParentDashboard() {
   const [selectedDate, setSelectedDate] = React.useState(new Date());
 
   return (
-    <ScrollView
-      showsVerticalScrollIndicator={false}
-      className="flex-1 bg-white px-3 pt-6"
-    >
-      {/* <StatusBar barStyle="dark-content" backgroundColor="#fff" /> */}
-      {/* Header */}
-      <View className="flex-row justify-between items-start px-1 pt-6">
-        {/* Logo */}
-        <Image
-          source={require("../../assets/images/logo.png")}
-          className="w-[75px] h-[40px] mt-1"
-          resizeMode="contain"
-        />
-        {/* Icons */}
-        <View className="flex-row items-center gap-3 pr-1">
-          {/* Message Icon with badge */}
-          <View className="relative">
-            <TouchableOpacity className="p-2 bg-orange-400 rounded-xl shadow-sm">
-              <Ionicons
-                name="chatbubble-ellipses-outline"
-                size={22}
-                color="white"
-              />
-            </TouchableOpacity>
-            <View className="absolute -top-1 -right-1 bg-red-500 rounded-full w-5 h-5 items-center justify-center border-2 border-white">
-              <Text className="text-xs text-white font-bold">9</Text>
+    <>
+      <View
+        style={{
+          position: "absolute",
+          top: 0,
+          left: 0,
+          right: 0,
+          height: Platform.OS === "android" ? 32 : 0,
+          backgroundColor: "white",
+          zIndex: 10,
+        }}
+      />
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        className="flex-1 bg-white px-3"
+        contentContainerStyle={{
+          paddingBottom: 2,
+          paddingTop: Platform.OS === "android" ? 32 : 0,
+        }}
+      >
+        {/* <StatusBar barStyle="dark-content" backgroundColor="#fff" /> */}
+        {/* Header */}
+        <View className="flex-row justify-between items-start px-1 pt-6">
+          {/* Logo */}
+          <Image
+            source={require("../../assets/images/logo.png")}
+            className="w-[75px] h-[40px] mt-1"
+            resizeMode="contain"
+          />
+          {/* Icons */}
+          <View className="flex-row items-center gap-3 pr-1">
+            {/* Message Icon with badge */}
+            <View className="relative">
+              <TouchableOpacity className="p-2 bg-orange-400 rounded-xl shadow-sm">
+                <Ionicons
+                  name="chatbubble-ellipses-outline"
+                  size={22}
+                  color="white"
+                />
+              </TouchableOpacity>
+              <View className="absolute -top-1 -right-1 bg-red-500 rounded-full w-5 h-5 items-center justify-center border-2 border-white">
+                <Text className="text-xs text-white font-bold">9</Text>
+              </View>
             </View>
+            {/* Search Icon */}
+            <TouchableOpacity className="p-2 bg-orange-400 rounded-xl shadow-sm">
+              <Ionicons name="search-outline" size={22} color="white" />
+            </TouchableOpacity>
+            {/* Notification Icon */}
+            <TouchableOpacity className="p-2 bg-orange-400 rounded-xl shadow-sm">
+              <Ionicons name="notifications-outline" size={22} color="white" />
+            </TouchableOpacity>
           </View>
-          {/* Search Icon */}
-          <TouchableOpacity className="p-2 bg-orange-400 rounded-xl shadow-sm">
-            <Ionicons name="search-outline" size={22} color="white" />
-          </TouchableOpacity>
-          {/* Notification Icon */}
-          <TouchableOpacity className="p-2 bg-orange-400 rounded-xl shadow-sm">
-            <Ionicons name="notifications-outline" size={22} color="white" />
-          </TouchableOpacity>
         </View>
-      </View>
 
-      {/* Greeting Row with Avatar */}
-      <View className="flex-row items-center justify-between mt-6 mb-2 px-1">
-        <View>
-          <Text className="text-2xl font-comfortaa-bold">
-            Good morning, Jane
-          </Text>
-          <Text className="text-gray-500 font-comfortaa mt-1">
-            Glad to see you again, Parent! <Text className="text-lg">😊</Text>
-          </Text>
-        </View>
-        <Image
-          source={{ uri: "https://randomuser.me/api/portraits/men/32.jpg" }}
-          className="w-14 h-14 rounded-full bg-gray-100"
-          resizeMode="cover"
-        />
-      </View>
-
-      {/* Stats Cards */}
-      <View className="flex-row flex-wrap justify-between mb-4">
-        <View className="w-[48%] mb-3">
-          <AnalyticsCard
-            icon={<FontAwesome5 name="car" size={28} color="#8B5CF6" />}
-            title={"Today's Pickups"}
-            value="12"
-            subtitle="2 Schools"
-          />
-        </View>
-        <View className="w-[48%] mb-3">
-          <AnalyticsCard
-            icon={
-              <MaterialIcons name="access-time" size={28} color="#3B82F6" />
-            }
-            title="Timesheets"
-            value="3"
-            subtitle="All time"
-          />
-        </View>
-        <View className="w-[48%] mb-3">
-          <AnalyticsCard
-            icon={<Feather name="users" size={28} color="#22C55E" />}
-            title="Buddis"
-            value="3"
-            subtitle="Connected"
-          />
-        </View>
-        <View className="w-[48%] mb-3">
-          <AnalyticsCard
-            icon={<FontAwesome5 name="child" size={28} color="#FF9100" />}
-            title="Registered Kids"
-            value="2"
-            subtitle="2 Schools"
-          />
-        </View>
-      </View>
-
-      {/* Payment Alert */}
-      <PaymentAlert />
-
-      {/* Pickup Schedule */}
-      <View className="mb-4">
-        <View className="flex-row items-center justify-between mb-2 px-2">
-          <Text className="text-sm font-comfortaa-bold text-[#232B3A]">
-            Your Kids Pickup Schedule
-          </Text>
-          <TouchableOpacity className="flex-row items-center">
-            <Text className="text-sm text-primary font-comfortaa mr-1">
-              Full Schedule
+        {/* Greeting Row with Avatar */}
+        <View className="flex-row items-center justify-between mt-6 mb-2 px-1">
+          <View>
+            <Text className="text-2xl font-comfortaa-bold">
+              Good morning, Jane
             </Text>
-            <Ionicons name="arrow-forward" size={20} color="#FF9100" />
-          </TouchableOpacity>
+            <Text className="text-gray-500 font-comfortaa mt-1">
+              Glad to see you again, Parent! <Text className="text-lg">😊</Text>
+            </Text>
+          </View>
+          <Image
+            source={{ uri: "https://randomuser.me/api/portraits/men/32.jpg" }}
+            className="w-14 h-14 rounded-full bg-gray-100"
+            resizeMode="cover"
+          />
         </View>
-        <KidPickupCard
-          childName="Bryan Smith"
-          remaining="3,234.8 Remaining"
-          schedule="5 Days a Week"
-          buddiName="Brian Ford"
-          buddiEmail="brianford@kdk.com"
-          buddiAvatar="https://randomuser.me/api/portraits/men/2.jpg"
-          buddiStatus="Available"
-          schoolName="School Name"
-          destination="Senen"
-          mainAction="Trip Not Yet Started"
-        />
-      </View>
 
-      {/* Extra Activities Calendar */}
-      <View className="mb-6">
-        <View className="flex-row justify-between items-center mx-4 mb-2">
-          <Text className="font-comfortaa-bold text-xl">Schedule</Text>
-          <TouchableOpacity>
-            <Text className="text-primary font-comfortaa">View All</Text>
-          </TouchableOpacity>
+        {/* Stats Cards */}
+        <View className="flex-row flex-wrap justify-between mb-4">
+          <View className="w-[48%] mb-3">
+            <AnalyticsCard
+              icon={<FontAwesome5 name="car" size={28} color="#8B5CF6" />}
+              title={"Today's Pickups"}
+              value="12"
+              subtitle="2 Schools"
+            />
+          </View>
+          <View className="w-[48%] mb-3">
+            <AnalyticsCard
+              icon={
+                <MaterialIcons name="access-time" size={28} color="#3B82F6" />
+              }
+              title="Timesheets"
+              value="3"
+              subtitle="All time"
+            />
+          </View>
+          <View className="w-[48%] mb-3">
+            <AnalyticsCard
+              icon={<Feather name="users" size={28} color="#22C55E" />}
+              title="Buddis"
+              value="3"
+              subtitle="Connected"
+            />
+          </View>
+          <View className="w-[48%] mb-3">
+            <AnalyticsCard
+              icon={<FontAwesome5 name="child" size={28} color="#FF9100" />}
+              title="Registered Kids"
+              value="2"
+              subtitle="2 Schools"
+            />
+          </View>
         </View>
-        <Calendar
-          selectedDate={selectedDate}
-          onDaySelect={(date) => setSelectedDate(date)}
-          primaryColor="#FF932E"
-        />
-      </View>
-    </ScrollView>
+
+        {/* Payment Alert */}
+        <PaymentAlert />
+
+        {/* Pickup Schedule */}
+        <View className="mb-4">
+          <View className="flex-row items-center justify-between mb-2 px-2">
+            <Text className="text-sm font-comfortaa-bold text-[#232B3A]">
+              Your Kids Pickup Schedule
+            </Text>
+            <TouchableOpacity className="flex-row items-center">
+              <Text className="text-sm text-primary font-comfortaa mr-1">
+                Full Schedule
+              </Text>
+              <Ionicons name="arrow-forward" size={20} color="#FF9100" />
+            </TouchableOpacity>
+          </View>
+          <KidPickupCard
+            childName="Bryan Smith"
+            remaining="3,234.8 Remaining"
+            schedule="5 Days a Week"
+            buddiName="Brian Ford"
+            buddiEmail="brianford@kdk.com"
+            buddiAvatar="https://randomuser.me/api/portraits/men/2.jpg"
+            buddiStatus="Available"
+            schoolName="School Name"
+            destination="Senen"
+            mainAction="Trip Not Yet Started"
+          />
+        </View>
+
+        {/* Extra Activities Calendar */}
+        <View className="mb-6">
+          <View className="flex-row justify-between items-center mx-4 mb-2">
+            <Text className="font-comfortaa-bold text-xl">Schedule</Text>
+            <TouchableOpacity>
+              <Text className="text-primary font-comfortaa">View All</Text>
+            </TouchableOpacity>
+          </View>
+          <Calendar
+            selectedDate={selectedDate}
+            onDaySelect={(date) => setSelectedDate(date)}
+            primaryColor="#FF932E"
+          />
+        </View>
+      </ScrollView>
+    </>
   );
 }
