@@ -3,9 +3,9 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import React from "react";
 import { Image, ScrollView, Text, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import AnalyticsCard from "../../components/commons/AnalyticsCard";
-import Map from "../../components/commons/Map";
-import PickupDetailsCard from "../../components/commons/PickupDetailsCard";
+import AnalyticsCard from "../../../components/commons/AnalyticsCard";
+import Map from "../../../components/commons/Map";
+import PickupDetailsCard from "../../../components/commons/PickupDetailsCard";
 
 // Mock data (should be replaced with real data source)
 const timesheetData = [
