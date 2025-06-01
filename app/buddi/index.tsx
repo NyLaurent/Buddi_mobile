@@ -224,39 +224,39 @@ export default function BuddiHome() {
           snapToInterval={312} // card width (300) + margin (12)
         >
           <PickupCard
+            id="1"
             name="Bryan Smith"
             time="2:23:04"
             days="5 Days a Week"
             school="School Name"
             home="Senen"
-            onViewDetails={() => {}}
             onButtonPress={() => {}}
           />
           <PickupCard
+            id="2"
             name="Sarah Johnson"
             time="3:15:00"
             days="3 Days a Week"
             school="Lincoln High"
             home="Downtown"
-            onViewDetails={() => {}}
             onButtonPress={() => {}}
           />
           <PickupCard
+            id="3"
             name="Mike Wilson"
             time="1:45:30"
             days="4 Days a Week"
             school="St. Mary's"
             home="Westside"
-            onViewDetails={() => {}}
             onButtonPress={() => {}}
           />
           <PickupCard
+            id="4"
             name="Emma Davis"
             time="4:00:00"
             days="2 Days a Week"
             school="Oak Elementary"
             home="Eastside"
-            onViewDetails={() => {}}
             onButtonPress={() => {}}
           />
         </ScrollView>
