@@ -88,7 +88,7 @@ const Calendar = ({
   const calendarDays = generateCalendarDays();
 
   return (
-    <View className="bg-white rounded-2xl p-4 mx-4 border border-[#E8E8E8]">
+    <View className="bg-white rounded-2xl p-4  mx-1 border border-[#E8E8E8]">
       {/* Header */}
       <View className="flex-row justify-between items-center mb-4">
         <TouchableOpacity onPress={() => navigateMonth("prev")} className="p-2">

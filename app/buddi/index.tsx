@@ -279,7 +279,7 @@ export default function BuddiHome() {
         </View>
 
         {/* Calendar Section */}
-        <View className="mb-6">
+        <View className="mb-6 px-2">
           <View className="flex-row justify-between items-center mx-4 mb-2">
             <Text className="font-comfortaa-bold text-xl">Schedule</Text>
             <TouchableOpacity>
