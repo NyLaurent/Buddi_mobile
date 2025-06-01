@@ -16,6 +16,7 @@ export default function SchedulePage() {
   const router = useRouter();
   const pickupData = [
     {
+      id: "1",
       name: "Bryan Smith",
       time: "2:23:04",
       days: "$25 per hour",
@@ -23,6 +24,7 @@ export default function SchedulePage() {
       home: "Senen",
     },
     {
+      id: "2",
       name: "Emma Johnson",
       time: "3:15:30",
       days: "$22 per hour",
@@ -30,6 +32,7 @@ export default function SchedulePage() {
       home: "Downtown",
     },
     {
+      id: "3",
       name: "Michael Davis",
       time: "8:45:12",
       days: "$28 per hour",
@@ -37,6 +40,7 @@ export default function SchedulePage() {
       home: "Westside",
     },
     {
+      id: "4",
       name: "Sarah Wilson",
       time: "4:30:00",
       days: "$24 per hour",
@@ -211,12 +215,12 @@ export default function SchedulePage() {
                 {pickupData.map((pickup, index) => (
                   <View key={index} className="mr-4">
                     <PickupCard
+                      id={pickup.id}
                       name={pickup.name}
                       time={pickup.time}
                       days={pickup.days}
                       school={pickup.school}
                       home={pickup.home}
-                      onViewDetails={() => {}}
                       onButtonPress={() => {}}
                     />
                   </View>

@@ -278,8 +278,10 @@ export default function TimesheetDetail() {
             </Text>
           </View>
           {/* PickupDetailsCard (paid variant) */}
+
+          
           <PickupDetailsCard
-            variant="paid"
+            variant="request"
             studentName={coverageRequests[0].name}
             time={coverageRequests[0].time}
             hourlyRate={coverageRequests[0].rate}
