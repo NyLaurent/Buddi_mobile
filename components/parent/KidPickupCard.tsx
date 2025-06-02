@@ -66,8 +66,8 @@ const KidPickupCard = ({
         shadowOpacity: 0.02,
         shadowRadius: 2,
         shadowOffset: { width: 0, height: 1 },
-        width: 340,
-        maxWidth: "90%",
+        width: 380,
+        maxWidth: "98%",
       }}
     >
       {/* Top Row: Child Name & Report Issue */}
