@@ -5,7 +5,7 @@ import { Text, TouchableOpacity, View } from "react-native";
 const tabs = [
   { name: "Home", icon: "home", route: "/parent" },
   { name: "Schedule", icon: "calendar-outline", route: "/parent/schedule" },
-  { name: "My Buddi", icon: "people-outline", route: "/parent/mybuddi" },
+  { name: "My Buddi", icon: "people-outline", route: "/parent/my-buddi" },
   { name: "Payments", icon: "wallet-outline", route: "/parent/payments" },
 ];
 
