@@ -62,9 +62,24 @@ export default function ParentDashboard() {
                   color="white"
                 />
               </TouchableOpacity>
-              <View className="absolute -top-1 -right-1 bg-red-500 rounded-full w-5 h-5 items-center justify-center border-2 border-white">
+              {/* <View
+                style={{
+                  position: "absolute",
+                  top: -8,
+                  right: -8,
+                  backgroundColor: "#EF4444",
+                  borderRadius: 9999,
+                  width: 24,
+                  height: 24,
+                  alignItems: "center",
+                  justifyContent: "center",
+                  borderWidth: 2,
+                  borderColor: "white",
+                  zIndex: 999,
+                }}
+              >
                 <Text className="text-xs text-white font-bold">9</Text>
-              </View>
+              </View> */}
             </View>
             {/* Search Icon */}
             <TouchableOpacity className="p-2 bg-orange-400 rounded-xl shadow-sm">

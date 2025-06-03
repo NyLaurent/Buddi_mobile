@@ -7,13 +7,23 @@ import {
 import React from "react";
 import { Image, Text, TouchableOpacity, View } from "react-native";
 
+interface BuddiInfo {
+  name: string;
+  email: string;
+  avatar?: string;
+  status: string;
+  statusColor: string;
+  onMessage?: () => void;
+  subLabel?: string;
+}
+
 interface KidPickupCardProps {
   childName: string;
   onReportIssue?: () => void;
   remaining: string;
   schedule: string;
-  buddiName: string;
-  buddiEmail: string;
+  buddiName?: string;
+  buddiEmail?: string;
   buddiAvatar?: string;
   buddiStatus?: string;
   onMessageBuddi?: () => void;
@@ -21,10 +31,12 @@ interface KidPickupCardProps {
   destination: string;
   mainAction: string;
   onMainAction?: () => void;
-  variant?: "default" | "coverage";
+  variant?: "default" | "coverage" | "detailed";
   badgeColor?: string;
   statusColor?: string;
   mainActionColor?: string;
+  defaultBuddi?: BuddiInfo;
+  coverageBuddi?: BuddiInfo;
 }
 
 const KidPickupCard = ({
@@ -45,6 +57,8 @@ const KidPickupCard = ({
   badgeColor,
   statusColor,
   mainActionColor,
+  defaultBuddi,
+  coverageBuddi,
 }: KidPickupCardProps) => {
   const badgeBg =
     badgeColor || (variant === "coverage" ? "#3B82F6" : "#FF9100");
@@ -52,6 +66,420 @@ const KidPickupCard = ({
     statusColor || (variant === "coverage" ? "#F59E0B" : "#22C55E");
   const mainActionBg =
     mainActionColor || (variant === "coverage" ? "#3B82F6" : "#FF932E");
+
+  if (variant === "detailed") {
+    return (
+      <View
+        style={{
+          backgroundColor: "#fff",
+          borderRadius: 16,
+          borderWidth: 1.2,
+          borderColor: "#D1D5DB",
+          padding: 16,
+          marginVertical: 6,
+          shadowColor: "#000",
+          shadowOpacity: 0.02,
+          shadowRadius: 2,
+          shadowOffset: { width: 0, height: 1 },
+          width: 360,
+          maxWidth: "98%",
+        }}
+      >
+        {/* Header */}
+        <View
+          style={{
+            flexDirection: "row",
+            alignItems: "center",
+            marginBottom: 8,
+          }}
+        >
+          <FontAwesome5
+            name="child"
+            size={20}
+            color="#232B3A"
+            style={{ marginRight: 7 }}
+          />
+          <Text
+            style={{
+              fontFamily: "Comfortaa-Bold",
+              fontSize: 18,
+              color: "#232B3A",
+              flex: 1,
+            }}
+          >
+            {childName}
+          </Text>
+          <TouchableOpacity
+            onPress={onReportIssue}
+            style={{ flexDirection: "row", alignItems: "center" }}
+          >
+            <Text
+              style={{
+                fontFamily: "Comfortaa-Regular",
+                color: "#F87171",
+                fontSize: 13,
+                marginRight: 3,
+              }}
+            >
+              Report issue
+            </Text>
+            <Feather name="send" size={16} color="#F87171" />
+          </TouchableOpacity>
+        </View>
+        {/* Timer & Schedule */}
+        <View
+          style={{
+            flexDirection: "row",
+            alignItems: "center",
+            marginBottom: 10,
+          }}
+        >
+          <View
+            style={{
+              flexDirection: "row",
+              alignItems: "center",
+              backgroundColor: "#FF9100",
+              borderRadius: 6,
+              paddingHorizontal: 9,
+              paddingVertical: 3,
+              marginRight: 7,
+            }}
+          >
+            <MaterialIcons
+              name="timer"
+              size={15}
+              color="#fff"
+              style={{ marginRight: 4 }}
+            />
+            <Text
+              style={{
+                color: "#fff",
+                fontFamily: "Comfortaa-Bold",
+                fontSize: 13,
+              }}
+            >
+              {remaining} Remaining
+            </Text>
+          </View>
+          <View
+            style={{
+              backgroundColor: "#F3F4F6",
+              borderRadius: 6,
+              paddingHorizontal: 9,
+              paddingVertical: 3,
+            }}
+          >
+            <Text
+              style={{
+                color: "#6B7280",
+                fontFamily: "Comfortaa-Regular",
+                fontSize: 13,
+              }}
+            >
+              {schedule}
+            </Text>
+          </View>
+        </View>
+        {/* Default Buddi */}
+        {defaultBuddi && (
+          <View style={{ marginBottom: 8 }}>
+            <Text
+              style={{
+                color: "#A3A3A3",
+                fontFamily: "Comfortaa-Regular",
+                fontSize: 12,
+                marginBottom: 2,
+              }}
+            >
+              Default Buddi
+            </Text>
+            <View
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                marginBottom: 2,
+              }}
+            >
+              <Image
+                source={{
+                  uri:
+                    defaultBuddi.avatar ||
+                    "https://randomuser.me/api/portraits/men/2.jpg",
+                }}
+                style={{
+                  width: 32,
+                  height: 32,
+                  borderRadius: 16,
+                  marginRight: 8,
+                }}
+              />
+              <View style={{ flex: 1 }}>
+                <Text
+                  style={{
+                    fontFamily: "Comfortaa-Bold",
+                    color: "#232B3A",
+                    fontSize: 15,
+                  }}
+                >
+                  {defaultBuddi.name}
+                </Text>
+                <Text
+                  style={{
+                    fontFamily: "Comfortaa-Regular",
+                    color: "#888",
+                    fontSize: 12,
+                  }}
+                >
+                  {defaultBuddi.email}
+                </Text>
+              </View>
+              <View style={{ flexDirection: "row", alignItems: "center" }}>
+                <View
+                  style={{
+                    backgroundColor: defaultBuddi.statusColor,
+                    borderRadius: 12,
+                    paddingHorizontal: 10,
+                    paddingVertical: 4,
+                    marginRight: 6,
+                    flexDirection: "row",
+                    alignItems: "center",
+                  }}
+                >
+                  <View
+                    style={{
+                      width: 8,
+                      height: 8,
+                      borderRadius: 4,
+                      backgroundColor: "#fff",
+                      marginRight: 5,
+                    }}
+                  />
+                  <Text
+                    style={{
+                      color: "#fff",
+                      fontFamily: "Comfortaa-Bold",
+                      fontSize: 12,
+                    }}
+                  >
+                    {defaultBuddi.status}
+                  </Text>
+                </View>
+                <TouchableOpacity
+                  onPress={defaultBuddi.onMessage}
+                  style={{
+                    backgroundColor: "#FFF7ED",
+                    borderRadius: 12,
+                    padding: 6,
+                  }}
+                >
+                  <Feather name="message-circle" size={16} color="#FF9100" />
+                </TouchableOpacity>
+              </View>
+            </View>
+          </View>
+        )}
+        {/* Coverage Buddi */}
+        {coverageBuddi && (
+          <View style={{ marginBottom: 12 }}>
+            <Text
+              style={{
+                color: "#A3A3A3",
+                fontFamily: "Comfortaa-Regular",
+                fontSize: 12,
+                marginBottom: 2,
+              }}
+            >
+              Coverage Buddi
+              {coverageBuddi.subLabel ? ` (${coverageBuddi.subLabel})` : ""}
+            </Text>
+            <View style={{ flexDirection: "row", alignItems: "center" }}>
+              <Image
+                source={{
+                  uri:
+                    coverageBuddi.avatar ||
+                    "https://randomuser.me/api/portraits/men/2.jpg",
+                }}
+                style={{
+                  width: 32,
+                  height: 32,
+                  borderRadius: 16,
+                  marginRight: 8,
+                }}
+              />
+              <View style={{ flex: 1 }}>
+                <Text
+                  style={{
+                    fontFamily: "Comfortaa-Bold",
+                    color: "#232B3A",
+                    fontSize: 15,
+                  }}
+                >
+                  {coverageBuddi.name}
+                </Text>
+                <Text
+                  style={{
+                    fontFamily: "Comfortaa-Regular",
+                    color: "#888",
+                    fontSize: 12,
+                  }}
+                >
+                  {coverageBuddi.email}
+                </Text>
+              </View>
+              <View style={{ flexDirection: "row", alignItems: "center" }}>
+                <View
+                  style={{
+                    backgroundColor: coverageBuddi.statusColor,
+                    borderRadius: 12,
+                    paddingHorizontal: 10,
+                    paddingVertical: 4,
+                    marginRight: 6,
+                    flexDirection: "row",
+                    alignItems: "center",
+                  }}
+                >
+                  <View
+                    style={{
+                      width: 8,
+                      height: 8,
+                      borderRadius: 4,
+                      backgroundColor: "#fff",
+                      marginRight: 5,
+                    }}
+                  />
+                  <Text
+                    style={{
+                      color: "#fff",
+                      fontFamily: "Comfortaa-Bold",
+                      fontSize: 12,
+                    }}
+                  >
+                    {coverageBuddi.status}
+                  </Text>
+                </View>
+                <TouchableOpacity
+                  onPress={coverageBuddi.onMessage}
+                  style={{
+                    backgroundColor: "#FFF7ED",
+                    borderRadius: 12,
+                    padding: 6,
+                  }}
+                >
+                  <Feather name="message-circle" size={16} color="#FF9100" />
+                </TouchableOpacity>
+              </View>
+            </View>
+          </View>
+        )}
+        {/* Route Row */}
+        <View
+          style={{
+            flexDirection: "row",
+            alignItems: "center",
+            justifyContent: "space-between",
+            marginBottom: 16,
+          }}
+        >
+          <View style={{ alignItems: "center", flexDirection: "row" }}>
+            <MaterialIcons
+              name="location-on"
+              size={16}
+              color="#22C55E"
+              style={{ marginRight: 3 }}
+            />
+            <View>
+              <Text
+                style={{
+                  color: "#A3A3A3",
+                  fontFamily: "Comfortaa-Regular",
+                  fontSize: 11,
+                }}
+              >
+                School
+              </Text>
+              <Text
+                style={{
+                  fontFamily: "Comfortaa-Bold",
+                  color: "#232B3A",
+                  fontSize: 13,
+                }}
+              >
+                {schoolName}
+              </Text>
+            </View>
+          </View>
+          <View style={{ alignItems: "center", flexDirection: "row" }}>
+            <View
+              style={{
+                width: 28,
+                height: 28,
+                borderRadius: 14,
+                backgroundColor: "#E6F4FF",
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
+              <Ionicons name="play" size={18} color="#0A77FF" />
+            </View>
+          </View>
+          <View style={{ alignItems: "center", flexDirection: "row" }}>
+            <MaterialIcons
+              name="home"
+              size={16}
+              color="#FF9100"
+              style={{ marginRight: 3 }}
+            />
+            <View>
+              <Text
+                style={{
+                  color: "#A3A3A3",
+                  fontFamily: "Comfortaa-Regular",
+                  fontSize: 11,
+                }}
+              >
+                Home
+              </Text>
+              <Text
+                style={{
+                  fontFamily: "Comfortaa-Bold",
+                  color: "#232B3A",
+                  fontSize: 13,
+                }}
+              >
+                {destination}
+              </Text>
+            </View>
+          </View>
+        </View>
+        {/* Main Action Button */}
+        <TouchableOpacity
+          onPress={onMainAction}
+          style={{
+            backgroundColor:
+              mainAction === "Trip Not Yet Started" ? "#FF932E" : "#0A77FF",
+            borderRadius: 24,
+            paddingVertical: 13,
+            alignItems: "center",
+            flexDirection: "row",
+            justifyContent: "center",
+          }}
+          activeOpacity={0.85}
+        >
+          <Text
+            style={{
+              color: "#fff",
+              fontFamily: "Comfortaa-Bold",
+              fontSize: 17,
+              marginRight: 10,
+            }}
+          >
+            {mainAction}
+          </Text>
+          <MaterialIcons name="check-box" size={20} color="#fff" />
+        </TouchableOpacity>
+      </View>
+    );
+  }
 
   return (
     <View
@@ -278,12 +706,12 @@ const KidPickupCard = ({
               width: 24,
               height: 24,
               borderRadius: 12,
-              backgroundColor: "#E0F2FE",
+              backgroundColor: "#E6F4FF",
               alignItems: "center",
               justifyContent: "center",
             }}
           >
-            <Ionicons name="play" size={16} color="#3CB4FF" />
+            <Ionicons name="play" size={16} color="#0A77FF" />
           </View>
         </View>
         <View style={{ alignItems: "center", flexDirection: "row" }}>
@@ -319,7 +747,8 @@ const KidPickupCard = ({
       <TouchableOpacity
         onPress={onMainAction}
         style={{
-          backgroundColor: mainActionBg,
+          backgroundColor:
+            mainAction === "Trip Not Yet Started" ? "#FF932E" : "#0A77FF",
           borderRadius: 20,
           paddingVertical: 10,
           alignItems: "center",

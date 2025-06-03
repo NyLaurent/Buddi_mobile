@@ -9,7 +9,9 @@ module.exports = {
         extend: {
             colors: {
                 primary: '#FF932E',
-                gray:'#CBD5E1'
+                gray: '#CBD5E1',
+                blue: '#0A77FF',
+                green:'#34C759'
             },
             fontFamily: {
                 'comfortaa': ['Comfortaa-Regular'],

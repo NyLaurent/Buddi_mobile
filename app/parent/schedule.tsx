@@ -277,22 +277,37 @@ const SchedulePage = () => {
                 >
                   {coverageRequestsData.map((request, index) => (
                     <View key={index} className="mr-4" style={{ width: 338 }}>
+                      
                       <KidPickupCard
-                        childName={request.studentName}
-                        remaining={request.time}
-                        schedule={request.hourlyRate}
-                        buddiName={request.requesterName}
-                        buddiEmail={request.requesterEmail}
-                        buddiAvatar={
-                          request.requesterAvatar ||
-                          "https://randomuser.me/api/portraits/men/4.jpg"
-                        }
-                        buddiStatus={"Pending"}
-                        schoolName={request.school}
-                        destination={request.home}
-                        mainAction={"Request Coverage"}
-                        variant="coverage"
-                      />
+                      variant="detailed"
+                      childName="Bryan Smith"
+                      remaining="2:23:04"
+                      schedule="5 Days a Week"
+                      defaultBuddi={{
+                        name: "Brian Ford",
+                        email: "brianford@lok.com",
+                        avatar: "https://randomuser.me/api/portraits/men/2.jpg",
+                        status: "Unavailable",
+                        statusColor: "#F04438", // red
+                        onMessage: () => {},
+                      }}
+                      coverageBuddi={{
+                        name: "Brian Ford",
+                        email: "brianford@lok.com",
+                        avatar: "https://randomuser.me/api/portraits/men/2.jpg",
+                        status: "Available",
+                        statusColor: "#22C55E", // green
+                        onMessage: () => {},
+                        subLabel: "You ranked him your 2nd buddi",
+                      }}
+                      schoolName="School Name"
+                      destination="Senen"
+                      mainAction="Coverage Request Sent"
+                      onMainAction={() => {}}
+                    />
+  
+
+        
                     </View>
                   ))}
                 </ScrollView>
