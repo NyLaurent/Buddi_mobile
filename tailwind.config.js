@@ -11,7 +11,8 @@ module.exports = {
                 primary: '#FF932E',
                 gray: '#CBD5E1',
                 blue: '#0A77FF',
-                green:'#34C759'
+                green:'#34C759',
+                grayText:'#858C95'
             },
             fontFamily: {
                 'comfortaa': ['Comfortaa-Regular'],
