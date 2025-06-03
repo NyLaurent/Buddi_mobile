@@ -1,4 +1,5 @@
 import AnalyticsCard from "@/components/commons/AnalyticsCard";
+import PageHeader from "@/components/commons/PageHeader";
 import KidPickupCard from "@/components/parent/KidPickupCard";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
@@ -94,18 +95,12 @@ const SchedulePage = () => {
         }}
         showsVerticalScrollIndicator={false}
       >
-        <View className="flex-row items-center justify-between px-4 mb-6">
-          <TouchableOpacity
-            onPress={() => router.back()}
-            className="w-10 h-10 bg-primary rounded-xl items-center justify-center"
-          >
-            <Ionicons name="arrow-back" size={20} color="white" />
-          </TouchableOpacity>
-          <Text className="text-xl font-comfortaa-bold">Pickup Schedule</Text>
-          <TouchableOpacity className="w-10 h-10 bg-primary rounded-xl items-center justify-center">
-            <Ionicons name="ellipsis-horizontal" size={20} color="white" />
-          </TouchableOpacity>
-        </View>
+        <PageHeader
+          title="Pickup Schedule"
+          onMenuPress={() => {
+            // Add your menu press handler here
+          }}
+        />
 
         <View className="px-4 mb-6">
           <View className="flex-row gap-3 mb-3">
@@ -277,37 +272,35 @@ const SchedulePage = () => {
                 >
                   {coverageRequestsData.map((request, index) => (
                     <View key={index} className="mr-4" style={{ width: 338 }}>
-                      
                       <KidPickupCard
-                      variant="detailed"
-                      childName="Bryan Smith"
-                      remaining="2:23:04"
-                      schedule="5 Days a Week"
-                      defaultBuddi={{
-                        name: "Brian Ford",
-                        email: "brianford@lok.com",
-                        avatar: "https://randomuser.me/api/portraits/men/2.jpg",
-                        status: "Unavailable",
-                        statusColor: "#F04438", // red
-                        onMessage: () => {},
-                      }}
-                      coverageBuddi={{
-                        name: "Brian Ford",
-                        email: "brianford@lok.com",
-                        avatar: "https://randomuser.me/api/portraits/men/2.jpg",
-                        status: "Available",
-                        statusColor: "#22C55E", // green
-                        onMessage: () => {},
-                        subLabel: "You ranked him your 2nd buddi",
-                      }}
-                      schoolName="School Name"
-                      destination="Senen"
-                      mainAction="Coverage Request Sent"
-                      onMainAction={() => {}}
-                    />
-  
-
-        
+                        variant="detailed"
+                        childName="Bryan Smith"
+                        remaining="2:23:04"
+                        schedule="5 Days a Week"
+                        defaultBuddi={{
+                          name: "Brian Ford",
+                          email: "brianford@lok.com",
+                          avatar:
+                            "https://randomuser.me/api/portraits/men/2.jpg",
+                          status: "Unavailable",
+                          statusColor: "#F04438", // red
+                          onMessage: () => {},
+                        }}
+                        coverageBuddi={{
+                          name: "Brian Ford",
+                          email: "brianford@lok.com",
+                          avatar:
+                            "https://randomuser.me/api/portraits/men/2.jpg",
+                          status: "Available",
+                          statusColor: "#22C55E", // green
+                          onMessage: () => {},
+                          subLabel: "You ranked him your 2nd buddi",
+                        }}
+                        schoolName="School Name"
+                        destination="Senen"
+                        mainAction="Coverage Request Sent"
+                        onMainAction={() => {}}
+                      />
                     </View>
                   ))}
                 </ScrollView>

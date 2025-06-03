@@ -1,4 +1,5 @@
 import CongratulationsCard from "@/components/commons/CongratulationsCard";
+import Header from "@/components/commons/Header";
 import { Ionicons } from "@expo/vector-icons";
 import { useEvent } from "expo";
 import { useRouter } from "expo-router";
@@ -14,10 +15,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import {
-  SafeAreaView,
-  useSafeAreaInsets,
-} from "react-native-safe-area-context";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 const BuddiProfile = () => {
   const [activeTab, setActiveTab] = useState("General");
@@ -48,41 +46,14 @@ const BuddiProfile = () => {
           }),
         }}
       >
-        {/* Header (now scrollable) */}
-        <View className="bg-[#FF932E] rounded-b-3xl" style={{ minHeight: 120 }}>
-          <SafeAreaView edges={["top", "left", "right"]}>
-            <View className="flex-row justify-end items-center px-4 pt-2">
-              <TouchableOpacity
-                className="bg-white rounded-full p-2"
-                onPress={() => router.push("/buddi/settings")}
-              >
-                <Ionicons name="settings-outline" size={22} color="#FF932E" />
-              </TouchableOpacity>
-            </View>
-            <View className="items-center mt-1 mb-2">
-              <Image
-                source={{
-                  uri: "https://randomuser.me/api/portraits/men/32.jpg",
-                }}
-                className="w-20 h-20 rounded-full border-4 border-white"
-                resizeMode="cover"
-              />
-              <Text className="text-white text-lg font-comfortaa-bold mt-1">
-                John Doe Smith
-              </Text>
-              <Text className="text-white font-comfortaa mt-0.5">
-                johndoe@gmail.com
-              </Text>
-              <View className="flex-row items-center bg-white rounded-xl px-3 py-0.5 mt-2">
-                {[...Array(5)].map((_, i) => (
-                  <Ionicons key={i} name="star" size={16} color="#FF932E" />
-                ))}
-              </View>
-            </View>
-          </SafeAreaView>
-        </View>
+        <Header
+          name="John Doe Smith"
+          email="johndoe@gmail.com"
+          profileImage="https://randomuser.me/api/portraits/men/32.jpg"
+          rating={5}
+        />
+
         {/* Toggler Tabs */}
-        
         <View
           className="flex-row bg-[#F8F9FE] rounded-2xl mx-4 mt-4 z-10"
           style={{ position: "relative" }}
