@@ -3,6 +3,7 @@ import React from 'react'
 import { useRouter } from 'expo-router'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import AvailableBuddie from '@/components/parent/AvailableBuddie'
+import NoBuddi from '@/components/parent/NoBuddi'
 
 const MyBuddyPage = () => {
   const router = useRouter();
@@ -11,8 +12,8 @@ const MyBuddyPage = () => {
       <View className="flex-1 px-4">
         <Text className="text-2xl font-bold">My Buddies</Text>
 
-        <AvailableBuddie />
-
+        {/* <AvailableBuddie /> */}
+        <NoBuddi />
 
 
       </View>
