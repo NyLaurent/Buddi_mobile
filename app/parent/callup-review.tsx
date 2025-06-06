@@ -12,7 +12,20 @@ const demoBuddies = [
     available: true,
     rank: "No1",
   },
-  // You can add more buddies here
+  {
+    name: "Alice Smith",
+    email: "alice@lok.com",
+    avatar: undefined,
+    available: true,
+    rank: "No2",
+  },
+  {
+    name: "Charlie Brown",
+    email: "charlie@lok.com",
+    avatar: undefined,
+    available: false,
+    rank: "No3",
+  },
 ];
 
 const callupReview = () => {
@@ -58,7 +71,7 @@ const callupReview = () => {
             }}
           />
           {/* Show with buddies: */}
-          <RecommendedBuddiesCard buddies={demoBuddies} />
+          <RecommendedBuddiesCard buddies={demoBuddies} horizontal />
           {/* Show with no buddies: */}
           {/* <RecommendedBuddiesCard buddies={[]} /> */}
         </View>
