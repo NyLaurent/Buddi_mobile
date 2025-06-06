@@ -1,21 +1,7 @@
-import PageHeader from "@/components/commons/PageHeader";
-import CallUpReviewCard from "@/components/parent/CallUpReviewCard";
-import RecommendedBuddiesCard from "@/components/parent/RecommendedBuddiesCard";
 import React from "react";
-import { Platform, ScrollView, Text, View } from "react-native";
+import { Platform, ScrollView, View } from "react-native";
 
-const demoBuddies = [
-  {
-    name: "Brian Ford",
-    email: "brianford@lok.com",
-    avatar: undefined, // or provide a URL
-    available: true,
-    rank: "No1",
-  },
-  // You can add more buddies here
-];
-
-const callupReview = () => {
+const payments = () => {
   return (
     <>
       <View
@@ -35,36 +21,9 @@ const callupReview = () => {
           paddingTop: Platform.OS === "android" ? 32 : 0,
           minHeight: "100%",
         }}
-      >
-        <PageHeader title="My Buddi" />
-        <Text className="text-lg font-comfortaa-bold px-2">
-          Call Up Preview
-        </Text>
-        <View className="px-2">
-          <CallUpReviewCard
-            name="Brian Ford"
-            email="brianford@lok.com"
-            school="School, Name"
-            requestedAgo="2 Days ago"
-            description="Fill in the details below to invite Buddis to apply."
-            schoolName="School Name"
-            home="Senen"
-            assignedKids={[{ name: "Bryan Smith" }, { name: "Bryan Smith" }]}
-            onRemove={() => {
-              /* handle remove */
-            }}
-            onApplicants={() => {
-              /* handle applicants */
-            }}
-          />
-          {/* Show with buddies: */}
-          <RecommendedBuddiesCard buddies={demoBuddies} />
-          {/* Show with no buddies: */}
-          {/* <RecommendedBuddiesCard buddies={[]} /> */}
-        </View>
-      </ScrollView>
+      ></ScrollView>
     </>
   );
 };
 
-export default callupReview;
+export default payments;

@@ -68,8 +68,7 @@ const RecommendedBuddiesCard: React.FC<RecommendedBuddiesCardProps> = ({
         {buddies.map((buddy, idx) => (
           <View
             key={buddy.email}
-            className=" rounded-xl px-3 py-4 mx-2"
-            style={{ width: 240, minWidth: 200 }}
+            className="rounded-xl px-3 py-4 mx-2"
           >
             <View className="flex-row items-center justify-between mb-2">
               <View className="flex-row items-center">
