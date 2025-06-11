@@ -6,7 +6,7 @@ const Index = () => {
   // if (!seen) return <Redirect href="/onboarding" />;
   // return <Redirect href="/login" />;
 
-  return <Redirect href="/parent" />;
+  return <Redirect href="/admin" />;
 };
 
 export default Index;
