@@ -1,4 +1,5 @@
 import AdminProfileReviewCard from "@/components/admin/AdminProfileReviewCard";
+import AdminVideoReviewCard from "@/components/admin/AdminVideoReviewCard";
 import CoverageAlertCard from "@/components/admin/CoverageAlertCard";
 import AnalyticsCard from "@/components/commons/AnalyticsCard";
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
@@ -184,6 +185,70 @@ export default function AdminDashboard() {
             />
           </ScrollView>
         </View>
+
+        {/* Pending Profile Videos Reviews Section */}
+        <View style={styles.videoReviewsSection}>
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>
+              Pending Profile Videos Reviews
+            </Text>
+            <TouchableOpacity
+              style={styles.viewAllButton}
+              onPress={() => {
+                router.push("/admin/buddis" as any);
+              }}
+            >
+              <Text style={styles.viewAllText}>View All</Text>
+              <Ionicons
+                name="arrow-forward"
+                size={16}
+                color="#FF932E"
+                style={{ marginLeft: 4 }}
+              />
+            </TouchableOpacity>
+          </View>
+          <View style={styles.videoListContainer}>
+            <AdminVideoReviewCard
+              name="John Doe"
+              date="23, May, 2025"
+              time="2:01 pm"
+              duration="00:40:05"
+              onViewVideo={() => {
+                router.push("/admin/buddis" as any);
+              }}
+              onPlayVideo={() => {
+                // Play the intro video
+                console.log("Playing intro.mp4");
+              }}
+            />
+            <AdminVideoReviewCard
+              name="John Doe"
+              date="23, May, 2025"
+              time="2:01 pm"
+              duration="00:40:05"
+              onViewVideo={() => {
+                router.push("/admin/buddis" as any);
+              }}
+              onPlayVideo={() => {
+                // Play the intro video
+                console.log("Playing intro.mp4");
+              }}
+            />
+            <AdminVideoReviewCard
+              name="John Doe"
+              date="23, May, 2025"
+              time="2:01 pm"
+              duration="00:40:05"
+              onViewVideo={() => {
+                router.push("/admin/buddis" as any);
+              }}
+              onPlayVideo={() => {
+                // Play the intro video
+                console.log("Playing intro.mp4");
+              }}
+            />
+          </View>
+        </View>
       </ScrollView>
     </SafeAreaView>
   );
@@ -252,5 +317,12 @@ const styles = StyleSheet.create({
   },
   profileReviewsContainer: {
     padding: 2,
+  },
+  videoReviewsSection: {
+    paddingLeft: 8,
+    marginTop: 24,
+  },
+  videoListContainer: {
+    paddingHorizontal: 2,
   },
 });
