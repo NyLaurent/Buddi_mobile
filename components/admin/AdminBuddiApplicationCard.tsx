@@ -1,275 +1,833 @@
-import React from "react";
-import { View, Text, StyleSheet, Image, TouchableOpacity } from "react-native";
-import { Ionicons, MaterialIcons } from "@expo/vector-icons";
+import { Ionicons } from "@expo/vector-icons";
+import { useRouter } from "expo-router";
+import React, { useState } from "react";
+import { Image, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 
-interface BuddiInfo {
-  image: string;
+interface BuddiApplicationData {
+  id: string;
   name: string;
-  gender?: string;
+  gender: string;
   email: string;
   age: string;
-  phone: string;
   school: string;
   schoolName: string;
+  phone: string;
+  reference: {
+    name: string;
+    email: string;
+    phone: string;
+    role: string;
+  };
+  status: "Not yet reviewed" | "Approved" | "Rejected";
+  avatar: string;
 }
 
-interface ReferenceInfo {
-  image: string;
-  name: string;
-  phone: string;
-  role: string;
-}
+// Dummy data for multiple applications
+const dummyApplications: BuddiApplicationData[] = [
+  {
+    id: "1",
+    name: "Sarah Johnson",
+    gender: "Female",
+    email: "sarah.johnson@email.com",
+    age: "22",
+    school: "University",
+    schoolName: "Harvard University",
+    phone: "+1 (555) 123-4567",
+    reference: {
+      name: "Dr. Michael Smith",
+      email: "m.smith@harvard.edu",
+      phone: "+1 (555) 987-6543",
+      role: "Professor",
+    },
+    status: "Not yet reviewed",
+    avatar: "https://randomuser.me/api/portraits/women/1.jpg",
+  },
+  {
+    id: "2",
+    name: "James Wilson",
+    gender: "Male",
+    email: "james.wilson@email.com",
+    age: "21",
+    school: "College",
+    schoolName: "MIT",
+    phone: "+1 (555) 234-5678",
+    reference: {
+      name: "Prof. Emily Davis",
+      email: "e.davis@mit.edu",
+      phone: "+1 (555) 876-5432",
+      role: "Department Head",
+    },
+    status: "Approved",
+    avatar: "https://randomuser.me/api/portraits/men/2.jpg",
+  },
+  {
+    id: "3",
+    name: "Maria Garcia",
+    gender: "Female",
+    email: "maria.garcia@email.com",
+    age: "23",
+    school: "University",
+    schoolName: "Stanford University",
+    phone: "+1 (555) 345-6789",
+    reference: {
+      name: "Dr. Robert Brown",
+      email: "r.brown@stanford.edu",
+      phone: "+1 (555) 765-4321",
+      role: "Academic Advisor",
+    },
+    status: "Rejected",
+    avatar: "https://randomuser.me/api/portraits/women/3.jpg",
+  },
+  {
+    id: "4",
+    name: "David Chen",
+    gender: "Male",
+    email: "david.chen@email.com",
+    age: "20",
+    school: "College",
+    schoolName: "UCLA",
+    phone: "+1 (555) 456-7890",
+    reference: {
+      name: "Dr. Lisa Taylor",
+      email: "l.taylor@ucla.edu",
+      phone: "+1 (555) 654-3210",
+      role: "Professor",
+    },
+    status: "Not yet reviewed",
+    avatar: "https://randomuser.me/api/portraits/men/4.jpg",
+  },
+  {
+    id: "5",
+    name: "Emma Thompson",
+    gender: "Female",
+    email: "emma.thompson@email.com",
+    age: "22",
+    school: "University",
+    schoolName: "Yale University",
+    phone: "+1 (555) 567-8901",
+    reference: {
+      name: "Prof. John Anderson",
+      email: "j.anderson@yale.edu",
+      phone: "+1 (555) 543-2109",
+      role: "Department Chair",
+    },
+    status: "Approved",
+    avatar: "https://randomuser.me/api/portraits/women/5.jpg",
+  },
+  {
+    id: "6",
+    name: "Alex Rodriguez",
+    gender: "Male",
+    email: "alex.rodriguez@email.com",
+    age: "21",
+    school: "College",
+    schoolName: "Princeton University",
+    phone: "+1 (555) 678-9012",
+    reference: {
+      name: "Dr. Susan White",
+      email: "s.white@princeton.edu",
+      phone: "+1 (555) 432-1098",
+      role: "Research Director",
+    },
+    status: "Not yet reviewed",
+    avatar: "https://randomuser.me/api/portraits/men/6.jpg",
+  },
+  {
+    id: "7",
+    name: "Olivia Martin",
+    gender: "Female",
+    email: "olivia.martin@email.com",
+    age: "23",
+    school: "University",
+    schoolName: "Columbia University",
+    phone: "+1 (555) 789-0123",
+    reference: {
+      name: "Prof. Mark Johnson",
+      email: "m.johnson@columbia.edu",
+      phone: "+1 (555) 321-0987",
+      role: "Associate Professor",
+    },
+    status: "Approved",
+    avatar: "https://randomuser.me/api/portraits/women/7.jpg",
+  },
+  {
+    id: "8",
+    name: "Ryan Lee",
+    gender: "Male",
+    email: "ryan.lee@email.com",
+    age: "20",
+    school: "College",
+    schoolName: "University of Chicago",
+    phone: "+1 (555) 890-1234",
+    reference: {
+      name: "Dr. Jennifer Wilson",
+      email: "j.wilson@uchicago.edu",
+      phone: "+1 (555) 210-9876",
+      role: "Senior Lecturer",
+    },
+    status: "Rejected",
+    avatar: "https://randomuser.me/api/portraits/men/8.jpg",
+  },
+];
 
 interface AdminBuddiApplicationCardProps {
-  buddi: BuddiInfo;
-  reference: ReferenceInfo;
-  status: string;
+  application: BuddiApplicationData;
   onViewDetails: () => void;
   onApprove: () => void;
-  approved: boolean;
 }
 
 const AdminBuddiApplicationCard: React.FC<AdminBuddiApplicationCardProps> = ({
-  buddi,
-  reference,
-  status,
+  application,
   onViewDetails,
   onApprove,
-  approved,
 }) => {
+  const getStatusStyle = () => {
+    switch (application.status) {
+      case "Not yet reviewed":
+        return { backgroundColor: "#E3F2FD", color: "#1976D2" };
+      case "Approved":
+        return { backgroundColor: "#E8F5E8", color: "#388E3C" };
+      case "Rejected":
+        return { backgroundColor: "#FFEBEE", color: "#D32F2F" };
+      default:
+        return { backgroundColor: "#F5F5F5", color: "#666" };
+    }
+  };
+
   return (
     <View style={styles.card}>
-      {/* Header */}
-      <View style={styles.headerRow}>
+      {/* Card Header */}
+      <View style={styles.cardHeader}>
         <View>
-          <Text style={styles.headerTitle}>Buddi Application</Text>
-          <Text style={styles.headerSub}>Click on a buddi to view details</Text>
+          <Text style={styles.cardTitle}>Buddi Application</Text>
+          <Text style={styles.cardSubtitle}>
+            Click on a buddi to view details
+          </Text>
         </View>
-        <Ionicons name="ellipsis-horizontal" size={22} color="#BDBDBD" />
-      </View>
-      {/* Status */}
-      <View style={styles.statusRow}>
-        <Text style={styles.sectionLabel}>Buddi</Text>
-        <View style={styles.statusBadge}>
-          <Text style={styles.statusText}>{status}</Text>
-        </View>
-      </View>
-      {/* Buddi Info */}
-      <View style={styles.buddiRow}>
-        <Image source={{ uri: buddi.image }} style={styles.avatar} />
-        <View style={{ flex: 1 }}>
-          <Text style={styles.buddiName}>{buddi.name} {buddi.gender && `(${buddi.gender})`}</Text>
-          <Text style={styles.buddiEmail}>{buddi.email}</Text>
-        </View>
-        <View style={{ alignItems: "flex-end" }}>
-          <Text style={styles.buddiAgeLabel}>Age</Text>
-          <Text style={styles.buddiAge}>{buddi.age}</Text>
-        </View>
-      </View>
-      {/* School & Phone */}
-      <View style={styles.schoolRow}>
-        <MaterialIcons name="school" size={22} color="#3B82F6" style={{ marginRight: 8 }} />
-        <Text style={styles.schoolName}>{buddi.schoolName}</Text>
-        <Ionicons name="call" size={18} color="#23272F" style={{ marginLeft: 18, marginRight: 6 }} />
-        <Text style={styles.buddiPhone}>{buddi.phone}</Text>
-      </View>
-      {/* Reference */}
-      <View style={styles.referenceRow}>
-        <Text style={styles.sectionLabel}>Reference</Text>
-        <Text style={styles.referenceRole}>{reference.role}</Text>
-      </View>
-      <View style={styles.buddiRow}>
-        <Image source={{ uri: reference.image }} style={styles.avatarSmall} />
-        <View style={{ flex: 1 }}>
-          <Text style={styles.buddiName}>{reference.name}</Text>
-        </View>
-        <Ionicons name="call" size={18} color="#23272F" style={{ marginRight: 6 }} />
-        <Text style={styles.buddiPhone}>{reference.phone}</Text>
-        <Ionicons name="chatbubble-ellipses-outline" size={22} color="#FF932E" style={{ marginLeft: 10 }} />
-      </View>
-      {/* Actions */}
-      <View style={styles.actionsRow}>
-        <TouchableOpacity style={styles.detailsBtn} onPress={onViewDetails}>
-          <Text style={styles.detailsBtnText}>View Details</Text>
-          <Ionicons name="arrow-forward" size={18} color="#23272F" style={{ marginLeft: 6 }} />
+        <TouchableOpacity>
+          <Ionicons name="ellipsis-horizontal" size={24} color="#666" />
         </TouchableOpacity>
-        <TouchableOpacity style={[styles.approveBtn, approved && styles.approveBtnActive]} onPress={onApprove}>
-          <Text style={styles.approveBtnText}>Approve</Text>
-          {approved && (
-            <Ionicons name="checkmark" size={18} color="#fff" style={{ marginLeft: 6 }} />
-          )}
+      </View>
+
+      {/* Status Badge */}
+      <View style={styles.statusContainer}>
+        <Text style={styles.statusLabel}>Buddi</Text>
+        <View style={[styles.statusBadge, getStatusStyle()]}>
+          <Text style={[styles.statusText, { color: getStatusStyle().color }]}>
+            {application.status}
+          </Text>
+        </View>
+      </View>
+
+      {/* Buddi Information Section */}
+      <View style={styles.buddiSection}>
+        <View style={styles.userInfo}>
+          <Image source={{ uri: application.avatar }} style={styles.avatar} />
+          <View style={styles.userDetails}>
+            <Text style={styles.userName}>
+              {application.name} ({application.gender})
+            </Text>
+            <Text style={styles.userEmail}>{application.email}</Text>
+          </View>
+        </View>
+
+        <View style={styles.infoRow}>
+          <Text style={styles.infoLabel}>Age</Text>
+          <Text style={styles.infoValue}>{application.age}</Text>
+        </View>
+
+        <View style={styles.schoolInfo}>
+          <Ionicons
+            name="business"
+            size={20}
+            color="#4F46E5"
+            style={styles.schoolIcon}
+          />
+          <View style={styles.schoolDetails}>
+            <Text style={styles.schoolType}>{application.school}</Text>
+            <Text style={styles.schoolName}>{application.schoolName}</Text>
+          </View>
+          <View style={styles.phoneContainer}>
+            <Ionicons name="call" size={16} color="#666" />
+            <Text style={styles.phoneText}>{application.phone}</Text>
+          </View>
+        </View>
+      </View>
+
+      {/* Reference Section - Now under buddi data */}
+      <View style={styles.referenceSection}>
+        <Text style={styles.referenceLabel}>Reference</Text>
+        <Text style={styles.referenceRole}>{application.reference.role}</Text>
+
+        <View style={styles.referenceInfo}>
+          <Image
+            source={{ uri: application.avatar }}
+            style={styles.referenceAvatar}
+          />
+          <View style={styles.referenceDetails}>
+            <Text style={styles.referenceName}>
+              {application.reference.name}
+            </Text>
+            <Text style={styles.referenceEmail}>
+              {application.reference.email}
+            </Text>
+          </View>
+          <TouchableOpacity style={styles.chatButton}>
+            <Ionicons name="chatbubble-outline" size={20} color="#FF9500" />
+          </TouchableOpacity>
+        </View>
+
+        <View style={styles.referencePhone}>
+          <Ionicons name="call" size={16} color="#666" />
+          <Text style={styles.referencePhoneText}>
+            {application.reference.phone}
+          </Text>
+        </View>
+      </View>
+
+      {/* Action Buttons */}
+      <View style={styles.actionButtons}>
+        <TouchableOpacity style={styles.viewButton} onPress={onViewDetails}>
+          <Text style={styles.viewButtonText}>View Details</Text>
+          <Ionicons name="arrow-forward" size={16} color="#666" />
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.approveButton} onPress={onApprove}>
+          <Text style={styles.approveButtonText}>Approve</Text>
+          <Ionicons name="checkmark" size={16} color="#fff" />
         </TouchableOpacity>
       </View>
     </View>
   );
 };
 
+// Main container component with pagination
+const AdminBuddiApplicationsContainer: React.FC = () => {
+  const router = useRouter();
+  const [currentPage, setCurrentPage] = useState(1);
+  const [searchQuery, setSearchQuery] = useState("");
+  const itemsPerPage = 3;
+
+  // Filter applications based on search query
+  const filteredApplications = dummyApplications.filter(
+    (app) =>
+      app.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      app.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      app.schoolName.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  // Calculate pagination
+  const totalPages = Math.ceil(filteredApplications.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const currentApplications = filteredApplications.slice(startIndex, endIndex);
+
+  const handlePrevPage = () => {
+    if (currentPage > 1) {
+      setCurrentPage(currentPage - 1);
+    }
+  };
+
+  const handleNextPage = () => {
+    if (currentPage < totalPages) {
+      setCurrentPage(currentPage + 1);
+    }
+  };
+
+  const handlePageClick = (page: number) => {
+    setCurrentPage(page);
+  };
+
+  const handleViewDetails = (application: BuddiApplicationData) => {
+    router.push({
+      pathname: "/admin/buddi-details",
+      params: { id: application.id },
+    });
+  };
+
+  const handleApprove = (application: BuddiApplicationData) => {
+    console.log("Approve application for:", application.name);
+  };
+
+  const renderPageNumbers = () => {
+    const pageNumbers = [];
+    const maxVisiblePages = 5;
+
+    let startPage = Math.max(1, currentPage - 2);
+    let endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
+
+    if (endPage - startPage < maxVisiblePages - 1) {
+      startPage = Math.max(1, endPage - maxVisiblePages + 1);
+    }
+
+    for (let i = startPage; i <= endPage; i++) {
+      pageNumbers.push(
+        <TouchableOpacity
+          key={i}
+          style={[styles.pageNumber, currentPage === i && styles.activePage]}
+          onPress={() => handlePageClick(i)}
+        >
+          <Text
+            style={[
+              styles.pageNumberText,
+              currentPage === i && styles.activePageText,
+            ]}
+          >
+            {i}
+          </Text>
+        </TouchableOpacity>
+      );
+    }
+
+    return pageNumbers;
+  };
+
+  return (
+    <View style={styles.container}>
+      {/* Header */}
+      <View style={styles.header}>
+        <Text style={styles.title}>
+          All Pending Buddi Registration Requests
+        </Text>
+        <Text style={styles.subtitle}>
+          Total: {filteredApplications.length} applications
+        </Text>
+      </View>
+
+      {/* Search and Filter */}
+      <View style={styles.searchContainer}>
+        <View style={styles.searchBox}>
+          <Ionicons
+            name="search"
+            size={20}
+            color="#999"
+            style={styles.searchIcon}
+          />
+          <Text style={styles.searchPlaceholder}>Search applications...</Text>
+        </View>
+        <TouchableOpacity style={styles.filterButton}>
+          <Ionicons name="options" size={20} color="#666" />
+          <Text style={styles.filterText}>Filter</Text>
+        </TouchableOpacity>
+      </View>
+
+      {/* Application Cards */}
+      {currentApplications.map((application) => (
+        <AdminBuddiApplicationCard
+          key={application.id}
+          application={application}
+          onViewDetails={() => handleViewDetails(application)}
+          onApprove={() => handleApprove(application)}
+        />
+      ))}
+
+      {/* Pagination */}
+      {totalPages > 1 && (
+        <View style={styles.pagination}>
+          <TouchableOpacity
+            style={[
+              styles.pageButton,
+              currentPage === 1 && styles.disabledButton,
+            ]}
+            onPress={handlePrevPage}
+            disabled={currentPage === 1}
+          >
+            <Ionicons
+              name="chevron-back"
+              size={16}
+              color={currentPage === 1 ? "#ccc" : "#666"}
+            />
+            <Text
+              style={[
+                styles.pageText,
+                currentPage === 1 && styles.disabledText,
+              ]}
+            >
+              Prev
+            </Text>
+          </TouchableOpacity>
+
+          <View style={styles.pageNumbers}>{renderPageNumbers()}</View>
+
+          <TouchableOpacity
+            style={[
+              styles.pageButton,
+              currentPage === totalPages && styles.disabledButton,
+            ]}
+            onPress={handleNextPage}
+            disabled={currentPage === totalPages}
+          >
+            <Text
+              style={[
+                styles.pageText,
+                currentPage === totalPages && styles.disabledText,
+              ]}
+            >
+              Next
+            </Text>
+            <Ionicons
+              name="chevron-forward"
+              size={16}
+              color={currentPage === totalPages ? "#ccc" : "#666"}
+            />
+          </TouchableOpacity>
+        </View>
+      )}
+
+      {/* Page Info */}
+      <View style={styles.pageInfo}>
+        <Text style={styles.pageInfoText}>
+          Showing {startIndex + 1}-
+          {Math.min(endIndex, filteredApplications.length)} of{" "}
+          {filteredApplications.length} applications
+        </Text>
+      </View>
+    </View>
+  );
+};
+
 const styles = StyleSheet.create({
+  container: {
+    backgroundColor: "#fff",
+    borderRadius: 12,
+    padding: 16,
+    marginTop: 20,
+    borderWidth: 1,
+    borderColor: "#F0F0F0",
+  },
+  header: {
+    marginBottom: 20,
+  },
+  title: {
+    fontSize: 18,
+    fontWeight: "600",
+    color: "#23272F",
+    fontFamily: "Comfortaa-Regular",
+  },
+  subtitle: {
+    fontSize: 14,
+    color: "#666",
+    marginTop: 4,
+    fontFamily: "Comfortaa-Regular",
+  },
+  searchContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 20,
+    gap: 12,
+  },
+  searchBox: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#F8F9FA",
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    height: 44,
+  },
+  searchIcon: {
+    marginRight: 8,
+  },
+  searchPlaceholder: {
+    fontSize: 16,
+    color: "#999",
+    fontFamily: "Comfortaa-Regular",
+  },
+  filterButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#F8F9FA",
+    borderRadius: 8,
+    paddingHorizontal: 16,
+    height: 44,
+    gap: 8,
+  },
+  filterText: {
+    fontSize: 16,
+    color: "#666",
+    fontFamily: "Comfortaa-Regular",
+  },
   card: {
     backgroundColor: "#fff",
-    borderRadius: 18,
-    padding: 18,
-    margin: 12,
-    shadowColor: "#23272F",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 8,
-    elevation: 2,
+    borderRadius: 12,
+    padding: 20,
     borderWidth: 1,
-    borderColor: "#F2F2F2",
+    borderColor: "#F0F0F0",
+    marginBottom: 16,
   },
-  headerRow: {
+  cardHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "flex-start",
-    marginBottom: 8,
+    marginBottom: 16,
   },
-  headerTitle: {
-    fontSize: 17,
+  cardTitle: {
+    fontSize: 16,
     fontWeight: "600",
     color: "#23272F",
     fontFamily: "Comfortaa-Regular",
   },
-  headerSub: {
-    fontSize: 13,
-    color: "#BDBDBD",
+  cardSubtitle: {
+    fontSize: 14,
+    color: "#999",
+    marginTop: 4,
     fontFamily: "Comfortaa-Regular",
   },
-  statusRow: {
+  statusContainer: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    marginBottom: 8,
+    marginBottom: 20,
   },
-  sectionLabel: {
+  statusLabel: {
     fontSize: 14,
-    color: "#23272F",
-    fontWeight: "500",
+    color: "#666",
     fontFamily: "Comfortaa-Regular",
   },
   statusBadge: {
-    backgroundColor: "#EAF2FF",
-    borderRadius: 12,
     paddingHorizontal: 12,
-    paddingVertical: 3,
+    paddingVertical: 4,
+    borderRadius: 12,
   },
   statusText: {
-    color: "#3B82F6",
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: "500",
     fontFamily: "Comfortaa-Regular",
   },
-  buddiRow: {
+  buddiSection: {
+    marginBottom: 20,
+    paddingBottom: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: "#F0F0F0",
+  },
+  userInfo: {
     flexDirection: "row",
     alignItems: "center",
-    marginBottom: 6,
+    marginBottom: 16,
+    gap: 12,
   },
   avatar: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
-    marginRight: 10,
-    backgroundColor: "#eee",
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: "#E0E7FF",
   },
-  avatarSmall: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    marginRight: 10,
-    backgroundColor: "#eee",
+  userDetails: {
+    flex: 1,
   },
-  buddiName: {
-    fontSize: 15,
+  userName: {
+    fontSize: 16,
     fontWeight: "600",
     color: "#23272F",
     fontFamily: "Comfortaa-Regular",
   },
-  buddiEmail: {
-    fontSize: 13,
-    color: "#8A8A8A",
+  userEmail: {
+    fontSize: 14,
+    color: "#666",
+    marginTop: 2,
     fontFamily: "Comfortaa-Regular",
   },
-  buddiAgeLabel: {
-    fontSize: 13,
-    color: "#8A8A8A",
-    fontFamily: "Comfortaa-Regular",
-    textAlign: "right",
+  infoRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 16,
   },
-  buddiAge: {
-    fontSize: 15,
+  infoLabel: {
+    fontSize: 14,
+    color: "#666",
+    fontFamily: "Comfortaa-Regular",
+  },
+  infoValue: {
+    fontSize: 14,
+    fontWeight: "500",
     color: "#23272F",
-    fontWeight: "600",
     fontFamily: "Comfortaa-Regular",
-    textAlign: "right",
   },
-  schoolRow: {
+  schoolInfo: {
     flexDirection: "row",
     alignItems: "center",
-    marginBottom: 8,
-    marginLeft: 48,
+    gap: 8,
+  },
+  schoolIcon: {
+    marginRight: 4,
+  },
+  schoolDetails: {
+    flex: 1,
+  },
+  schoolType: {
+    fontSize: 14,
+    fontWeight: "500",
+    color: "#23272F",
+    fontFamily: "Comfortaa-Regular",
   },
   schoolName: {
-    fontSize: 13,
-    color: "#23272F",
-    fontFamily: "Comfortaa-Regular",
-    marginRight: 8,
-  },
-  buddiPhone: {
-    fontSize: 13,
-    color: "#23272F",
+    fontSize: 12,
+    color: "#666",
     fontFamily: "Comfortaa-Regular",
   },
-  referenceRow: {
+  phoneContainer: {
     flexDirection: "row",
-    justifyContent: "space-between",
     alignItems: "center",
-    marginTop: 8,
-    marginBottom: 2,
+    gap: 4,
+  },
+  phoneText: {
+    fontSize: 12,
+    color: "#666",
+    fontFamily: "Comfortaa-Regular",
+  },
+  referenceSection: {
+    marginBottom: 20,
+  },
+  referenceLabel: {
+    fontSize: 14,
+    color: "#666",
+    marginBottom: 4,
+    fontFamily: "Comfortaa-Regular",
   },
   referenceRole: {
-    fontSize: 13,
-    color: "#3B82F6",
+    fontSize: 14,
     fontWeight: "500",
-    fontFamily: "Comfortaa-Regular",
-  },
-  actionsRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginTop: 16,
-  },
-  detailsBtn: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "#F6F6F6",
-    borderRadius: 24,
-    paddingVertical: 10,
-    paddingHorizontal: 22,
-  },
-  detailsBtnText: {
     color: "#23272F",
-    fontSize: 15,
+    marginBottom: 16,
+    fontFamily: "Comfortaa-Regular",
+  },
+  referenceInfo: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    marginBottom: 12,
+  },
+  referenceAvatar: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: "#E0E7FF",
+  },
+  referenceDetails: {
+    flex: 1,
+  },
+  referenceName: {
+    fontSize: 14,
+    fontWeight: "500",
+    color: "#23272F",
+    fontFamily: "Comfortaa-Regular",
+  },
+  referenceEmail: {
+    fontSize: 12,
+    color: "#666",
+    marginTop: 2,
+    fontFamily: "Comfortaa-Regular",
+  },
+  referencePhone: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  referencePhoneText: {
+    fontSize: 12,
+    color: "#666",
+    fontFamily: "Comfortaa-Regular",
+  },
+  chatButton: {
+    padding: 4,
+  },
+  actionButtons: {
+    flexDirection: "row",
+    gap: 12,
+  },
+  viewButton: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#F8F9FA",
+    borderRadius: 8,
+    paddingVertical: 12,
+    gap: 8,
+  },
+  viewButtonText: {
+    fontSize: 14,
+    color: "#666",
     fontWeight: "500",
     fontFamily: "Comfortaa-Regular",
   },
-  approveBtn: {
+  approveButton: {
+    flex: 1,
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#FF932E",
-    borderRadius: 24,
-    paddingVertical: 10,
-    paddingHorizontal: 28,
-    opacity: 0.7,
+    justifyContent: "center",
+    backgroundColor: "#007BFF",
+    borderRadius: 8,
+    paddingVertical: 12,
+    gap: 8,
   },
-  approveBtnActive: {
-    opacity: 1,
-  },
-  approveBtnText: {
+  approveButtonText: {
+    fontSize: 14,
     color: "#fff",
-    fontSize: 15,
     fontWeight: "500",
+    fontFamily: "Comfortaa-Regular",
+  },
+  pagination: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginTop: 20,
+    paddingTop: 16,
+    borderTopWidth: 1,
+    borderTopColor: "#F0F0F0",
+  },
+  pageButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+  },
+  disabledButton: {
+    opacity: 0.5,
+  },
+  pageText: {
+    fontSize: 14,
+    color: "#666",
+    fontFamily: "Comfortaa-Regular",
+  },
+  disabledText: {
+    color: "#ccc",
+  },
+  pageNumbers: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  pageNumber: {
+    width: 32,
+    height: 32,
+    borderRadius: 6,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  activePage: {
+    backgroundColor: "#007BFF",
+  },
+  pageNumberText: {
+    fontSize: 14,
+    color: "#666",
+    fontFamily: "Comfortaa-Regular",
+  },
+  activePageText: {
+    color: "#fff",
+    fontWeight: "600",
+  },
+  pageInfo: {
+    alignItems: "center",
+    marginTop: 12,
+  },
+  pageInfoText: {
+    fontSize: 12,
+    color: "#999",
     fontFamily: "Comfortaa-Regular",
   },
 });
 
-export default AdminBuddiApplicationCard; 
+export default AdminBuddiApplicationsContainer;
+export { AdminBuddiApplicationCard };
