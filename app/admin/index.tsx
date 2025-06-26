@@ -1,6 +1,7 @@
 import AdminProfileReviewCard from "@/components/admin/AdminProfileReviewCard";
 import AdminVideoReviewCard from "@/components/admin/AdminVideoReviewCard";
 import CoverageAlertCard from "@/components/admin/CoverageAlertCard";
+import ParentRequestCard from "@/components/admin/ParentRequestCard";
 import AnalyticsCard from "@/components/commons/AnalyticsCard";
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
@@ -151,8 +152,8 @@ export default function AdminDashboard() {
             contentContainerStyle={styles.profileReviewsContainer}
           >
             <AdminProfileReviewCard
-              image="https://images.unsplash.com/photo-1494790108755-2616b612b789?w=150"
-              name="Sarah Johnson"
+              image="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150"
+              name="Brian F"
               email="sarah.j@email.com"
               phone="+1 (555) 123-4567"
               date="Dec 15, 2024"
@@ -249,6 +250,66 @@ export default function AdminDashboard() {
             />
           </View>
         </View>
+
+        {/* Parent Requests Section */}
+        <View style={styles.parentRequestsSection}>
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>Parent Requests</Text>
+            <TouchableOpacity
+              style={styles.viewAllButton}
+              onPress={() => {
+                router.push("/admin/parents" as any);
+              }}
+            >
+              <Text style={styles.viewAllText}>View All</Text>
+              <Ionicons
+                name="arrow-forward"
+                size={16}
+                color="#FF932E"
+                style={{ marginLeft: 4 }}
+              />
+            </TouchableOpacity>
+          </View>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.parentRequestsContainer}
+          >
+            <ParentRequestCard
+              date="MAR 05"
+              serviceType="Pickup & Baby Sitting"
+              duration="2hrs per Day"
+              parentName="Brian Ford"
+              parentEmail="brianford@lok.com"
+              parentAvatar="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150"
+              onProposeBuddis={() => {
+                router.push("/admin/buddis" as any);
+              }}
+            />
+            <ParentRequestCard
+              date="MAR 05"
+              serviceType="Pickup & Baby Sitting"
+              duration="2hrs per Day"
+              parentName="Brian Ford"
+              parentEmail="brianford@lok.com"
+              parentAvatar="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150"
+              onProposeBuddis={() => {
+                router.push("/admin/buddis" as any);
+              }}
+            />
+            <ParentRequestCard
+              date="MAR 06"
+              serviceType="School Pickup"
+              duration="1hr per Day"
+              parentName="Sarah Johnson"
+              parentEmail="sarah.j@email.com"
+              parentAvatar="https://images.unsplash.com/photo-1494790108755-2616b612b789?w=150"
+              onProposeBuddis={() => {
+                router.push("/admin/buddis" as any);
+              }}
+            />
+          </ScrollView>
+        </View>
       </ScrollView>
     </SafeAreaView>
   );
@@ -324,5 +385,12 @@ const styles = StyleSheet.create({
   },
   videoListContainer: {
     paddingHorizontal: 2,
+  },
+  parentRequestsSection: {
+    paddingLeft: 8,
+    marginTop: 24,
+  },
+  parentRequestsContainer: {
+    padding: 2,
   },
 });
