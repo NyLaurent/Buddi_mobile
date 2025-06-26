@@ -1,7 +1,8 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import React from "react";
-import { Image, ScrollView, Text, TouchableOpacity, View } from "react-native";
+import { Image, ScrollView, StatusBar, Text, TouchableOpacity, View } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 const user = {
   name: "John Doe Smith",
@@ -24,9 +25,14 @@ const Settings = () => {
   const router = useRouter();
 
   return (
-    <View className="flex-1 bg-white">
+    <SafeAreaView style={{ flex: 1, backgroundColor: "#fff" }} edges={['top', 'left', 'right']}>
+      <StatusBar 
+        barStyle="dark-content" 
+        backgroundColor="transparent" 
+        translucent={true}
+      />
       {/* Header */}
-      <View className="flex-row items-center justify-between px-4 pt-10 pb-4">
+      <View className="flex-row items-center justify-between px-4 pt-6 pb-4">
         <TouchableOpacity
           onPress={() => router.back()}
           className="bg-[#FF932E] w-8 h-8 rounded-full items-center justify-center"
@@ -64,7 +70,7 @@ const Settings = () => {
         </View>
 
         {/* Settings Options */}
-        <View className="px-4">
+        <View className="px-4 pb-20">
           {settingsOptions.map((option, idx) => (
             <TouchableOpacity
               key={option}
@@ -79,7 +85,7 @@ const Settings = () => {
           ))}
         </View>
       </ScrollView>
-    </View>
+    </SafeAreaView>
   );
 };
 

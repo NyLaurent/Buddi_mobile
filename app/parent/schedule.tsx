@@ -5,12 +5,13 @@ import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import React from "react";
 import {
-  Platform,
   ScrollView,
+  StatusBar,
   Text,
   TouchableOpacity,
   View,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 const pickupData = [
   {
@@ -75,23 +76,16 @@ const SchedulePage = () => {
   const [pickupIndex, setPickupIndex] = React.useState(0);
 
   return (
-    <>
-      <View
-        style={{
-          position: "absolute",
-          top: 0,
-          left: 0,
-          right: 0,
-          height: Platform.OS === "android" ? 32 : 0,
-          backgroundColor: "white",
-          zIndex: 10,
-        }}
+    <SafeAreaView style={{ flex: 1, backgroundColor: "#fff" }} edges={['top', 'left', 'right']}>
+      <StatusBar 
+        barStyle="dark-content" 
+        backgroundColor="transparent" 
+        translucent={true}
       />
       <ScrollView
         className="flex-1 bg-white"
         contentContainerStyle={{
-          paddingTop: Platform.OS === "android" ? 32 : 0,
-          paddingBottom: 2,
+          paddingBottom: 20,
         }}
         showsVerticalScrollIndicator={false}
       >
@@ -236,18 +230,15 @@ const SchedulePage = () => {
                     </View>
                   ))}
                 </ScrollView>
-                <View className="flex-row justify-center items-center mt-2 mb-2">
-                  {pickupData.map((_, i) => (
+
+                {/* Pagination Dots */}
+                <View className="flex-row justify-center items-center gap-2 mt-4">
+                  {pickupData.map((_, index) => (
                     <View
-                      key={i}
-                      style={{
-                        width: 8,
-                        height: 8,
-                        borderRadius: 4,
-                        marginHorizontal: 4,
-                        backgroundColor:
-                          pickupIndex === i ? "#FF9100" : "#E0E0E0",
-                      }}
+                      key={index}
+                      className={`w-2 h-2 rounded-full ${
+                        index === pickupIndex ? "bg-primary" : "bg-gray-300"
+                      }`}
                     />
                   ))}
                 </View>
@@ -265,51 +256,35 @@ const SchedulePage = () => {
                     <Ionicons name="arrow-forward" size={16} color="#FF932E" />
                   </TouchableOpacity>
                 </View>
-                <ScrollView
-                  horizontal
-                  showsHorizontalScrollIndicator={false}
-                  contentContainerStyle={{ paddingRight: 16 }}
-                >
+                <View className="gap-4">
                   {coverageRequestsData.map((request, index) => (
-                    <View key={index} className="mr-4" style={{ width: 338 }}>
-                      <KidPickupCard
-                        variant="detailed"
-                        childName="Bryan Smith"
-                        remaining="2:23:04"
-                        schedule="5 Days a Week"
-                        defaultBuddi={{
-                          name: "Brian Ford",
-                          email: "brianford@lok.com",
-                          avatar:
-                            "https://randomuser.me/api/portraits/men/2.jpg",
-                          status: "Unavailable",
-                          statusColor: "#F04438", // red
-                          onMessage: () => {},
-                        }}
-                        coverageBuddi={{
-                          name: "Brian Ford",
-                          email: "brianford@lok.com",
-                          avatar:
-                            "https://randomuser.me/api/portraits/men/2.jpg",
-                          status: "Available",
-                          statusColor: "#22C55E", // green
-                          onMessage: () => {},
-                          subLabel: "You ranked him your 2nd buddi",
-                        }}
-                        schoolName="School Name"
-                        destination="Senen"
-                        mainAction="Coverage Request Sent"
-                        onMainAction={() => {}}
-                      />
-                    </View>
+                    <KidPickupCard
+                      key={index}
+                      childName={request.studentName}
+                      remaining={request.time}
+                      schedule={request.hourlyRate}
+                      buddiName={request.requesterName}
+                      buddiEmail={request.requesterEmail}
+                      buddiAvatar={
+                        request.requesterAvatar ||
+                        `https://randomuser.me/api/portraits/men/${
+                          index + 1
+                        }.jpg`
+                      }
+                      buddiStatus={"Requesting Coverage"}
+                      schoolName={request.school}
+                      destination={request.home}
+                      mainAction={"Accept Request"}
+                      variant="coverage"
+                    />
                   ))}
-                </ScrollView>
+                </View>
               </>
             )}
           </View>
         </View>
       </ScrollView>
-    </>
+    </SafeAreaView>
   );
 };
 

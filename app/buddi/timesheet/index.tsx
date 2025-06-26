@@ -5,8 +5,8 @@ import {
   KeyboardAvoidingView,
   Platform,
   ScrollView,
+  StatusBar,
   Text,
-  TextInput,
   TouchableOpacity,
   View,
 } from "react-native";
@@ -14,61 +14,65 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import TimeSheetCard from "../../../components/commons/TimeSheetCard";
 import TimesheetStatusCard from "../../../components/commons/TimesheetStatusCard";
 
-const timesheetData: {
-  week: string;
-  date: string;
-  shifts: number;
-  status: "ongoing" | "pending" | "completed" | "flagged";
-  amount: number;
-}[] = [
+const submittedTimeSheets = [
   {
-    week: "Week 1",
-    date: "2-8 th, May, 2025",
-    shifts: 23,
-    status: "ongoing",
-    amount: 40,
+    id: "1",
+    childName: "Bryan Smith",
+    date: "Jan 16, 2024",
+    checkInTime: "8:45:08 AM",
+    checkOutTime: "3:23:08 PM",
+    duration: "6h 38m",
+    status: "Submitted",
   },
   {
-    week: "Week 1",
-    date: "2-8 th, May, 2025",
-    shifts: 23,
-    status: "pending",
-    amount: 40,
+    id: "2",
+    childName: "Emma Johnson",
+    date: "Jan 15, 2024",
+    checkInTime: "7:30:00 AM",
+    checkOutTime: "2:45:30 PM",
+    duration: "7h 15m",
+    status: "Submitted",
   },
   {
-    week: "Week 1",
-    date: "2-8 th, May, 2025",
-    shifts: 23,
-    status: "completed",
-    amount: 40,
+    id: "3",
+    childName: "Michael Davis",
+    date: "Jan 14, 2024",
+    checkInTime: "8:15:12 AM",
+    checkOutTime: "3:45:45 PM",
+    duration: "7h 30m",
+    status: "Submitted",
   },
   {
-    week: "Week 1",
-    date: "2-8 th, May, 2025",
-    shifts: 23,
-    status: "completed",
-    amount: 40,
+    id: "4",
+    childName: "Sarah Wilson",
+    date: "Jan 13, 2024",
+    checkInTime: "8:00:00 AM",
+    checkOutTime: "3:00:00 PM",
+    duration: "7h 0m",
+    status: "Submitted",
+  },
+];
+
+const flaggedTimeSheets = [
+  {
+    id: "1",
+    childName: "Olivia Brown",
+    date: "Jan 16, 2024",
+    checkInTime: "8:45:08 AM",
+    checkOutTime: "--:--:-- --",
+    duration: "Incomplete",
+    status: "Flagged",
+    reason: "Missing checkout time",
   },
   {
-    week: "Week 1",
-    date: "2-8 th, May, 2025",
-    shifts: 23,
-    status: "flagged",
-    amount: 40,
-  },
-  {
-    week: "Week 2",
-    date: "9-15 th, May, 2025",
-    shifts: 18,
-    status: "flagged",
-    amount: 32,
-  },
-  {
-    week: "Week 3",
-    date: "16-22 th, May, 2025",
-    shifts: 20,
-    status: "flagged",
-    amount: 36,
+    id: "2",
+    childName: "Liam Miller",
+    date: "Jan 15, 2024",
+    checkInTime: "7:30:00 AM",
+    checkOutTime: "1:45:30 PM",
+    duration: "6h 15m",
+    status: "Flagged",
+    reason: "Early checkout",
   },
 ];
 
@@ -79,8 +83,15 @@ export default function TimesheetPage() {
   const router = useRouter();
 
   return (
-    <SafeAreaView className="flex-1 bg-white">
-      {/* <StatusBar barStyle="dark-content" /> */}
+    <SafeAreaView
+      style={{ flex: 1, backgroundColor: "#fff" }}
+      edges={["top", "left", "right"]}
+    >
+      <StatusBar
+        barStyle="dark-content"
+        backgroundColor="transparent"
+        translucent={true}
+      />
       <KeyboardAvoidingView
         style={{ flex: 1 }}
         behavior={Platform.OS === "ios" ? "padding" : "height"}
@@ -89,13 +100,12 @@ export default function TimesheetPage() {
         <ScrollView
           className="flex-1 bg-transparent"
           contentContainerStyle={{
-            paddingTop: 40,
             paddingBottom: Platform.OS === "ios" ? 100 : 80,
           }}
           showsVerticalScrollIndicator={false}
         >
           {/* Header */}
-          <View className="flex-row items-center justify-between px-2 mb-6">
+          <View className="flex-row items-center justify-between px-2 mb-6 pt-6">
             <TouchableOpacity
               className="w-10 h-10 bg-primary rounded-xl items-center justify-center"
               onPress={() => router.back()}
@@ -111,106 +121,37 @@ export default function TimesheetPage() {
           </View>
 
           {/* Analytics Cards */}
-          <View className="px-1 mb-6">
-            <View
-              style={{
-                flexDirection: "row",
-                flexWrap: "wrap",
-                justifyContent: "space-between",
-              }}
-            >
-              <View style={{ width: "48%" }}>
-                <TimeSheetCard
-                  icon={
-                    <View
-                      style={{
-                        backgroundColor: "#188CFF",
-                        width: 36,
-                        height: 36,
-                        borderRadius: 18,
-                        alignItems: "center",
-                        justifyContent: "center",
-                      }}
-                    >
-                      <Ionicons name="flash" size={20} color="white" />
-                    </View>
-                  }
-                  value="12"
-                  title="Total Trips"
-                />
+          <View className="flex-row gap-3 mx-4 mb-6">
+            <View className="bg-white rounded-xl p-4 flex-1 border border-gray-100 shadow-sm">
+              <View className="flex-row items-center mb-1">
+                <Ionicons name="checkmark-circle" size={20} color="#10B981" />
+                <Text className="ml-2 font-comfortaa-bold text-lg">
+                  {submittedTimeSheets.length}
+                </Text>
               </View>
-              <View style={{ width: "48%" }}>
-                <TimeSheetCard
-                  icon={
-                    <View
-                      style={{
-                        backgroundColor: "#3CB4FF",
-                        width: 36,
-                        height: 36,
-                        borderRadius: 18,
-                        alignItems: "center",
-                        justifyContent: "center",
-                      }}
-                    >
-                      <Ionicons name="timer" size={20} color="white" />
-                    </View>
-                  }
-                  value="12"
-                  title="Hours Worked"
-                />
+              <Text className="font-comfortaa text-gray-500 text-sm">
+                Submitted
+              </Text>
+            </View>
+            <View className="bg-white rounded-xl p-4 flex-1 border border-gray-100 shadow-sm">
+              <View className="flex-row items-center mb-1">
+                <Ionicons name="flag" size={20} color="#EF4444" />
+                <Text className="ml-2 font-comfortaa-bold text-lg">
+                  {flaggedTimeSheets.length}
+                </Text>
               </View>
-              <View style={{ width: "48%" }}>
-                <TimeSheetCard
-                  icon={
-                    <View
-                      style={{
-                        backgroundColor: "#A259FF",
-                        width: 36,
-                        height: 36,
-                        borderRadius: 18,
-                        alignItems: "center",
-                        justifyContent: "center",
-                      }}
-                    >
-                      <Ionicons name="cash" size={20} color="white" />
-                    </View>
-                  }
-                  value="12"
-                  title="Earnings"
-                />
-              </View>
-              <View style={{ width: "48%" }}>
-                <TimeSheetCard
-                  icon={
-                    <View
-                      style={{
-                        backgroundColor: "#FFB800",
-                        width: 36,
-                        height: 36,
-                        borderRadius: 18,
-                        alignItems: "center",
-                        justifyContent: "center",
-                      }}
-                    >
-                      <Ionicons name="document-text" size={20} color="white" />
-                    </View>
-                  }
-                  value="12"
-                  title="Timesheets"
-                />
-              </View>
+              <Text className="font-comfortaa text-gray-500 text-sm">
+                Flagged
+              </Text>
             </View>
           </View>
 
           {/* Tab Navigator */}
-          <View className="px-2">
-            <View
-              className="flex-row bg-[#F8F9FE] rounded-full mb-6 items-center justify-between min-h-[48px] px-1 mx-2 self-center"
-              style={{ maxWidth: 360, width: "100%" }}
-            >
+          <View className="mx-4 mb-6">
+            <View className="flex-row bg-[#F8F9FE] rounded-lg">
               <TouchableOpacity
-                className={`flex-1 items-center rounded-full ${
-                  activeTab === "submitted" ? "bg-white mx-1 py-2" : "py-2"
+                className={`flex-1 items-center py-3 rounded-lg ${
+                  activeTab === "submitted" ? "bg-white mx-1" : ""
                 }`}
                 onPress={() => setActiveTab("submitted")}
               >
@@ -219,12 +160,12 @@ export default function TimesheetPage() {
                     activeTab === "submitted" ? "text-black" : "text-gray-400"
                   }`}
                 >
-                  Submitted
+                  Submitted ({submittedTimeSheets.length})
                 </Text>
               </TouchableOpacity>
               <TouchableOpacity
-                className={`flex-1 items-center rounded-full ${
-                  activeTab === "flagged" ? "bg-white mx-1 py-2" : "py-2"
+                className={`flex-1 items-center py-3 rounded-lg ${
+                  activeTab === "flagged" ? "bg-white mx-1" : ""
                 }`}
                 onPress={() => setActiveTab("flagged")}
               >
@@ -233,67 +174,62 @@ export default function TimesheetPage() {
                     activeTab === "flagged" ? "text-black" : "text-gray-400"
                   }`}
                 >
-                  Flagged sheets
+                  Flagged ({flaggedTimeSheets.length})
                 </Text>
               </TouchableOpacity>
             </View>
           </View>
 
-          {/* Timesheets Section */}
-          <View className="px-3">
-            <View className="flex-row items-center justify-between mb-2">
-              <Text className="font-comfortaa-bold text-lg">Timesheets</Text>
-              <TouchableOpacity className="flex-row items-center gap-1">
-                <Text className="text-primary font-comfortaa text-sm">
-                  Clear older
-                </Text>
-                <Ionicons name="trash-outline" size={16} color="#FF5A5F" />
-              </TouchableOpacity>
-            </View>
-            {/* Search and Filter */}
-            <View className="flex-row items-center mb-4">
-              <View className="flex-1 flex-row items-center bg-[#F8F9FE] rounded-full border border-[#E0E0E0] px-3 py-2 mr-2">
-                <Ionicons name="search" size={18} color="#B0B0B0" />
-                <TextInput
-                  placeholder="Search"
-                  className="flex-1 ml-2 text-base font-comfortaa"
-                  placeholderTextColor="#B0B0B0"
-                />
-              </View>
-              <TouchableOpacity className="bg-[#F8F9FE] rounded-2xl border border-[#E0E0E0] p-3">
-                <Ionicons name="filter" size={18} color="#B0B0B0" />
-              </TouchableOpacity>
-            </View>
-            {/* Timesheet Cards */}
-            {timesheetData
-              .filter((item) =>
-                activeTab === "flagged"
-                  ? item.status === "flagged"
-                  : item.status !== "flagged"
-              )
-              .map((item, idx) => (
-                <TimesheetStatusCard
-                  key={idx}
-                  status={item.status}
-                  week={item.week}
-                  date={item.date}
-                  shifts={item.shifts}
-                  amount={item.amount}
-                  chevron={
-                    <TouchableOpacity
-                      onPress={() => {
-                        router.push(`/buddi/timesheet/${idx}` as any);
-                      }}
-                    >
-                      <Ionicons
-                        name="chevron-forward"
-                        size={22}
-                        color="#B0B0B0"
-                      />
-                    </TouchableOpacity>
-                  }
-                />
-              ))}
+          {/* Content */}
+          <View className="mx-4">
+            {activeTab === "submitted" ? (
+              <FlatList
+                data={submittedTimeSheets}
+                renderItem={({ item }) => (
+                  <TimeSheetCard
+                    key={item.id}
+                    childName={item.childName}
+                    date={item.date}
+                    checkInTime={item.checkInTime}
+                    checkOutTime={item.checkOutTime}
+                    duration={item.duration}
+                    status={item.status}
+                    onPress={() =>
+                      router.push(`/buddi/timesheet/${item.id}` as any)
+                    }
+                  />
+                )}
+                keyExtractor={(item) => item.id}
+                scrollEnabled={false}
+                ItemSeparatorComponent={() => <View className="h-3" />}
+              />
+            ) : (
+              <FlatList
+                data={flaggedTimeSheets}
+                renderItem={({ item }) => (
+                  <TimesheetStatusCard
+                    key={item.id}
+                    childName={item.childName}
+                    date={item.date}
+                    checkInTime={item.checkInTime}
+                    checkOutTime={item.checkOutTime}
+                    duration={item.duration}
+                    status={item.status}
+                    reason={item.reason}
+                    onViewDetails={() =>
+                      router.push(`/buddi/timesheet/${item.id}` as any)
+                    }
+                    onResolve={() => {
+                      // Handle resolve action
+                      console.log("Resolving timesheet for", item.childName);
+                    }}
+                  />
+                )}
+                keyExtractor={(item) => item.id}
+                scrollEnabled={false}
+                ItemSeparatorComponent={() => <View className="h-3" />}
+              />
+            )}
           </View>
         </ScrollView>
       </KeyboardAvoidingView>

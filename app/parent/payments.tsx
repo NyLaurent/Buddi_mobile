@@ -1,28 +1,24 @@
 import React from "react";
-import { Platform, ScrollView, View } from "react-native";
+import { ScrollView, StatusBar, View } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 const payments = () => {
   return (
-    <>
-      <View
-        style={{
-          position: "absolute",
-          top: 0,
-          left: 0,
-          right: 0,
-          height: Platform.OS === "android" ? 32 : 0,
-          backgroundColor: "white",
-          zIndex: 10,
-        }}
+    <SafeAreaView style={{ flex: 1, backgroundColor: "#fff" }} edges={['top', 'left', 'right']}>
+      <StatusBar 
+        barStyle="dark-content" 
+        backgroundColor="transparent" 
+        translucent={true}
       />
       <ScrollView
         className="flex-1 bg-white"
         contentContainerStyle={{
-          paddingTop: Platform.OS === "android" ? 32 : 0,
-          minHeight: "100%",
+          paddingBottom: 20,
         }}
-      ></ScrollView>
-    </>
+      >
+        {/* Add your payment content here */}
+      </ScrollView>
+    </SafeAreaView>
   );
 };
 

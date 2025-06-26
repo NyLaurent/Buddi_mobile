@@ -5,12 +5,13 @@ import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import React from "react";
 import {
-  Platform,
   ScrollView,
+  StatusBar,
   Text,
   TouchableOpacity,
   View,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 const MyBuddyPage = () => {
   const router = useRouter();
@@ -18,22 +19,18 @@ const MyBuddyPage = () => {
   const buddieCards = Array.from({ length: 5 });
 
   return (
-    <>
-      <View
-        style={{
-          position: "absolute",
-          top: 0,
-          left: 0,
-          right: 0,
-          height: Platform.OS === "android" ? 32 : 0,
-          backgroundColor: "white",
-          zIndex: 10,
-        }}
+    <SafeAreaView
+      style={{ flex: 1, backgroundColor: "#fff" }}
+      edges={["top", "left", "right"]}
+    >
+      <StatusBar
+        barStyle="dark-content"
+        backgroundColor="transparent"
+        translucent={true}
       />
       <ScrollView
         className="flex-1 bg-white"
         contentContainerStyle={{
-          paddingTop: Platform.OS === "android" ? 32 : 0,
           paddingBottom: 32,
         }}
         showsVerticalScrollIndicator={false}
@@ -81,7 +78,7 @@ const MyBuddyPage = () => {
           </View>
         </View>
       </ScrollView>
-    </>
+    </SafeAreaView>
   );
 };
 

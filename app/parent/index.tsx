@@ -7,12 +7,13 @@ import {
 import React from "react";
 import {
   Image,
-  Platform,
   ScrollView,
+  StatusBar,
   Text,
   TouchableOpacity,
   View,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import AnalyticsCard from "../../components/commons/AnalyticsCard";
 import Calendar from "../../components/commons/Calendar";
 import KidPickupCard from "../../components/parent/KidPickupCard";
@@ -22,27 +23,22 @@ export default function ParentDashboard() {
   const [selectedDate, setSelectedDate] = React.useState(new Date());
 
   return (
-    <>
-      <View
-        style={{
-          position: "absolute",
-          top: 0,
-          left: 0,
-          right: 0,
-          height: Platform.OS === "android" ? 32 : 0,
-          backgroundColor: "white",
-          zIndex: 10,
-        }}
+    <SafeAreaView
+      style={{ flex: 1, backgroundColor: "#fff" }}
+      edges={["top", "left", "right"]}
+    >
+      <StatusBar
+        barStyle="dark-content"
+        backgroundColor="transparent"
+        translucent={true}
       />
       <ScrollView
         showsVerticalScrollIndicator={false}
         className="flex-1 bg-white px-3"
         contentContainerStyle={{
-          paddingBottom: 2,
-          paddingTop: Platform.OS === "android" ? 32 : 0,
+          paddingBottom: 20,
         }}
       >
-        {/* <StatusBar barStyle="dark-content" backgroundColor="#fff" /> */}
         {/* Header */}
         <View className="flex-row justify-between items-start px-1 pt-6">
           {/* Logo */}
@@ -192,6 +188,6 @@ export default function ParentDashboard() {
           />
         </View>
       </ScrollView>
-    </>
+    </SafeAreaView>
   );
 }

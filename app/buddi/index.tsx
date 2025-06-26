@@ -14,7 +14,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import AnalyticsCard from "../../components/commons/AnalyticsCard";
 import Calendar from "../../components/commons/Calendar";
 import CongratulationsCard from "../../components/commons/CongratulationsCard";
@@ -36,6 +36,7 @@ export default function BuddiHome() {
   const scrollViewRef = useRef(null);
   const insets = useSafeAreaInsets();
   const router = useRouter();
+  
   const handleScroll = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
     const contentOffset = event.nativeEvent.contentOffset.x;
     const cardWidth = 300 + 12; // card width + margin
@@ -142,7 +143,6 @@ export default function BuddiHome() {
         showsVerticalScrollIndicator={false}
         className="flex-1 pt-2"
         contentContainerStyle={{
-          paddingTop: insets.top,
           paddingBottom: Platform.select({
             ios: 90 + insets.bottom,
             android: 80 + insets.bottom,
@@ -279,8 +279,8 @@ export default function BuddiHome() {
         </View>
 
         {/* Calendar Section */}
-        <View className="mb-6 px-2">
-          <View className="flex-row justify-between items-center mx-4 mb-2">
+        <View className="mx-4 mb-6">
+          <View className="flex-row justify-between items-center mb-4">
             <Text className="font-comfortaa-bold text-xl">Schedule</Text>
             <TouchableOpacity>
               <Text className="text-primary font-comfortaa">View All</Text>
@@ -297,30 +297,18 @@ export default function BuddiHome() {
   };
 
   return (
-    <View className="flex-1 bg-white">
-      <View className="absolute top-0 left-0 right-0 z-50 bg-white">
-        <StatusBar backgroundColor="white" barStyle="dark-content" />
-      </View>
-
-      {/* Conditional rendering based on activeTab */}
+    <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
+      <StatusBar 
+        barStyle="dark-content" 
+        backgroundColor="transparent" 
+        translucent={true}
+      />
       {activeTab === 0 && renderHomeContent()}
-      {activeTab === 1 && (
-        <View className="flex-1">
-          <SchedulePage />
-        </View>
-      )}
-      {activeTab === 3 && (
-        <View className="flex-1">
-          <Messages
-            onChatOpen={() => setChatOpen(true)}
-            onChatClose={() => setChatOpen(false)}
-          />
-        </View>
-      )}
+      {activeTab === 1 && <SchedulePage />}
+      {activeTab === 3 && <Messages />}
       {activeTab === 4 && <Profile />}
-
-      {!chatOpen && renderBottomTabs()}
-    </View>
+      {renderBottomTabs()}
+    </SafeAreaView>
   );
 }
 
@@ -328,11 +316,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#fff",
-  },
-  header: {
-    backgroundColor: "#fff",
-    borderBottomWidth: 1,
-    borderBottomColor: "rgba(0,0,0,0.1)",
   },
   scrollView: {
     flex: 1,
@@ -411,43 +394,8 @@ const styles = StyleSheet.create({
     color: "#FF932E",
     fontFamily: "Comfortaa-Regular",
   },
-  bottomTabs: {
-    position: "absolute",
-    bottom: 0,
-    left: 0,
-    right: 0,
-    backgroundColor: "#fff",
-    flexDirection: "row",
-    justifyContent: "space-around",
-    alignItems: "center",
-    borderTopWidth: 1,
-    borderTopColor: "rgba(0,0,0,0.1)",
-    shadowColor: "#000",
-    shadowOffset: {
-      width: 0,
-      height: -2,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 3,
-    elevation: 10,
-  },
-  tabItem: {
-    alignItems: "center",
-    justifyContent: "center",
-    paddingVertical: 8,
-  },
-  tabLabel: {
-    fontSize: 12,
-    color: "#666",
-    marginTop: 4,
-    fontFamily: "Comfortaa-Regular",
-  },
-  activeTabLabel: {
-    color: "#FF932E",
-    fontFamily: "Comfortaa-Medium",
-  },
   addButton: {
-    marginTop: -30,
+    marginTop: -40,
     width: 60,
     height: 60,
     justifyContent: "center",
@@ -461,10 +409,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     shadowColor: "#FF932E",
-    shadowOffset: {
-      width: 0,
-      height: 4,
-    },
+    shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 4,
     elevation: 8,

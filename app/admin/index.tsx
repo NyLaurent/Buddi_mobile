@@ -1,34 +1,31 @@
 import CoverageAlertCard from "@/components/admin/CoverageAlertCard";
 import AnalyticsCard from "@/components/commons/AnalyticsCard";
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
+import { useRouter } from "expo-router";
 import {
   Image,
-  Platform,
   ScrollView,
+  StatusBar,
   StyleSheet,
   TouchableOpacity,
   View,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function AdminDashboard() {
+  const router = useRouter();
+
   return (
-    <View style={styles.container}>
-      <View
-        style={{
-          position: "absolute",
-          top: 0,
-          left: 0,
-          right: 0,
-          height: Platform.OS === "android" ? 32 : 0,
-          backgroundColor: "white",
-          zIndex: 10,
-        }}
+    <SafeAreaView style={styles.container} edges={["top", "left", "right"]}>
+      <StatusBar
+        barStyle="dark-content"
+        backgroundColor="transparent"
+        translucent={true}
       />
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{
-          paddingBottom: 2,
-          paddingTop: Platform.OS === "android" ? 32 : 0,
+          paddingBottom: 20,
         }}
       >
         <View className="flex-row justify-between px-1 pt-6">
@@ -101,38 +98,32 @@ export default function AdminDashboard() {
               label: "Handle Coverages",
               icon: <Ionicons name="reload" size={20} color="#fff" />,
               onPress: () => {
-                /* handle action */
+                router.push("/admin/buddis" as any);
               },
             }}
           />
           <CoverageAlertCard
-            title="21 Buddis Need Coverage For Today"
-            subtitle="Review this before effects!"
-            description="Please review Buddis requesting coverage to ensure availability and reliability."
+            title="New Buddi Applications Pending"
+            subtitle="8 applications require review"
+            description="Review new Buddi applications and references to maintain platform quality."
             secondaryButton={{
-              label: "Deploy 2nd",
-              icon: (
-                <Ionicons
-                  name="git-network-outline"
-                  size={20}
-                  color="#23272F"
-                />
-              ),
+              label: "View All",
+              icon: <Ionicons name="eye-outline" size={20} color="#23272F" />,
               onPress: () => {
                 /* handle deploy */
               },
             }}
             primaryButton={{
-              label: "View All",
+              label: "Review Now",
               icon: <Ionicons name="person-outline" size={20} color="#fff" />,
               onPress: () => {
-                /* handle view all */
+                router.push("/admin/buddis" as any);
               },
             }}
           />
         </View>
       </ScrollView>
-    </View>
+    </SafeAreaView>
   );
 }
 
