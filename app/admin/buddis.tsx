@@ -1,6 +1,7 @@
 import AdminBuddiApplicationsContainer from "@/components/admin/AdminBuddiApplicationCard";
 import BuddisTable from "@/components/admin/BuddisTable";
 import CoverageAlertCard from "@/components/admin/CoverageAlertCard";
+import FeedbackReportsContainer from "@/components/admin/FeedbackReportsCard";
 import AnalyticsCard from "@/components/commons/AnalyticsCard";
 import PageHeader from "@/components/commons/PageHeader";
 import { Ionicons, MaterialIcons } from "@expo/vector-icons";
@@ -194,8 +195,46 @@ export default function AdminBuddisPage() {
         );
       case "feedback":
         return (
-          <View style={styles.tabContent}>
-            <Text style={styles.contentText}>Feedback Content</Text>
+          <View>
+            {/* Analytics Cards Row */}
+            <View style={styles.analyticsRow}>
+              <View style={styles.cardContainer}>
+                <AnalyticsCard
+                  icon={<Ionicons name="thumbs-up" size={36} color="#4CAF50" />}
+                  title="Pending Approvals"
+                  value="12"
+                  subtitle="Pending"
+                />
+              </View>
+              <View style={styles.cardContainer}>
+                <AnalyticsCard
+                  icon={<Ionicons name="eye" size={36} color="#2196F3" />}
+                  title="Reviewed"
+                  value="12"
+                  subtitle="Pending"
+                />
+              </View>
+            </View>
+
+            {/* Coverage Alert Section */}
+            <View>
+              <CoverageAlertCard
+                title="21 Buddis Need Coverage For Today"
+                subtitle="Review this before effects!"
+                description="Please review Buddis requesting coverage to ensure availability and reliability."
+                primaryButton={{
+                  label: "Handle Coverages",
+                  icon: <Ionicons name="hammer" size={18} color="#fff" />,
+                  onPress: () => {
+                    // Handle coverage logic
+                    console.log("Handle coverages pressed");
+                  },
+                }}
+              />
+            </View>
+
+            {/* Feedback Reports Container */}
+            <FeedbackReportsContainer />
           </View>
         );
       case "videos":
