@@ -86,7 +86,7 @@ export default function SchedulePage() {
 
   return (
     <SafeAreaView
-      style={{ flex: 1, backgroundColor: "#F9FAFB" }}
+      style={{ flex: 1, backgroundColor: "#fff" }}
       edges={["top", "left", "right"]}
     >
       <StatusBar
@@ -273,15 +273,15 @@ export default function SchedulePage() {
                           index + 1
                         }.jpg`
                       }
-                      onAccept={() => {
+                      onViewDetails={() => {
                         console.log(
-                          "Accepted coverage request for",
+                          "Viewing details for coverage request:",
                           request.studentName
                         );
                       }}
-                      onDecline={() => {
+                      onAccept={() => {
                         console.log(
-                          "Declined coverage request for",
+                          "Accepted coverage request for",
                           request.studentName
                         );
                       }}

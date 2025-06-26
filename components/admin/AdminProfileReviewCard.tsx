@@ -1,6 +1,6 @@
-import React from "react";
-import { View, Text, StyleSheet, Image, TouchableOpacity } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import React from "react";
+import { Image, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 
 interface AdminProfileReviewCardProps {
   image: string;
@@ -9,6 +9,7 @@ interface AdminProfileReviewCardProps {
   phone: string;
   date: string;
   time: string;
+  status?: "Active" | "Inactive";
   onReview: () => void;
 }
 
@@ -19,6 +20,7 @@ const AdminProfileReviewCard: React.FC<AdminProfileReviewCardProps> = ({
   phone,
   date,
   time,
+  status = "Active",
   onReview,
 }) => {
   return (
@@ -27,15 +29,36 @@ const AdminProfileReviewCard: React.FC<AdminProfileReviewCardProps> = ({
       <Text style={styles.name}>{name}</Text>
       <Text style={styles.email}>{email}</Text>
       <View style={styles.phoneRow}>
-        <Ionicons name="call" size={20} color="#23272F" style={{ marginRight: 6 }} />
+        <Ionicons
+          name="call"
+          size={20}
+          color="#23272F"
+          style={{ marginRight: 6 }}
+        />
         <Text style={styles.phone}>{phone}</Text>
       </View>
+
+      {/* Status Badge */}
+      <View
+        style={[
+          styles.statusBadge,
+          { backgroundColor: status === "Active" ? "#4CAF50" : "#9E9E9E" },
+        ]}
+      >
+        <Text style={styles.statusText}>{status}</Text>
+      </View>
+
       <View style={styles.infoRow}>
         <Text style={styles.infoText}>{date}</Text>
         <Text style={styles.infoText}>{time}</Text>
       </View>
       <TouchableOpacity style={styles.button} onPress={onReview}>
-        <Ionicons name="person-outline" size={22} color="#fff" style={{ marginRight: 8 }} />
+        <Ionicons
+          name="person-outline"
+          size={22}
+          color="#fff"
+          style={{ marginRight: 8 }}
+        />
         <Text style={styles.buttonText}>Go To Review</Text>
       </TouchableOpacity>
     </View>
@@ -48,14 +71,10 @@ const styles = StyleSheet.create({
     borderRadius: 24,
     padding: 24,
     alignItems: "center",
-    shadowColor: "#23272F",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 8,
-    elevation: 3,
     borderWidth: 1,
     borderColor: "#F2F2F2",
     margin: 12,
+    width: 280,
   },
   avatar: {
     width: 110,
@@ -70,21 +89,35 @@ const styles = StyleSheet.create({
     color: "#23272F",
     marginBottom: 4,
     fontFamily: "Comfortaa-Regular",
+    textAlign: "center",
   },
   email: {
     fontSize: 15,
     color: "#8A8A8A",
     marginBottom: 12,
     fontFamily: "Comfortaa-Regular",
+    textAlign: "center",
   },
   phoneRow: {
     flexDirection: "row",
     alignItems: "center",
-    marginBottom: 12,
+    marginBottom: 16,
   },
   phone: {
     fontSize: 15,
     color: "#23272F",
+    fontFamily: "Comfortaa-Regular",
+  },
+  statusBadge: {
+    borderRadius: 20,
+    paddingHorizontal: 16,
+    paddingVertical: 6,
+    marginBottom: 16,
+  },
+  statusText: {
+    color: "#fff",
+    fontSize: 14,
+    fontWeight: "500",
     fontFamily: "Comfortaa-Regular",
   },
   infoRow: {
@@ -118,4 +151,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default AdminProfileReviewCard; 
+export default AdminProfileReviewCard;

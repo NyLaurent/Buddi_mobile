@@ -1,3 +1,4 @@
+import AdminProfileReviewCard from "@/components/admin/AdminProfileReviewCard";
 import CoverageAlertCard from "@/components/admin/CoverageAlertCard";
 import AnalyticsCard from "@/components/commons/AnalyticsCard";
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
@@ -7,6 +8,7 @@ import {
   ScrollView,
   StatusBar,
   StyleSheet,
+  Text,
   TouchableOpacity,
   View,
 } from "react-native";
@@ -122,6 +124,66 @@ export default function AdminDashboard() {
             }}
           />
         </View>
+
+        {/* Profile Reviews Section */}
+        <View style={styles.profileReviewsSection}>
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>Profile Reviews</Text>
+            <TouchableOpacity
+              style={styles.viewAllButton}
+              onPress={() => {
+                router.push("/admin/buddis" as any);
+              }}
+            >
+              <Text style={styles.viewAllText}>View All</Text>
+              <Ionicons
+                name="arrow-forward"
+                size={16}
+                color="#FF932E"
+                style={{ marginLeft: 4 }}
+              />
+            </TouchableOpacity>
+          </View>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.profileReviewsContainer}
+          >
+            <AdminProfileReviewCard
+              image="https://images.unsplash.com/photo-1494790108755-2616b612b789?w=150"
+              name="Sarah Johnson"
+              email="sarah.j@email.com"
+              phone="+1 (555) 123-4567"
+              date="Dec 15, 2024"
+              time="2:30 PM"
+              onReview={() => {
+                router.push("/admin/buddis" as any);
+              }}
+            />
+            <AdminProfileReviewCard
+              image="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150"
+              name="Michael Chen"
+              email="m.chen@email.com"
+              phone="+1 (555) 987-6543"
+              date="Dec 14, 2024"
+              time="10:15 AM"
+              onReview={() => {
+                router.push("/admin/buddis" as any);
+              }}
+            />
+            <AdminProfileReviewCard
+              image="https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=150"
+              name="Emma Wilson"
+              email="emma.w@email.com"
+              phone="+1 (555) 456-7890"
+              date="Dec 13, 2024"
+              time="4:45 PM"
+              onReview={() => {
+                router.push("/admin/buddis" as any);
+              }}
+            />
+          </ScrollView>
+        </View>
       </ScrollView>
     </SafeAreaView>
   );
@@ -154,11 +216,27 @@ const styles = StyleSheet.create({
   section: {
     padding: 20,
   },
+  sectionHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingHorizontal: 8,
+    marginBottom: 15,
+  },
   sectionTitle: {
     fontSize: 18,
     fontWeight: "600",
-    marginBottom: 15,
-    color: "#1a1a1a",
+    color: "#23272F",
+    fontFamily: "Comfortaa-Regular",
+  },
+  viewAllButton: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  viewAllText: {
+    fontSize: 16,
+    color: "#FF932E",
+    fontFamily: "Comfortaa-Regular",
   },
   activityCard: {
     backgroundColor: "#f8f9fa",
@@ -168,5 +246,11 @@ const styles = StyleSheet.create({
   noActivity: {
     color: "#666",
     textAlign: "center",
+  },
+  profileReviewsSection: {
+    paddingLeft: 8,
+  },
+  profileReviewsContainer: {
+    padding: 2,
   },
 });

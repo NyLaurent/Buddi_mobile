@@ -2,6 +2,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import React, { useState } from "react";
 import {
+  FlatList,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
@@ -188,15 +189,15 @@ export default function TimesheetPage() {
                 renderItem={({ item }) => (
                   <TimeSheetCard
                     key={item.id}
-                    childName={item.childName}
-                    date={item.date}
-                    checkInTime={item.checkInTime}
-                    checkOutTime={item.checkOutTime}
-                    duration={item.duration}
-                    status={item.status}
-                    onPress={() =>
-                      router.push(`/buddi/timesheet/${item.id}` as any)
+                    icon={
+                      <Ionicons
+                        name="checkmark-circle"
+                        size={20}
+                        color="#10B981"
+                      />
                     }
+                    value={item.duration}
+                    title={`${item.childName} - ${item.date}`}
                   />
                 )}
                 keyExtractor={(item) => item.id}
@@ -209,20 +210,11 @@ export default function TimesheetPage() {
                 renderItem={({ item }) => (
                   <TimesheetStatusCard
                     key={item.id}
-                    childName={item.childName}
+                    status={item.status.toLowerCase()}
+                    week={item.childName}
                     date={item.date}
-                    checkInTime={item.checkInTime}
-                    checkOutTime={item.checkOutTime}
-                    duration={item.duration}
-                    status={item.status}
-                    reason={item.reason}
-                    onViewDetails={() =>
-                      router.push(`/buddi/timesheet/${item.id}` as any)
-                    }
-                    onResolve={() => {
-                      // Handle resolve action
-                      console.log("Resolving timesheet for", item.childName);
-                    }}
+                    shifts={1}
+                    amount={0}
                   />
                 )}
                 keyExtractor={(item) => item.id}

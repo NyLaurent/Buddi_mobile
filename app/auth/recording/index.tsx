@@ -234,232 +234,232 @@ const RecordingPage = () => {
   const hasAnsweredCurrent = completedQuestions.includes(currentQuestionIndex);
 
   return (
-      <View style={styles.container}>
-        <StatusBar
-          translucent
-          backgroundColor="transparent"
-          barStyle="light-content"
-        />
-        <ImageBackground
-          source={require("../../../assets/images/auth/video_bg.jpg")}
-          style={styles.backgroundImage}
-          resizeMode="cover"
+    <View style={styles.container}>
+      <StatusBar
+        translucent
+        backgroundColor="transparent"
+        barStyle="light-content"
+      />
+      <ImageBackground
+        source={require("../../../assets/images/auth/video_bg.jpg")}
+        style={styles.backgroundImage}
+        resizeMode="cover"
+      >
+        <SafeAreaView
+          style={{
+            flex: 1,
+            paddingTop: Platform.OS === "android" ? StatusBar.currentHeight : 0,
+          }}
+          edges={["right", "left"]}
         >
-          <SafeAreaView
-            style={{
-              flex: 1,
-              paddingTop: Platform.OS === "android" ? StatusBar.currentHeight : 0,
-            }}
-            edges={["right", "left"]}
-          >
-            {/* Header */}
-            <View className="flex-row justify-between items-center px-4 py-2 mt-2">
-              <TouchableOpacity
-                className="bg-white rounded-full p-2"
-                onPress={() => router.back()}
-              >
-                <Ionicons name="chevron-back" size={24} color="#555" />
-              </TouchableOpacity>
+          {/* Header */}
+          <View className="flex-row justify-between items-center px-4 py-2 mt-2">
+            <TouchableOpacity
+              className="bg-white rounded-full p-2"
+              onPress={() => router.back()}
+            >
+              <Ionicons name="chevron-back" size={24} color="#555" />
+            </TouchableOpacity>
 
-              <View className="items-center">
-                <Text className="text-white text-lg font-comfortaa-bold text-center">
-                  Record Your Buddi
-                </Text>
-                <Text className="text-white text-lg font-comfortaa-bold text-center">
-                  Interview
-                </Text>
-              </View>
-
-              <TouchableOpacity className="bg-white rounded-full p-2">
-                <Ionicons name="ellipsis-vertical" size={20} color="#555" />
-              </TouchableOpacity>
+            <View className="items-center">
+              <Text className="text-white text-lg font-comfortaa-bold text-center">
+                Record Your Buddi
+              </Text>
+              <Text className="text-white text-lg font-comfortaa-bold text-center">
+                Interview
+              </Text>
             </View>
 
-            {/* Main Content */}
-            <View style={styles.contentContainer}>
-              {/* Score Board and Camera in a row */}
-              <View style={styles.topRow}>
-                {/* Score Board */}
-                <View className="bg-white rounded-3xl w-[40%] p-5 shadow-sm overflow-hidden relative">
-                  <View className="flex-row justify-between items-start">
-                    <Text className="font-comfortaa text-gray-800 text-sm">
-                      You score board
-                    </Text>
-                  </View>
+            <TouchableOpacity className="bg-white rounded-full p-2">
+              <Ionicons name="ellipsis-vertical" size={20} color="#555" />
+            </TouchableOpacity>
+          </View>
 
-                  <View className="flex-row items-center mt-4">
-                    <View className="flex-1">
-                      <Text className="font-comfortaa-bold text-gray-800 text-xl">
-                        24/30
-                      </Text>
-                      <Text className="font-comfortaa text-gray-400 text-xs">
-                        Point
-                      </Text>
-                    </View>
-                  </View>
-
-                  {/* Sparkle icon at bottom right */}
-                  <View className="absolute bottom-1.5 right-2">
-                    <Ionicons name="sparkles" size={20} color="#3CDFFF" />
-                  </View>
-
-                  {/* Lightning circle - positioned absolutely */}
-                  <View className="absolute top-3 right-3">
-                    <View className="bg-purple-500 h-10 w-10 rounded-full justify-center items-center shadow-sm">
-                      <Ionicons name="flash" size={22} color="white" />
-                    </View>
-                  </View>
-                </View>
-
-                {/* Camera Preview / Recording */}
-                <View style={styles.cameraContainer}>
-                  {currentVideoUri &&
-                  answeredQuestions[currentQuestionIndex] === currentVideoUri ? (
-                    <View style={styles.videoPreviewContainer}>
-                      <View style={styles.mockVideoPreview}>
-                        <Text style={styles.mockVideoText}>Video Preview</Text>
-                        <Ionicons name="play-circle" size={50} color="white" />
-                      </View>
-                      <TouchableOpacity
-                        style={styles.retakeButton}
-                        onPress={() => setCurrentVideoUri(null)}
-                      >
-                        <Ionicons name="refresh" size={20} color="#fff" />
-                        <Text style={styles.retakeText}>Retake</Text>
-                      </TouchableOpacity>
-                    </View>
-                  ) : (
-                    <View style={styles.cameraWrapper}>
-                      <CameraView
-                        ref={cameraRef}
-                        style={styles.camera}
-                        facing={type}
-                        onCameraReady={() => setCameraReady(true)}
-                        onMountError={(error) => {
-                          console.error("Camera mount error:", error);
-                        }}
-                        flash="off"
-                        mirror={true}
-                      >
-                        {isRecording && (
-                          <View style={styles.recordingIndicator}>
-                            <View style={styles.redDot} />
-                            <Text style={styles.recordingText}>Recording...</Text>
-                          </View>
-                        )}
-
-                        {/* Audio icon */}
-                        <TouchableOpacity style={styles.audioButton}>
-                          <Ionicons name="mic" size={22} color="white" />
-                        </TouchableOpacity>
-
-                        {!isRecording && (
-                          <View style={styles.recordIconContainer}>
-                            <Ionicons name="videocam" size={24} color="white" />
-                          </View>
-                        )}
-                      </CameraView>
-
-                      <TouchableOpacity
-                        style={styles.flipCameraButton}
-                        onPress={() => {
-                          setType(type === "back" ? "front" : "back");
-                        }}
-                      >
-                        <Ionicons name="camera-reverse" size={24} color="white" />
-                      </TouchableOpacity>
-                    </View>
-                  )}
-                </View>
-              </View>
-
-              {/* Question and Navigation */}
-              <View
-                className="bg-white rounded-3xl shadow-md mt-8 overflow-hidden relative"
-                style={{ height: height * 0.38 }}
-              >
-                <View className="py-2 items-center justify-center h-10">
-                  <ImageBackground
-                    source={require("../../../assets/images/logo.png")}
-                    className="w-24 h-8"
-                    resizeMode="contain"
-                  />
-                </View>
-
-                <View className="items-center py-3 mb-2">
-                  <Text className="font-comfortaa-bold text-lg text-gray-800">
-                    Question {currentQuestionIndex + 1}
+          {/* Main Content */}
+          <View style={styles.contentContainer}>
+            {/* Score Board and Camera in a row */}
+            <View style={styles.topRow}>
+              {/* Score Board */}
+              <View className="bg-white rounded-3xl w-[40%] p-5 shadow-sm overflow-hidden relative">
+                <View className="flex-row justify-between items-start">
+                  <Text className="font-comfortaa text-gray-800 text-sm">
+                    You score board
                   </Text>
                 </View>
 
-                <View className="px-4 pb-5">
-                  <View className="flex-row items-start">
-                    <View className="w-7 h-7 bg-gray-100 rounded-full items-center justify-center mr-3 mt-0.5">
-                      <Text className="font-comfortaa-bold text-sm text-gray-800">
-                        {currentQuestionIndex + 1}
-                      </Text>
-                    </View>
-                    <Text className="font-comfortaa text-base text-gray-800 flex-1 leading-6">
-                      {currentQuestion.question}
+                <View className="flex-row items-center mt-4">
+                  <View className="flex-1">
+                    <Text className="font-comfortaa-bold text-gray-800 text-xl">
+                      24/30
+                    </Text>
+                    <Text className="font-comfortaa text-gray-400 text-xs">
+                      Point
                     </Text>
                   </View>
                 </View>
 
-                <View className="flex-row justify-between items-center px-4 py-4 mt-2">
-                  <TouchableOpacity
-                    disabled={isFirstQuestion}
-                    className="flex-row items-center bg-white rounded-full py-2.5 px-4 shadow-sm"
-                    onPress={() => handleSlideQuestion("prev")}
-                  >
-                    <Ionicons name="arrow-back" size={18} color="#555" />
-                    <Text className="font-comfortaa text-sm text-gray-700 ml-1.5">
-                      Previous
-                    </Text>
-                  </TouchableOpacity>
-
-                  {isLastQuestion ? (
-                    <TouchableOpacity
-                      className="flex-row items-center bg-[#FF932E] rounded-full py-3 px-7 shadow-sm"
-                      onPress={handleSubmit}
-                    >
-                      <Text className="font-comfortaa-bold text-white text-base mr-1.5">
-                        Submit
-                      </Text>
-                      <Ionicons name="checkmark" size={18} color="white" />
-                    </TouchableOpacity>
-                  ) : (
-                    <TouchableOpacity
-                      className="flex-row items-center bg-[#FF932E] rounded-full py-3 px-7 shadow-sm"
-                      onPress={() => handleSlideQuestion("next")}
-                    >
-                      <Text className="font-comfortaa-bold text-white text-base mr-1.5">
-                        Next
-                      </Text>
-                      <Ionicons name="arrow-forward" size={18} color="white" />
-                    </TouchableOpacity>
-                  )}
+                {/* Sparkle icon at bottom right */}
+                <View className="absolute bottom-1.5 right-2">
+                  <Ionicons name="sparkles" size={20} color="#3CDFFF" />
                 </View>
 
-                <View className="h-1.5 w-full bg-gray-100 absolute bottom-0">
-                  <View
-                    className="h-1.5 bg-blue-600"
-                    style={{
-                      width: `${
-                        ((currentQuestionIndex + 1) /
-                          INTERVIEW_QUESTIONS.length) *
-                        100
-                      }%`,
-                    }}
-                  />
+                {/* Lightning circle - positioned absolutely */}
+                <View className="absolute top-3 right-3">
+                  <View className="bg-purple-500 h-10 w-10 rounded-full justify-center items-center shadow-sm">
+                    <Ionicons name="flash" size={22} color="white" />
+                  </View>
                 </View>
               </View>
 
-              {/* Add space at the bottom */}
-              <View style={{ height: height * 0.1 }} />
+              {/* Camera Preview / Recording */}
+              <View style={styles.cameraContainer}>
+                {currentVideoUri &&
+                answeredQuestions[currentQuestionIndex] === currentVideoUri ? (
+                  <View style={styles.videoPreviewContainer}>
+                    <View style={styles.mockVideoPreview}>
+                      <Text style={styles.mockVideoText}>Video Preview</Text>
+                      <Ionicons name="play-circle" size={50} color="white" />
+                    </View>
+                    <TouchableOpacity
+                      style={styles.retakeButton}
+                      onPress={() => setCurrentVideoUri(null)}
+                    >
+                      <Ionicons name="refresh" size={20} color="#fff" />
+                      <Text style={styles.retakeText}>Retake</Text>
+                    </TouchableOpacity>
+                  </View>
+                ) : (
+                  <View style={styles.cameraWrapper}>
+                    <CameraView
+                      ref={cameraRef}
+                      style={styles.camera}
+                      facing={type}
+                      onCameraReady={() => setCameraReady(true)}
+                      onMountError={(error) => {
+                        console.error("Camera mount error:", error);
+                      }}
+                      flash="off"
+                      mirror={true}
+                    >
+                      {isRecording && (
+                        <View style={styles.recordingIndicator}>
+                          <View style={styles.redDot} />
+                          <Text style={styles.recordingText}>Recording...</Text>
+                        </View>
+                      )}
+
+                      {/* Audio icon */}
+                      <TouchableOpacity style={styles.audioButton}>
+                        <Ionicons name="mic" size={22} color="white" />
+                      </TouchableOpacity>
+
+                      {!isRecording && (
+                        <View style={styles.recordIconContainer}>
+                          <Ionicons name="videocam" size={24} color="white" />
+                        </View>
+                      )}
+                    </CameraView>
+
+                    <TouchableOpacity
+                      style={styles.flipCameraButton}
+                      onPress={() => {
+                        setType(type === "back" ? "front" : "back");
+                      }}
+                    >
+                      <Ionicons name="camera-reverse" size={24} color="white" />
+                    </TouchableOpacity>
+                  </View>
+                )}
+              </View>
             </View>
-          </SafeAreaView>
-        </ImageBackground>
-      </View>
+
+            {/* Question and Navigation */}
+            <View
+              className="bg-white rounded-3xl shadow-md mt-8 overflow-hidden relative"
+              style={{ height: height * 0.38 }}
+            >
+              <View className="py-2 items-center justify-center h-10">
+                <ImageBackground
+                  source={require("../../../assets/images/logo.png")}
+                  className="w-24 h-8"
+                  resizeMode="contain"
+                />
+              </View>
+
+              <View className="items-center py-3 mb-2">
+                <Text className="font-comfortaa-bold text-lg text-gray-800">
+                  Question {currentQuestionIndex + 1}
+                </Text>
+              </View>
+
+              <View className="px-4 pb-5">
+                <View className="flex-row items-start">
+                  <View className="w-7 h-7 bg-gray-100 rounded-full items-center justify-center mr-3 mt-0.5">
+                    <Text className="font-comfortaa-bold text-sm text-gray-800">
+                      {currentQuestionIndex + 1}
+                    </Text>
+                  </View>
+                  <Text className="font-comfortaa text-base text-gray-800 flex-1 leading-6">
+                    {currentQuestion.question}
+                  </Text>
+                </View>
+              </View>
+
+              <View className="flex-row justify-between items-center px-4 py-4 mt-2">
+                <TouchableOpacity
+                  disabled={isFirstQuestion}
+                  className="flex-row items-center bg-white rounded-full py-2.5 px-4 shadow-sm"
+                  onPress={() => handleSlideQuestion("prev")}
+                >
+                  <Ionicons name="arrow-back" size={18} color="#555" />
+                  <Text className="font-comfortaa text-sm text-gray-700 ml-1.5">
+                    Previous
+                  </Text>
+                </TouchableOpacity>
+
+                {isLastQuestion ? (
+                  <TouchableOpacity
+                    className="flex-row items-center bg-[#FF932E] rounded-full py-3 px-7 shadow-sm"
+                    onPress={handleSubmit}
+                  >
+                    <Text className="font-comfortaa-bold text-white text-base mr-1.5">
+                      Submit
+                    </Text>
+                    <Ionicons name="checkmark" size={18} color="white" />
+                  </TouchableOpacity>
+                ) : (
+                  <TouchableOpacity
+                    className="flex-row items-center bg-[#FF932E] rounded-full py-3 px-7 shadow-sm"
+                    onPress={() => handleSlideQuestion("next")}
+                  >
+                    <Text className="font-comfortaa-bold text-white text-base mr-1.5">
+                      Next
+                    </Text>
+                    <Ionicons name="arrow-forward" size={18} color="white" />
+                  </TouchableOpacity>
+                )}
+              </View>
+
+              <View className="h-1.5 w-full bg-gray-100 absolute bottom-0">
+                <View
+                  className="h-1.5 bg-blue-600"
+                  style={{
+                    width: `${
+                      ((currentQuestionIndex + 1) /
+                        INTERVIEW_QUESTIONS.length) *
+                      100
+                    }%`,
+                  }}
+                />
+              </View>
+            </View>
+
+            {/* Add space at the bottom */}
+            <View style={{ height: height * 0.1 }} />
+          </View>
+        </SafeAreaView>
+      </ImageBackground>
+    </View>
   );
 };
 
