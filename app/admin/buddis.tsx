@@ -1,4 +1,5 @@
 import AdminBuddiApplicationsContainer from "@/components/admin/AdminBuddiApplicationCard";
+import AdminVideosInterviewsContainer from "@/components/admin/AdminVideosInterviewsContainer";
 import BuddisTable from "@/components/admin/BuddisTable";
 import CoverageAlertCard from "@/components/admin/CoverageAlertCard";
 import FeedbackReportsContainer from "@/components/admin/FeedbackReportsCard";
@@ -239,10 +240,8 @@ export default function AdminBuddisPage() {
         );
       case "videos":
         return (
-          <View style={styles.tabContent}>
-            <Text style={styles.contentText}>
-              Profile Videos & Interviews Content
-            </Text>
+          <View>
+            <AdminVideosInterviewsContainer />
           </View>
         );
       default:
