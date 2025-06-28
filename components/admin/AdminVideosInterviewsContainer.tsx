@@ -1,4 +1,5 @@
 import { Ionicons, MaterialIcons } from "@expo/vector-icons";
+import { router } from "expo-router";
 import React, { useEffect, useState } from "react";
 import {
   Image,
@@ -197,7 +198,7 @@ const AdminVideosInterviewsContainer: React.FC = () => {
             label: "Manage Questions Bank",
             icon: <Ionicons name="arrow-forward" size={18} color="#fff" />,
             onPress: () => {
-              console.log("Manage questions pressed");
+              router.push("/admin/question-bank");
             },
           }}
         />
