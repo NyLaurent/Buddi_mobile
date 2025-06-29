@@ -6,6 +6,7 @@ import FeedbackReportsContainer from "@/components/admin/FeedbackReportsCard";
 import AnalyticsCard from "@/components/commons/AnalyticsCard";
 import PageHeader from "@/components/commons/PageHeader";
 import { Ionicons, MaterialIcons } from "@expo/vector-icons";
+import { router } from "expo-router";
 import React, { useState } from "react";
 import {
   ScrollView,
@@ -227,8 +228,7 @@ export default function AdminBuddisPage() {
                   label: "Handle Coverages",
                   icon: <Ionicons name="hammer" size={18} color="#fff" />,
                   onPress: () => {
-                    // Handle coverage logic
-                    console.log("Handle coverages pressed");
+                    router.push("/admin/backup-requests");
                   },
                 }}
               />
