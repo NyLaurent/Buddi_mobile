@@ -336,7 +336,7 @@ const styles = StyleSheet.create({
   },
   activeTabText: {
     color: "#23272F",
-    fontWeight: "900",
+    fontFamily: "Comfortaa-Bold",
   },
   content: {
     paddingHorizontal: 16,
