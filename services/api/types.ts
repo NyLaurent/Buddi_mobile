@@ -29,6 +29,51 @@ export interface LoginRequest {
   password: string;
 }
 
+export interface BuddiRegistrationRequest {
+  email: string;
+  password: string;
+  phoneNumber: string;
+  firstName: string;
+  lastName: string;
+  homeAddress: string;
+  currentSchool: string;
+  AreaOfStudy: string;
+  Gpa: string;
+  teacherEmail: string;
+  teacherPhoneNumber: string;
+  customReferral?: string;
+  referralOccupation?: string;
+  resume?: File;
+  gender: 'MALE' | 'FEMALE' | 'OTHER';
+  dob: string;
+  profilePicture?: File;
+}
+
+export interface BuddiRegistrationResponse {
+  message: string;
+  user: User;
+  buddi: {
+    id: number;
+    status: 'RegisterApprovalPending';
+    totalEarnings: number;
+    currentSchool: string;
+    AreaOfStudy: string;
+    Gpa: string;
+    teacherEmail: string;
+    teacherPhoneNumber: string;
+    customReferral?: string;
+    referralOccupation?: string;
+    resume?: string;
+    gender: string;
+    dob: string;
+    userId: string;
+    updatedAt: string;
+    createdAt: string;
+    profilePicture?: string;
+    rating?: number;
+  }
+}
+
 export interface RegisterRequest {
   firstName: string;
   lastName: string;

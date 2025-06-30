@@ -2,7 +2,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios, { AxiosInstance, AxiosResponse, InternalAxiosRequestConfig } from 'axios';
 
 // API Configuration
-const API_BASE_URL = process.env.API_BASE_URL || 'https://backend-service-hw1rh.kinsta.app';
+const API_BASE_URL = process.env.API_BASE_URL || 'https://backend-service-hw1rh.kinsta.app/api/v1';
 const API_TIMEOUT = parseInt(process.env.API_TIMEOUT || '30000');
 
 // Storage keys
@@ -37,9 +37,14 @@ const createAxiosInstance = (requiresAuth: boolean = false): AxiosInstance => {
         }
       }
 
+      // Handle multipart/form-data
+      if (config.data instanceof FormData) {
+        config.headers['Content-Type'] = 'multipart/form-data';
+      }
+
       // Log request in development
       if (__DEV__) {
-        console.log(`🚀 ${config.method?.toUpperCase()} ${config.url}`, {
+        console.log(`[REQUEST] ${config.method?.toUpperCase()} ${config.url}`, {
           data: config.data,
           params: config.params,
         });
@@ -58,7 +63,7 @@ const createAxiosInstance = (requiresAuth: boolean = false): AxiosInstance => {
     (response: AxiosResponse) => {
       // Log response in development
       if (__DEV__) {
-        console.log(`✅ ${response.config.method?.toUpperCase()} ${response.config.url}`, {
+        console.log(`[SUCCESS] ${response.config.method?.toUpperCase()} ${response.config.url}`, {
           status: response.status,
           data: response.data,
         });
@@ -68,7 +73,7 @@ const createAxiosInstance = (requiresAuth: boolean = false): AxiosInstance => {
     async (error) => {
       // Log error in development
       if (__DEV__) {
-        console.error(`❌ ${error.config?.method?.toUpperCase()} ${error.config?.url}`, {
+        console.error(`[ERROR] ${error.config?.method?.toUpperCase()} ${error.config?.url}`, {
           status: error.response?.status,
           data: error.response?.data,
         });
