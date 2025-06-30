@@ -539,9 +539,25 @@ const ResumeStep: React.FC<StepProps> = ({ formData, setFormData }) => {
     try {
       const result = await DocumentPicker.getDocumentAsync({
         type: [
+          // PDF formats
           "application/pdf",
+          // Microsoft Office formats
           "application/msword",
           "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+          "application/vnd.ms-excel",
+          "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+          "application/vnd.ms-powerpoint",
+          "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+          // Image formats
+          "image/*",
+          // Text formats
+          "text/plain",
+          // Rich Text Format
+          "application/rtf",
+          // OpenDocument formats
+          "application/vnd.oasis.opendocument.text",
+          "application/vnd.oasis.opendocument.spreadsheet",
+          "application/vnd.oasis.opendocument.presentation",
         ],
         copyToCacheDirectory: true,
       });
@@ -633,7 +649,7 @@ const ResumeStep: React.FC<StepProps> = ({ formData, setFormData }) => {
           Upload Your Resume here
         </Text>
         <Text className="font-comfortaa text-xs text-gray-500">
-          Allowed formats: .pdf, .doc, .docx
+          Allowed formats: PDF, Word, Images, and more
         </Text>
       </TouchableOpacity>
 
