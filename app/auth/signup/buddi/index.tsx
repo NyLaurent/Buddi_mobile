@@ -17,10 +17,6 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import CountryPicker, {
-  Country,
-  CountryCode,
-} from "react-native-country-picker-modal";
 import { SafeAreaView } from "react-native-safe-area-context";
 import SuccessScreen from "../../../../components/commons/SuccessScreen";
 import authService from "../../../../services/api/auth.service";
@@ -92,9 +88,6 @@ const RegistrationStep: React.FC<StepProps> = ({
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [showDate, setShowDate] = useState(false);
-  const [countryCode, setCountryCode] = useState<CountryCode>("GB");
-  const [callingCode, setCallingCode] = useState("+44");
-  const [showCountryPicker, setShowCountryPicker] = useState(false);
 
   const pickImage = async () => {
     let result = await ImagePicker.launchImageLibraryAsync({
@@ -276,27 +269,41 @@ const RegistrationStep: React.FC<StepProps> = ({
             <Text className="font-comfortaa-bold text-xs text-gray-500 mb-1">
               Date Of Birth
             </Text>
-            <TouchableOpacity
-              onPress={() => setShowDate(true)}
+            <View
               style={{
                 backgroundColor: "#fff",
                 borderWidth: 1,
                 borderColor: "#CBD5E1",
                 borderRadius: 16,
-                paddingHorizontal: 16,
-                paddingVertical: 12,
                 flexDirection: "row",
                 alignItems: "center",
                 height: 52,
+                paddingLeft: 16,
               }}
             >
-              <Text className="font-comfortaa text-gray-700 flex-1 text-base">
-                {formData.dob
-                  ? new Date(formData.dob).toLocaleDateString()
-                  : "00/00/0000"}
-              </Text>
-              <Ionicons name="calendar" size={20} color="#A0A0A0" />
-            </TouchableOpacity>
+              <TextInput
+                className="flex-1 font-comfortaa text-gray-700 text-base"
+                value={formData.dob ? formData.dob : ""}
+                onChangeText={(text) => {
+                  // Basic validation for YYYY-MM-DD format
+                  if (text.length <= 10 && /^[\d-]*$/.test(text)) {
+                    setFormData((prev) => ({ ...prev, dob: text }));
+                  }
+                }}
+                placeholder="YYYY-MM-DD"
+                placeholderTextColor="#A0A0A0"
+              />
+              <TouchableOpacity
+                onPress={() => setShowDate(true)}
+                style={{
+                  padding: 12,
+                  borderLeftWidth: 1,
+                  borderLeftColor: "#CBD5E1",
+                }}
+              >
+                <Ionicons name="calendar" size={20} color="#A0A0A0" />
+              </TouchableOpacity>
+            </View>
             {showDate && (
               <DateTimePicker
                 value={formData.dob ? new Date(formData.dob) : new Date()}
@@ -304,11 +311,12 @@ const RegistrationStep: React.FC<StepProps> = ({
                 display={Platform.OS === "ios" ? "spinner" : "default"}
                 onChange={(event, date) => {
                   setShowDate(false);
-                  if (date)
+                  if (date && event.type !== "dismissed") {
                     setFormData((prev) => ({
                       ...prev,
-                      dob: date.toISOString(),
+                      dob: date.toISOString().split("T")[0],
                     }));
+                  }
                 }}
                 maximumDate={new Date()}
               />
@@ -363,97 +371,70 @@ const RegistrationStep: React.FC<StepProps> = ({
             <Text className="font-comfortaa-bold text-xs text-gray-500 mb-1">
               Phone Number
             </Text>
-            <View className="flex-row items-center">
-              <TouchableOpacity
-                onPress={() => setShowCountryPicker(true)}
-                style={{
-                  flexDirection: "row",
-                  alignItems: "center",
-                  backgroundColor: "#fff",
-                  borderWidth: 1,
-                  borderColor: "#CBD5E1",
-                  borderRadius: 16,
-                  height: 52,
-                  paddingLeft: 16,
-                  paddingRight: 12,
-                  marginRight: 12,
-                  width: 130,
-                  justifyContent: "space-between",
-                }}
-              >
-                <View style={{ flexDirection: "row", alignItems: "center" }}>
-                  <CountryPicker
-                    countryCode={countryCode}
-                    withFlag
-                    withEmoji={false}
-                    withFilter
-                    withCallingCode
-                    withCallingCodeButton={false}
-                    onSelect={(country: Country) => {
-                      setCountryCode(country.cca2);
-                      if (
-                        country.callingCode &&
-                        country.callingCode.length > 0
-                      ) {
-                        setCallingCode(`+${country.callingCode[0]}`);
-                      }
-                    }}
-                    visible={showCountryPicker}
-                    onClose={() => setShowCountryPicker(false)}
-                    containerButtonStyle={{
-                      alignItems: "center",
-                      justifyContent: "center",
-                      padding: 4,
-                    }}
-                  />
-                  <Text
-                    style={{
-                      marginLeft: 10,
-                      fontFamily: "comfortaa-medium",
-                      fontSize: 16,
-                      color: "#374151",
-                      fontWeight: "500",
-                    }}
-                  >
-                    {callingCode}
-                  </Text>
-                </View>
-                <Ionicons name="chevron-down" size={16} color="#A0A0A0" />
-              </TouchableOpacity>
-              <View
+            <View
+              style={{
+                flex: 1,
+                flexDirection: "row",
+                alignItems: "center",
+                backgroundColor: "#fff",
+                borderRadius: 16,
+                borderWidth: 1,
+                borderColor: "#CBD5E1",
+                height: 52,
+                paddingHorizontal: 16,
+              }}
+            >
+              <TextInput
+                value={formData.phoneNumber}
+                onChangeText={(text) =>
+                  setFormData((prev) => ({
+                    ...prev,
+                    phoneNumber: text,
+                  }))
+                }
+                placeholder="Example: +250781234567"
+                keyboardType="phone-pad"
                 style={{
                   flex: 1,
-                  flexDirection: "row",
-                  alignItems: "center",
-                  backgroundColor: "#fff",
-                  borderRadius: 16,
-                  borderWidth: 1,
-                  borderColor: "#CBD5E1",
-                  height: 52,
-                  paddingHorizontal: 16,
+                  fontFamily: "comfortaa-medium",
+                  color: "#374151",
+                  fontSize: 14,
                 }}
-              >
-                <TextInput
-                  value={formData.phoneNumber}
-                  onChangeText={(text) =>
-                    setFormData((prev) => ({
-                      ...prev,
-                      phoneNumber: callingCode + text,
-                    }))
-                  }
-                  placeholder="(000)000-0000"
-                  keyboardType="phone-pad"
-                  style={{
-                    flex: 1,
-                    fontFamily: "comfortaa-medium",
-                    color: "#374151",
-                    fontSize: 14,
-                  }}
-                />
-              </View>
+              />
             </View>
           </View>
         </View>
+
+        {/* Home Address Field */}
+        <View style={{ marginBottom: 20 }}>
+          <Text className="font-comfortaa-bold text-xs text-gray-500 mb-1">
+            Home Address
+          </Text>
+          <View className="flex-row items-center bg-white border border-[#CBD5E1] rounded-2xl px-4 py-3">
+            <Ionicons
+              name="home"
+              size={20}
+              color="#A0A0A0"
+              style={{ marginRight: 8 }}
+            />
+            <TextInput
+              className="flex-1 font-comfortaa text-gray-700 text-base"
+              value={formData.homeAddress}
+              onChangeText={(text) =>
+                setFormData((prev) => ({ ...prev, homeAddress: text }))
+              }
+              placeholder="Example: Kigali, Rwanda"
+              placeholderTextColor="#A0A0A0"
+              multiline={true}
+              numberOfLines={2}
+              style={{
+                minHeight: 52,
+                textAlignVertical: "top",
+              }}
+            />
+          </View>
+        </View>
+
         {/* Login link */}
         <View className="items-center mt-2 mb-6">
           <Text className="font-comfortaa text-gray-400 text-base">
@@ -666,9 +647,6 @@ const ResumeStep: React.FC<StepProps> = ({ formData, setFormData }) => {
 
 // Step 4: References
 const ReferencesStep: React.FC<StepProps> = ({ formData, setFormData }) => {
-  const [showCountryPicker, setShowCountryPicker] = useState(false);
-  const [countryCode, setCountryCode] = useState<CountryCode>("GB");
-  const [callingCode, setCallingCode] = useState("+44");
   const [activeTab, setActiveTab] = useState(0);
 
   const renderHeadTeacherContent = () => (
@@ -707,88 +685,33 @@ const ReferencesStep: React.FC<StepProps> = ({ formData, setFormData }) => {
         <Text className="font-comfortaa-bold text-xs text-gray-500 mb-1">
           Phone Number
         </Text>
-        <View className="flex-row items-center">
-          <TouchableOpacity
-            onPress={() => setShowCountryPicker(true)}
-            style={{
-              flexDirection: "row",
-              alignItems: "center",
-              backgroundColor: "#fff",
-              borderWidth: 1,
-              borderColor: "#CBD5E1",
-              borderRadius: 16,
-              height: 52,
-              paddingLeft: 16,
-              paddingRight: 12,
-              marginRight: 12,
-              width: 130,
-              justifyContent: "space-between",
-            }}
-          >
-            <View style={{ flexDirection: "row", alignItems: "center" }}>
-              <CountryPicker
-                countryCode={countryCode}
-                withFlag
-                withEmoji={false}
-                withFilter
-                withCallingCode
-                withCallingCodeButton={false}
-                onSelect={(country: Country) => {
-                  setCountryCode(country.cca2);
-                  if (country.callingCode && country.callingCode.length > 0) {
-                    setCallingCode(`+${country.callingCode[0]}`);
-                  }
-                }}
-                visible={showCountryPicker}
-                onClose={() => setShowCountryPicker(false)}
-                containerButtonStyle={{
-                  alignItems: "center",
-                  justifyContent: "center",
-                  padding: 4,
-                }}
-              />
-              <Text
-                style={{
-                  marginLeft: 10,
-                  fontFamily: "comfortaa-medium",
-                  fontSize: 16,
-                  color: "#374151",
-                  fontWeight: "500",
-                }}
-              >
-                {callingCode}
-              </Text>
-            </View>
-            <Ionicons name="chevron-down" size={16} color="#A0A0A0" />
-          </TouchableOpacity>
-          <View
+        <View
+          style={{
+            flex: 1,
+            flexDirection: "row",
+            alignItems: "center",
+            backgroundColor: "#fff",
+            borderRadius: 16,
+            borderWidth: 1,
+            borderColor: "#CBD5E1",
+            height: 52,
+            paddingHorizontal: 16,
+          }}
+        >
+          <TextInput
+            value={formData.teacherPhoneNumber}
+            onChangeText={(text) =>
+              setFormData((prev) => ({ ...prev, teacherPhoneNumber: text }))
+            }
+            placeholder="Enter phone number"
+            keyboardType="phone-pad"
             style={{
               flex: 1,
-              flexDirection: "row",
-              alignItems: "center",
-              backgroundColor: "#fff",
-              borderRadius: 16,
-              borderWidth: 1,
-              borderColor: "#CBD5E1",
-              height: 52,
-              paddingHorizontal: 16,
+              fontFamily: "comfortaa-medium",
+              color: "#374151",
+              fontSize: 14,
             }}
-          >
-            <TextInput
-              value={formData.teacherPhoneNumber}
-              onChangeText={(text) =>
-                setFormData((prev) => ({ ...prev, teacherPhoneNumber: text }))
-              }
-              placeholder="(000)000-0000"
-              keyboardType="phone-pad"
-              style={{
-                flex: 1,
-                fontFamily: "comfortaa-medium",
-                color: "#374151",
-                fontSize: 14,
-              }}
-            />
-          </View>
+          />
         </View>
       </View>
     </View>

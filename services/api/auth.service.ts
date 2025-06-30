@@ -2,13 +2,13 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { STORAGE_KEYS, unauthorizedApi } from './config';
 import { AUTH_ENDPOINTS } from './endpoints';
 import {
-    ApiResponse,
-    AuthResponse,
-    BuddiRegistrationRequest,
-    BuddiRegistrationResponse,
-    LoginRequest,
-    RegisterRequest,
-    User
+  ApiResponse,
+  AuthResponse,
+  BuddiRegistrationRequest,
+  BuddiRegistrationResponse,
+  LoginRequest,
+  RegisterRequest,
+  User
 } from './types';
 
 class AuthService {
@@ -26,45 +26,6 @@ class AuthService {
 
       // Store tokens and user data
       await this.storeAuthData(tokens.accessToken, tokens.refreshToken, user);
-
-      return response.data.data;
-    } catch (error: any) {
-      throw this.handleAuthError(error);
-    }
-  }
-
-  /**
-   * Register new buddi with form data
-   */
-  async registerBuddi(data: BuddiRegistrationRequest): Promise<BuddiRegistrationResponse> {
-    try {
-      // Create form data
-      const formData = new FormData();
-
-      // Add all text fields
-      Object.entries(data).forEach(([key, value]) => {
-        if (value !== undefined && !(value instanceof File)) {
-          formData.append(key, value);
-        }
-      });
-
-      // Add files if present
-      if (data.profilePicture) {
-        formData.append('profilePicture', data.profilePicture);
-      }
-      if (data.resume) {
-        formData.append('resume', data.resume);
-      }
-
-      const response = await unauthorizedApi.post<ApiResponse<BuddiRegistrationResponse>>(
-        AUTH_ENDPOINTS.REGISTER_BUDDI,
-        formData,
-        {
-          headers: {
-            'Content-Type': 'multipart/form-data',
-          },
-        }
-      );
 
       return response.data.data;
     } catch (error: any) {

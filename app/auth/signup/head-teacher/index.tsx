@@ -9,10 +9,6 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import CountryPicker, {
-  Country,
-  CountryCode,
-} from "react-native-country-picker-modal";
 import { SafeAreaView } from "react-native-safe-area-context";
 import SuccessScreen from "../../../../components/commons/SuccessScreen";
 
@@ -28,9 +24,6 @@ const RegistrationStep = ({ onLogin }: { onLogin: () => void }) => {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [phone, setPhone] = useState("");
-  const [countryCode, setCountryCode] = useState<CountryCode>("GB");
-  const [callingCode, setCallingCode] = useState("+44");
-  const [showCountryPicker, setShowCountryPicker] = useState(false);
 
   return (
     <View className="flex-1 bg-white">
@@ -183,62 +176,33 @@ const RegistrationStep = ({ onLogin }: { onLogin: () => void }) => {
           <Text className="font-comfortaa-bold text-xs text-gray-500 mb-1">
             Phone Number
           </Text>
-          <View className="flex-row">
-            <TouchableOpacity
-              onPress={() => setShowCountryPicker(true)}
-              className="flex-row items-center bg-white border border-[#CBD5E1] rounded-2xl px-3 py-3 mr-2"
-              style={{ width: 80 }}
-            >
-              <Image
-                source={{
-                  uri: `https://flagcdn.com/w40/${countryCode.toLowerCase()}.png`,
-                }}
-                style={{ width: 24, height: 16 }}
-              />
-              <Text className="ml-2 text-gray-700">{callingCode}</Text>
-            </TouchableOpacity>
-            <View className="flex-row flex-1 items-center bg-white border border-[#CBD5E1] rounded-2xl px-4 py-3">
-              <TextInput
-                className="flex-1 font-comfortaa text-gray-700 text-base"
-                value={phone}
-                onChangeText={setPhone}
-                placeholder="(000) 000-0000"
-                placeholderTextColor="#A0A0A0"
-                keyboardType="phone-pad"
-              />
-              <TouchableOpacity>
-                <Ionicons
-                  name="information-circle-outline"
-                  size={20}
-                  color="#A0A0A0"
-                  style={{ marginLeft: 8 }}
-                />
-              </TouchableOpacity>
-            </View>
+          <View
+            style={{
+              flex: 1,
+              flexDirection: "row",
+              alignItems: "center",
+              backgroundColor: "#fff",
+              borderRadius: 16,
+              borderWidth: 1,
+              borderColor: "#CBD5E1",
+              height: 52,
+              paddingHorizontal: 16,
+            }}
+          >
+            <TextInput
+              value={phone}
+              onChangeText={setPhone}
+              placeholder="Enter your phone number"
+              keyboardType="phone-pad"
+              style={{
+                flex: 1,
+                fontFamily: "comfortaa-medium",
+                color: "#374151",
+                fontSize: 14,
+              }}
+            />
           </View>
         </View>
-
-        {showCountryPicker && (
-          <CountryPicker
-            visible={showCountryPicker}
-            onClose={() => setShowCountryPicker(false)}
-            onSelect={(country: Country) => {
-              setCountryCode(country.cca2);
-              setCallingCode(
-                country.callingCode.length > 0
-                  ? `+${country.callingCode[0]}`
-                  : "+44"
-              );
-              setShowCountryPicker(false);
-            }}
-            withFilter
-            withFlag
-            withCallingCode
-            withCallingCodeButton
-            countryCode={countryCode}
-            preferredCountries={["GB", "US"]}
-          />
-        )}
 
         <View className="mt-2 mb-4">
           <TouchableOpacity onPress={onLogin} className="self-center">
