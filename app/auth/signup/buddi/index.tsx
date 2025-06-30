@@ -9,6 +9,7 @@ import {
   Image,
   Platform,
   ScrollView,
+  StatusBar,
   Text,
   TextInput,
   TouchableOpacity,
@@ -835,6 +836,13 @@ export default function BuddiSignup() {
 
   return (
     <SafeAreaView className="flex-1 bg-white">
+      <StatusBar
+        barStyle="dark-content"
+        backgroundColor="#FFFFFF"
+        translucent={false}
+        hidden={false}
+        animated={true}
+      />
       <ScrollView contentContainerStyle={{ flexGrow: 1 }}>
         <View className="">
           <View className="">
