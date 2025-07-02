@@ -1,3 +1,4 @@
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { LogOut } from "lucide-react-native";
@@ -68,12 +69,13 @@ const Onboarding = () => {
   ).current;
   const [isTransitioning, setIsTransitioning] = useState(false);
 
-  // Uncomment this logic to show onboarding only once, when you're new on the app
-  // useEffect(() => {
-  //   const seen = await AsyncStorage.getItem('onboarding_seen');
-  //   if (seen) router.replace('/login');
-  // }, []);
-  // const markSeen = () => AsyncStorage.setItem('onboarding_seen', 'true');
+  const markSeen = async () => {
+    try {
+      await AsyncStorage.setItem("onboarding_seen", "true");
+    } catch (error) {
+      console.error("Error marking onboarding as seen:", error);
+    }
+  };
 
   const animateDot = (index: number, toValue: number) => {
     Animated.spring(dotAnimations[index], {
@@ -112,11 +114,9 @@ const Onboarding = () => {
     }
   };
 
-  const handleStartNow = () => {
-    // markSeen();
-    // router.replace('/login');
-
-    router.push("/role-select" as any);
+  const handleStartNow = async () => {
+    await markSeen();
+    router.replace("/role-select" as any);
   };
 
   return (

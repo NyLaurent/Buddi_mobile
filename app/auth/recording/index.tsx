@@ -20,6 +20,7 @@ import {
   withTiming,
 } from "react-native-reanimated";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { useAuth } from "../../../context/AuthContext";
 
 const PRIMARY_COLOR = "#FF932E";
 const { width, height } = Dimensions.get("window");
@@ -47,6 +48,7 @@ interface AnsweredQuestions {
 
 const RecordingPage = () => {
   const router = useRouter();
+  const { user, buddiDetails, updateBuddiRecordingStatus } = useAuth();
   const videoPlayer = useRef(null);
   const [type, setType] = useState<CameraType>("front");
   const [isRecording, setIsRecording] = useState(false);
@@ -63,11 +65,22 @@ const RecordingPage = () => {
   const slideTransition = useSharedValue(0);
 
   useEffect(() => {
+    // Check if user should be on this screen
+    if (!user || user.role !== "buddi") {
+      router.replace("/auth/login");
+      return;
+    }
+
+    if (!buddiDetails || buddiDetails.status !== "Registered") {
+      router.replace("/auth/waitlist");
+      return;
+    }
+
     // Request camera permissions if not granted
     if (permission && !permission.granted) {
       requestPermission();
     }
-  }, [permission, requestPermission]);
+  }, [permission, requestPermission, user, buddiDetails]);
 
   const animatedStyle = useAnimatedStyle(() => {
     return {
@@ -145,40 +158,52 @@ const RecordingPage = () => {
     }
   };
 
-  const handleSubmit = () => {
-    if (completedQuestions.length < INTERVIEW_QUESTIONS.length) {
-      Alert.alert(
-        "Incomplete Interview",
-        `You've completed ${completedQuestions.length} out of ${INTERVIEW_QUESTIONS.length} questions. Are you sure you want to submit?`,
-        [
-          { text: "Cancel", style: "cancel" },
-          {
-            text: "Submit Anyway",
-            onPress: () => {
-              Alert.alert(
-                "Interview Submitted",
-                "Thank you for completing your interview!",
-                [
-                  {
-                    text: "OK",
-                    onPress: () => router.replace("/buddi" as any),
-                  },
-                ]
-              );
+  const handleSubmit = async () => {
+    try {
+      if (completedQuestions.length < INTERVIEW_QUESTIONS.length) {
+        Alert.alert(
+          "Incomplete Interview",
+          `You've completed ${completedQuestions.length} out of ${INTERVIEW_QUESTIONS.length} questions. Are you sure you want to submit?`,
+          [
+            { text: "Cancel", style: "cancel" },
+            {
+              text: "Submit Anyway",
+              onPress: submitInterview,
             },
+          ]
+        );
+      } else {
+        await submitInterview();
+      }
+    } catch (error) {
+      console.error("Error submitting interview:", error);
+      Alert.alert("Error", "Failed to submit interview. Please try again.", [
+        { text: "OK" },
+      ]);
+    }
+  };
+
+  const submitInterview = async () => {
+    try {
+      // Update recording completion status
+      await updateBuddiRecordingStatus();
+
+      Alert.alert(
+        "Interview Submitted Successfully!",
+        "Thank you for completing your video interview. You will be redirected to login to access your Buddi portal once your application is fully approved.",
+        [
+          {
+            text: "Continue to Login",
+            onPress: () => router.replace("/auth/login"),
           },
         ]
       );
-    } else {
+    } catch (error) {
+      console.error("Error updating recording status:", error);
       Alert.alert(
-        "Interview Submitted",
-        "Thank you for completing your interview!",
-        [
-          {
-            text: "OK",
-            onPress: () => router.replace("/buddi" as any),
-          },
-        ]
+        "Error",
+        "Failed to update recording status. Please try again.",
+        [{ text: "OK" }]
       );
     }
   };

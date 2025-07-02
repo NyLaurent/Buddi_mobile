@@ -1,8 +1,17 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import React, { useState } from "react";
-import { Image, Text, TextInput, TouchableOpacity, View } from "react-native";
+import {
+  ActivityIndicator,
+  Alert,
+  Image,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+} from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { useAuth } from "../../../context/AuthContext";
 
 const PRIMARY_COLOR = "#FF932E";
 
@@ -11,11 +20,31 @@ const LoginScreen = () => {
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
-  const router = useRouter();
+  const [isLoading, setIsLoading] = useState(false);
 
-  const handleLogin = () => {
-    // Handle login logic here
-    router.push("/");
+  const router = useRouter();
+  const { login } = useAuth();
+
+  const handleLogin = async () => {
+    if (!email.trim() || !password.trim()) {
+      Alert.alert("Error", "Please enter both email and password.");
+      return;
+    }
+
+    try {
+      setIsLoading(true);
+      await login(email.trim(), password);
+      // Navigation will be handled automatically by AuthContext
+    } catch (error: any) {
+      console.error("Login error:", error);
+      Alert.alert(
+        "Login Failed",
+        error.message || "Invalid credentials. Please try again.",
+        [{ text: "OK" }]
+      );
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleSignUp = () => {
@@ -27,7 +56,7 @@ const LoginScreen = () => {
   };
 
   const handleGoogleSignIn = () => {
-    // Handle Google sign in
+    Alert.alert("Coming Soon", "Google Sign In will be available soon!");
   };
 
   return (
@@ -48,7 +77,7 @@ const LoginScreen = () => {
             Login
           </Text>
           <Text className="text-sm font-comfortaa text-center text-gray-500 mb-8">
-            Sign In to access all-in-one intelligent health
+            Sign In to access your Pickup Buddi account
           </Text>
         </View>
 
@@ -72,6 +101,7 @@ const LoginScreen = () => {
               placeholderTextColor="#A0A0A0"
               keyboardType="email-address"
               autoCapitalize="none"
+              editable={!isLoading}
             />
           </View>
         </View>
@@ -95,8 +125,12 @@ const LoginScreen = () => {
               placeholder="**************"
               placeholderTextColor="#A0A0A0"
               secureTextEntry={!showPassword}
+              editable={!isLoading}
             />
-            <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
+            <TouchableOpacity
+              onPress={() => setShowPassword(!showPassword)}
+              disabled={isLoading}
+            >
               <Ionicons
                 name={showPassword ? "eye-outline" : "eye-off-outline"}
                 size={20}
@@ -111,11 +145,15 @@ const LoginScreen = () => {
           <TouchableOpacity
             className="flex-row items-center"
             onPress={() => setRememberMe(!rememberMe)}
+            disabled={isLoading}
           >
             <View
               className={`w-5 h-5 rounded-full items-center justify-center ${
                 rememberMe ? "bg-primary" : "border border-gray-300"
               }`}
+              style={{
+                backgroundColor: rememberMe ? PRIMARY_COLOR : "transparent",
+              }}
             >
               {rememberMe && (
                 <Ionicons name="checkmark" size={12} color="#fff" />
@@ -125,21 +163,43 @@ const LoginScreen = () => {
               Keep me signed in
             </Text>
           </TouchableOpacity>
-          <TouchableOpacity onPress={handleForgotPassword}>
-            <Text className="font-comfortaa text-primary">Forgot Password</Text>
+          <TouchableOpacity onPress={handleForgotPassword} disabled={isLoading}>
+            <Text className="font-comfortaa" style={{ color: PRIMARY_COLOR }}>
+              Forgot Password
+            </Text>
           </TouchableOpacity>
         </View>
 
         {/* Login Button */}
         <TouchableOpacity
-          className="bg-primary rounded-full py-3.5 items-center mb-6"
+          className="rounded-full py-3.5 items-center mb-6"
+          style={{
+            backgroundColor: PRIMARY_COLOR,
+            opacity: isLoading ? 0.7 : 1,
+          }}
           onPress={handleLogin}
+          disabled={isLoading}
         >
           <View className="flex-row items-center">
-            <Text className="font-comfortaa-bold text-white text-base mr-2">
-              Login
-            </Text>
-            <Ionicons name="arrow-forward" size={18} color="#fff" />
+            {isLoading ? (
+              <ActivityIndicator
+                size="small"
+                color="#fff"
+                style={{ marginRight: 8 }}
+              />
+            ) : (
+              <Text className="font-comfortaa-bold text-white text-base mr-2">
+                Login
+              </Text>
+            )}
+            {!isLoading && (
+              <Ionicons name="arrow-forward" size={18} color="#fff" />
+            )}
+            {isLoading && (
+              <Text className="font-comfortaa-bold text-white text-base">
+                Logging in...
+              </Text>
+            )}
           </View>
         </TouchableOpacity>
 
@@ -154,6 +214,8 @@ const LoginScreen = () => {
         <TouchableOpacity
           className="border border-gray-200 rounded-full py-3.5 items-center mb-8"
           onPress={handleGoogleSignIn}
+          disabled={isLoading}
+          style={{ opacity: isLoading ? 0.7 : 1 }}
         >
           <View className="flex-row items-center">
             <Image
@@ -173,8 +235,9 @@ const LoginScreen = () => {
           <Text className="font-comfortaa text-gray-600">
             Don&apos;t have an account?{" "}
             <Text
-              className="font-comfortaa-bold text-primary"
-              onPress={handleSignUp}
+              className="font-comfortaa-bold"
+              style={{ color: PRIMARY_COLOR }}
+              onPress={isLoading ? undefined : handleSignUp}
             >
               Sign Up
             </Text>
