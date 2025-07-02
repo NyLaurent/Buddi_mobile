@@ -1,4 +1,5 @@
 import { useRouter } from "expo-router";
+import { StatusBar } from "expo-status-bar";
 import { LogOut } from "lucide-react-native";
 import React, { useRef, useState } from "react";
 import {
@@ -120,6 +121,7 @@ const Onboarding = () => {
 
   return (
     <SafeAreaView className="flex-1 bg-white">
+      <StatusBar style="dark" backgroundColor="#ffffff" translucent={false} />
       {/* Background Images */}
       <View className="absolute left-[-30px] top-[300px] -translate-y-1/2">
         <Image
