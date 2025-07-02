@@ -1,8 +1,11 @@
 import { Ionicons } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
 import { useRouter } from "expo-router";
+import { StatusBar } from "expo-status-bar";
 import React, { useState } from "react";
 import {
+  ActivityIndicator,
+  Alert,
   Image,
   ScrollView,
   Text,
@@ -12,20 +15,70 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import SuccessScreen from "../../../../components/commons/SuccessScreen";
+import authService from "../../../../services/api/auth.service";
+import { ParentRegistrationRequest } from "../../../../services/api/types";
 
 const PRIMARY_COLOR = "#FF932E";
 const STEPS = ["Registration", "Child Information", "Payment"];
 
-const RegistrationStep = ({ onLogin }: { onLogin: () => void }) => {
-  const [profileImage, setProfileImage] = useState<string | null>(null);
-  const [firstName, setFirstName] = useState("");
-  const [lastName, setLastName] = useState("");
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
+interface ChildData {
+  name: string;
+  age: string;
+  school: string;
+}
+
+interface FormData {
+  // Registration data
+  email: string;
+  password: string;
+  confirmPassword: string;
+  phoneNumber: string;
+  firstName: string;
+  lastName: string;
+  profilePicture: File | null;
+
+  // Child information
+  homeAddress: string;
+  children: ChildData[];
+  termsAccepted: boolean;
+
+  // Payment data
+  paymentMethod: "card" | "paypal" | "apple_pay";
+  cardDetails: {
+    cardNumber: string;
+    expiry: string;
+    cvv: string;
+  } | null;
+}
+
+const initialFormData: FormData = {
+  email: "",
+  password: "",
+  confirmPassword: "",
+  phoneNumber: "",
+  firstName: "",
+  lastName: "",
+  profilePicture: null,
+  homeAddress: "",
+  children: [{ name: "", age: "", school: "" }],
+  termsAccepted: false,
+  paymentMethod: "card",
+  cardDetails: null,
+};
+
+interface StepProps {
+  onLogin?: () => void;
+  formData: FormData;
+  setFormData: React.Dispatch<React.SetStateAction<FormData>>;
+}
+
+const RegistrationStep: React.FC<StepProps> = ({
+  onLogin,
+  formData,
+  setFormData,
+}) => {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [phone, setPhone] = useState("");
 
   const pickImage = async () => {
     let result = await ImagePicker.launchImageLibraryAsync({
@@ -35,7 +88,12 @@ const RegistrationStep = ({ onLogin }: { onLogin: () => void }) => {
       quality: 0.7,
     });
     if (!result.canceled && result.assets && result.assets[0].uri) {
-      setProfileImage(result.assets[0].uri);
+      // Create a File object from the image URI
+      const uri = result.assets[0].uri;
+      const response = await fetch(uri);
+      const blob = await response.blob();
+      const file = new File([blob], "profile.jpg", { type: "image/jpeg" });
+      setFormData((prev) => ({ ...prev, profilePicture: file }));
     }
   };
 
@@ -69,9 +127,9 @@ const RegistrationStep = ({ onLogin }: { onLogin: () => void }) => {
             className="w-28 h-28 rounded-full border-2 border-dashed border-gray-300 items-center justify-center mb-2 overflow-hidden relative"
             style={{ borderStyle: "dashed" }}
           >
-            {profileImage ? (
+            {formData.profilePicture ? (
               <Image
-                source={{ uri: profileImage }}
+                source={{ uri: URL.createObjectURL(formData.profilePicture) }}
                 className="w-full h-full rounded-full"
               />
             ) : (
@@ -95,8 +153,10 @@ const RegistrationStep = ({ onLogin }: { onLogin: () => void }) => {
             </Text>
             <TextInput
               className="bg-white border border-[#CBD5E1] rounded-2xl px-4 py-3 font-comfortaa text-gray-700 text-base"
-              value={firstName}
-              onChangeText={setFirstName}
+              value={formData.firstName}
+              onChangeText={(text) =>
+                setFormData((prev) => ({ ...prev, firstName: text }))
+              }
               placeholder="John Doe"
               placeholderTextColor="#A0A0A0"
             />
@@ -107,8 +167,10 @@ const RegistrationStep = ({ onLogin }: { onLogin: () => void }) => {
             </Text>
             <TextInput
               className="bg-white border border-[#CBD5E1] rounded-2xl px-4 py-3 font-comfortaa text-gray-700 text-base"
-              value={lastName}
-              onChangeText={setLastName}
+              value={formData.lastName}
+              onChangeText={(text) =>
+                setFormData((prev) => ({ ...prev, lastName: text }))
+              }
               placeholder="Smith"
               placeholderTextColor="#A0A0A0"
             />
@@ -122,8 +184,10 @@ const RegistrationStep = ({ onLogin }: { onLogin: () => void }) => {
             <View className="flex-row items-center bg-white border border-[#CBD5E1] rounded-2xl px-4">
               <TextInput
                 className="flex-1 font-comfortaa text-gray-700 text-base py-3"
-                value={password}
-                onChangeText={setPassword}
+                value={formData.password}
+                onChangeText={(text) =>
+                  setFormData((prev) => ({ ...prev, password: text }))
+                }
                 placeholder="********"
                 placeholderTextColor="#A0A0A0"
                 secureTextEntry={!showPassword}
@@ -145,8 +209,10 @@ const RegistrationStep = ({ onLogin }: { onLogin: () => void }) => {
             <View className="flex-row items-center bg-white border border-[#CBD5E1] rounded-2xl px-4">
               <TextInput
                 className="flex-1 font-comfortaa text-gray-700 text-base py-3"
-                value={confirmPassword}
-                onChangeText={setConfirmPassword}
+                value={formData.confirmPassword}
+                onChangeText={(text) =>
+                  setFormData((prev) => ({ ...prev, confirmPassword: text }))
+                }
                 placeholder="********"
                 placeholderTextColor="#A0A0A0"
                 secureTextEntry={!showConfirmPassword}
@@ -177,8 +243,10 @@ const RegistrationStep = ({ onLogin }: { onLogin: () => void }) => {
             />
             <TextInput
               className="flex-1 font-comfortaa text-gray-700 text-base"
-              value={email}
-              onChangeText={setEmail}
+              value={formData.email}
+              onChangeText={(text) =>
+                setFormData((prev) => ({ ...prev, email: text }))
+              }
               placeholder="johndoe@example.com"
               placeholderTextColor="#A0A0A0"
               keyboardType="email-address"
@@ -215,8 +283,10 @@ const RegistrationStep = ({ onLogin }: { onLogin: () => void }) => {
             }}
           >
             <TextInput
-              value={phone}
-              onChangeText={setPhone}
+              value={formData.phoneNumber}
+              onChangeText={(text) =>
+                setFormData((prev) => ({ ...prev, phoneNumber: text }))
+              }
               placeholder="Enter your phone number"
               keyboardType="phone-pad"
               style={{
@@ -241,11 +311,38 @@ const RegistrationStep = ({ onLogin }: { onLogin: () => void }) => {
   );
 };
 
-const ChildInformationStep = () => {
-  const [school, setSchool] = useState("");
-  const [address, setAddress] = useState("");
-  const [numberOfKids, setNumberOfKids] = useState("");
-  const [termsAccepted, setTermsAccepted] = useState(false);
+const ChildInformationStep: React.FC<StepProps> = ({
+  formData,
+  setFormData,
+}) => {
+  const addChild = () => {
+    setFormData((prev) => ({
+      ...prev,
+      children: [...prev.children, { name: "", age: "", school: "" }],
+    }));
+  };
+
+  const removeChild = (index: number) => {
+    if (formData.children.length > 1) {
+      setFormData((prev) => ({
+        ...prev,
+        children: prev.children.filter((_, i) => i !== index),
+      }));
+    }
+  };
+
+  const updateChild = (
+    index: number,
+    field: keyof ChildData,
+    value: string
+  ) => {
+    setFormData((prev) => ({
+      ...prev,
+      children: prev.children.map((child, i) =>
+        i === index ? { ...child, [field]: value } : child
+      ),
+    }));
+  };
 
   return (
     <View className="flex-1 bg-white">
@@ -266,25 +363,12 @@ const ChildInformationStep = () => {
             resizeMode="contain"
           />
           <Text className="text-2xl font-comfortaa-bold text-center text-gray-800 mb-2">
-            Tell us more about you child
+            Tell us more about your child(ren)
           </Text>
           <Text className="text-sm font-comfortaa text-center text-gray-500 mb-6 px-8">
             Help us get to know your child(ren) to match them with the perfect
             Buddi.
           </Text>
-        </View>
-
-        <View style={{ marginBottom: 20 }}>
-          <Text className="font-comfortaa-bold text-xs text-gray-500 mb-1">
-            Current School
-          </Text>
-          <TextInput
-            className="bg-white border border-[#CBD5E1] rounded-2xl px-4 py-3 font-comfortaa text-gray-700 text-base"
-            value={school}
-            onChangeText={setSchool}
-            placeholder="John Doe"
-            placeholderTextColor="#A0A0A0"
-          />
         </View>
 
         <View style={{ marginBottom: 20 }}>
@@ -300,49 +384,110 @@ const ChildInformationStep = () => {
             />
             <TextInput
               className="flex-1 font-comfortaa text-gray-700 text-base"
-              value={address}
-              onChangeText={setAddress}
+              value={formData.homeAddress}
+              onChangeText={(text) =>
+                setFormData((prev) => ({ ...prev, homeAddress: text }))
+              }
               placeholder="Enter your address"
               placeholderTextColor="#A0A0A0"
             />
           </View>
         </View>
 
-        <View style={{ marginBottom: 20 }}>
-          <Text className="font-comfortaa-bold text-xs text-gray-500 mb-1">
-            How many of your kids need the service?
-          </Text>
-          <View className="flex-row items-center bg-white border border-[#CBD5E1] rounded-2xl px-4 py-3">
-            <Ionicons
-              name="people-outline"
-              size={20}
-              color="#A0A0A0"
-              style={{ marginRight: 8 }}
-            />
-            <TextInput
-              className="flex-1 font-comfortaa text-gray-700 text-base"
-              value={numberOfKids}
-              onChangeText={setNumberOfKids}
-              placeholder="Enter number"
-              placeholderTextColor="#A0A0A0"
-              keyboardType="number-pad"
-            />
+        {/* Children Information */}
+        <View className="mb-4">
+          <View className="flex-row items-center justify-between mb-3">
+            <Text className="font-comfortaa-bold text-base text-gray-800">
+              Children Information
+            </Text>
+            <TouchableOpacity
+              onPress={addChild}
+              className="bg-primary px-3 py-1.5 rounded-full"
+            >
+              <Text className="font-comfortaa-bold text-white text-sm">
+                + Add Child
+              </Text>
+            </TouchableOpacity>
           </View>
+
+          {formData.children.map((child, index) => (
+            <View key={index} className="mb-4 p-4 bg-gray-50 rounded-2xl">
+              <View className="flex-row items-center justify-between mb-3">
+                <Text className="font-comfortaa-bold text-gray-700">
+                  Child {index + 1}
+                </Text>
+                {formData.children.length > 1 && (
+                  <TouchableOpacity
+                    onPress={() => removeChild(index)}
+                    className="p-1"
+                  >
+                    <Ionicons name="close" size={20} color="#FF6B6B" />
+                  </TouchableOpacity>
+                )}
+              </View>
+
+              <View style={{ marginBottom: 12 }}>
+                <Text className="font-comfortaa-bold text-xs text-gray-500 mb-1">
+                  Full Name
+                </Text>
+                <TextInput
+                  className="bg-white border border-[#CBD5E1] rounded-2xl px-4 py-3 font-comfortaa text-gray-700 text-base"
+                  value={child.name}
+                  onChangeText={(text) => updateChild(index, "name", text)}
+                  placeholder="Child's full name"
+                  placeholderTextColor="#A0A0A0"
+                />
+              </View>
+
+              <View style={{ flexDirection: "row", gap: 12, marginBottom: 12 }}>
+                <View style={{ flex: 1 }}>
+                  <Text className="font-comfortaa-bold text-xs text-gray-500 mb-1">
+                    Age
+                  </Text>
+                  <TextInput
+                    className="bg-white border border-[#CBD5E1] rounded-2xl px-4 py-3 font-comfortaa text-gray-700 text-base"
+                    value={child.age}
+                    onChangeText={(text) => updateChild(index, "age", text)}
+                    placeholder="Age"
+                    placeholderTextColor="#A0A0A0"
+                    keyboardType="number-pad"
+                  />
+                </View>
+                <View style={{ flex: 2 }}>
+                  <Text className="font-comfortaa-bold text-xs text-gray-500 mb-1">
+                    School
+                  </Text>
+                  <TextInput
+                    className="bg-white border border-[#CBD5E1] rounded-2xl px-4 py-3 font-comfortaa text-gray-700 text-base"
+                    value={child.school}
+                    onChangeText={(text) => updateChild(index, "school", text)}
+                    placeholder="School name"
+                    placeholderTextColor="#A0A0A0"
+                  />
+                </View>
+              </View>
+            </View>
+          ))}
         </View>
 
         <View className="flex-row items-center mb-8 mt-4">
           <TouchableOpacity
-            onPress={() => setTermsAccepted(!termsAccepted)}
+            onPress={() =>
+              setFormData((prev) => ({
+                ...prev,
+                termsAccepted: !prev.termsAccepted,
+              }))
+            }
             className="mr-2"
           >
             <View
               className={`w-5 h-5 border rounded ${
-                termsAccepted
+                formData.termsAccepted
                   ? "border-primary bg-primary"
                   : "border-gray-300 bg-white"
               } justify-center items-center`}
             >
-              {termsAccepted && (
+              {formData.termsAccepted && (
                 <Ionicons name="checkmark" size={14} color="#fff" />
               )}
             </View>
@@ -358,12 +503,7 @@ const ChildInformationStep = () => {
   );
 };
 
-const PaymentStep = () => {
-  const [paymentMethod, setPaymentMethod] = useState("credit");
-  const [cardNumber, setCardNumber] = useState("");
-  const [expiry, setExpiry] = useState("");
-  const [cvv, setCvv] = useState("");
-
+const PaymentStep: React.FC<StepProps> = ({ formData, setFormData }) => {
   return (
     <View className="flex-1 bg-white">
       <ScrollView
@@ -389,7 +529,7 @@ const PaymentStep = () => {
             Check Payment
           </Text>
           <Text className="text-sm font-comfortaa text-center text-gray-500 mb-6 px-6">
-            Secure your child &apos;s safety and peace of mind. A small fee
+            Secure your child&apos;s safety and peace of mind. A small fee
             covers a thorough Buddi background screening.
           </Text>
         </View>
@@ -407,9 +547,11 @@ const PaymentStep = () => {
 
           <View className="flex-row mb-4">
             <TouchableOpacity
-              onPress={() => setPaymentMethod("credit")}
+              onPress={() =>
+                setFormData((prev) => ({ ...prev, paymentMethod: "card" }))
+              }
               className={`flex-row items-center border rounded-xl py-3 px-4 ${
-                paymentMethod === "credit"
+                formData.paymentMethod === "card"
                   ? "border-primary bg-[#FFF5E6]"
                   : "border-gray-200"
               }`}
@@ -419,11 +561,13 @@ const PaymentStep = () => {
                 className="w-5 h-5 rounded-full border mr-2 items-center justify-center"
                 style={{
                   borderColor:
-                    paymentMethod === "credit" ? PRIMARY_COLOR : "#CBD5E1",
+                    formData.paymentMethod === "card"
+                      ? PRIMARY_COLOR
+                      : "#CBD5E1",
                   backgroundColor: "white",
                 }}
               >
-                {paymentMethod === "credit" && (
+                {formData.paymentMethod === "card" && (
                   <View className="w-3 h-3 rounded-full bg-primary" />
                 )}
               </View>
@@ -457,9 +601,11 @@ const PaymentStep = () => {
 
           <View className="flex-row mb-4">
             <TouchableOpacity
-              onPress={() => setPaymentMethod("paypal")}
+              onPress={() =>
+                setFormData((prev) => ({ ...prev, paymentMethod: "paypal" }))
+              }
               className={`flex-row items-center border rounded-xl py-3 px-4 ${
-                paymentMethod === "paypal"
+                formData.paymentMethod === "paypal"
                   ? "border-primary bg-[#FFF5E6]"
                   : "border-gray-200"
               }`}
@@ -469,11 +615,13 @@ const PaymentStep = () => {
                 className="w-5 h-5 rounded-full border mr-2 items-center justify-center"
                 style={{
                   borderColor:
-                    paymentMethod === "paypal" ? PRIMARY_COLOR : "#CBD5E1",
+                    formData.paymentMethod === "paypal"
+                      ? PRIMARY_COLOR
+                      : "#CBD5E1",
                   backgroundColor: "white",
                 }}
               >
-                {paymentMethod === "paypal" && (
+                {formData.paymentMethod === "paypal" && (
                   <View className="w-3 h-3 rounded-full bg-primary" />
                 )}
               </View>
@@ -491,9 +639,11 @@ const PaymentStep = () => {
 
           <View className="flex-row mb-6">
             <TouchableOpacity
-              onPress={() => setPaymentMethod("apple")}
+              onPress={() =>
+                setFormData((prev) => ({ ...prev, paymentMethod: "apple_pay" }))
+              }
               className={`flex-row items-center border rounded-xl py-3 px-4 ${
-                paymentMethod === "apple"
+                formData.paymentMethod === "apple_pay"
                   ? "border-primary bg-[#FFF5E6]"
                   : "border-gray-200"
               }`}
@@ -503,11 +653,13 @@ const PaymentStep = () => {
                 className="w-5 h-5 rounded-full border mr-2 items-center justify-center"
                 style={{
                   borderColor:
-                    paymentMethod === "apple" ? PRIMARY_COLOR : "#CBD5E1",
+                    formData.paymentMethod === "apple_pay"
+                      ? PRIMARY_COLOR
+                      : "#CBD5E1",
                   backgroundColor: "white",
                 }}
               >
-                {paymentMethod === "apple" && (
+                {formData.paymentMethod === "apple_pay" && (
                   <View className="w-3 h-3 rounded-full bg-primary" />
                 )}
               </View>
@@ -523,7 +675,7 @@ const PaymentStep = () => {
             </TouchableOpacity>
           </View>
 
-          {paymentMethod === "credit" && (
+          {formData.paymentMethod === "card" && (
             <View>
               <Text className="font-comfortaa-bold text-base text-gray-800 mb-4">
                 <Ionicons
@@ -542,8 +694,18 @@ const PaymentStep = () => {
                 <View className="flex-row items-center bg-white border border-[#CBD5E1] rounded-2xl px-4 py-3">
                   <TextInput
                     className="flex-1 font-comfortaa text-gray-700 text-base"
-                    value={cardNumber}
-                    onChangeText={setCardNumber}
+                    value={formData.cardDetails?.cardNumber || ""}
+                    onChangeText={(text) =>
+                      setFormData((prev) => ({
+                        ...prev,
+                        cardDetails: {
+                          ...prev.cardDetails,
+                          cardNumber: text,
+                          expiry: prev.cardDetails?.expiry || "",
+                          cvv: prev.cardDetails?.cvv || "",
+                        },
+                      }))
+                    }
                     placeholder="1234 5678 9012 3456"
                     placeholderTextColor="#A0A0A0"
                     keyboardType="number-pad"
@@ -565,8 +727,18 @@ const PaymentStep = () => {
                   <View className="flex-row items-center bg-white border border-[#CBD5E1] rounded-2xl px-4 py-3">
                     <TextInput
                       className="flex-1 font-comfortaa text-gray-700 text-base"
-                      value={expiry}
-                      onChangeText={setExpiry}
+                      value={formData.cardDetails?.expiry || ""}
+                      onChangeText={(text) =>
+                        setFormData((prev) => ({
+                          ...prev,
+                          cardDetails: {
+                            ...prev.cardDetails,
+                            expiry: text,
+                            cardNumber: prev.cardDetails?.cardNumber || "",
+                            cvv: prev.cardDetails?.cvv || "",
+                          },
+                        }))
+                      }
                       placeholder="02/28"
                       placeholderTextColor="#A0A0A0"
                       keyboardType="number-pad"
@@ -586,8 +758,18 @@ const PaymentStep = () => {
                   <View className="flex-row items-center bg-white border border-[#CBD5E1] rounded-2xl px-4 py-3">
                     <TextInput
                       className="flex-1 font-comfortaa text-gray-700 text-base"
-                      value={cvv}
-                      onChangeText={setCvv}
+                      value={formData.cardDetails?.cvv || ""}
+                      onChangeText={(text) =>
+                        setFormData((prev) => ({
+                          ...prev,
+                          cardDetails: {
+                            ...prev.cardDetails,
+                            cvv: text,
+                            cardNumber: prev.cardDetails?.cardNumber || "",
+                            expiry: prev.cardDetails?.expiry || "",
+                          },
+                        }))
+                      }
                       placeholder="356"
                       placeholderTextColor="#A0A0A0"
                       keyboardType="number-pad"
@@ -625,18 +807,62 @@ const PaymentStep = () => {
 
 export default function ParentSignup() {
   const [step, setStep] = useState(0);
-  const [completed, setCompleted] = useState(false);
+  const [showSuccess, setShowSuccess] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
+  const [formData, setFormData] = useState<FormData>(initialFormData);
 
   const handleLogin = () => {
     router.push("/auth/login");
   };
 
-  const handleNext = () => {
+  const handleNext = async () => {
     if (step < STEPS.length - 1) {
       setStep(step + 1);
     } else {
-      setCompleted(true);
+      // Final step - submit the form
+      try {
+        setIsLoading(true);
+
+        // Prepare registration data
+        const registrationData: ParentRegistrationRequest = {
+          email: formData.email,
+          password: formData.password,
+          phoneNumber: formData.phoneNumber,
+          firstName: formData.firstName,
+          lastName: formData.lastName,
+          homeAddress: formData.homeAddress,
+          childrenCount: formData.children.length,
+          children: formData.children.map((child) => ({
+            name: child.name,
+            age: parseInt(child.age) || 0,
+            school: child.school,
+          })),
+          paymentMethod: formData.paymentMethod,
+          cardDetails:
+            formData.paymentMethod === "card" ? formData.cardDetails : null,
+          profilePicture: formData.profilePicture || undefined,
+        };
+
+        const response = await authService.registerParent(registrationData);
+        console.log("Registration successful:", response);
+
+        // Show success screen for 3 seconds then navigate to waitlist
+        setShowSuccess(true);
+        setTimeout(() => {
+          setShowSuccess(false);
+          router.push("/auth/waitlist");
+        }, 3000);
+      } catch (error: any) {
+        console.error("Registration error:", error);
+        Alert.alert(
+          "Registration Failed",
+          error.message ||
+            "An error occurred during registration. Please try again."
+        );
+      } finally {
+        setIsLoading(false);
+      }
     }
   };
 
@@ -648,23 +874,63 @@ export default function ParentSignup() {
     }
   };
 
-  if (completed) {
+  const handleSuccessContinue = () => {
+    setShowSuccess(false);
+    router.push("/auth/waitlist");
+  };
+
+  if (showSuccess) {
     return (
       <SuccessScreen
         title="Registration Successful!"
-        description="Your account has been created successfully. You can now start using the app."
-        buttonText="Continue to Home"
-        onContinue={() => router.back()}
+        description="Your account has been created successfully. Please check your email for further instructions."
+        buttonText="Continue to Login"
+        onContinue={handleSuccessContinue}
+        primaryColor={PRIMARY_COLOR}
+        imagePath={require("../../../../assets/images/onboarding/success.png")}
       />
     );
   }
 
   return (
     <SafeAreaView className="flex-1 bg-white">
+      <StatusBar style="dark" backgroundColor="#ffffff" translucent={false} />
+
       {/* Step Content */}
-      {step === 0 && <RegistrationStep onLogin={handleLogin} />}
-      {step === 1 && <ChildInformationStep />}
-      {step === 2 && <PaymentStep />}
+      {step === 0 && (
+        <RegistrationStep
+          onLogin={handleLogin}
+          formData={formData}
+          setFormData={setFormData}
+        />
+      )}
+      {step === 1 && (
+        <ChildInformationStep formData={formData} setFormData={setFormData} />
+      )}
+      {step === 2 && (
+        <PaymentStep formData={formData} setFormData={setFormData} />
+      )}
+
+      {/* Progress Stepper */}
+      <View className="flex-row justify-center items-center mb-6 mt-4">
+        {STEPS.map((_, idx) => (
+          <View
+            key={idx}
+            style={{
+              width: 40,
+              height: 6,
+              borderRadius: 3,
+              marginHorizontal: 4,
+              backgroundColor:
+                idx === step
+                  ? PRIMARY_COLOR
+                  : idx < step
+                  ? "#60D394"
+                  : "#E5E7EB",
+            }}
+          />
+        ))}
+      </View>
 
       {/* Bottom Buttons */}
       <View className="flex-row justify-between items-center px-6 pb-6">
@@ -672,6 +938,7 @@ export default function ParentSignup() {
           <TouchableOpacity
             className="flex-row items-center px-6 py-3 rounded-full border border-gray-300 bg-white"
             onPress={handleBack}
+            disabled={isLoading}
           >
             <Ionicons
               name="arrow-back"
@@ -688,13 +955,27 @@ export default function ParentSignup() {
           className={`flex-row items-center px-8 py-3 rounded-full ${
             step === 0 ? "ml-auto" : ""
           }`}
-          style={{ backgroundColor: PRIMARY_COLOR }}
+          style={{
+            backgroundColor: PRIMARY_COLOR,
+            opacity: isLoading ? 0.7 : 1,
+          }}
           onPress={handleNext}
+          disabled={isLoading}
         >
-          <Text className="font-comfortaa-bold text-white mr-2 text-base">
-            Next
-          </Text>
-          <Ionicons name="arrow-forward" size={18} color="#fff" />
+          {isLoading ? (
+            <ActivityIndicator color="#fff" />
+          ) : (
+            <>
+              <Text className="font-comfortaa-bold text-white mr-2 text-base">
+                {step === STEPS.length - 1 ? "Submit" : "Next"}
+              </Text>
+              <Ionicons
+                name={step === STEPS.length - 1 ? "checkmark" : "arrow-forward"}
+                size={18}
+                color="#fff"
+              />
+            </>
+          )}
         </TouchableOpacity>
       </View>
 

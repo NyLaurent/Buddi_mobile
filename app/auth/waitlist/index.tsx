@@ -1,5 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
+import { StatusBar } from "expo-status-bar";
 import React from "react";
 import { Image, ScrollView, Text, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -16,6 +17,11 @@ const WaitlistScreen = () => {
 
   return (
     <SafeAreaView className="flex-1 bg-white">
+      <StatusBar
+        style="dark"
+        backgroundColor={PRIMARY_COLOR}
+        translucent={false}
+      />
       <ScrollView contentContainerStyle={{ flexGrow: 1, paddingBottom: 24 }}>
         {/* Header with profile */}
         <View

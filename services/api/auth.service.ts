@@ -7,6 +7,8 @@ import {
   BuddiRegistrationRequest,
   BuddiRegistrationResponse,
   LoginRequest,
+  ParentRegistrationRequest,
+  ParentRegistrationResponse,
   RegisterRequest,
   User
 } from './types';
@@ -67,6 +69,64 @@ class AuthService {
       );
 
       return response.data.data;
+    } catch (error: any) {
+      throw this.handleAuthError(error);
+    }
+  }
+
+  /**
+   * Register new parent with form data
+   */
+  async registerParent(data: ParentRegistrationRequest): Promise<ParentRegistrationResponse> {
+    try {
+      // If there's a profile picture, use FormData, otherwise send JSON
+      if (data.profilePicture) {
+        // Create form data for file upload
+        const formData = new FormData();
+
+        // Add all fields except profilePicture and cardDetails
+        Object.entries(data).forEach(([key, value]) => {
+          if (key === 'children' && Array.isArray(value)) {
+            // Handle children array
+            formData.append(key, JSON.stringify(value));
+          } else if (key === 'cardDetails') {
+            // Skip cardDetails for now
+            return;
+          } else if (value !== undefined && !(value instanceof File)) {
+            formData.append(key, value.toString());
+          }
+        });
+
+        // Add profile picture
+        formData.append('profilePicture', data.profilePicture);
+
+        const response = await unauthorizedApi.post<ApiResponse<ParentRegistrationResponse>>(
+          AUTH_ENDPOINTS.REGISTER_PARENT,
+          formData,
+          {
+            headers: {
+              'Content-Type': 'multipart/form-data',
+            },
+          }
+        );
+
+        return response.data.data;
+      } else {
+        // Send as JSON when no file upload
+        const { cardDetails, profilePicture, ...jsonData } = data;
+
+        const response = await unauthorizedApi.post<ApiResponse<ParentRegistrationResponse>>(
+          AUTH_ENDPOINTS.REGISTER_PARENT,
+          jsonData,
+          {
+            headers: {
+              'Content-Type': 'application/json',
+            },
+          }
+        );
+
+        return response.data.data;
+      }
     } catch (error: any) {
       throw this.handleAuthError(error);
     }

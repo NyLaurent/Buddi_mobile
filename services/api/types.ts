@@ -80,6 +80,62 @@ export interface BuddiRegistrationResponse {
   }
 }
 
+export interface ParentRegistrationRequest {
+  email: string;
+  password: string;
+  phoneNumber: string;
+  firstName: string;
+  lastName: string;
+  homeAddress: string;
+  childrenCount: number;
+  children: {
+    name: string;
+    age: number;
+    school: string;
+  }[];
+  paymentMethod: 'card' | 'paypal' | 'apple_pay';
+  cardDetails?: {
+    cardNumber: string;
+    expiry: string;
+    cvv: string;
+  } | null;
+  profilePicture?: File;
+}
+
+export interface ParentRegistrationResponse {
+  message: string;
+  user: {
+    userId: string;
+    email: string;
+    password: string;
+    phoneNumber: string;
+    firstName: string;
+    lastName: string;
+    homeAddress: string;
+    role: string;
+    updatedAt: string;
+    createdAt: string;
+  };
+  parent: {
+    id: number;
+    userId: string;
+    childrenCount: number;
+    children: {
+      name: string;
+      age: number;
+      school: string;
+    }[];
+    approvalStage: string;
+    paymentMethod: string;
+    bgcStatus: string;
+    updatedAt: string;
+    createdAt: string;
+    cardDetails: any;
+    checkrCandidateId: any;
+    checkrReportId: any;
+  };
+}
+
 export interface RegisterRequest {
   firstName: string;
   lastName: string;
