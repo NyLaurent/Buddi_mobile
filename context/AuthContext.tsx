@@ -70,6 +70,8 @@ export interface AuthContextType {
   updateBuddiRecordingStatus: () => Promise<void>;
   refreshUserData: () => Promise<void>;
   clearAllStorage: () => Promise<void>; // Temporary for debugging
+  startStatusPolling: () => void;
+  stopStatusPolling: () => void;
 
   // Navigation helpers
   getInitialRoute: () => string;
@@ -99,6 +101,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   const [isLoggingIn, setIsLoggingIn] = useState(false);
   const router = useRouter();
   const segments = useSegments();
+  const [statusPollInterval, setStatusPollInterval] = useState<any>(null);
 
   const authService = AuthService;
 
@@ -114,6 +117,30 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       handleNavigation();
     }
   }, [user, buddiDetails, parentDetails, isLoading, isLoggingIn, segments]);
+
+  // Start/stop status polling based on user authentication and location
+  useEffect(() => {
+    if (user && !isLoading && !isLoggingIn) {
+      // Start polling for users who need status updates
+      const needsPolling =
+        (user.role === "buddi" &&
+          buddiDetails?.status === "RegisterApprovalPending") ||
+        (user.role === "parent" && parentDetails?.approvalStage === "pending");
+
+      if (needsPolling) {
+        startStatusPolling();
+      } else {
+        stopStatusPolling();
+      }
+    } else {
+      stopStatusPolling();
+    }
+
+    // Cleanup on unmount
+    return () => {
+      stopStatusPolling();
+    };
+  }, [user, buddiDetails, parentDetails, isLoading, isLoggingIn]);
 
   const initializeAuth = async () => {
     try {
@@ -493,6 +520,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       console.log("AuthContext: Starting logout..."); // Debug log
       setIsLoading(true);
 
+      // Stop status polling
+      stopStatusPolling();
+
       console.log("AuthContext: Calling auth service logout..."); // Debug log
       // Call auth service logout to clear storage
       await authService.logout();
@@ -527,6 +557,78 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     }
   };
 
+  // Status polling functions for real-time status updates
+  const startStatusPolling = () => {
+    // Only start polling if user is authenticated and not already polling
+    if (user && !statusPollInterval) {
+      console.log("Starting status polling...");
+      const interval = setInterval(async () => {
+        try {
+          console.log("Polling status...");
+          const profileResponse = await authService.getProfile();
+          const apiUser = profileResponse.user;
+
+          // Check for status changes
+          if (user.role === "buddi" && apiUser.Buddi) {
+            const currentStatus = buddiDetails?.status;
+            const newStatus = apiUser.Buddi.status;
+
+            if (currentStatus !== newStatus) {
+              console.log(
+                `Buddi status changed: ${currentStatus} → ${newStatus}`
+              );
+
+              // Update buddi details
+              setBuddiDetails(apiUser.Buddi);
+              await AsyncStorage.setItem(
+                "buddi_details",
+                JSON.stringify(apiUser.Buddi)
+              );
+
+              // Navigate based on new status
+              const targetRoute = getInitialRoute();
+              router.replace(targetRoute as any);
+            }
+          }
+
+          if (user.role === "parent" && apiUser.Parent) {
+            const currentStage = parentDetails?.approvalStage;
+            const newStage = apiUser.Parent.approvalStage;
+
+            if (currentStage !== newStage) {
+              console.log(
+                `Parent approval stage changed: ${currentStage} → ${newStage}`
+              );
+
+              // Update parent details
+              setParentDetails(apiUser.Parent);
+              await AsyncStorage.setItem(
+                "parent_details",
+                JSON.stringify(apiUser.Parent)
+              );
+
+              // Navigate based on new status
+              const targetRoute = getInitialRoute();
+              router.replace(targetRoute as any);
+            }
+          }
+        } catch (error) {
+          console.error("Status polling error:", error);
+        }
+      }, 5000); // Poll every 5 seconds
+
+      setStatusPollInterval(interval);
+    }
+  };
+
+  const stopStatusPolling = () => {
+    if (statusPollInterval) {
+      console.log("Stopping status polling...");
+      clearInterval(statusPollInterval);
+      setStatusPollInterval(null);
+    }
+  };
+
   const value: AuthContextType = {
     // State
     user,
@@ -543,6 +645,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     updateBuddiRecordingStatus,
     refreshUserData,
     clearAllStorage,
+    startStatusPolling,
+    stopStatusPolling,
 
     // Navigation helpers
     getInitialRoute,
