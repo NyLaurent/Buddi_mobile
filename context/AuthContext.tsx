@@ -194,29 +194,50 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       ["role-select", "onboarding", ""].includes(segments[0]) ||
       segments[0] === undefined;
 
-    console.log("handleNavigation - Current segments:", segments);
-    console.log("handleNavigation - User:", user?.role);
-    console.log("handleNavigation - inAuthGroup:", inAuthGroup);
-    console.log("handleNavigation - isLoading:", isLoading);
+    // Allow recording page access for registered buddis
+    const isRecordingFlow =
+      inAuthGroup &&
+      ["interview-guidelines", "recording"].includes(segments[1]) &&
+      user?.role === "buddi" &&
+      buddiDetails?.status === "Registered";
+
+    console.log("handleNavigation - Debug Info:", {
+      segments,
+      inAuthGroup,
+      inProtectedRoute,
+      isPublicRoute,
+      isRecordingFlow,
+      userRole: user?.role,
+      buddiStatus: buddiDetails?.status,
+      recordingCompleted: buddiDetails?.recordingCompleted,
+    });
 
     if (!user) {
-      // User not logged in
       if (inProtectedRoute) {
         router.replace("/auth/login");
       }
-      // Allow navigation to public routes like role-select, onboarding
       if (isPublicRoute) {
         return;
       }
       return;
     }
 
-    // User is logged in - determine correct route
     const targetRoute = getInitialRoute();
     const currentPath = "/" + segments.join("/");
 
-    console.log("handleNavigation - Target route:", targetRoute);
-    console.log("handleNavigation - Current path:", currentPath);
+    console.log("handleNavigation - Navigation Check:", {
+      targetRoute,
+      currentPath,
+      isPublicRoute,
+      inAuthGroup,
+      isRecordingFlow,
+    });
+
+    // Allow recording flow navigation
+    if (isRecordingFlow) {
+      console.log("handleNavigation - In recording flow, allowing navigation");
+      return;
+    }
 
     // Don't redirect if already on correct path or on a public route
     if (currentPath === targetRoute || isPublicRoute) {
@@ -225,13 +246,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     }
 
     // Allow redirects FROM login TO other auth routes (like waitlist)
-    // But prevent redirects when already on the target auth route
     if (inAuthGroup && currentPath === targetRoute) {
       console.log("handleNavigation - Already on target auth route, staying");
       return;
     }
 
-    // Redirect to appropriate route
     console.log("handleNavigation - Redirecting to:", targetRoute);
     router.replace(targetRoute as any);
   };

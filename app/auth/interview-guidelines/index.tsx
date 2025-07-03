@@ -1,7 +1,8 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import React from "react";
+import React, { useEffect } from "react";
 import {
+  Alert,
   Image,
   ImageBackground,
   Platform,
@@ -12,15 +13,60 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { useAuth } from "../../../context/AuthContext";
 
 const PRIMARY_COLOR = "#FF932E";
 
 const VideoGuidelinesScreen = () => {
   const router = useRouter();
+  const { user, buddiDetails, refreshUserData } = useAuth();
 
-  const handleStartRecording = () => {
-    // Navigate to recording screen
-    router.push("/auth/recording" as any);
+  // Add access control
+  useEffect(() => {
+    // Check if user should be on this screen
+    if (!user || user.role !== "buddi") {
+      router.replace("/auth/login");
+      return;
+    }
+
+    if (!buddiDetails || buddiDetails.status !== "Registered") {
+      router.replace("/auth/waitlist");
+      return;
+    }
+  }, [user, buddiDetails]);
+
+  const handleStartRecording = async () => {
+    try {
+      // Get fresh profile data to ensure status is still valid
+      await refreshUserData();
+
+      // Check if still eligible for recording
+      if (user?.role === "buddi" && buddiDetails?.status === "Registered") {
+        // Navigate to recording screen using push instead of replace
+        router.push("/auth/recording");
+      } else {
+        // Status changed, redirect to appropriate route
+        if (!user || !buddiDetails) {
+          router.replace("/auth/login");
+          return;
+        }
+
+        if (buddiDetails.status === "RegisterApprovalPending") {
+          router.replace("/auth/waitlist");
+        } else if (["Approved", "Active"].includes(buddiDetails.status)) {
+          router.replace("/buddi");
+        } else {
+          router.replace("/auth/login");
+        }
+      }
+    } catch (error) {
+      console.error("Error checking status:", error);
+      Alert.alert(
+        "Navigation Error",
+        "Failed to navigate to recording page. Please try again.",
+        [{ text: "OK" }]
+      );
+    }
   };
 
   return (

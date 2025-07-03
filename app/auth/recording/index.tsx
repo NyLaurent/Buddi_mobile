@@ -60,27 +60,65 @@ const RecordingPage = () => {
   );
   const [permission, requestPermission] = useCameraPermissions();
   const [cameraReady, setCameraReady] = useState(false);
+  const [isInitialized, setIsInitialized] = useState(false);
   const cameraRef = useRef<any>(null);
 
   const slideTransition = useSharedValue(0);
 
+  // Split access control and camera permission into separate effects
   useEffect(() => {
+    console.log("Recording: Initial mount");
+    console.log("Recording: User role:", user?.role);
+    console.log("Recording: Buddi status:", buddiDetails?.status);
+
     // Check if user should be on this screen
     if (!user || user.role !== "buddi") {
+      console.log("Recording: Access denied - Invalid user role");
       router.replace("/auth/login");
       return;
     }
 
     if (!buddiDetails || buddiDetails.status !== "Registered") {
+      console.log("Recording: Access denied - Invalid status");
       router.replace("/auth/waitlist");
       return;
     }
 
     // Request camera permissions if not granted
     if (permission && !permission.granted) {
+      console.log("Recording: Requesting camera permission");
       requestPermission();
     }
   }, [permission, requestPermission, user, buddiDetails]);
+
+  // Handle camera permissions separately
+  useEffect(() => {
+    const setupCamera = async () => {
+      if (!isInitialized) return;
+
+      console.log("Recording: Setting up camera...");
+      if (!permission?.granted) {
+        console.log("Recording: Requesting camera permission...");
+        const result = await requestPermission();
+        if (!result.granted) {
+          console.log("Recording: Camera permission denied");
+          Alert.alert(
+            "Camera Permission Required",
+            "We need camera access to record your interview. Please grant permission in your device settings.",
+            [{ text: "OK" }]
+          );
+        } else {
+          console.log("Recording: Camera permission granted");
+          setCameraReady(true);
+        }
+      } else {
+        console.log("Recording: Camera already has permission");
+        setCameraReady(true);
+      }
+    };
+
+    setupCamera();
+  }, [isInitialized, permission?.granted]);
 
   const animatedStyle = useAnimatedStyle(() => {
     return {
@@ -238,7 +276,7 @@ const RecordingPage = () => {
   if (!permission.granted) {
     return (
       <View style={styles.container}>
-        <Text style={styles.errorText}>No access to camera or microphone</Text>
+        <Text style={styles.errorText}>Camera permission is required</Text>
         <TouchableOpacity
           style={styles.permissionButton}
           onPress={requestPermission}
