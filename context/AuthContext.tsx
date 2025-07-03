@@ -69,6 +69,7 @@ export interface AuthContextType {
   registerParent: (data: any) => Promise<void>;
   updateBuddiRecordingStatus: () => Promise<void>;
   refreshUserData: () => Promise<void>;
+  clearAllStorage: () => Promise<void>; // Temporary for debugging
 
   // Navigation helpers
   getInitialRoute: () => string;
@@ -95,6 +96,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     null
   );
   const [isLoading, setIsLoading] = useState(true);
+  const [isLoggingIn, setIsLoggingIn] = useState(false);
   const router = useRouter();
   const segments = useSegments();
 
@@ -107,10 +109,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 
   // Handle navigation based on auth state
   useEffect(() => {
-    if (!isLoading) {
+    // Don't interfere with navigation during login process
+    if (!isLoading && !isLoggingIn) {
       handleNavigation();
     }
-  }, [user, buddiDetails, parentDetails, isLoading, segments]);
+  }, [user, buddiDetails, parentDetails, isLoading, isLoggingIn, segments]);
 
   const initializeAuth = async () => {
     try {
@@ -138,6 +141,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       const buddiData = await AsyncStorage.getItem("buddi_details");
       const parentData = await AsyncStorage.getItem("parent_details");
 
+      console.log("loadUserData - Loading from storage...");
+      console.log("loadUserData - userData:", userData);
+      console.log("loadUserData - parentData:", parentData);
+
       if (userData) {
         setUser(JSON.parse(userData));
       }
@@ -145,6 +152,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         setBuddiDetails(JSON.parse(buddiData));
       }
       if (parentData) {
+        console.log("loadUserData - Setting parentDetails from storage");
         setParentDetails(JSON.parse(parentData));
       }
     } catch (error) {
@@ -155,11 +163,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   const handleNavigation = () => {
     const inAuthGroup = segments[0] === "auth";
     const inProtectedRoute = ["buddi", "parent", "admin"].includes(segments[0]);
+    const isPublicRoute =
+      ["role-select", "onboarding", ""].includes(segments[0]) ||
+      segments[0] === undefined;
+
+    console.log("handleNavigation - Current segments:", segments);
+    console.log("handleNavigation - User:", user?.role);
+    console.log("handleNavigation - inAuthGroup:", inAuthGroup);
+    console.log("handleNavigation - isLoading:", isLoading);
 
     if (!user) {
       // User not logged in
       if (inProtectedRoute) {
         router.replace("/auth/login");
+      }
+      // Allow navigation to public routes like role-select, onboarding
+      if (isPublicRoute) {
+        return;
       }
       return;
     }
@@ -168,17 +188,33 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     const targetRoute = getInitialRoute();
     const currentPath = "/" + segments.join("/");
 
-    // Don't redirect if already on correct path
-    if (currentPath === targetRoute) {
+    console.log("handleNavigation - Target route:", targetRoute);
+    console.log("handleNavigation - Current path:", currentPath);
+
+    // Don't redirect if already on correct path or on a public route
+    if (currentPath === targetRoute || isPublicRoute) {
+      console.log("handleNavigation - Already on correct path or public route");
+      return;
+    }
+
+    // Allow redirects FROM login TO other auth routes (like waitlist)
+    // But prevent redirects when already on the target auth route
+    if (inAuthGroup && currentPath === targetRoute) {
+      console.log("handleNavigation - Already on target auth route, staying");
       return;
     }
 
     // Redirect to appropriate route
+    console.log("handleNavigation - Redirecting to:", targetRoute);
     router.replace(targetRoute as any);
   };
 
   const getInitialRoute = (): string => {
     if (!user) return "/auth/login";
+
+    console.log("getInitialRoute - User role:", user.role);
+    console.log("getInitialRoute - BuddiDetails:", buddiDetails);
+    console.log("getInitialRoute - ParentDetails:", parentDetails);
 
     switch (user.role) {
       case "admin":
@@ -213,9 +249,22 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         return "/auth/waitlist";
 
       case "parent":
-        if (!parentDetails) return "/auth/login";
+        if (!parentDetails) {
+          console.log(
+            "getInitialRoute - No parentDetails, redirecting to login"
+          );
+          return "/auth/login";
+        }
+
+        console.log(
+          "getInitialRoute - Parent approval stage:",
+          parentDetails.approvalStage
+        );
 
         if (parentDetails.approvalStage === "pending") {
+          console.log(
+            "getInitialRoute - Parent pending, redirecting to waitlist"
+          );
           return "/auth/waitlist";
         }
 
@@ -263,17 +312,113 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   const login = async (email: string, password: string): Promise<void> => {
     try {
       setIsLoading(true);
-      const response = await authService.login({ email, password });
+      setIsLoggingIn(true);
 
-      setUser(response.user);
+      // Step 1: Login to get the token
+      const loginResponse = await authService.login({ email, password });
+      console.log("Login - Step 1: Login successful");
 
-      // Store user data (already stored in auth service)
-      // No need to fetch additional details for admin/minorAdmin
+      // Step 2: Get fresh profile data with current status
+      console.log("Login - Step 2: Getting fresh profile data...");
+      const profileResponse = await authService.getProfile();
+
+      console.log("Login - Profile API response:", profileResponse);
+
+      // Extract user data from profile response
+      const apiUser = profileResponse.user;
+      const {
+        Buddi,
+        Parent,
+        SuperAdmin,
+        MinorAdmin,
+        ReferralTeacher,
+        ...cleanUser
+      } = apiUser;
+
+      console.log("Login - Clean user:", cleanUser);
+      console.log("Login - Buddi data:", apiUser.Buddi);
+      console.log("Login - Parent data:", apiUser.Parent);
+
+      setUser(cleanUser);
+
+      // Handle role-specific data extraction and storage
+      if (cleanUser.role === "buddi" && apiUser.Buddi) {
+        const buddiData = apiUser.Buddi;
+        console.log("Login - Setting buddi data:", buddiData);
+        setBuddiDetails(buddiData);
+        await AsyncStorage.setItem("buddi_details", JSON.stringify(buddiData));
+      }
+
+      if (cleanUser.role === "parent" && apiUser.Parent) {
+        const parentData = apiUser.Parent;
+        console.log("Login - Setting parent data:", parentData);
+        setParentDetails(parentData);
+        await AsyncStorage.setItem(
+          "parent_details",
+          JSON.stringify(parentData)
+        );
+      }
+
+      // Store clean user data
+      await AsyncStorage.setItem(
+        STORAGE_KEYS.USER_DATA,
+        JSON.stringify(cleanUser)
+      );
+
+      // Step 3: Determine target route based on fresh profile data
+      console.log("Login - Step 3: Determining target route...");
+      setIsLoading(false);
+      setIsLoggingIn(false);
+
+      let targetRoute = "/auth/login";
+
+      if (cleanUser.role === "admin" || cleanUser.role === "minorAdmin") {
+        targetRoute = "/admin";
+      } else if (cleanUser.role === "buddi") {
+        if (apiUser.Buddi) {
+          console.log("Login - Buddi status:", apiUser.Buddi.status);
+          if (apiUser.Buddi.status === "RegisterApprovalPending") {
+            targetRoute = "/auth/waitlist";
+          } else if (
+            apiUser.Buddi.status === "Registered" &&
+            !apiUser.Buddi.recordingCompleted
+          ) {
+            targetRoute = "/auth/interview-guidelines";
+          } else if (["Approved", "Active"].includes(apiUser.Buddi.status)) {
+            targetRoute = "/buddi";
+          } else {
+            targetRoute = "/auth/waitlist";
+          }
+        } else {
+          console.log("Login - No Buddi data found, redirecting to waitlist");
+          targetRoute = "/auth/waitlist";
+        }
+      } else if (cleanUser.role === "parent") {
+        if (apiUser.Parent) {
+          console.log(
+            "Login - Parent approval stage:",
+            apiUser.Parent.approvalStage
+          );
+          if (apiUser.Parent.approvalStage === "pending") {
+            targetRoute = "/auth/waitlist";
+          } else if (
+            ["approved", "active"].includes(apiUser.Parent.approvalStage)
+          ) {
+            targetRoute = "/parent";
+          } else {
+            targetRoute = "/auth/waitlist";
+          }
+        } else {
+          console.log("Login - No Parent data found, redirecting to waitlist");
+          targetRoute = "/auth/waitlist";
+        }
+      }
+
+      console.log("Login - Final target route:", targetRoute);
+      router.replace(targetRoute as any);
     } catch (error) {
       console.error("Login error:", error);
       throw error;
-    } finally {
-      setIsLoading(false);
     }
   };
 
@@ -367,6 +512,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     }
   };
 
+  // Temporary function to clear all storage - REMOVE AFTER TESTING
+  const clearAllStorage = async (): Promise<void> => {
+    try {
+      console.log("Clearing all storage...");
+      await AsyncStorage.clear();
+      setUser(null);
+      setBuddiDetails(null);
+      setParentDetails(null);
+      setIsLoading(false);
+      console.log("Storage cleared successfully!");
+    } catch (error) {
+      console.error("Error clearing storage:", error);
+    }
+  };
+
   const value: AuthContextType = {
     // State
     user,
@@ -382,6 +542,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     registerParent,
     updateBuddiRecordingStatus,
     refreshUserData,
+    clearAllStorage,
 
     // Navigation helpers
     getInitialRoute,

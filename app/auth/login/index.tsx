@@ -231,17 +231,22 @@ const LoginScreen = () => {
         </TouchableOpacity>
 
         {/* Sign Up Link */}
-        <View className="items-center">
+        <View className="items-center flex-row">
           <Text className="font-comfortaa text-gray-600">
             Don&apos;t have an account?{" "}
+          </Text>
+          <TouchableOpacity
+            onPress={handleSignUp}
+            disabled={isLoading}
+            style={{ opacity: isLoading ? 0.7 : 1 }}
+          >
             <Text
               className="font-comfortaa-bold"
               style={{ color: PRIMARY_COLOR }}
-              onPress={isLoading ? undefined : handleSignUp}
             >
               Sign Up
             </Text>
-          </Text>
+          </TouchableOpacity>
         </View>
       </View>
 

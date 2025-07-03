@@ -230,6 +230,18 @@ class AuthService {
   }
 
   /**
+   * Get user profile from API with fresh status data
+   */
+  async getProfile(): Promise<any> {
+    try {
+      const response = await authorizedApi.get(AUTH_ENDPOINTS.PROFILE);
+      return response.data;
+    } catch (error: any) {
+      throw this.handleAuthError(error);
+    }
+  }
+
+  /**
    * Check if user is authenticated
    */
   async isAuthenticated(): Promise<boolean> {

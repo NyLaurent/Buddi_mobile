@@ -23,22 +23,36 @@ const WaitlistScreen = () => {
 
   // Check if user should be on waitlist
   useEffect(() => {
+    console.log("Waitlist useEffect - User:", user?.role);
+    console.log("Waitlist useEffect - BuddiDetails:", buddiDetails?.status);
+    console.log(
+      "Waitlist useEffect - ParentDetails:",
+      parentDetails?.approvalStage
+    );
+
     if (!user) {
+      console.log("Waitlist useEffect - No user, redirecting to login");
       router.replace("/auth/login");
       return;
     }
 
     // If buddi is approved, redirect to interview guidelines
     if (user.role === "buddi" && buddiDetails?.status === "Registered") {
+      console.log(
+        "Waitlist useEffect - Buddi registered, redirecting to interview guidelines"
+      );
       router.replace("/auth/interview-guidelines");
       return;
     }
 
     // If parent is approved, redirect to login for final authentication
     if (user.role === "parent" && parentDetails?.approvalStage === "approved") {
+      console.log("Waitlist useEffect - Parent approved, redirecting to login");
       router.replace("/auth/login");
       return;
     }
+
+    console.log("Waitlist useEffect - User should stay on waitlist");
   }, [user, buddiDetails, parentDetails]);
 
   const getUserDisplayInfo = () => {

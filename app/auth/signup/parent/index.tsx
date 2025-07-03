@@ -847,11 +847,11 @@ export default function ParentSignup() {
         const response = await authService.registerParent(registrationData);
         console.log("Registration successful:", response);
 
-        // Show success screen for 3 seconds then navigate to waitlist
+        // Show success screen for 3 seconds then navigate to login
         setShowSuccess(true);
         setTimeout(() => {
           setShowSuccess(false);
-          router.push("/auth/waitlist");
+          router.push("/auth/login");
         }, 3000);
       } catch (error: any) {
         console.error("Registration error:", error);
@@ -876,7 +876,7 @@ export default function ParentSignup() {
 
   const handleSuccessContinue = () => {
     setShowSuccess(false);
-    router.push("/auth/waitlist");
+    router.push("/auth/login");
   };
 
   if (showSuccess) {

@@ -899,7 +899,6 @@ const StepComponents = [
 export default function BuddiSignup() {
   const [step, setStep] = useState(0);
   const [showSuccess, setShowSuccess] = useState(false);
-  const [showWaitlist, setShowWaitlist] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [formData, setFormData] = useState<FormData>(initialFormData);
   const StepComponent = StepComponents[step];
@@ -934,11 +933,10 @@ export default function BuddiSignup() {
 
         console.log("Registration successful:", response);
 
-        // Show success screen for 2 seconds then redirect to waitlist
+        // Show success screen for 2 seconds then redirect to login
         setShowSuccess(true);
         setTimeout(() => {
-          setShowSuccess(false);
-          setShowWaitlist(true);
+          router.push("/auth/login");
         }, 2000);
       } catch (error: any) {
         console.error("Registration error:", error);
@@ -957,16 +955,9 @@ export default function BuddiSignup() {
   };
 
   const handleContinue = () => {
-    // Navigate to waitlist screen
-    setShowSuccess(false);
-    setShowWaitlist(true);
+    // Navigate to login screen
+    router.push("/auth/login");
   };
-
-  if (showWaitlist) {
-    // Import WaitlistScreen dynamically
-    const WaitlistScreen = require("../../waitlist").default;
-    return <WaitlistScreen />;
-  }
 
   if (showSuccess) {
     return (
