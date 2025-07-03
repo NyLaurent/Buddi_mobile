@@ -194,6 +194,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       ["role-select", "onboarding", ""].includes(segments[0]) ||
       segments[0] === undefined;
 
+    // Make login route always accessible
+    const isLoginRoute = segments[0] === "auth" && segments[1] === "login";
+
     // Allow recording page access for registered buddis
     const isRecordingFlow =
       inAuthGroup &&
@@ -207,52 +210,42 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       inProtectedRoute,
       isPublicRoute,
       isRecordingFlow,
+      isLoginRoute,
       userRole: user?.role,
       buddiStatus: buddiDetails?.status,
       recordingCompleted: buddiDetails?.recordingCompleted,
     });
 
+    // Always allow access to login route
+    if (isLoginRoute) {
+      console.log("handleNavigation - Login route is freely accessible");
+      return;
+    }
+
     if (!user) {
       if (inProtectedRoute) {
         router.replace("/auth/login");
       }
-      if (isPublicRoute) {
-        return;
+      return;
+    }
+
+    // Allow admin to navigate freely within admin routes
+    if (user.role === "admin" || user.role === "minorAdmin") {
+      if (segments[0] === "admin") {
+        return; // Allow free navigation within admin routes
+      }
+      if (!inProtectedRoute) {
+        router.replace("/admin");
       }
       return;
     }
 
+    // Handle other roles navigation
     const targetRoute = getInitialRoute();
-    const currentPath = "/" + segments.join("/");
-
-    console.log("handleNavigation - Navigation Check:", {
-      targetRoute,
-      currentPath,
-      isPublicRoute,
-      inAuthGroup,
-      isRecordingFlow,
-    });
-
-    // Allow recording flow navigation
-    if (isRecordingFlow) {
-      console.log("handleNavigation - In recording flow, allowing navigation");
-      return;
+    if (targetRoute !== `/${segments.join("/")}`) {
+      console.log("handleNavigation - Redirecting to:", targetRoute);
+      router.replace(targetRoute as any);
     }
-
-    // Don't redirect if already on correct path or on a public route
-    if (currentPath === targetRoute || isPublicRoute) {
-      console.log("handleNavigation - Already on correct path or public route");
-      return;
-    }
-
-    // Allow redirects FROM login TO other auth routes (like waitlist)
-    if (inAuthGroup && currentPath === targetRoute) {
-      console.log("handleNavigation - Already on target auth route, staying");
-      return;
-    }
-
-    console.log("handleNavigation - Redirecting to:", targetRoute);
-    router.replace(targetRoute as any);
   };
 
   const getInitialRoute = (): string => {
