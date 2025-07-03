@@ -1,7 +1,7 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useRouter, useSegments } from "expo-router";
 import React, { createContext, useContext, useEffect, useState } from "react";
-import { AuthService } from "../services/api/auth.service";
+import AuthService from "../services/api/auth.service";
 import { STORAGE_KEYS } from "../services/api/config";
 
 // Types for our authentication context
@@ -12,7 +12,7 @@ export interface User {
   lastName: string;
   phoneNumber: string;
   homeAddress: string;
-  role: "buddi" | "parent" | "admin" | "head-teacher";
+  role: "buddi" | "parent" | "admin" | "minorAdmin" | "head-teacher";
   createdAt: string;
   updatedAt: string;
 }
@@ -41,11 +41,11 @@ export interface ParentDetails {
   id: number;
   userId: string;
   childrenCount: number;
-  children: Array<{
+  children: {
     name: string;
     age: number;
     school: string;
-  }>;
+  }[];
   approvalStage: "pending" | "approved" | "active";
   paymentMethod: string;
   bgcStatus: string;
@@ -98,7 +98,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   const router = useRouter();
   const segments = useSegments();
 
-  const authService = new AuthService();
+  const authService = AuthService;
 
   // Initialize auth state on app start
   useEffect(() => {
@@ -182,6 +182,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 
     switch (user.role) {
       case "admin":
+      case "minorAdmin":
         return "/admin";
 
       case "buddi":
@@ -246,7 +247,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   const canAccessPortal = (): boolean => {
     if (!user) return false;
 
-    if (user.role === "admin") return true;
+    if (user.role === "admin" || user.role === "minorAdmin") return true;
 
     if (user.role === "buddi" && buddiDetails) {
       return ["Approved", "Active"].includes(buddiDetails.status);
@@ -266,14 +267,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 
       setUser(response.user);
 
-      // Store user data
-      await AsyncStorage.setItem(
-        STORAGE_KEYS.USER_DATA,
-        JSON.stringify(response.user)
-      );
-
-      // TODO: Fetch and store role-specific details based on user.role
-      // This would require additional API calls to get buddi/parent details
+      // Store user data (already stored in auth service)
+      // No need to fetch additional details for admin/minorAdmin
     } catch (error) {
       console.error("Login error:", error);
       throw error;
@@ -287,13 +282,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       setIsLoading(true);
       const response = await authService.registerBuddi(data);
 
-      setUser(response.user);
-      setBuddiDetails(response.buddi);
+      // Transform API response to match interfaces
+      const user = response.user as unknown as User;
+      const buddi = response.buddi as unknown as BuddiDetails;
+
+      setUser(user);
+      setBuddiDetails(buddi);
 
       // Store data
       await AsyncStorage.multiSet([
-        [STORAGE_KEYS.USER_DATA, JSON.stringify(response.user)],
-        ["buddi_details", JSON.stringify(response.buddi)],
+        [STORAGE_KEYS.USER_DATA, JSON.stringify(user)],
+        ["buddi_details", JSON.stringify(buddi)],
       ]);
     } catch (error) {
       console.error("Buddi registration error:", error);
@@ -308,13 +307,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       setIsLoading(true);
       const response = await authService.registerParent(data);
 
-      setUser(response.user);
-      setParentDetails(response.parent);
+      // Transform API response to match interfaces
+      const user = response.user as unknown as User;
+      const parent = response.parent as unknown as ParentDetails;
+
+      setUser(user);
+      setParentDetails(parent);
 
       // Store data
       await AsyncStorage.multiSet([
-        [STORAGE_KEYS.USER_DATA, JSON.stringify(response.user)],
-        ["parent_details", JSON.stringify(response.parent)],
+        [STORAGE_KEYS.USER_DATA, JSON.stringify(user)],
+        ["parent_details", JSON.stringify(parent)],
       ]);
     } catch (error) {
       console.error("Parent registration error:", error);
@@ -342,23 +345,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 
   const logout = async (): Promise<void> => {
     try {
+      console.log("AuthContext: Starting logout..."); // Debug log
       setIsLoading(true);
 
-      // Clear all stored data
-      await AsyncStorage.multiRemove([
-        STORAGE_KEYS.ACCESS_TOKEN,
-        STORAGE_KEYS.REFRESH_TOKEN,
-        STORAGE_KEYS.USER_DATA,
-        "buddi_details",
-        "parent_details",
-      ]);
+      console.log("AuthContext: Calling auth service logout..."); // Debug log
+      // Call auth service logout to clear storage
+      await authService.logout();
 
+      console.log("AuthContext: Clearing context state..."); // Debug log
       // Clear state
       setUser(null);
       setBuddiDetails(null);
       setParentDetails(null);
+
+      console.log("AuthContext: Logout completed successfully"); // Debug log
     } catch (error) {
-      console.error("Logout error:", error);
+      console.error("AuthContext: Logout error:", error);
+      throw error;
     } finally {
       setIsLoading(false);
     }

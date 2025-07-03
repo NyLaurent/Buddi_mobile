@@ -35,6 +35,22 @@ export interface LoginRequest {
   password: string;
 }
 
+export interface LoginResponse {
+  user: {
+    userId: string;
+    email: string;
+    password: string;
+    phoneNumber: string;
+    firstName: string;
+    lastName: string;
+    homeAddress: string;
+    role: 'buddi' | 'parent' | 'admin' | 'minorAdmin' | 'head-teacher';
+    createdAt: string;
+    updatedAt: string;
+  };
+  token: string;
+}
+
 export interface BuddiRegistrationRequest {
   email: string;
   password: string;
@@ -165,7 +181,7 @@ export interface User extends BaseEntity {
   profileImage?: string;
   dateOfBirth: string;
   gender: string;
-  userType: 'parent' | 'buddi' | 'teacher' | 'admin';
+  userType: 'parent' | 'buddi' | 'teacher' | 'admin' | 'minorAdmin';
   status: 'active' | 'inactive' | 'pending' | 'suspended';
   emailVerified: boolean;
   phoneVerified: boolean;

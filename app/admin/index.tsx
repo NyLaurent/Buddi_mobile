@@ -6,6 +6,7 @@ import AnalyticsCard from "@/components/commons/AnalyticsCard";
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import {
+  Alert,
   Image,
   ScrollView,
   StatusBar,
@@ -15,9 +16,35 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { useAuth } from "../../context/AuthContext";
 
 export default function AdminDashboard() {
   const router = useRouter();
+  const { user, logout } = useAuth();
+
+  const handleLogout = () => {
+    console.log("Logout button clicked!"); // Debug log
+    
+    // For web compatibility, logout directly without Alert confirmation
+    // TODO: Add proper web-compatible confirmation modal later
+    handleLogoutConfirmed();
+  };
+
+  const handleLogoutConfirmed = async () => {
+    console.log("User confirmed logout"); // Debug log
+    try {
+      console.log("Calling logout function..."); // Debug log
+      await logout();
+      console.log("Logout successful, navigating to login..."); // Debug log
+      router.replace("/auth/login");
+    } catch (error) {
+      console.error("Logout error:", error); // Debug log
+      // For web, use window.alert as fallback
+      if (typeof window !== 'undefined') {
+        window.alert("Failed to logout. Please try again.");
+      }
+    }
+  };
 
   return (
     <SafeAreaView style={styles.container} edges={["top", "left", "right"]}>
@@ -32,18 +59,35 @@ export default function AdminDashboard() {
           paddingBottom: 20,
         }}
       >
-        <View className="flex-row justify-between px-1 pt-6">
-          <Image
-            source={require("../../assets/images/logo.png")}
-            className="w-[75px] h-[40px]"
-            resizeMode="contain"
-          />
+        <View className="flex-row justify-between items-center px-1 pt-6">
+          <View>
+            <Image
+              source={require("../../assets/images/logo.png")}
+              className="w-[75px] h-[40px]"
+              resizeMode="contain"
+            />
+            {user && (
+              <Text className="text-sm text-gray-600 font-comfortaa mt-1">
+                Welcome, {user.firstName}
+              </Text>
+            )}
+          </View>
           <View className="flex-row items-center gap-2 pr-1">
             <TouchableOpacity className="p-2 bg-primary rounded-xl shadow-sm">
               <Ionicons name="search-outline" size={20} color="white" />
             </TouchableOpacity>
             <TouchableOpacity className="p-2 bg-primary rounded-xl shadow-sm">
               <Ionicons name="notifications-outline" size={20} color="white" />
+            </TouchableOpacity>
+            <TouchableOpacity
+              className="p-2 bg-red-500 rounded-xl shadow-sm"
+              onPress={() => {
+                console.log("TouchableOpacity pressed!"); // Simple test
+                handleLogout();
+              }}
+              activeOpacity={0.7}
+            >
+              <Ionicons name="log-out-outline" size={20} color="white" />
             </TouchableOpacity>
           </View>
         </View>

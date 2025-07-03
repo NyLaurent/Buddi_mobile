@@ -156,11 +156,11 @@ const WaitlistScreen = () => {
                           buddiDetails?.profilePicture ||
                           "https://via.placeholder.com/150",
                       }
-                    : require("../../../assets/images/avatar-placeholder.png")
+                    : require("../../../assets/images/icon.png")
                 }
                 className="w-full h-full"
                 resizeMode="cover"
-                defaultSource={require("../../../assets/images/avatar-placeholder.png")}
+                defaultSource={require("../../../assets/images/icon.png")}
               />
             </View>
             <Text className="text-xl font-comfortaa-bold text-white mb-1">

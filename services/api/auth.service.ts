@@ -1,37 +1,100 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { STORAGE_KEYS, unauthorizedApi } from './config';
+import { authorizedApi, STORAGE_KEYS, unauthorizedApi } from './config';
 import { AUTH_ENDPOINTS } from './endpoints';
 import {
-  ApiResponse,
-  AuthResponse,
-  BuddiRegistrationRequest,
-  BuddiRegistrationResponse,
-  LoginRequest,
-  ParentRegistrationRequest,
-  ParentRegistrationResponse,
-  RegisterRequest,
-  User
+    ApiResponse,
+    AuthResponse,
+    BuddiRegistrationRequest,
+    BuddiRegistrationResponse,
+    LoginRequest,
+    LoginResponse,
+    ParentRegistrationRequest,
+    ParentRegistrationResponse,
+    RegisterRequest
 } from './types';
+
+// Sanitized user interface without password
+interface SanitizedUser {
+  userId: string;
+  email: string;
+  phoneNumber: string;
+  firstName: string;
+  lastName: string;
+  homeAddress: string;
+  role: 'buddi' | 'parent' | 'admin' | 'minorAdmin' | 'head-teacher';
+  createdAt: string;
+  updatedAt: string;
+}
+
+interface SanitizedLoginResponse {
+  user: SanitizedUser;
+  token: string;
+}
 
 class AuthService {
   /**
    * Login user with email and password
    */
-  async login(credentials: LoginRequest): Promise<AuthResponse> {
+  async login(credentials: LoginRequest): Promise<SanitizedLoginResponse> {
     try {
-      const response = await unauthorizedApi.post<ApiResponse<AuthResponse>>(
+      const response = await unauthorizedApi.post<LoginResponse>(
         AUTH_ENDPOINTS.LOGIN,
         credentials
       );
 
-      const { user, tokens } = response.data.data;
+      const { user, token } = response.data;
 
-      // Store tokens and user data
-      await this.storeAuthData(tokens.accessToken, tokens.refreshToken, user);
+      // Store token and user data (excluding password from user object)
+      const sanitizedUser: SanitizedUser = {
+        userId: user.userId,
+        email: user.email,
+        phoneNumber: user.phoneNumber,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        homeAddress: user.homeAddress,
+        role: user.role,
+        createdAt: user.createdAt,
+        updatedAt: user.updatedAt,
+      };
 
-      return response.data.data;
+      await this.storeAuthData(token, sanitizedUser);
+
+      return { user: sanitizedUser, token };
     } catch (error: any) {
       throw this.handleAuthError(error);
+    }
+  }
+
+  /**
+   * Logout user and clear stored data
+   */
+  async logout(): Promise<void> {
+    try {
+      console.log("AuthService: Starting logout process..."); // Debug log
+      
+      // First, call the logout API endpoint to invalidate the session on the server
+      try {
+        console.log("AuthService: Calling logout API..."); // Debug log
+        await authorizedApi.post(AUTH_ENDPOINTS.LOGOUT);
+        console.log("AuthService: Logout API call successful"); // Debug log
+      } catch (apiError) {
+        // Log the error but continue with local cleanup
+        console.warn('Logout API call failed, continuing with local cleanup:', apiError);
+      }
+
+      console.log("AuthService: Clearing local storage..."); // Debug log
+      // Clear all stored authentication data
+      await AsyncStorage.multiRemove([
+        STORAGE_KEYS.ACCESS_TOKEN,
+        STORAGE_KEYS.REFRESH_TOKEN,
+        STORAGE_KEYS.USER_DATA,
+        'buddi_details',
+        'parent_details',
+      ]);
+      console.log("AuthService: Local storage cleared successfully"); // Debug log
+    } catch (error) {
+      console.error('AuthService: Error during logout:', error);
+      throw new Error('Failed to logout');
     }
   }
 
@@ -145,7 +208,7 @@ class AuthService {
       const { user, tokens } = response.data.data;
 
       // Store tokens and user data
-      await this.storeAuthData(tokens.accessToken, tokens.refreshToken, user);
+      await this.storeAuthData(tokens.accessToken, user);
 
       return response.data.data;
     } catch (error: any) {
@@ -156,7 +219,7 @@ class AuthService {
   /**
    * Get current user profile
    */
-  async getCurrentUser(): Promise<User | null> {
+  async getCurrentUser(): Promise<any | null> {
     try {
       const userData = await AsyncStorage.getItem(STORAGE_KEYS.USER_DATA);
       return userData ? JSON.parse(userData) : null;
@@ -182,15 +245,10 @@ class AuthService {
   /**
    * Store authentication data
    */
-  private async storeAuthData(
-    accessToken: string, 
-    refreshToken: string, 
-    user: User
-  ): Promise<void> {
+  private async storeAuthData(token: string, user: any): Promise<void> {
     try {
       await AsyncStorage.multiSet([
-        [STORAGE_KEYS.ACCESS_TOKEN, accessToken],
-        [STORAGE_KEYS.REFRESH_TOKEN, refreshToken],
+        [STORAGE_KEYS.ACCESS_TOKEN, token],
         [STORAGE_KEYS.USER_DATA, JSON.stringify(user)],
       ]);
     } catch (error) {

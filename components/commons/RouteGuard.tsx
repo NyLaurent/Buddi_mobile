@@ -35,8 +35,8 @@ export const RouteGuard: React.FC<RouteGuardProps> = ({
       return;
     }
 
-    // Check approval requirements for buddi and parent
-    if (requireApproval) {
+    // Check approval requirements for buddi and parent (skip for admin roles)
+    if (requireApproval && !["admin", "minorAdmin"].includes(user.role)) {
       if (user.role === "buddi" && buddiDetails) {
         if (buddiDetails.status === "RegisterApprovalPending") {
           router.replace("/auth/waitlist");
@@ -105,7 +105,9 @@ export const RouteGuard: React.FC<RouteGuardProps> = ({
   if (
     !user ||
     (allowedRoles.length > 0 && !allowedRoles.includes(user.role)) ||
-    (requireApproval && !canAccessPortal() && user.role !== "admin")
+    (requireApproval &&
+      !canAccessPortal() &&
+      !["admin", "minorAdmin"].includes(user.role))
   ) {
     return null;
   }

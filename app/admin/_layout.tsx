@@ -9,7 +9,7 @@ export default function AdminLayout() {
   const insets = useSafeAreaInsets();
 
   return (
-    <RouteGuard allowedRoles={['admin']}>
+    <RouteGuard allowedRoles={["admin", "minorAdmin"]}>
       <View style={styles.container}>
         <View style={styles.content}>
           <Stack screenOptions={{ headerShown: false }} />
@@ -34,4 +34,4 @@ export default function AdminLayout() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#fff" },
   content: { flex: 1 },
-}); 
+});
