@@ -350,16 +350,18 @@ const VideoGuidelinesScreen = () => {
                   Re-read Guidelines
                 </Text>
               </TouchableOpacity>
-              <Link href="/auth/recording" asChild>
-                <TouchableOpacity
-                  className="bg-[#FF932E] py-3 px-6 rounded-full"
-                  style={{ backgroundColor: PRIMARY_COLOR }}
-                >
-                  <Text className="font-comfortaa-bold text-white">
-                    Continue
-                  </Text>
-                </TouchableOpacity>
-              </Link>
+              <TouchableOpacity
+                className="bg-[#FF932E] py-3 px-6 rounded-full"
+                style={{ backgroundColor: PRIMARY_COLOR }}
+                onPress={() => {
+                  setShowConfirmModal(false);
+                  router.push("/auth/recording");
+                }}
+              >
+                <Text className="font-comfortaa-bold text-white">
+                  Continue
+                </Text>
+              </TouchableOpacity>
             </View>
           </View>
         </View>
