@@ -19,7 +19,12 @@ export interface User {
 
 export interface BuddiDetails {
   id: number;
-  status: "RegisterApprovalPending" | "Registered" | "Approved" | "Active";
+  status:
+    | "RegisterApprovalPending"
+    | "Registered"
+    | "Approved"
+    | "Active"
+    | "submissionApproved";
   totalEarnings: number;
   currentSchool: string;
   AreaOfStudy: string;
@@ -222,6 +227,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       return;
     }
 
+    // Allow recording flow for registered buddis or those who just completed recording
+    if (isRecordingFlow || segments[1] === "recording") {
+      console.log("handleNavigation - Recording flow is accessible");
+      return;
+    }
+
     if (!user) {
       if (inProtectedRoute) {
         router.replace("/auth/login");
@@ -279,6 +290,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
           buddiDetails.recordingCompleted
         ) {
           return "/auth/login"; // Redirect to login for final authentication
+        }
+
+        if (buddiDetails.status === "submissionApproved") {
+          return "/auth/referral-waitlist";
         }
 
         if (["Approved", "Active"].includes(buddiDetails.status)) {
@@ -597,9 +612,22 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
                 JSON.stringify(apiUser.Buddi)
               );
 
-              // Navigate based on new status
-              const targetRoute = getInitialRoute();
-              router.replace(targetRoute as any);
+              // Log status change for debugging
+              console.log("Status change detected:", {
+                currentStatus,
+                newStatus,
+                recordingCompleted: apiUser.Buddi.recordingCompleted,
+              });
+
+              // Only navigate if not on recording page
+              const currentSegments = segments;
+              if (currentSegments[1] !== "recording") {
+                const targetRoute = getInitialRoute();
+                console.log("Navigating to:", targetRoute);
+                router.replace(targetRoute as any);
+              } else {
+                console.log("Status changed but staying on recording page");
+              }
             }
           }
 

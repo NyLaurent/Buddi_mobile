@@ -1,8 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
-import { useRouter } from "expo-router";
+import { Link, useRouter } from "expo-router";
 import React, { useEffect } from "react";
 import {
-  Alert,
   Image,
   ImageBackground,
   Platform,
@@ -19,7 +18,7 @@ const PRIMARY_COLOR = "#FF932E";
 
 const VideoGuidelinesScreen = () => {
   const router = useRouter();
-  const { user, buddiDetails, refreshUserData } = useAuth();
+  const { user, buddiDetails } = useAuth();
 
   // Add access control
   useEffect(() => {
@@ -34,40 +33,6 @@ const VideoGuidelinesScreen = () => {
       return;
     }
   }, [user, buddiDetails]);
-
-  const handleStartRecording = async () => {
-    try {
-      // Get fresh profile data to ensure status is still valid
-      await refreshUserData();
-
-      // Check if still eligible for recording
-      if (user?.role === "buddi" && buddiDetails?.status === "Registered") {
-        // Navigate to recording screen using push instead of replace
-        router.push("/auth/recording");
-      } else {
-        // Status changed, redirect to appropriate route
-        if (!user || !buddiDetails) {
-          router.replace("/auth/login");
-          return;
-        }
-
-        if (buddiDetails.status === "RegisterApprovalPending") {
-          router.replace("/auth/waitlist");
-        } else if (["Approved", "Active"].includes(buddiDetails.status)) {
-          router.replace("/buddi");
-        } else {
-          router.replace("/auth/login");
-        }
-      }
-    } catch (error) {
-      console.error("Error checking status:", error);
-      Alert.alert(
-        "Navigation Error",
-        "Failed to navigate to recording page. Please try again.",
-        [{ text: "OK" }]
-      );
-    }
-  };
 
   return (
     <View style={{ flex: 1 }}>
@@ -260,16 +225,17 @@ const VideoGuidelinesScreen = () => {
 
             {/* Start Button */}
             <View className="px-2 my-4">
-              <TouchableOpacity
-                className="bg-[#FF932E] py-3 rounded-full w-full flex-row justify-center items-center"
-                style={{ backgroundColor: PRIMARY_COLOR }}
-                onPress={handleStartRecording}
-              >
-                <Text className="font-comfortaa-bold text-white text-base mr-2">
-                  Start
-                </Text>
-                <Ionicons name="videocam" size={18} color="white" />
-              </TouchableOpacity>
+              <Link href="/auth/recording" asChild>
+                <TouchableOpacity
+                  className="bg-[#FF932E] py-3 rounded-full w-full flex-row justify-center items-center"
+                  style={{ backgroundColor: PRIMARY_COLOR }}
+                >
+                  <Text className="font-comfortaa-bold text-white text-base mr-2">
+                    Start
+                  </Text>
+                  <Ionicons name="videocam" size={18} color="white" />
+                </TouchableOpacity>
+              </Link>
             </View>
           </ScrollView>
         </SafeAreaView>
