@@ -319,7 +319,7 @@ const RecordingPage = () => {
           <View className="flex-row justify-between items-center px-4 py-2 mt-2">
             <TouchableOpacity
               className="bg-white rounded-full p-2"
-              onPress={() => router.back()}
+              onPress={() => router.navigate("/auth/interview-guidelines")}
             >
               <Ionicons name="chevron-back" size={24} color="#555" />
             </TouchableOpacity>

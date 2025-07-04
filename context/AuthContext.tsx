@@ -19,12 +19,7 @@ export interface User {
 
 export interface BuddiDetails {
   id: number;
-  status:
-    | "RegisterApprovalPending"
-    | "Registered"
-    | "Approved"
-    | "Active"
-    | "submissionApproved";
+  status: "RegisterApprovalPending" | "Registered" | "Approved" | "Active";
   totalEarnings: number;
   currentSchool: string;
   AreaOfStudy: string;
@@ -195,6 +190,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   const handleNavigation = () => {
     const inAuthGroup = segments[0] === "auth";
     const inProtectedRoute = ["buddi", "parent", "admin"].includes(segments[0]);
+    
+    // TEMPORARY: Allow unrestricted access to these routes for development
+    // TODO: REMOVE THIS BEFORE PRODUCTION
+    const isTemporaryUnprotectedRoute = 
+      segments[0] === "onboarding" || 
+      segments[0] === "role-select" ||
+      (inAuthGroup && segments[1] === "signup");
+
+    if (isTemporaryUnprotectedRoute) {
+      console.log("handleNavigation - Temporarily allowing access to development routes");
+      return;
+    }
+
     const isPublicRoute =
       ["role-select", "onboarding", ""].includes(segments[0]) ||
       segments[0] === undefined;
@@ -227,8 +235,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       return;
     }
 
-    // Allow recording flow for registered buddis or those who just completed recording
-    if (isRecordingFlow || segments[1] === "recording") {
+    // Allow recording flow for registered buddis
+    if (isRecordingFlow) {
       console.log("handleNavigation - Recording flow is accessible");
       return;
     }
@@ -290,10 +298,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
           buddiDetails.recordingCompleted
         ) {
           return "/auth/login"; // Redirect to login for final authentication
-        }
-
-        if (buddiDetails.status === "submissionApproved") {
-          return "/auth/referral-waitlist";
         }
 
         if (["Approved", "Active"].includes(buddiDetails.status)) {
@@ -612,22 +616,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
                 JSON.stringify(apiUser.Buddi)
               );
 
-              // Log status change for debugging
-              console.log("Status change detected:", {
-                currentStatus,
-                newStatus,
-                recordingCompleted: apiUser.Buddi.recordingCompleted,
-              });
-
-              // Only navigate if not on recording page
-              const currentSegments = segments;
-              if (currentSegments[1] !== "recording") {
-                const targetRoute = getInitialRoute();
-                console.log("Navigating to:", targetRoute);
-                router.replace(targetRoute as any);
-              } else {
-                console.log("Status changed but staying on recording page");
-              }
+              // Navigate based on new status
+              const targetRoute = getInitialRoute();
+              router.replace(targetRoute as any);
             }
           }
 

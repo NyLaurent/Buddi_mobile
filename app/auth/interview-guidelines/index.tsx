@@ -1,9 +1,10 @@
 import { Ionicons } from "@expo/vector-icons";
 import { Link, useRouter } from "expo-router";
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import {
   Image,
   ImageBackground,
+  Modal,
   Platform,
   ScrollView,
   StatusBar,
@@ -19,6 +20,20 @@ const PRIMARY_COLOR = "#FF932E";
 const VideoGuidelinesScreen = () => {
   const router = useRouter();
   const { user, buddiDetails } = useAuth();
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
+
+  type GuidelineKey = "guideline1" | "guideline2" | "guideline3" | "guideline4";
+
+  const [guidelinesRead, setGuidelinesRead] = useState({
+    guideline1: false,
+    guideline2: false,
+    guideline3: false,
+    guideline4: false,
+  });
+
+  const allGuidelinesRead = Object.values(guidelinesRead).every(
+    (value) => value
+  );
 
   // Add access control
   useEffect(() => {
@@ -33,6 +48,21 @@ const VideoGuidelinesScreen = () => {
       return;
     }
   }, [user, buddiDetails]);
+
+  const toggleGuideline = (key: GuidelineKey) => {
+    setGuidelinesRead((prev) => ({
+      ...prev,
+      [key]: !prev[key],
+    }));
+  };
+
+  const handleStartPress = () => {
+    if (!allGuidelinesRead) {
+      alert("Please read and acknowledge all guidelines before proceeding.");
+      return;
+    }
+    setShowConfirmModal(true);
+  };
 
   return (
     <View style={{ flex: 1 }}>
@@ -111,12 +141,12 @@ const VideoGuidelinesScreen = () => {
               </View>
 
               {/* Score Board */}
-              <View
+              {/* <View
                 className="mb-6 border border-blue-200 rounded-2xl p-4"
                 style={{ backgroundColor: "#F5FAFF" }}
               >
                 <Text className="font-comfortaa text-gray-700 mb-2">
-                  You score board
+                  Your interview details
                 </Text>
 
                 <View className="flex-row items-center">
@@ -144,12 +174,12 @@ const VideoGuidelinesScreen = () => {
                     resizeMode="contain"
                   />
                 </View>
-              </View>
+              </View> */}
 
               {/* Guidelines */}
               <View className="mb-6">
                 <Text className="font-comfortaa-bold text-gray-700 mb-3">
-                  Checkout the Guidelines for the Interview Session:
+                  Please read and acknowledge each guideline carefully:
                 </Text>
 
                 {/* Guideline Item 1 */}
@@ -165,14 +195,22 @@ const VideoGuidelinesScreen = () => {
                   />
                   <View className="flex-1">
                     <Text className="font-comfortaa-bold text-gray-800">
-                      Title
+                      Camera Position & Lighting
                     </Text>
                     <Text className="font-comfortaa text-xs text-gray-500 mb-1">
-                      Description. Lorem ipsum dolor sit amet consectetur
-                      adipiscing elit, sed do
+                      Ensure you are well-lit and facing the camera directly.
+                      Your face should be clearly visible and centered in the
+                      frame.
                     </Text>
                   </View>
-                  <TouchableOpacity className="border border-gray-300 rounded h-5 w-5 mt-1" />
+                  <TouchableOpacity
+                    className={`border rounded h-5 w-5 mt-1 ${
+                      guidelinesRead.guideline1
+                        ? "bg-[#0066FF] border-[#0066FF]"
+                        : "border-gray-300"
+                    }`}
+                    onPress={() => toggleGuideline("guideline1")}
+                  />
                 </View>
 
                 {/* Guideline Item 2 */}
@@ -188,14 +226,22 @@ const VideoGuidelinesScreen = () => {
                   />
                   <View className="flex-1">
                     <Text className="font-comfortaa-bold text-gray-800">
-                      Title
+                      No External Assistance
                     </Text>
                     <Text className="font-comfortaa text-xs text-gray-500 mb-1">
-                      Description. Lorem ipsum dolor sit amet consectetur
-                      adipiscing elit, sed do
+                      Do not use AI tools, chat assistants, or any external help
+                      during the interview. Your answers must be genuine and
+                      original.
                     </Text>
                   </View>
-                  <TouchableOpacity className="border border-gray-300 rounded h-5 w-5 mt-1" />
+                  <TouchableOpacity
+                    className={`border rounded h-5 w-5 mt-1 ${
+                      guidelinesRead.guideline2
+                        ? "bg-[#0066FF] border-[#0066FF]"
+                        : "border-gray-300"
+                    }`}
+                    onPress={() => toggleGuideline("guideline2")}
+                  />
                 </View>
 
                 {/* Guideline Item 3 */}
@@ -211,35 +257,113 @@ const VideoGuidelinesScreen = () => {
                   />
                   <View className="flex-1">
                     <Text className="font-comfortaa-bold text-gray-800">
-                      Title
+                      Clear Communication
                     </Text>
                     <Text className="font-comfortaa text-xs text-gray-500 mb-1">
-                      Description. Lorem ipsum dolor sit amet consectetur
-                      adipiscing elit, sed do
+                      Speak clearly and maintain a professional demeanor. Take
+                      your time to think before answering each question.
                     </Text>
                   </View>
-                  <TouchableOpacity className="border border-gray-300 rounded h-5 w-5 mt-1" />
+                  <TouchableOpacity
+                    className={`border rounded h-5 w-5 mt-1 ${
+                      guidelinesRead.guideline3
+                        ? "bg-[#0066FF] border-[#0066FF]"
+                        : "border-gray-300"
+                    }`}
+                    onPress={() => toggleGuideline("guideline3")}
+                  />
+                </View>
+
+                {/* Guideline Item 4 */}
+                <View className="flex-row mb-4">
+                  <View
+                    className="mr-3 mt-1"
+                    style={{
+                      backgroundColor: "#0066FF",
+                      borderRadius: 10,
+                      height: 16,
+                      width: 4,
+                    }}
+                  />
+                  <View className="flex-1">
+                    <Text className="font-comfortaa-bold text-gray-800">
+                      Quiet Environment
+                    </Text>
+                    <Text className="font-comfortaa text-xs text-gray-500 mb-1">
+                      Find a quiet space with minimal background noise. Ensure
+                      you won&apos;t be interrupted during the interview
+                      session.
+                    </Text>
+                  </View>
+                  <TouchableOpacity
+                    className={`border rounded h-5 w-5 mt-1 ${
+                      guidelinesRead.guideline4
+                        ? "bg-[#0066FF] border-[#0066FF]"
+                        : "border-gray-300"
+                    }`}
+                    onPress={() => toggleGuideline("guideline4")}
+                  />
                 </View>
               </View>
             </View>
 
             {/* Start Button */}
             <View className="px-2 my-4">
-              <Link href="/auth/recording" asChild>
-                <TouchableOpacity
-                  className="bg-[#FF932E] py-3 rounded-full w-full flex-row justify-center items-center"
-                  style={{ backgroundColor: PRIMARY_COLOR }}
-                >
-                  <Text className="font-comfortaa-bold text-white text-base mr-2">
-                    Start
-                  </Text>
-                  <Ionicons name="videocam" size={18} color="white" />
-                </TouchableOpacity>
-              </Link>
+              <TouchableOpacity
+                className={`py-3 rounded-full w-full flex-row justify-center items-center ${
+                  allGuidelinesRead ? "bg-[#FF932E]" : "bg-gray-400"
+                }`}
+                onPress={handleStartPress}
+              >
+                <Text className="font-comfortaa-bold text-white text-base mr-2">
+                  Start Interview
+                </Text>
+                <Ionicons name="videocam" size={18} color="white" />
+              </TouchableOpacity>
             </View>
           </ScrollView>
         </SafeAreaView>
       </ImageBackground>
+
+      {/* Confirmation Modal */}
+      <Modal
+        animationType="fade"
+        transparent={true}
+        visible={showConfirmModal}
+        onRequestClose={() => setShowConfirmModal(false)}
+      >
+        <View className="flex-1 justify-center items-center bg-black/50">
+          <View className="bg-white rounded-3xl p-6 m-4 w-[90%] max-w-[400px]">
+            <Text className="text-xl font-comfortaa-bold text-gray-800 mb-4 text-center">
+              Ready to Begin?
+            </Text>
+            <Text className="font-comfortaa text-gray-600 mb-6 text-center">
+              Please confirm that you have read and understood all the interview
+              guidelines. Once you start, you cannot pause the interview.
+            </Text>
+            <View className="flex-row justify-center space-x-4">
+              <TouchableOpacity
+                className="bg-gray-200 py-3 px-6 rounded-full"
+                onPress={() => setShowConfirmModal(false)}
+              >
+                <Text className="font-comfortaa-bold text-gray-700">
+                  Re-read Guidelines
+                </Text>
+              </TouchableOpacity>
+              <Link href="/auth/recording" asChild>
+                <TouchableOpacity
+                  className="bg-[#FF932E] py-3 px-6 rounded-full"
+                  style={{ backgroundColor: PRIMARY_COLOR }}
+                >
+                  <Text className="font-comfortaa-bold text-white">
+                    Continue
+                  </Text>
+                </TouchableOpacity>
+              </Link>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 };
