@@ -5,6 +5,7 @@ import {
   MaterialIcons,
 } from "@expo/vector-icons";
 import React from "react";
+import { useRouter } from "expo-router";
 import {
   Image,
   ScrollView,
@@ -18,10 +19,31 @@ import AnalyticsCard from "../../components/commons/AnalyticsCard";
 import Calendar from "../../components/commons/Calendar";
 import KidPickupCard from "../../components/parent/KidPickupCard";
 import PaymentAlert from "../../components/parent/PaymentAlert";
-
+import { useAuth } from "../../context/AuthContext";
 export default function ParentDashboard() {
   const [selectedDate, setSelectedDate] = React.useState(new Date());
+  const { user, logout } = useAuth();
+  const router = useRouter();
 
+  const handleLogout = () => {
+    console.log("Logout button clicked!"); // Debug log
+    handleLogoutConfirmed();
+  };
+
+  const handleLogoutConfirmed = async () => {
+    console.log("User confirmed logout"); // Debug log
+    try {
+      console.log("Calling logout function..."); // Debug log
+      await logout();
+      console.log("Logout successful, navigating to login..."); // Debug log
+      router.replace("/auth/login");
+    } catch (error) {
+      console.error("Logout error:", error); // Debug log
+      if (typeof window !== 'undefined') {
+        window.alert("Failed to logout. Please try again.");
+      }
+    }
+  };
   return (
     <SafeAreaView
       style={{ flex: 1, backgroundColor: "#fff" }}
@@ -84,6 +106,13 @@ export default function ParentDashboard() {
             {/* Notification Icon */}
             <TouchableOpacity className="p-2 bg-orange-400 rounded-xl shadow-sm">
               <Ionicons name="notifications-outline" size={22} color="white" />
+            </TouchableOpacity>
+            <TouchableOpacity
+              className="p-2 bg-red-500 rounded-xl shadow-sm"
+              onPress={handleLogout}
+              activeOpacity={0.7}
+            >
+              <Ionicons name="log-out-outline" size={20} color="white" />
             </TouchableOpacity>
           </View>
         </View>

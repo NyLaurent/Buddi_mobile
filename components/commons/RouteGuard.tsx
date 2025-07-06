@@ -16,15 +16,14 @@ export const RouteGuard: React.FC<RouteGuardProps> = ({
   requireApproval = false,
   redirectTo = "/auth/login",
 }) => {
-  const { user, buddiDetails, parentDetails, isLoading, canAccessPortal } =
-    useAuth();
+  const { user, buddiDetails, parentDetails, isLoading } = useAuth();
   const router = useRouter();
   const hasRedirected = useRef(false);
 
   useEffect(() => {
     // Reset redirect flag when dependencies change
     hasRedirected.current = false;
-  }, [user?.userId, buddiDetails?.status, parentDetails?.approvalStage]);
+  }, [user?.userId]);
 
   useEffect(() => {
     if (isLoading || hasRedirected.current) return;
@@ -43,7 +42,12 @@ export const RouteGuard: React.FC<RouteGuardProps> = ({
       return;
     }
 
-    // Check approval requirements for buddi and parent (skip for admin roles)
+    // For parent role, only check basic authentication
+    if (user.role === "parent") {
+      return;
+    }
+
+    // Check approval requirements for buddi (skip for admin roles)
     if (requireApproval && !["admin", "minorAdmin"].includes(user.role)) {
       if (user.role === "buddi" && buddiDetails) {
         if (buddiDetails.status === "RegisterApprovalPending") {
@@ -59,35 +63,11 @@ export const RouteGuard: React.FC<RouteGuardProps> = ({
           router.replace("/auth/interview-guidelines");
           return;
         }
-        if (buddiDetails.status === "submissionApproved") {
-          hasRedirected.current = true;
-          router.replace("/auth/submission-approved");
-          return;
-        }
-        if (!["referenceApproved", "approved", "verified"].includes(buddiDetails.status)) {
-          hasRedirected.current = true;
-          router.replace("/auth/waitlist");
-          return;
-        }
-      }
-
-      if (user.role === "parent" && parentDetails) {
-        if (parentDetails.approvalStage === "pending") {
-          hasRedirected.current = true;
-          router.replace("/auth/waitlist");
-          return;
-        }
-        if (!["approved", "active"].includes(parentDetails.approvalStage)) {
-          hasRedirected.current = true;
-          router.replace("/auth/waitlist");
-          return;
-        }
       }
     }
   }, [
     user,
     buddiDetails,
-    parentDetails,
     isLoading,
     allowedRoles,
     requireApproval,
@@ -119,14 +99,8 @@ export const RouteGuard: React.FC<RouteGuardProps> = ({
     );
   }
 
-  // Don't render if user doesn't meet requirements
-  if (
-    !user ||
-    (allowedRoles.length > 0 && !allowedRoles.includes(user.role)) ||
-    (requireApproval &&
-      !canAccessPortal() &&
-      !["admin", "minorAdmin"].includes(user.role))
-  ) {
+  // Only check basic authentication for parents
+  if (!user || (allowedRoles.length > 0 && !allowedRoles.includes(user.role))) {
     return null;
   }
 

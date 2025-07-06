@@ -1,9 +1,11 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
   Alert,
+  AppState,
+  AppStateStatus,
   Image,
   ScrollView,
   Text,
@@ -11,53 +13,110 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { FullScreenLoader } from "../../../components/commons/FullScreenLoader";
 import { useAuth } from "../../../context/AuthContext";
 
 const PRIMARY_COLOR = "#FF932E";
+const POLLING_INTERVAL = 30000; // Poll every 30 seconds
 
 const WaitlistScreen = () => {
   const router = useRouter();
   const { user, buddiDetails, parentDetails, refreshUserData, logout } =
     useAuth();
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [isNavigating, setIsNavigating] = useState(false);
+  const [appState, setAppState] = useState(AppState.currentState);
+  const intervalRef = useRef<number | null>(null);
 
-  // Check if user should be on waitlist
+  const navigateToParentPortal = useCallback(async () => {
+    setIsNavigating(true);
+    clearPollingInterval();
+    // Small delay to show loader
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+    router.replace("/parent");
+  }, [router]);
+
+  const clearPollingInterval = useCallback(() => {
+    if (intervalRef.current) {
+      clearInterval(intervalRef.current);
+      intervalRef.current = null;
+    }
+  }, []);
+
+  // Function to check approval status and navigate if approved
+  const checkApprovalAndNavigate = useCallback(async () => {
+    try {
+      await refreshUserData();
+
+      if (!user) {
+        console.log("No user found, redirecting to login");
+        router.replace("/auth/login");
+        return;
+      }
+
+      if (
+        user.role === "parent" &&
+        parentDetails?.approvalStage === "approved"
+      ) {
+        console.log("Parent approved, navigating to parent portal");
+        await navigateToParentPortal();
+        return;
+      }
+
+      if (user.role === "buddi" && buddiDetails?.status === "Registered") {
+        console.log("Buddi registered, navigating to interview guidelines");
+        clearPollingInterval();
+        router.replace("/auth/interview-guidelines");
+        return;
+      }
+    } catch (error) {
+      console.error("Error checking approval status:", error);
+    }
+  }, [
+    user,
+    parentDetails,
+    buddiDetails,
+    router,
+    refreshUserData,
+    clearPollingInterval,
+    navigateToParentPortal,
+  ]);
+
+  // Set up polling interval
   useEffect(() => {
-    console.log("Waitlist useEffect - User:", user?.role);
-    console.log("Waitlist useEffect - BuddiDetails:", buddiDetails?.status);
-    console.log(
-      "Waitlist useEffect - ParentDetails:",
-      parentDetails?.approvalStage
+    // Initial check
+    checkApprovalAndNavigate();
+
+    // Set up interval for subsequent checks
+    intervalRef.current = setInterval(
+      checkApprovalAndNavigate,
+      POLLING_INTERVAL
     );
 
-    if (!user) {
-      console.log("Waitlist useEffect - No user, redirecting to login");
-      router.replace("/auth/login");
-      return;
-    }
+    // Handle app state changes
+    const subscription = AppState.addEventListener(
+      "change",
+      (nextAppState: AppStateStatus) => {
+        if (
+          appState.match(/inactive|background/) &&
+          nextAppState === "active"
+        ) {
+          // App has come to foreground
+          checkApprovalAndNavigate();
+        }
+        setAppState(nextAppState);
+      }
+    );
 
-    // If buddi is approved, redirect to interview guidelines
-    if (user.role === "buddi" && buddiDetails?.status === "Registered") {
-      console.log(
-        "Waitlist useEffect - Buddi registered, redirecting to interview guidelines"
-      );
-      router.replace("/auth/interview-guidelines");
-      return;
-    }
-
-    // If parent is approved, redirect to login for final authentication
-    if (user.role === "parent" && parentDetails?.approvalStage === "approved") {
-      console.log("Waitlist useEffect - Parent approved, redirecting to login");
-      router.replace("/auth/login");
-      return;
-    }
-
-    console.log("Waitlist useEffect - User should stay on waitlist");
-  }, [user, buddiDetails, parentDetails]);
+    // Cleanup
+    return () => {
+      clearPollingInterval();
+      subscription.remove();
+    };
+  }, [checkApprovalAndNavigate, appState, clearPollingInterval]);
 
   const getUserDisplayInfo = () => {
-    if (!user)
-      return { name: "", email: "", statusText: "", progressWidth: "0%" };
+    if (!user) return { name: "", email: "", statusText: "", progressWidth: 0 };
 
     const name = `${user.firstName} ${user.lastName}`;
     const email = user.email;
@@ -70,7 +129,7 @@ const WaitlistScreen = () => {
           buddiDetails.status === "RegisterApprovalPending"
             ? "Under Review - Application Pending"
             : "Application In Review",
-        progressWidth: "65%",
+        progressWidth: 65,
         roleDisplayName: "Buddi",
       };
     }
@@ -83,7 +142,7 @@ const WaitlistScreen = () => {
           parentDetails.approvalStage === "pending"
             ? "Under Review - Parent Verification Pending"
             : "Parent Application In Review",
-        progressWidth: "50%",
+        progressWidth: 50,
         roleDisplayName: "Parent",
       };
     }
@@ -92,7 +151,7 @@ const WaitlistScreen = () => {
       name,
       email,
       statusText: "Application In Review",
-      progressWidth: "30%",
+      progressWidth: 30,
       roleDisplayName: user.role === "buddi" ? "Buddi" : "Parent",
     };
   };
@@ -100,7 +159,7 @@ const WaitlistScreen = () => {
   const handleRefreshStatus = async () => {
     try {
       setIsRefreshing(true);
-      await refreshUserData();
+      await checkApprovalAndNavigate();
       Alert.alert(
         "Status Updated",
         "Your application status has been refreshed."
@@ -136,6 +195,10 @@ const WaitlistScreen = () => {
   };
 
   const userInfo = getUserDisplayInfo();
+
+  if (isNavigating) {
+    return <FullScreenLoader />;
+  }
 
   if (!user) {
     return null; // Will redirect in useEffect
@@ -198,212 +261,70 @@ const WaitlistScreen = () => {
             style={{
               backgroundColor: "rgba(255, 255, 255, 0.9)",
               shadowColor: "#000000",
-              shadowOffset: { width: 0, height: 2 },
-              shadowOpacity: 0.05,
+              shadowOffset: { width: 0, height: 4 },
+              shadowOpacity: 0.1,
               shadowRadius: 8,
-              elevation: 1,
+              elevation: 4,
             }}
           >
-            <View
-              className="bg-white rounded-3xl overflow-hidden mb-4"
-              style={{
-                borderWidth: 1.5,
-                borderColor: "#007AFF",
-              }}
-            >
-              <View className="p-6">
-                <View className="flex-row justify-between items-center mb-3">
-                  <Text className="text-lg font-comfortaa-bold text-gray-800">
-                    Application Status
-                  </Text>
-                  <View
-                    style={{
-                      backgroundColor: "#e6f7ff",
-                      borderRadius: 16,
-                      width: 32,
-                      height: 32,
-                      alignItems: "center",
-                      justifyContent: "center",
-                    }}
-                  >
-                    <Ionicons name="time-outline" size={20} color="#0099ff" />
-                  </View>
-                </View>
+            <Text className="font-comfortaa-bold text-lg mb-2">
+              Registration Status
+            </Text>
+            <Text className="font-comfortaa text-gray-600 mb-4">
+              {userInfo.statusText}
+            </Text>
 
-                <Text className="font-comfortaa text-base text-gray-600 mb-4">
-                  {userInfo.statusText}
-                </Text>
-
-                {/* Progress Bar */}
-                <View className="items-center mb-4">
-                  <View className="w-full h-2 bg-gray-200 rounded-full overflow-hidden">
-                    <View
-                      className="h-full"
-                      style={{
-                        width: userInfo.progressWidth as any,
-                        backgroundColor: PRIMARY_COLOR,
-                      }}
-                    />
-                  </View>
-                  <Text className="mt-2 font-comfortaa text-sm text-gray-500 text-center">
-                    {user.role === "buddi"
-                      ? "We're reviewing your application and references. You'll be notified once approved to proceed with the interview process."
-                      : "We're verifying your information and background check. You'll be notified once approved to access the platform."}
-                  </Text>
-                </View>
-              </View>
+            {/* Progress Bar */}
+            <View className="h-2 bg-gray-200 rounded-full overflow-hidden mb-4">
+              <View
+                className="h-full bg-primary rounded-full"
+                style={{ width: `${userInfo.progressWidth}%` }}
+              />
             </View>
 
             {/* Action Buttons */}
-            <View className="flex-row items-center justify-between px-2 mt-1">
+            <View className="flex-row justify-between">
               <TouchableOpacity
-                className="flex-row items-center justify-center py-3 px-5 rounded-full mr-3"
-                style={{
-                  flex: 1,
-                  borderWidth: 1,
-                  borderColor: "#EAEBF0",
-                  backgroundColor: "#fff",
-                }}
                 onPress={handleRefreshStatus}
                 disabled={isRefreshing}
+                className="flex-row items-center"
               >
                 <Ionicons
-                  name={isRefreshing ? "refresh" : "refresh-outline"}
-                  size={18}
-                  color="#666"
-                  style={{ marginRight: 8 }}
+                  name="refresh"
+                  size={20}
+                  color={PRIMARY_COLOR}
+                  style={{ marginRight: 4 }}
                 />
-                <Text className="font-comfortaa-bold text-gray-700 text-base">
+                <Text className="font-comfortaa text-primary">
                   {isRefreshing ? "Refreshing..." : "Refresh Status"}
                 </Text>
               </TouchableOpacity>
 
               <TouchableOpacity
-                className="flex-row items-center justify-center py-3 px-5 rounded-full"
-                style={{ backgroundColor: PRIMARY_COLOR, flex: 1 }}
                 onPress={handleContactUs}
+                className="flex-row items-center"
               >
-                <Text className="font-comfortaa-bold text-white text-base">
-                  Contact us
-                </Text>
                 <Ionicons
-                  name="chatbubble-outline"
-                  size={18}
-                  color="white"
-                  style={{ marginLeft: 8 }}
+                  name="mail"
+                  size={20}
+                  color={PRIMARY_COLOR}
+                  style={{ marginRight: 4 }}
                 />
+                <Text className="font-comfortaa text-primary">Contact Us</Text>
               </TouchableOpacity>
             </View>
           </View>
         </View>
 
-        {/* Information Section */}
-        <View className="mt-8 mx-4 mb-12">
-          <View
-            className="bg-white rounded-3xl p-4 overflow-hidden relative"
-            style={{
-              borderWidth: 1,
-              borderColor: "#EAEBF0",
-              shadowColor: "#000000",
-              shadowOffset: { width: 0, height: 1 },
-              shadowOpacity: 0.05,
-              shadowRadius: 5,
-              elevation: 1,
-            }}
-          >
-            {/* What's Next */}
-            <TouchableOpacity className="flex-row items-center py-3 border-b border-gray-100">
-              <View
-                style={{
-                  backgroundColor: "#e6f7ff",
-                  borderRadius: 12,
-                  width: 36,
-                  height: 36,
-                  alignItems: "center",
-                  justifyContent: "center",
-                  marginRight: 12,
-                }}
-              >
-                <Ionicons
-                  name="information-outline"
-                  size={20}
-                  color="#0099ff"
-                />
-              </View>
-              <View style={{ flex: 1 }}>
-                <Text className="font-comfortaa-bold text-gray-800 text-base mb-0.5">
-                  What&apos;s Next?
-                </Text>
-                <Text className="font-comfortaa text-xs text-gray-500 leading-4">
-                  {user.role === "buddi"
-                    ? "Once approved, you'll complete video interviews and background checks before accessing the platform."
-                    : "Once approved, you'll gain full access to request pickup services and manage your children's schedules."}
-                </Text>
-              </View>
-              <Ionicons name="chevron-forward" size={20} color="#A0A0A0" />
-            </TouchableOpacity>
-
-            {/* Terms & Conditions */}
-            <TouchableOpacity className="flex-row items-center py-3 border-b border-gray-100">
-              <View
-                style={{
-                  backgroundColor: "#e6f7ff",
-                  borderRadius: 12,
-                  width: 36,
-                  height: 36,
-                  alignItems: "center",
-                  justifyContent: "center",
-                  marginRight: 12,
-                }}
-              >
-                <Ionicons
-                  name="document-text-outline"
-                  size={20}
-                  color="#0099ff"
-                />
-              </View>
-              <View style={{ flex: 1 }}>
-                <Text className="font-comfortaa-bold text-gray-800 text-base mb-0.5">
-                  Terms & Conditions
-                </Text>
-                <Text className="font-comfortaa text-xs text-gray-500 leading-4">
-                  Review our terms and conditions to understand your rights and
-                  responsibilities.
-                </Text>
-              </View>
-              <Ionicons name="chevron-forward" size={20} color="#A0A0A0" />
-            </TouchableOpacity>
-
-            {/* Sign Out */}
-            <TouchableOpacity
-              className="flex-row items-center py-3"
-              onPress={handleSignOut}
-            >
-              <View
-                style={{
-                  backgroundColor: "#ffe6e6",
-                  borderRadius: 12,
-                  width: 36,
-                  height: 36,
-                  alignItems: "center",
-                  justifyContent: "center",
-                  marginRight: 12,
-                }}
-              >
-                <Ionicons name="log-out-outline" size={20} color="#ff4444" />
-              </View>
-              <View style={{ flex: 1 }}>
-                <Text className="font-comfortaa-bold text-gray-800 text-base mb-0.5">
-                  Sign Out
-                </Text>
-                <Text className="font-comfortaa text-xs text-gray-500 leading-4">
-                  Sign out of your account
-                </Text>
-              </View>
-              <Ionicons name="chevron-forward" size={20} color="#A0A0A0" />
-            </TouchableOpacity>
-          </View>
-        </View>
+        {/* Sign Out Button */}
+        <TouchableOpacity
+          onPress={handleSignOut}
+          className="mx-4 mt-4 p-4 bg-red-500 rounded-2xl"
+        >
+          <Text className="font-comfortaa text-white text-center">
+            Sign Out
+          </Text>
+        </TouchableOpacity>
       </ScrollView>
     </SafeAreaView>
   );

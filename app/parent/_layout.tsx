@@ -12,10 +12,23 @@ export default function ParentLayout() {
   const showNav = pathname !== "/parent/request-buddi";
 
   return (
-    <RouteGuard allowedRoles={["parent"]} requireApproval={true}>
+    <RouteGuard allowedRoles={["parent"]} requireApproval={false}>
       <View style={styles.container}>
         <View style={styles.content}>
-          <Stack screenOptions={{ headerShown: false }} />
+          <Stack 
+            screenOptions={{ 
+              headerShown: false,
+              animation: "slide_from_right"
+            }}
+          >
+            <Stack.Screen name="index" />
+            <Stack.Screen name="schedule" />
+            <Stack.Screen name="my-buddi" />
+            <Stack.Screen name="payments" />
+            <Stack.Screen name="callup-review" />
+            <Stack.Screen name="rank-buddies" />
+            <Stack.Screen name="request-buddi" />
+          </Stack>
         </View>
         {showNav && (
           <View
