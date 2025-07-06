@@ -1,12 +1,64 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import React from "react";
+import React, { useEffect } from "react";
 import { StyleSheet, Text, View } from "react-native";
 import { TouchableOpacity } from "react-native-gesture-handler";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { useAuth } from "../../../context/AuthContext";
 
 const SubmissionApproved = () => {
   const router = useRouter();
+  const { user, buddiDetails, startStatusPolling } = useAuth();
+
+  // Add access control and start polling
+  useEffect(() => {
+    // Check if user should be on this screen
+    if (!user || user.role !== "buddi") {
+      router.replace("/auth/login" as any);
+      return;
+    }
+
+    if (!buddiDetails) return; // Wait for buddiDetails to load
+
+    // Allow only submissionApproved status for this page
+    if (buddiDetails.status !== "submissionApproved") {
+      if (
+        buddiDetails.status === "referenceApproved" ||
+        ["Approved", "Active"].includes(buddiDetails.status)
+      ) {
+        // If already approved, go to buddi portal
+        router.replace("/buddi" as any);
+        return;
+      }
+      // For any other status, go to appropriate page
+      router.replace(getInitialRoute() as any);
+      return;
+    }
+
+    // Start polling for status changes - this will automatically redirect
+    // when status changes to referenceApproved
+    startStatusPolling();
+  }, [user, buddiDetails]);
+
+  // Helper function to get initial route based on status
+  const getInitialRoute = () => {
+    if (!buddiDetails) return "/auth/login";
+
+    switch (buddiDetails.status) {
+      case "RegisterApprovalPending":
+        return "/auth/waitlist";
+      case "Registered":
+        return "/auth/interview-guidelines";
+      case "submissionApproved":
+        return "/auth/submission-approved";
+      case "referenceApproved":
+      case "verified":
+      case "approved":
+        return "/buddi";
+      default:
+        return "/auth/login";
+    }
+  };
 
   return (
     <SafeAreaView style={styles.container}>

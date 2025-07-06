@@ -22,6 +22,7 @@ import PickupCard from "../../components/commons/PickupCard";
 import Messages from "./messages";
 import Profile from "./profile";
 import SchedulePage from "./schedule";
+import { useAuth } from "../../context/AuthContext";
 
 const DOT_SIZE = 8;
 const DOT_SPACING = 12;
@@ -36,12 +37,35 @@ export default function BuddiHome() {
   const scrollViewRef = useRef(null);
   const insets = useSafeAreaInsets();
   const router = useRouter();
+  const { user, logout } = useAuth();
   
   const handleScroll = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
     const contentOffset = event.nativeEvent.contentOffset.x;
     const cardWidth = 300 + 12; // card width + margin
     const newIndex = Math.round(contentOffset / cardWidth);
     setActiveCard(newIndex);
+  };
+  const handleLogout = () => {
+    console.log("Logout button clicked!"); // Debug log
+    
+    // For web compatibility, logout directly without Alert confirmation
+    // TODO: Add proper web-compatible confirmation modal later
+    handleLogoutConfirmed();
+  };
+  const handleLogoutConfirmed = async () => {
+    console.log("User confirmed logout"); // Debug log
+    try {
+      console.log("Calling logout function..."); // Debug log
+      await logout();
+      console.log("Logout successful, navigating to login..."); // Debug log
+      router.replace("/auth/login");
+    } catch (error) {
+      console.error("Logout error:", error); // Debug log
+      // For web, use window.alert as fallback
+      if (typeof window !== 'undefined') {
+        window.alert("Failed to logout. Please try again.");
+      }
+    }
   };
 
   const renderBottomTabs = () => {
@@ -161,6 +185,16 @@ export default function BuddiHome() {
             </TouchableOpacity>
             <TouchableOpacity className="p-2 bg-primary rounded-xl shadow-sm">
               <Ionicons name="notifications-outline" size={20} color="white" />
+            </TouchableOpacity>
+            <TouchableOpacity
+              className="p-2 bg-red-500 rounded-xl shadow-sm"
+              onPress={() => {
+                console.log("TouchableOpacity pressed!"); // Simple test
+                handleLogout();
+              }}
+              activeOpacity={0.7}
+            >
+              <Ionicons name="log-out-outline" size={20} color="white" />
             </TouchableOpacity>
           </View>
         </View>

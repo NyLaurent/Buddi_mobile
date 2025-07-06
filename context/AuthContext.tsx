@@ -23,9 +23,10 @@ export interface BuddiDetails {
   status:
     | "RegisterApprovalPending"
     | "Registered"
-    | "Approved"
-    | "Active"
-    | "submissionApproved";
+    | "approved"
+    | "verified"
+    | "submissionApproved"
+    | "referenceApproved";
   totalEarnings: number;
   currentSchool: string;
   AreaOfStudy: string;
@@ -339,7 +340,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
           return "/auth/login"; // Redirect to login for final authentication
         }
 
-        if (["Approved", "Active"].includes(buddiDetails.status)) {
+        if (
+          ["referenceApproved", "approved", "verified"].includes(
+            buddiDetails.status
+          )
+        ) {
           return "/buddi";
         }
 
@@ -396,7 +401,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     if (user.role === "admin" || user.role === "minorAdmin") return true;
 
     if (user.role === "buddi" && buddiDetails) {
-      return ["Approved", "Active"].includes(buddiDetails.status);
+      return ["referenceApproved", "approved", "verified"].includes(
+        buddiDetails.status
+      );
     }
 
     if (user.role === "parent" && parentDetails) {
@@ -680,22 +687,35 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 
               // Determine the target URL based on new status
               let targetUrl = "";
-              if (newStatus === "submissionApproved") {
-                console.log(
-                  "Status polling - Status changed to submissionApproved"
-                );
-                targetUrl = "/auth/submission-approved";
-              } else if (newStatus === "Registered") {
-                console.log(
-                  "Status polling - Redirecting to interview-guidelines"
-                );
-                targetUrl = "/auth/interview-guidelines";
-              } else if (!["Approved", "Active"].includes(newStatus)) {
-                console.log("Status polling - Redirecting to waitlist");
-                targetUrl = "/auth/waitlist";
-              } else {
-                console.log("Status polling - Redirecting to buddi portal");
-                targetUrl = "/buddi";
+              console.log(
+                "Status polling - Processing status change:",
+                newStatus
+              );
+
+              switch (newStatus) {
+                case "submissionApproved":
+                  console.log(
+                    "Status polling - Status changed to submissionApproved"
+                  );
+                  targetUrl = "/auth/submission-approved";
+                  break;
+                case "Registered":
+                  console.log(
+                    "Status polling - Redirecting to interview-guidelines"
+                  );
+                  targetUrl = "/auth/interview-guidelines";
+                  break;
+                case "referenceApproved":
+                case "approved":
+                case "verified":
+                  console.log(
+                    "Status polling - Status approved, redirecting to buddi portal"
+                  );
+                  targetUrl = "/buddi";
+                  break;
+                default:
+                  console.log("Status polling - Redirecting to waitlist");
+                  targetUrl = "/auth/waitlist";
               }
 
               console.log("Status polling - Final target URL:", targetUrl);
