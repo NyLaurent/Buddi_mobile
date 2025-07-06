@@ -4,8 +4,8 @@ import {
   Ionicons,
   MaterialIcons,
 } from "@expo/vector-icons";
-import React from "react";
 import { useRouter } from "expo-router";
+import React from "react";
 import {
   Image,
   ScrollView,
@@ -39,7 +39,7 @@ export default function ParentDashboard() {
       router.replace("/auth/login");
     } catch (error) {
       console.error("Logout error:", error); // Debug log
-      if (typeof window !== 'undefined') {
+      if (typeof window !== "undefined") {
         window.alert("Failed to logout. Please try again.");
       }
     }
@@ -62,7 +62,7 @@ export default function ParentDashboard() {
         }}
       >
         {/* Header */}
-        <View className="flex-row justify-between items-start px-1 pt-6">
+        <View className="flex-row justify-between items-start px-1 pt-12">
           {/* Logo */}
           <Image
             source={require("../../assets/images/logo.png")}

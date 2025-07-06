@@ -35,7 +35,7 @@ const MyBuddyPage = () => {
         }}
         showsVerticalScrollIndicator={false}
       >
-        <View className="pt-5">
+        <View className="pt-12">
           <PageHeader title="My Buddi" />
           <View className="flex-row gap-3 px-3">
             <AnalyticsCard

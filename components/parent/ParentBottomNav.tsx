@@ -5,6 +5,7 @@ import { Text, TouchableOpacity, View } from "react-native";
 const tabs = [
   { name: "Home", icon: "home", route: "/parent" },
   { name: "Schedule", icon: "calendar-outline", route: "/parent/schedule" },
+  { name: "Search", icon: "search", route: "/parent", center: true },
   { name: "My Buddi", icon: "people-outline", route: "/parent/my-buddi" },
   { name: "Payments", icon: "wallet-outline", route: "/parent/payments" },
 ];
@@ -51,18 +52,16 @@ export default function ParentBottomNav() {
           </TouchableOpacity>
         ))}
 
-        {/* Middle + button */}
+        {/* Center Search Button */}
         <TouchableOpacity
           style={{
-            marginTop: -60,
+            marginTop: -40,
             width: 60,
             height: 60,
             justifyContent: "center",
             alignItems: "center",
           }}
-          onPress={() => {
-            /* Add your action here */
-          }}
+          onPress={() => router.push("/admin/search" as any)}
         >
           <View
             style={{
@@ -79,12 +78,12 @@ export default function ParentBottomNav() {
               elevation: 8,
             }}
           >
-            <Ionicons name="add" size={32} color="#fff" />
+            <Ionicons name="search" size={32} color="#fff" />
           </View>
         </TouchableOpacity>
 
         {/* Last two tabs */}
-        {tabs.slice(2).map((tab) => (
+        {tabs.slice(3).map((tab) => (
           <TouchableOpacity
             key={tab.name}
             onPress={() => router.push(tab.route as any)}

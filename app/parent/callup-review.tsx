@@ -33,7 +33,9 @@ const callupReview = () => {
           paddingBottom: 20,
         }}
       >
-        <PageHeader title="My Buddi" />
+        <View className="pt-12">
+          <PageHeader title="My Buddi" />
+        </View>
         <Text className="text-lg font-comfortaa-bold px-2">
           Call Up Preview
         </Text>

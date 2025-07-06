@@ -76,10 +76,13 @@ const SchedulePage = () => {
   const [pickupIndex, setPickupIndex] = React.useState(0);
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: "#fff" }} edges={['top', 'left', 'right']}>
-      <StatusBar 
-        barStyle="dark-content" 
-        backgroundColor="transparent" 
+    <SafeAreaView
+      style={{ flex: 1, backgroundColor: "#fff" }}
+      edges={["top", "left", "right"]}
+    >
+      <StatusBar
+        barStyle="dark-content"
+        backgroundColor="transparent"
         translucent={true}
       />
       <ScrollView
@@ -89,12 +92,14 @@ const SchedulePage = () => {
         }}
         showsVerticalScrollIndicator={false}
       >
-        <PageHeader
-          title="Pickup Schedule"
-          onMenuPress={() => {
-            // Add your menu press handler here
-          }}
-        />
+        <View className="pt-12">
+          <PageHeader
+            title="Pickup Schedule"
+            onMenuPress={() => {
+              // Add your menu press handler here
+            }}
+          />
+        </View>
 
         <View className="px-4 mb-6">
           <View className="flex-row gap-3 mb-3">

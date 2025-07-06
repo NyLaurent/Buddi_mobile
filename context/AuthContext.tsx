@@ -295,6 +295,34 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       return;
     }
 
+    // Allow approved buddis to navigate freely within buddi routes
+    if (user.role === "buddi" && buddiDetails) {
+      const isApprovedBuddi = [
+        "referenceApproved",
+        "approved",
+        "verified",
+      ].includes(buddiDetails.status);
+      if (isApprovedBuddi && segments[0] === "buddi") {
+        console.log(
+          "handleNavigation - Approved buddi navigating freely within buddi portal"
+        );
+        return; // Allow free navigation within buddi routes
+      }
+    }
+
+    // Allow approved parents to navigate freely within parent routes
+    if (user.role === "parent" && parentDetails) {
+      const isApprovedParent = ["approved", "active"].includes(
+        parentDetails.approvalStage
+      );
+      if (isApprovedParent && segments[0] === "parent") {
+        console.log(
+          "handleNavigation - Approved parent navigating freely within parent portal"
+        );
+        return; // Allow free navigation within parent routes
+      }
+    }
+
     // Handle other roles navigation
     const targetRoute = getInitialRoute();
     if (targetRoute !== `/${segments.join("/")}`) {
@@ -345,6 +373,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
             buddiDetails.status
           )
         ) {
+          console.log(
+            "getInitialRoute - Approved buddi, returning to buddi portal"
+          );
           return "/buddi";
         }
 
@@ -371,6 +402,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         }
 
         if (["approved", "active"].includes(parentDetails.approvalStage)) {
+          console.log(
+            "getInitialRoute - Approved parent, returning to parent portal"
+          );
           return "/parent";
         }
 

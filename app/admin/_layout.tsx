@@ -7,6 +7,8 @@ import { RouteGuard } from "../../components/commons/RouteGuard";
 export default function AdminLayout() {
   const insets = useSafeAreaInsets();
 
+  
+
   return (
     <RouteGuard allowedRoles={["admin", "minorAdmin"]}>
       <View style={styles.container}>

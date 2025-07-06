@@ -1,13 +1,16 @@
 import React from "react";
-import { ScrollView, StatusBar, View } from "react-native";
+import { ScrollView, StatusBar } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-const payments = () => {
+const Payments = () => {
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: "#fff" }} edges={['top', 'left', 'right']}>
-      <StatusBar 
-        barStyle="dark-content" 
-        backgroundColor="transparent" 
+    <SafeAreaView
+      style={{ flex: 1, backgroundColor: "#fff" }}
+      edges={["top", "left", "right"]}
+    >
+      <StatusBar
+        barStyle="dark-content"
+        backgroundColor="transparent"
         translucent={true}
       />
       <ScrollView
@@ -16,10 +19,10 @@ const payments = () => {
           paddingBottom: 20,
         }}
       >
-        {/* Add your payment content here */}
+        <View className="pt-12">{/* Add your payment content here */}</View>
       </ScrollView>
     </SafeAreaView>
   );
 };
 
-export default payments;
+export default Payments;

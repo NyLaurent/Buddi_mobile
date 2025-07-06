@@ -1,18 +1,32 @@
 import { Ionicons } from "@expo/vector-icons";
-import { usePathname, useRouter } from "expo-router";
+import { Link, usePathname } from "expo-router";
 import { Text, TouchableOpacity, View } from "react-native";
 
 const tabs = [
   { name: "Home", icon: "home", route: "/buddi" },
   { name: "Schedule", icon: "calendar-outline", route: "/buddi/schedule" },
   { name: "Add", icon: "add", route: "", center: true },
-  { name: "Messages", icon: "chatbubble-ellipses-outline", route: "/buddi/messages" },
+  {
+    name: "Messages",
+    icon: "chatbubble-ellipses-outline",
+    route: "/buddi/messages",
+  },
   { name: "Profile", icon: "person-outline", route: "/buddi/profile" },
 ];
 
 export default function BuddiBottomNav() {
-  const router = useRouter();
   const pathname = usePathname();
+
+  const isActiveTab = (route: string) => {
+    if (route === "/buddi") {
+      return (
+        pathname === "/buddi" ||
+        pathname === "/buddi/" ||
+        pathname === "/buddi/index"
+      );
+    }
+    return pathname === route;
+  };
 
   return (
     <View style={{ backgroundColor: "#fff" }}>
@@ -29,27 +43,27 @@ export default function BuddiBottomNav() {
       >
         {/* First two tabs */}
         {tabs.slice(0, 2).map((tab) => (
-          <TouchableOpacity
-            key={tab.name}
-            onPress={() => router.push(tab.route as any)}
-            style={{ alignItems: "center", flex: 1, paddingVertical: 8 }}
-          >
-            <Ionicons
-              name={tab.icon as any}
-              size={24}
-              color={pathname === tab.route ? "#FF932E" : "#666"}
-            />
-            <Text
-              style={{
-                color: pathname === tab.route ? "#FF932E" : "#666",
-                fontFamily: "Comfortaa-Regular",
-                fontSize: 12,
-                marginTop: 2,
-              }}
+          <Link key={tab.name} href={tab.route as any} asChild>
+            <TouchableOpacity
+              style={{ alignItems: "center", flex: 1, paddingVertical: 8 }}
             >
-              {tab.name}
-            </Text>
-          </TouchableOpacity>
+              <Ionicons
+                name={tab.icon as any}
+                size={24}
+                color={isActiveTab(tab.route) ? "#FF932E" : "#666"}
+              />
+              <Text
+                style={{
+                  color: isActiveTab(tab.route) ? "#FF932E" : "#666",
+                  fontFamily: "Comfortaa-Regular",
+                  fontSize: 12,
+                  marginTop: 2,
+                }}
+              >
+                {tab.name}
+              </Text>
+            </TouchableOpacity>
+          </Link>
         ))}
 
         {/* Center Add Button */}
@@ -83,29 +97,29 @@ export default function BuddiBottomNav() {
 
         {/* Last two tabs */}
         {tabs.slice(3).map((tab) => (
-          <TouchableOpacity
-            key={tab.name}
-            onPress={() => router.push(tab.route as any)}
-            style={{ alignItems: "center", flex: 1, paddingVertical: 8 }}
-          >
-            <Ionicons
-              name={tab.icon as any}
-              size={24}
-              color={pathname === tab.route ? "#FF932E" : "#666"}
-            />
-            <Text
-              style={{
-                color: pathname === tab.route ? "#FF932E" : "#666",
-                fontFamily: "Comfortaa-Regular",
-                fontSize: 12,
-                marginTop: 2,
-              }}
+          <Link key={tab.name} href={tab.route as any} asChild>
+            <TouchableOpacity
+              style={{ alignItems: "center", flex: 1, paddingVertical: 8 }}
             >
-              {tab.name}
-            </Text>
-          </TouchableOpacity>
+              <Ionicons
+                name={tab.icon as any}
+                size={24}
+                color={isActiveTab(tab.route) ? "#FF932E" : "#666"}
+              />
+              <Text
+                style={{
+                  color: isActiveTab(tab.route) ? "#FF932E" : "#666",
+                  fontFamily: "Comfortaa-Regular",
+                  fontSize: 12,
+                  marginTop: 2,
+                }}
+              >
+                {tab.name}
+              </Text>
+            </TouchableOpacity>
+          </Link>
         ))}
       </View>
     </View>
   );
-} 
+}

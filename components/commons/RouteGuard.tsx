@@ -1,4 +1,4 @@
-import { useRouter } from "expo-router";
+import { useRouter, useSegments } from "expo-router";
 import React, { useEffect, useRef } from "react";
 import { ActivityIndicator, Text, View } from "react-native";
 import { useAuth } from "../../context/AuthContext";
@@ -18,6 +18,7 @@ export const RouteGuard: React.FC<RouteGuardProps> = ({
 }) => {
   const { user, buddiDetails, parentDetails, isLoading } = useAuth();
   const router = useRouter();
+  const segments = useSegments();
   const hasRedirected = useRef(false);
 
   useEffect(() => {
@@ -42,36 +43,79 @@ export const RouteGuard: React.FC<RouteGuardProps> = ({
       return;
     }
 
-    // For parent role, only check basic authentication
-    if (user.role === "parent") {
-      return;
-    }
+    // Handle approval requirements based on role
+    if (requireApproval) {
+      switch (user.role) {
+        case "buddi":
+          if (buddiDetails) {
+            // Allow approved buddis to navigate freely within their portal
+            const isApprovedBuddi = [
+              "referenceApproved",
+              "approved",
+              "verified",
+            ].includes(buddiDetails.status);
+            const isInBuddiPortal = segments[0] === "buddi";
 
-    // Check approval requirements for buddi (skip for admin roles)
-    if (requireApproval && !["admin", "minorAdmin"].includes(user.role)) {
-      if (user.role === "buddi" && buddiDetails) {
-        if (buddiDetails.status === "RegisterApprovalPending") {
-          hasRedirected.current = true;
-          router.replace("/auth/waitlist");
-          return;
-        }
-        if (
-          buddiDetails.status === "Registered" &&
-          !buddiDetails.recordingCompleted
-        ) {
-          hasRedirected.current = true;
-          router.replace("/auth/interview-guidelines");
-          return;
-        }
+            if (isApprovedBuddi && isInBuddiPortal) {
+              // Allow free navigation within buddi portal for approved users
+              return;
+            }
+
+            if (buddiDetails.status === "RegisterApprovalPending") {
+              hasRedirected.current = true;
+              router.replace("/auth/waitlist");
+              return;
+            }
+            if (
+              buddiDetails.status === "Registered" &&
+              !buddiDetails.recordingCompleted
+            ) {
+              hasRedirected.current = true;
+              router.replace("/auth/interview-guidelines");
+              return;
+            }
+          }
+          break;
+        case "admin":
+        case "minorAdmin":
+          // Admin roles don't need approval checks
+          break;
+        case "parent":
+          if (parentDetails) {
+            // Allow approved parents to navigate freely within their portal
+            const isApprovedParent = ["approved", "active"].includes(
+              parentDetails.approvalStage
+            );
+            const isInParentPortal = segments[0] === "parent";
+
+            if (isApprovedParent && isInParentPortal) {
+              // Allow free navigation within parent portal for approved users
+              return;
+            }
+
+            if (parentDetails.approvalStage === "pending") {
+              hasRedirected.current = true;
+              router.replace("/auth/waitlist");
+              return;
+            }
+            if (!["approved", "active"].includes(parentDetails.approvalStage)) {
+              hasRedirected.current = true;
+              router.replace("/auth/waitlist");
+              return;
+            }
+          }
+          break;
       }
     }
   }, [
     user,
     buddiDetails,
+    parentDetails,
     isLoading,
     allowedRoles,
     requireApproval,
     redirectTo,
+    segments,
   ]);
 
   // Show loading while checking authentication
@@ -99,7 +143,7 @@ export const RouteGuard: React.FC<RouteGuardProps> = ({
     );
   }
 
-  // Only check basic authentication for parents
+  // Check authentication and role permissions
   if (!user || (allowedRoles.length > 0 && !allowedRoles.includes(user.role))) {
     return null;
   }
