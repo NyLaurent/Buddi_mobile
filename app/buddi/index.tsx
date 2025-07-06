@@ -19,9 +19,6 @@ import AnalyticsCard from "../../components/commons/AnalyticsCard";
 import Calendar from "../../components/commons/Calendar";
 import CongratulationsCard from "../../components/commons/CongratulationsCard";
 import PickupCard from "../../components/commons/PickupCard";
-import Messages from "./messages";
-import Profile from "./profile";
-import SchedulePage from "./schedule";
 import { useAuth } from "../../context/AuthContext";
 
 const DOT_SIZE = 8;
@@ -30,10 +27,8 @@ const DOT_COLOR_ACTIVE = "#FF932E";
 const DOT_COLOR_INACTIVE = "#E0E0E0";
 
 export default function BuddiHome() {
-  const [activeTab, setActiveTab] = useState(0);
   const [activeCard, setActiveCard] = useState(0);
   const [selectedDate, setSelectedDate] = useState(new Date());
-  const [chatOpen, setChatOpen] = useState(false);
   const scrollViewRef = useRef(null);
   const insets = useSafeAreaInsets();
   const router = useRouter();
@@ -45,13 +40,12 @@ export default function BuddiHome() {
     const newIndex = Math.round(contentOffset / cardWidth);
     setActiveCard(newIndex);
   };
+
   const handleLogout = () => {
     console.log("Logout button clicked!"); // Debug log
-    
-    // For web compatibility, logout directly without Alert confirmation
-    // TODO: Add proper web-compatible confirmation modal later
     handleLogoutConfirmed();
   };
+
   const handleLogoutConfirmed = async () => {
     console.log("User confirmed logout"); // Debug log
     try {
@@ -61,108 +55,19 @@ export default function BuddiHome() {
       router.replace("/auth/login");
     } catch (error) {
       console.error("Logout error:", error); // Debug log
-      // For web, use window.alert as fallback
       if (typeof window !== 'undefined') {
         window.alert("Failed to logout. Please try again.");
       }
     }
   };
 
-  const renderBottomTabs = () => {
-    return (
-      <View
-        className="absolute bottom-0 left-0 right-0 bg-white flex-row justify-around items-center border-t border-gray/10 shadow-lg"
-        style={{
-          paddingBottom: Math.max(insets.bottom, 16),
-          height: Platform.select({
-            ios: 80 + insets.bottom,
-            android: 65 + insets.bottom,
-          }),
-        }}
-      >
-        <TouchableOpacity
-          className="items-center justify-center py-2"
-          onPress={() => setActiveTab(0)}
-        >
-          <Ionicons
-            name="home"
-            size={24}
-            color={activeTab === 0 ? "#FF932E" : "#666"}
-          />
-          <Text
-            className={`mt-1 text-xs font-comfortaa ${
-              activeTab === 0 ? "text-primary" : "text-gray-500"
-            }`}
-          >
-            Home
-          </Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          className="items-center justify-center py-2"
-          onPress={() => setActiveTab(1)}
-        >
-          <Ionicons
-            name="calendar-outline"
-            size={24}
-            color={activeTab === 1 ? "#FF932E" : "#666"}
-          />
-          <Text
-            className={`mt-1 text-xs font-comfortaa ${
-              activeTab === 1 ? "text-primary" : "text-gray-500"
-            }`}
-          >
-            Schedule
-          </Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity style={styles.addButton}>
-          <View style={styles.addButtonInner}>
-            <Ionicons name="add" size={32} color="#fff" />
-          </View>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          className="items-center justify-center py-2"
-          onPress={() => setActiveTab(3)}
-        >
-          <Ionicons
-            name="chatbubble-ellipses-outline"
-            size={24}
-            color={activeTab === 3 ? "#FF932E" : "#666"}
-          />
-          <Text
-            className={`mt-1 text-xs font-comfortaa ${
-              activeTab === 3 ? "text-primary" : "text-gray-500"
-            }`}
-          >
-            Messages
-          </Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          className="items-center justify-center py-2"
-          onPress={() => setActiveTab(4)}
-        >
-          <Ionicons
-            name="person-outline"
-            size={24}
-            color={activeTab === 4 ? "#FF932E" : "#666"}
-          />
-          <Text
-            className={`mt-1 text-xs font-comfortaa ${
-              activeTab === 4 ? "text-primary" : "text-gray-500"
-            }`}
-          >
-            Profile
-          </Text>
-        </TouchableOpacity>
-      </View>
-    );
-  };
-
-  const renderHomeContent = () => {
-    return (
+  return (
+    <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
+      <StatusBar 
+        barStyle="dark-content" 
+        backgroundColor="transparent" 
+        translucent={true}
+      />
       <ScrollView
         showsVerticalScrollIndicator={false}
         className="flex-1 pt-2"
@@ -188,10 +93,7 @@ export default function BuddiHome() {
             </TouchableOpacity>
             <TouchableOpacity
               className="p-2 bg-red-500 rounded-xl shadow-sm"
-              onPress={() => {
-                console.log("TouchableOpacity pressed!"); // Simple test
-                handleLogout();
-              }}
+              onPress={handleLogout}
               activeOpacity={0.7}
             >
               <Ionicons name="log-out-outline" size={20} color="white" />
@@ -327,21 +229,6 @@ export default function BuddiHome() {
           />
         </View>
       </ScrollView>
-    );
-  };
-
-  return (
-    <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
-      <StatusBar 
-        barStyle="dark-content" 
-        backgroundColor="transparent" 
-        translucent={true}
-      />
-      {activeTab === 0 && renderHomeContent()}
-      {activeTab === 1 && <SchedulePage />}
-      {activeTab === 3 && <Messages />}
-      {activeTab === 4 && <Profile />}
-      {renderBottomTabs()}
     </SafeAreaView>
   );
 }
@@ -350,102 +237,5 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#fff",
-  },
-  scrollView: {
-    flex: 1,
-  },
-  logoContainer: {
-    alignItems: "center",
-    marginVertical: 16,
-  },
-  logo: {
-    width: 120,
-    height: 40,
-    resizeMode: "contain",
-  },
-  greeting: {
-    fontSize: 18,
-    fontWeight: "bold",
-    margin: 16,
-    fontFamily: "Comfortaa-Bold",
-  },
-  subGreeting: {
-    color: "#888",
-    marginHorizontal: 16,
-    fontFamily: "Comfortaa-Regular",
-  },
-  cardsContainer: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    margin: 16,
-  },
-  iconCircle: {
-    padding: 10,
-    borderRadius: 20,
-  },
-  congratsContainer: {
-    margin: 16,
-    backgroundColor: "#f5f5f5",
-    borderRadius: 16,
-    padding: 16,
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-  },
-  congratsContent: {
-    flex: 1,
-  },
-  congratsTitle: {
-    fontWeight: "bold",
-    fontFamily: "Comfortaa-Bold",
-  },
-  congratsText: {
-    color: "#666",
-    marginTop: 4,
-    fontFamily: "Comfortaa-Regular",
-  },
-  viewHistoryButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 4,
-  },
-  viewHistoryText: {
-    color: "#666",
-    fontFamily: "Comfortaa-Regular",
-  },
-  pickupsHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    margin: 16,
-  },
-  pickupsTitle: {
-    fontWeight: "bold",
-    fontSize: 16,
-    fontFamily: "Comfortaa-Bold",
-  },
-  viewAll: {
-    color: "#FF932E",
-    fontFamily: "Comfortaa-Regular",
-  },
-  addButton: {
-    marginTop: -40,
-    width: 60,
-    height: 60,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  addButtonInner: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    backgroundColor: "#FF932E",
-    justifyContent: "center",
-    alignItems: "center",
-    shadowColor: "#FF932E",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 4,
-    elevation: 8,
   },
 });
