@@ -1,6 +1,7 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useRouter, useSegments } from "expo-router";
 import React, { createContext, useContext, useEffect, useState } from "react";
+import { FullScreenLoader } from "../components/commons/FullScreenLoader";
 import AuthService from "../services/api/auth.service";
 import { STORAGE_KEYS } from "../services/api/config";
 
@@ -19,7 +20,12 @@ export interface User {
 
 export interface BuddiDetails {
   id: number;
-  status: "RegisterApprovalPending" | "Registered" | "Approved" | "Active";
+  status:
+    | "RegisterApprovalPending"
+    | "Registered"
+    | "Approved"
+    | "Active"
+    | "submissionApproved";
   totalEarnings: number;
   currentSchool: string;
   AreaOfStudy: string;
@@ -99,6 +105,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   );
   const [isLoading, setIsLoading] = useState(true);
   const [isLoggingIn, setIsLoggingIn] = useState(false);
+  const [showLoader, setShowLoader] = useState(false);
   const router = useRouter();
   const segments = useSegments();
   const [statusPollInterval, setStatusPollInterval] = useState<any>(null);
@@ -112,8 +119,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 
   // Handle navigation based on auth state
   useEffect(() => {
-    // Don't interfere with navigation during login process
-    if (!isLoading && !isLoggingIn) {
+    // Don't interfere with navigation during login process or status changes
+    if (!isLoading && !isLoggingIn && !statusPollInterval) {
       handleNavigation();
     }
   }, [user, buddiDetails, parentDetails, isLoading, isLoggingIn, segments]);
@@ -190,16 +197,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   const handleNavigation = () => {
     const inAuthGroup = segments[0] === "auth";
     const inProtectedRoute = ["buddi", "parent", "admin"].includes(segments[0]);
-    
+
     // TEMPORARY: Allow unrestricted access to these routes for development
     // TODO: REMOVE THIS BEFORE PRODUCTION
-    const isTemporaryUnprotectedRoute = 
-      segments[0] === "onboarding" || 
+    const isTemporaryUnprotectedRoute =
+      segments[0] === "onboarding" ||
       segments[0] === "role-select" ||
       (inAuthGroup && segments[1] === "signup");
 
     if (isTemporaryUnprotectedRoute) {
-      console.log("handleNavigation - Temporarily allowing access to development routes");
+      console.log(
+        "handleNavigation - Temporarily allowing access to development routes"
+      );
       return;
     }
 
@@ -209,6 +218,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 
     // Make login route always accessible
     const isLoginRoute = segments[0] === "auth" && segments[1] === "login";
+
+    // Allow submission-approved page access
+    const isSubmissionApprovedRoute =
+      inAuthGroup &&
+      segments[1] === "submission-approved" &&
+      user?.role === "buddi" &&
+      buddiDetails?.status === "submissionApproved";
 
     // Allow recording page access for registered buddis
     const isRecordingFlow =
@@ -224,14 +240,22 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       isPublicRoute,
       isRecordingFlow,
       isLoginRoute,
+      isSubmissionApprovedRoute,
       userRole: user?.role,
       buddiStatus: buddiDetails?.status,
       recordingCompleted: buddiDetails?.recordingCompleted,
+      currentPath: segments.join("/"),
     });
 
     // Always allow access to login route
     if (isLoginRoute) {
       console.log("handleNavigation - Login route is freely accessible");
+      return;
+    }
+
+    // Allow submission-approved route
+    if (isSubmissionApprovedRoute) {
+      console.log("handleNavigation - Submission approved route is accessible");
       return;
     }
 
@@ -245,6 +269,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       if (inProtectedRoute) {
         router.replace("/auth/login");
       }
+      return;
+    }
+
+    // Check if we need to redirect to submission-approved
+    if (
+      user.role === "buddi" &&
+      buddiDetails?.status === "submissionApproved" &&
+      (!inAuthGroup || segments[1] !== "submission-approved")
+    ) {
+      console.log("handleNavigation - Redirecting to submission-approved");
+      router.replace("/auth/submission-approved/index" as any);
       return;
     }
 
@@ -284,6 +319,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 
         if (buddiDetails.status === "RegisterApprovalPending") {
           return "/auth/waitlist";
+        }
+
+        if (buddiDetails.status === "submissionApproved") {
+          return "/auth/submission-approved";
         }
 
         if (
@@ -437,6 +476,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
           console.log("Login - Buddi status:", apiUser.Buddi.status);
           if (apiUser.Buddi.status === "RegisterApprovalPending") {
             targetRoute = "/auth/waitlist";
+          } else if (apiUser.Buddi.status === "submissionApproved") {
+            targetRoute = "/auth/submission-approved";
           } else if (
             apiUser.Buddi.status === "Registered" &&
             !apiUser.Buddi.recordingCompleted
@@ -604,21 +645,69 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
             const currentStatus = buddiDetails?.status;
             const newStatus = apiUser.Buddi.status;
 
+            console.log("Status polling - Current status:", {
+              currentStatus,
+              newStatus,
+              userId: user.userId,
+              role: user.role,
+            });
+
             if (currentStatus !== newStatus) {
               console.log(
                 `Buddi status changed: ${currentStatus} → ${newStatus}`
               );
 
+              // Stop polling before navigation
+              stopStatusPolling();
+
+              // Show loader
+              setShowLoader(true);
+
               // Update buddi details
-              setBuddiDetails(apiUser.Buddi);
+              const updatedBuddiDetails = apiUser.Buddi;
+              console.log(
+                "Status polling - Updating buddi details:",
+                updatedBuddiDetails
+              );
+              setBuddiDetails(updatedBuddiDetails);
               await AsyncStorage.setItem(
                 "buddi_details",
-                JSON.stringify(apiUser.Buddi)
+                JSON.stringify(updatedBuddiDetails)
               );
 
-              // Navigate based on new status
-              const targetRoute = getInitialRoute();
-              router.replace(targetRoute as any);
+              // Small delay to ensure state is updated
+              await new Promise((resolve) => setTimeout(resolve, 100));
+
+              // Determine the target URL based on new status
+              let targetUrl = "";
+              if (newStatus === "submissionApproved") {
+                console.log(
+                  "Status polling - Status changed to submissionApproved"
+                );
+                targetUrl = "/auth/submission-approved";
+              } else if (newStatus === "Registered") {
+                console.log(
+                  "Status polling - Redirecting to interview-guidelines"
+                );
+                targetUrl = "/auth/interview-guidelines";
+              } else if (!["Approved", "Active"].includes(newStatus)) {
+                console.log("Status polling - Redirecting to waitlist");
+                targetUrl = "/auth/waitlist";
+              } else {
+                console.log("Status polling - Redirecting to buddi portal");
+                targetUrl = "/buddi";
+              }
+
+              console.log("Status polling - Final target URL:", targetUrl);
+
+              // Update URL using router for proper navigation
+              router.replace(targetUrl as any);
+
+              // Small delay to ensure navigation completes
+              await new Promise((resolve) => setTimeout(resolve, 500));
+
+              // Refresh the page to ensure clean state
+              window.location.reload();
             }
           }
 
@@ -631,16 +720,31 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
                 `Parent approval stage changed: ${currentStage} → ${newStage}`
               );
 
+              // Stop polling before navigation
+              stopStatusPolling();
+
+              // Show loader
+              setShowLoader(true);
+
               // Update parent details
-              setParentDetails(apiUser.Parent);
+              const updatedParentDetails = apiUser.Parent;
+              setParentDetails(updatedParentDetails);
               await AsyncStorage.setItem(
                 "parent_details",
-                JSON.stringify(apiUser.Parent)
+                JSON.stringify(updatedParentDetails)
               );
 
-              // Navigate based on new status
-              const targetRoute = getInitialRoute();
-              router.replace(targetRoute as any);
+              // Small delay to ensure state is updated
+              await new Promise((resolve) => setTimeout(resolve, 100));
+
+              // Determine target URL and force reload
+              const targetUrl = !["approved", "active"].includes(newStage)
+                ? "/auth/waitlist"
+                : "/parent";
+
+              // Change URL and force reload
+              window.location.href = targetUrl;
+              window.location.reload();
             }
           }
         } catch (error) {
@@ -685,5 +789,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     canAccessPortal,
   };
 
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+  return (
+    <AuthContext.Provider value={value}>
+      {children}
+      {(isLoading || showLoader) && <FullScreenLoader />}
+    </AuthContext.Provider>
+  );
 };

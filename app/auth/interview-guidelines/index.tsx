@@ -13,6 +13,7 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { FullScreenLoader } from "../../../components/commons/FullScreenLoader";
 import { useAuth } from "../../../context/AuthContext";
 
 const PRIMARY_COLOR = "#FF932E";
@@ -21,6 +22,7 @@ const VideoGuidelinesScreen = () => {
   const router = useRouter();
   const { user, buddiDetails } = useAuth();
   const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [isTransitioning, setIsTransitioning] = useState(false);
 
   type GuidelineKey = "guideline1" | "guideline2" | "guideline3" | "guideline4";
 
@@ -37,16 +39,25 @@ const VideoGuidelinesScreen = () => {
 
   // Add access control
   useEffect(() => {
-    // Check if user should be on this screen
-    if (!user || user.role !== "buddi") {
-      router.replace("/auth/login");
-      return;
-    }
+    const checkAccess = async () => {
+      // Check if user should be on this screen
+      if (!user || user.role !== "buddi") {
+        setIsTransitioning(true);
+        await router.replace("/auth/login" as any);
+        return;
+      }
 
-    if (!buddiDetails || buddiDetails.status !== "Registered") {
-      router.replace("/auth/waitlist");
-      return;
-    }
+      if (!buddiDetails) return; // Wait for buddiDetails to load
+
+      // Allow both Registered and submissionApproved status for guidelines
+      if (buddiDetails.status !== "Registered" && buddiDetails.status !== "submissionApproved") {
+        setIsTransitioning(true);
+        await router.replace("/auth/waitlist" as any);
+        return;
+      }
+    };
+
+    checkAccess();
   }, [user, buddiDetails]);
 
   const toggleGuideline = (key: GuidelineKey) => {
@@ -57,15 +68,12 @@ const VideoGuidelinesScreen = () => {
   };
 
   const handleStartPress = () => {
-    if (!allGuidelinesRead) {
-      alert("Please read and acknowledge all guidelines before proceeding.");
-      return;
-    }
     setShowConfirmModal(true);
   };
 
   return (
     <View style={{ flex: 1 }}>
+      {isTransitioning && <FullScreenLoader />}
       <StatusBar
         translucent
         backgroundColor="transparent"
@@ -310,9 +318,7 @@ const VideoGuidelinesScreen = () => {
             {/* Start Button */}
             <View className="px-2 my-4">
               <TouchableOpacity
-                className={`py-3 rounded-full w-full flex-row justify-center items-center ${
-                  allGuidelinesRead ? "bg-[#FF932E]" : "bg-gray-400"
-                }`}
+                className="py-3 rounded-full w-full flex-row justify-center items-center bg-[#FF932E]"
                 onPress={handleStartPress}
               >
                 <Text className="font-comfortaa-bold text-white text-base mr-2">
@@ -358,9 +364,7 @@ const VideoGuidelinesScreen = () => {
                   router.push("/auth/recording");
                 }}
               >
-                <Text className="font-comfortaa-bold text-white">
-                  Continue
-                </Text>
+                <Text className="font-comfortaa-bold text-white">Continue</Text>
               </TouchableOpacity>
             </View>
           </View>

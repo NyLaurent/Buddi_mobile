@@ -15,6 +15,7 @@ export const AUTH_ENDPOINTS = {
   VERIFY_EMAIL: '/auth/verify-email',
   RESEND_VERIFICATION: '/auth/resend-verification',
   PROFILE: '/auth/profile',
+  UPLOAD_INTERVIEW_VIDEO: (buddiId: number) => `/buddi/interview/${buddiId}/uploadBuddiInterviewVideo/video`,
 } as const;
 
 // User Endpoints

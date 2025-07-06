@@ -2,15 +2,15 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { authorizedApi, STORAGE_KEYS, unauthorizedApi } from './config';
 import { AUTH_ENDPOINTS } from './endpoints';
 import {
-    ApiResponse,
-    AuthResponse,
-    BuddiRegistrationRequest,
-    BuddiRegistrationResponse,
-    LoginRequest,
-    LoginResponse,
-    ParentRegistrationRequest,
-    ParentRegistrationResponse,
-    RegisterRequest
+  ApiResponse,
+  AuthResponse,
+  BuddiRegistrationRequest,
+  BuddiRegistrationResponse,
+  LoginRequest,
+  LoginResponse,
+  ParentRegistrationRequest,
+  ParentRegistrationResponse,
+  RegisterRequest
 } from './types';
 
 // Sanitized user interface without password
@@ -290,6 +290,25 @@ class AuthService {
     }
     
     return new Error(error.message || 'An unexpected error occurred');
+  }
+
+  async uploadBuddiInterviewVideo(buddiId: number, videoData: FormData) {
+    try {
+      const response = await authorizedApi.post(
+        AUTH_ENDPOINTS.UPLOAD_INTERVIEW_VIDEO(buddiId),
+        videoData,
+        {
+          headers: {
+            'Content-Type': 'multipart/form-data',
+          },
+        }
+      );
+
+      return response.data;
+    } catch (error) {
+      console.error('Error uploading interview video:', error);
+      throw this.handleAuthError(error);
+    }
   }
 }
 
