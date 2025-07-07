@@ -2,17 +2,17 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { authorizedApi, STORAGE_KEYS, unauthorizedApi } from './config';
 import { AUTH_ENDPOINTS } from './endpoints';
 import {
-    ApiResponse,
-    AuthResponse,
-    BuddiRegistrationRequest,
-    BuddiRegistrationResponse,
-    LoginRequest,
-    LoginResponse,
-    ParentRegistrationRequest,
-    ParentRegistrationResponse,
-    ReferralTeacherRegistrationRequest,
-    ReferralTeacherRegistrationResponse,
-    RegisterRequest
+  ApiResponse,
+  AuthResponse,
+  BuddiRegistrationRequest,
+  BuddiRegistrationResponse,
+  LoginRequest,
+  LoginResponse,
+  ParentRegistrationRequest,
+  ParentRegistrationResponse,
+  ReferralTeacherRegistrationRequest,
+  ReferralTeacherRegistrationResponse,
+  RegisterRequest
 } from './types';
 
 // Sanitized user interface without password

@@ -17,6 +17,10 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import CountryPicker, {
+  Country,
+  CountryCode,
+} from "react-native-country-picker-modal";
 import { SafeAreaView } from "react-native-safe-area-context";
 import SuccessScreen from "../../../../components/commons/SuccessScreen";
 import authService from "../../../../services/api/auth.service";
@@ -37,6 +41,11 @@ interface FormData {
   password: string;
   confirmPassword: string;
   phoneNumber: string;
+  countryCallingCode: string;
+  teacherPhoneNumber: string;
+  teacherCountryCode: string;
+  customReferralPhoneNumber: string;
+  customReferralCountryCode: string;
   firstName: string;
   lastName: string;
   homeAddress: string;
@@ -44,13 +53,14 @@ interface FormData {
   AreaOfStudy: string;
   Gpa: string;
   teacherEmail: string;
-  teacherPhoneNumber: string;
   customReferral: string;
   referralOccupation: string;
   resume: File | null;
   gender: string;
   dob: string;
   profilePicture: File | null;
+  showPassword: boolean;
+  showConfirmPassword: boolean;
 }
 
 const initialFormData: FormData = {
@@ -58,6 +68,11 @@ const initialFormData: FormData = {
   password: "",
   confirmPassword: "",
   phoneNumber: "",
+  countryCallingCode: "",
+  teacherPhoneNumber: "",
+  teacherCountryCode: "",
+  customReferralPhoneNumber: "",
+  customReferralCountryCode: "",
   firstName: "",
   lastName: "",
   homeAddress: "",
@@ -65,28 +80,98 @@ const initialFormData: FormData = {
   AreaOfStudy: "",
   Gpa: "",
   teacherEmail: "",
-  teacherPhoneNumber: "",
   customReferral: "",
   referralOccupation: "",
   resume: null,
   gender: GENDERS[0],
   dob: "",
   profilePicture: null,
+  showPassword: false,
+  showConfirmPassword: false,
 };
 
 interface StepProps {
   onLogin?: () => void;
   formData: FormData;
   setFormData: React.Dispatch<React.SetStateAction<FormData>>;
+  errors: any;
+  countryCode: CountryCode;
+  setCountryCode: React.Dispatch<React.SetStateAction<CountryCode>>;
+  country: Country | null;
+  setCountry: React.Dispatch<React.SetStateAction<Country | null>>;
+}
+
+// Validation function
+function validateForm(formData: FormData, step: number) {
+  const errors: any = {};
+
+  if (step === 0) {
+    // Registration step validation
+    if (!formData.firstName) errors.firstName = "First name is required";
+    if (!formData.lastName) errors.lastName = "Last name is required";
+    if (!formData.email) errors.email = "Email is required";
+    else if (!/^[^@\s]+@[^@\s]+\.edu$/.test(formData.email))
+      errors.email = "Email must be a valid .edu email address";
+    if (!formData.password) errors.password = "Password is required";
+    else if (
+      !/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?]).{8,}$/.test(
+        formData.password
+      )
+    ) {
+      errors.password =
+        "Password must be at least 8 characters and include uppercase, lowercase, number, and special character";
+    }
+    if (formData.password !== formData.confirmPassword)
+      errors.confirmPassword = "Passwords do not match";
+    if (!formData.phoneNumber) errors.phoneNumber = "Phone number is required";
+    if (!formData.countryCallingCode)
+      errors.phoneNumber = "Please select a country code";
+    if (!formData.homeAddress) errors.homeAddress = "Home address is required";
+    if (!formData.dob) errors.dob = "Date of birth is required";
+    if (formData.gender === GENDERS[0])
+      errors.gender = "Please select your gender";
+  }
+
+  if (step === 1) {
+    // Academic details validation
+    if (!formData.currentSchool)
+      errors.currentSchool = "Current school is required";
+    if (!formData.AreaOfStudy) errors.AreaOfStudy = "Area of study is required";
+  }
+
+  if (step === 3) {
+    // References validation
+    if (!formData.teacherEmail && !formData.customReferral) {
+      errors.references =
+        "Please provide at least one reference (Head Teacher or Custom Reference)";
+    }
+    if (
+      formData.teacherEmail &&
+      !/^[^@\s]+@[^@\s]+\.edu$/.test(formData.teacherEmail)
+    ) {
+      errors.teacherEmail = "Head Teacher email must be a valid .edu email";
+    }
+    if (
+      formData.customReferral &&
+      !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(formData.customReferral)
+    ) {
+      errors.customReferral = "Please enter a valid email address";
+    }
+  }
+
+  return errors;
 }
 
 const RegistrationStep: React.FC<StepProps> = ({
   onLogin,
   formData,
   setFormData,
+  errors,
+  countryCode,
+  setCountryCode,
+  country,
+  setCountry,
 }) => {
-  const [showPassword, setShowPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [showDate, setShowDate] = useState(false);
 
   const pickImage = async () => {
@@ -167,6 +252,11 @@ const RegistrationStep: React.FC<StepProps> = ({
               placeholder="John Doe"
               placeholderTextColor="#A0A0A0"
             />
+            {errors.firstName ? (
+              <Text style={{ color: "red", fontSize: 12, marginTop: 4 }}>
+                {errors.firstName}
+              </Text>
+            ) : null}
           </View>
           <View style={{ flex: 1 }}>
             <Text className="font-comfortaa-bold text-xs text-gray-500 mb-1">
@@ -181,6 +271,11 @@ const RegistrationStep: React.FC<StepProps> = ({
               placeholder="John Doe"
               placeholderTextColor="#A0A0A0"
             />
+            {errors.lastName ? (
+              <Text style={{ color: "red", fontSize: 12, marginTop: 4 }}>
+                {errors.lastName}
+              </Text>
+            ) : null}
           </View>
         </View>
         <View style={{ marginBottom: 20 }}>
@@ -207,8 +302,13 @@ const RegistrationStep: React.FC<StepProps> = ({
             />
           </View>
           <Text className="font-comfortaa text-xs text-gray-400 mt-1">
-            Use a valid .ed email
+            Use a valid .edu email
           </Text>
+          {errors.email ? (
+            <Text style={{ color: "red", fontSize: 12, marginTop: 4 }}>
+              {errors.email}
+            </Text>
+          ) : null}
         </View>
         <View style={{ flexDirection: "row", gap: 16, marginBottom: 20 }}>
           <View style={{ flex: 1 }}>
@@ -224,17 +324,29 @@ const RegistrationStep: React.FC<StepProps> = ({
                 }
                 placeholder="********"
                 placeholderTextColor="#A0A0A0"
-                secureTextEntry={!showPassword}
+                secureTextEntry={!formData.showPassword}
               />
-              <TouchableOpacity onPress={() => setShowPassword((v) => !v)}>
+              <TouchableOpacity
+                onPress={() =>
+                  setFormData((prev) => ({
+                    ...prev,
+                    showPassword: !prev.showPassword,
+                  }))
+                }
+              >
                 <Ionicons
-                  name={showPassword ? "eye" : "eye-off"}
+                  name={formData.showPassword ? "eye" : "eye-off"}
                   size={20}
                   color="#A0A0A0"
                   style={{ marginLeft: 8 }}
                 />
               </TouchableOpacity>
             </View>
+            {errors.password ? (
+              <Text style={{ color: "red", fontSize: 12, marginTop: 4 }}>
+                {errors.password}
+              </Text>
+            ) : null}
           </View>
           <View style={{ flex: 1 }}>
             <Text className="font-comfortaa-bold text-xs text-gray-500 mb-1">
@@ -249,19 +361,29 @@ const RegistrationStep: React.FC<StepProps> = ({
                 }
                 placeholder="********"
                 placeholderTextColor="#A0A0A0"
-                secureTextEntry={!showConfirmPassword}
+                secureTextEntry={!formData.showConfirmPassword}
               />
               <TouchableOpacity
-                onPress={() => setShowConfirmPassword((v) => !v)}
+                onPress={() =>
+                  setFormData((prev) => ({
+                    ...prev,
+                    showConfirmPassword: !prev.showConfirmPassword,
+                  }))
+                }
               >
                 <Ionicons
-                  name={showConfirmPassword ? "eye" : "eye-off"}
+                  name={formData.showConfirmPassword ? "eye" : "eye-off"}
                   size={20}
                   color="#A0A0A0"
                   style={{ marginLeft: 8 }}
                 />
               </TouchableOpacity>
             </View>
+            {errors.confirmPassword ? (
+              <Text style={{ color: "red", fontSize: 12, marginTop: 4 }}>
+                {errors.confirmPassword}
+              </Text>
+            ) : null}
           </View>
         </View>
         <View style={{ flexDirection: "row", gap: 16, marginBottom: 20 }}>
@@ -304,6 +426,11 @@ const RegistrationStep: React.FC<StepProps> = ({
                 <Ionicons name="calendar" size={20} color="#A0A0A0" />
               </TouchableOpacity>
             </View>
+            {errors.dob ? (
+              <Text style={{ color: "red", fontSize: 12, marginTop: 4 }}>
+                {errors.dob}
+              </Text>
+            ) : null}
             {showDate && (
               <DateTimePicker
                 value={formData.dob ? new Date(formData.dob) : new Date()}
@@ -364,45 +491,71 @@ const RegistrationStep: React.FC<StepProps> = ({
                 ))}
               </Picker>
             </View>
+            {errors.gender ? (
+              <Text style={{ color: "red", fontSize: 12, marginTop: 4 }}>
+                {errors.gender}
+              </Text>
+            ) : null}
           </View>
         </View>
         <View style={{ marginBottom: 20 }}>
-          <View style={{ flex: 1 }}>
-            <Text className="font-comfortaa-bold text-xs text-gray-500 mb-1">
-              Phone Number
+          <Text className="font-comfortaa-bold text-xs text-gray-500 mb-1">
+            Phone Number
+          </Text>
+          <View
+            style={{
+              flexDirection: "row",
+              alignItems: "center",
+              backgroundColor: "#fff",
+              borderRadius: 16,
+              borderWidth: 1,
+              borderColor: "#CBD5E1",
+              height: 52,
+              paddingHorizontal: 8,
+            }}
+          >
+            <CountryPicker
+              countryCode={countryCode}
+              withFilter
+              withFlag
+              withCallingCode
+              withEmoji
+              onSelect={(c: Country) => {
+                setCountryCode(c.cca2);
+                setCountry(c);
+                setFormData((prev) => ({
+                  ...prev,
+                  countryCallingCode: c.callingCode[0],
+                }));
+              }}
+              containerButtonStyle={{ marginRight: 8 }}
+            />
+            <Text style={{ marginRight: 4, fontSize: 16 }}>
+              +{formData.countryCallingCode || ""}
             </Text>
-            <View
+            <TextInput
+              value={formData.phoneNumber}
+              onChangeText={(text) =>
+                setFormData((prev) => ({
+                  ...prev,
+                  phoneNumber: text,
+                }))
+              }
+              placeholder="Enter your phone number"
+              keyboardType="phone-pad"
               style={{
                 flex: 1,
-                flexDirection: "row",
-                alignItems: "center",
-                backgroundColor: "#fff",
-                borderRadius: 16,
-                borderWidth: 1,
-                borderColor: "#CBD5E1",
-                height: 52,
-                paddingHorizontal: 16,
+                fontFamily: "comfortaa-medium",
+                color: "#374151",
+                fontSize: 14,
               }}
-            >
-              <TextInput
-                value={formData.phoneNumber}
-                onChangeText={(text) =>
-                  setFormData((prev) => ({
-                    ...prev,
-                    phoneNumber: text,
-                  }))
-                }
-                placeholder="Example: +250781234567"
-                keyboardType="phone-pad"
-                style={{
-                  flex: 1,
-                  fontFamily: "comfortaa-medium",
-                  color: "#374151",
-                  fontSize: 14,
-                }}
-              />
-            </View>
+            />
           </View>
+          {errors.phoneNumber ? (
+            <Text style={{ color: "red", fontSize: 12, marginTop: 4 }}>
+              {errors.phoneNumber}
+            </Text>
+          ) : null}
         </View>
 
         {/* Home Address Field */}
@@ -433,6 +586,11 @@ const RegistrationStep: React.FC<StepProps> = ({
               }}
             />
           </View>
+          {errors.homeAddress ? (
+            <Text style={{ color: "red", fontSize: 12, marginTop: 4 }}>
+              {errors.homeAddress}
+            </Text>
+          ) : null}
         </View>
 
         {/* Login link */}
@@ -454,9 +612,11 @@ const RegistrationStep: React.FC<StepProps> = ({
 };
 
 // Step 2: Academic Details
-const AcademicStep: React.FC<StepProps> = ({ formData, setFormData }) => {
-  const [showGradDate, setShowGradDate] = useState(false);
-
+const AcademicStep: React.FC<StepProps> = ({
+  formData,
+  setFormData,
+  errors,
+}) => {
   return (
     <ScrollView
       contentContainerStyle={{
@@ -495,6 +655,11 @@ const AcademicStep: React.FC<StepProps> = ({ formData, setFormData }) => {
           placeholder="University of Edinburgh"
           placeholderTextColor="#A0A0A0"
         />
+        {errors.currentSchool ? (
+          <Text style={{ color: "red", fontSize: 12, marginTop: 4 }}>
+            {errors.currentSchool}
+          </Text>
+        ) : null}
       </View>
 
       <View style={{ marginBottom: 20 }}>
@@ -510,6 +675,11 @@ const AcademicStep: React.FC<StepProps> = ({ formData, setFormData }) => {
           placeholder="Computer Science"
           placeholderTextColor="#A0A0A0"
         />
+        {errors.AreaOfStudy ? (
+          <Text style={{ color: "red", fontSize: 12, marginTop: 4 }}>
+            {errors.AreaOfStudy}
+          </Text>
+        ) : null}
       </View>
 
       <View style={{ marginBottom: 20 }}>
@@ -578,6 +748,7 @@ const ResumeStep: React.FC<StepProps> = ({ formData, setFormData }) => {
       }
     } catch (error) {
       console.log("Error picking document:", error);
+      Alert.alert("Error", "Failed to upload document. Please try again.");
     }
   };
 
@@ -649,7 +820,7 @@ const ResumeStep: React.FC<StepProps> = ({ formData, setFormData }) => {
           Upload Your Resume here
         </Text>
         <Text className="font-comfortaa text-xs text-gray-500">
-          Allowed formats: PDF, Word, Images, and more
+          Allowed formats: PDF, Word, Excel, PowerPoint, Images, Text files
         </Text>
       </TouchableOpacity>
 
@@ -662,8 +833,23 @@ const ResumeStep: React.FC<StepProps> = ({ formData, setFormData }) => {
 };
 
 // Step 4: References
-const ReferencesStep: React.FC<StepProps> = ({ formData, setFormData }) => {
+const ReferencesStep: React.FC<StepProps> = ({
+  formData,
+  setFormData,
+  errors,
+  countryCode,
+  setCountryCode,
+  country,
+  setCountry,
+}) => {
   const [activeTab, setActiveTab] = useState(0);
+  const [teacherCountryCode, setTeacherCountryCode] =
+    useState<CountryCode>("US");
+  const [teacherCountry, setTeacherCountry] = useState<Country | null>(null);
+  const [customReferralCountryCode, setCustomReferralCountryCode] =
+    useState<CountryCode>("US");
+  const [customReferralCountry, setCustomReferralCountry] =
+    useState<Country | null>(null);
 
   const renderHeadTeacherContent = () => (
     <View style={{ marginTop: 24 }}>
@@ -685,7 +871,7 @@ const ReferencesStep: React.FC<StepProps> = ({ formData, setFormData }) => {
             onChangeText={(text) =>
               setFormData((prev) => ({ ...prev, teacherEmail: text }))
             }
-            placeholder="*****************"
+            placeholder="teacher@university.edu"
             placeholderTextColor="#A0A0A0"
             keyboardType="email-address"
             autoCapitalize="none"
@@ -694,6 +880,11 @@ const ReferencesStep: React.FC<StepProps> = ({ formData, setFormData }) => {
         <Text className="font-comfortaa text-xs text-gray-400 mt-1 italic">
           .edu email required for Head Teacher
         </Text>
+        {errors.teacherEmail ? (
+          <Text style={{ color: "red", fontSize: 12, marginTop: 4 }}>
+            {errors.teacherEmail}
+          </Text>
+        ) : null}
       </View>
 
       {/* Phone Number Field */}
@@ -711,9 +902,28 @@ const ReferencesStep: React.FC<StepProps> = ({ formData, setFormData }) => {
             borderWidth: 1,
             borderColor: "#CBD5E1",
             height: 52,
-            paddingHorizontal: 16,
+            paddingHorizontal: 8,
           }}
         >
+          <CountryPicker
+            countryCode={teacherCountryCode}
+            withFilter
+            withFlag
+            withCallingCode
+            withEmoji
+            onSelect={(c: Country) => {
+              setTeacherCountryCode(c.cca2);
+              setTeacherCountry(c);
+              setFormData((prev) => ({
+                ...prev,
+                teacherCountryCode: c.callingCode[0],
+              }));
+            }}
+            containerButtonStyle={{ marginRight: 8 }}
+          />
+          <Text style={{ marginRight: 4, fontSize: 16 }}>
+            +{formData.teacherCountryCode || ""}
+          </Text>
           <TextInput
             value={formData.teacherPhoneNumber}
             onChangeText={(text) =>
@@ -757,6 +967,68 @@ const ReferencesStep: React.FC<StepProps> = ({ formData, setFormData }) => {
             placeholderTextColor="#A0A0A0"
             keyboardType="email-address"
             autoCapitalize="none"
+          />
+        </View>
+        {errors.customReferral ? (
+          <Text style={{ color: "red", fontSize: 12, marginTop: 4 }}>
+            {errors.customReferral}
+          </Text>
+        ) : null}
+      </View>
+
+      {/* Custom Referral Phone Number Field */}
+      <View style={{ marginBottom: 20 }}>
+        <Text className="font-comfortaa-bold text-xs text-gray-500 mb-1">
+          Reference Phone Number
+        </Text>
+        <View
+          style={{
+            flex: 1,
+            flexDirection: "row",
+            alignItems: "center",
+            backgroundColor: "#fff",
+            borderRadius: 16,
+            borderWidth: 1,
+            borderColor: "#CBD5E1",
+            height: 52,
+            paddingHorizontal: 8,
+          }}
+        >
+          <CountryPicker
+            countryCode={customReferralCountryCode}
+            withFilter
+            withFlag
+            withCallingCode
+            withEmoji
+            onSelect={(c: Country) => {
+              setCustomReferralCountryCode(c.cca2);
+              setCustomReferralCountry(c);
+              setFormData((prev) => ({
+                ...prev,
+                customReferralCountryCode: c.callingCode[0],
+              }));
+            }}
+            containerButtonStyle={{ marginRight: 8 }}
+          />
+          <Text style={{ marginRight: 4, fontSize: 16 }}>
+            +{formData.customReferralCountryCode || ""}
+          </Text>
+          <TextInput
+            value={formData.customReferralPhoneNumber}
+            onChangeText={(text) =>
+              setFormData((prev) => ({
+                ...prev,
+                customReferralPhoneNumber: text,
+              }))
+            }
+            placeholder="Enter phone number"
+            keyboardType="phone-pad"
+            style={{
+              flex: 1,
+              fontFamily: "comfortaa-medium",
+              color: "#374151",
+              fontSize: 14,
+            }}
           />
         </View>
       </View>
@@ -809,7 +1081,7 @@ const ReferencesStep: React.FC<StepProps> = ({ formData, setFormData }) => {
           Add References
         </Text>
         <Text className="font-comfortaa text-center text-gray-500 mb-6 px-6">
-          Please provide at least two academic or professional references to
+          Please provide at least one academic or professional reference to
           support your qualifications.
         </Text>
       </View>
@@ -885,6 +1157,19 @@ const ReferencesStep: React.FC<StepProps> = ({ formData, setFormData }) => {
       {activeTab === 0
         ? renderHeadTeacherContent()
         : renderCustomReferenceContent()}
+
+      {errors.references ? (
+        <Text
+          style={{
+            color: "red",
+            fontSize: 12,
+            marginTop: 16,
+            textAlign: "center",
+          }}
+        >
+          {errors.references}
+        </Text>
+      ) : null}
     </ScrollView>
   );
 };
@@ -901,10 +1186,25 @@ export default function BuddiSignup() {
   const [showSuccess, setShowSuccess] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [formData, setFormData] = useState<FormData>(initialFormData);
+  const [countryCode, setCountryCode] = useState<CountryCode>("US");
+  const [country, setCountry] = useState<Country | null>(null);
+  const [errors, setErrors] = useState<any>({});
   const StepComponent = StepComponents[step];
   const router = useRouter();
 
   const handleNext = async () => {
+    // Validate current step
+    const validationErrors = validateForm(formData, step);
+    setErrors(validationErrors);
+
+    if (Object.keys(validationErrors).length > 0) {
+      Alert.alert(
+        "Validation Error",
+        "Please Complete all fields before proceeding."
+      );
+      return;
+    }
+
     if (step === STEPS.length - 1) {
       // On final step, submit the form
       try {
@@ -927,6 +1227,10 @@ export default function BuddiSignup() {
             : "",
           resume: formData.resume || undefined,
           profilePicture: formData.profilePicture || undefined,
+          phoneNumber: `+${formData.countryCallingCode}${formData.phoneNumber}`,
+          teacherPhoneNumber: formData.teacherPhoneNumber
+            ? `+${formData.teacherCountryCode}${formData.teacherPhoneNumber}`
+            : "",
         };
 
         const response = await authService.registerBuddi(registrationData);
@@ -939,7 +1243,7 @@ export default function BuddiSignup() {
           router.push("/auth/login");
         }, 2000);
       } catch (error: any) {
-        console.error("Registration error:", error);
+        console.error("Registration error (details):", error, error?.response);
         Alert.alert(
           "Registration Failed",
           error.message ||
@@ -985,6 +1289,11 @@ export default function BuddiSignup() {
               onLogin={() => router.push("/auth/login")}
               formData={formData}
               setFormData={setFormData}
+              errors={errors}
+              countryCode={countryCode}
+              setCountryCode={setCountryCode}
+              country={country}
+              setCountry={setCountry}
             />
           </View>
           {/* Stepper */}

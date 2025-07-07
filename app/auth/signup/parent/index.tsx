@@ -13,6 +13,10 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import CountryPicker, {
+  Country,
+  CountryCode,
+} from "react-native-country-picker-modal";
 import { SafeAreaView } from "react-native-safe-area-context";
 import SuccessScreen from "../../../../components/commons/SuccessScreen";
 import authService from "../../../../services/api/auth.service";
@@ -33,6 +37,7 @@ interface FormData {
   password: string;
   confirmPassword: string;
   phoneNumber: string;
+  countryCallingCode: string;
   firstName: string;
   lastName: string;
   profilePicture: File | null;
@@ -56,6 +61,7 @@ const initialFormData: FormData = {
   password: "",
   confirmPassword: "",
   phoneNumber: "",
+  countryCallingCode: "US",
   firstName: "",
   lastName: "",
   profilePicture: null,
@@ -72,10 +78,60 @@ interface StepProps {
   setFormData: React.Dispatch<React.SetStateAction<FormData>>;
 }
 
-const RegistrationStep: React.FC<StepProps> = ({
+function validateForm(formData: FormData, step: number) {
+  const errors: any = {};
+  if (step === 0) {
+    if (!formData.firstName) errors.firstName = "First name is required";
+    if (!formData.lastName) errors.lastName = "Last name is required";
+    if (!formData.email) errors.email = "Email is required";
+    if (!formData.password) errors.password = "Password is required";
+    else if (
+      !/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?]).{8,}$/.test(
+        formData.password
+      )
+    ) {
+      errors.password =
+        "Password must be at least 8 characters, include uppercase, lowercase, number, and special character";
+    }
+    if (formData.password !== formData.confirmPassword)
+      errors.confirmPassword = "Passwords do not match";
+    if (!formData.phoneNumber) errors.phoneNumber = "Phone number is required";
+    if (!formData.countryCallingCode)
+      errors.phoneNumber = "Select country code";
+  }
+  if (step === 1) {
+    if (!formData.homeAddress) errors.homeAddress = "Home address is required";
+    if (!formData.children || formData.children.length === 0)
+      errors.children = "At least one child is required";
+    formData.children.forEach((child, idx) => {
+      if (!child.name) errors[`childName${idx}`] = "Child name is required";
+      if (!child.age) errors[`childAge${idx}`] = "Child age is required";
+      if (!child.school)
+        errors[`childSchool${idx}`] = "Child school is required";
+    });
+    if (!formData.termsAccepted)
+      errors.termsAccepted = "You must accept the terms";
+  }
+  return errors;
+}
+
+const RegistrationStep: React.FC<
+  StepProps & {
+    errors: any;
+    countryCode: CountryCode;
+    setCountryCode: any;
+    country: Country | null;
+    setCountry: any;
+  }
+> = ({
   onLogin,
   formData,
   setFormData,
+  errors,
+  countryCode,
+  setCountryCode,
+  country,
+  setCountry,
 }) => {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
@@ -160,6 +216,11 @@ const RegistrationStep: React.FC<StepProps> = ({
               placeholder="John Doe"
               placeholderTextColor="#A0A0A0"
             />
+            {errors.firstName && (
+              <Text style={{ color: "red", fontSize: 12 }}>
+                {errors.firstName}
+              </Text>
+            )}
           </View>
           <View style={{ flex: 1 }}>
             <Text className="font-comfortaa-bold text-xs text-gray-500 mb-1">
@@ -174,6 +235,11 @@ const RegistrationStep: React.FC<StepProps> = ({
               placeholder="Smith"
               placeholderTextColor="#A0A0A0"
             />
+            {errors.lastName && (
+              <Text style={{ color: "red", fontSize: 12 }}>
+                {errors.lastName}
+              </Text>
+            )}
           </View>
         </View>
         <View style={{ flexDirection: "row", gap: 16, marginBottom: 20 }}>
@@ -201,6 +267,11 @@ const RegistrationStep: React.FC<StepProps> = ({
                 />
               </TouchableOpacity>
             </View>
+            {errors.password && (
+              <Text style={{ color: "red", fontSize: 12 }}>
+                {errors.password}
+              </Text>
+            )}
           </View>
           <View style={{ flex: 1 }}>
             <Text className="font-comfortaa-bold text-xs text-gray-500 mb-1">
@@ -228,6 +299,11 @@ const RegistrationStep: React.FC<StepProps> = ({
                 />
               </TouchableOpacity>
             </View>
+            {errors.confirmPassword && (
+              <Text style={{ color: "red", fontSize: 12 }}>
+                {errors.confirmPassword}
+              </Text>
+            )}
           </View>
         </View>
         <View style={{ marginBottom: 20 }}>
@@ -252,18 +328,10 @@ const RegistrationStep: React.FC<StepProps> = ({
               keyboardType="email-address"
               autoCapitalize="none"
             />
-            <TouchableOpacity>
-              <Ionicons
-                name="checkmark-circle-outline"
-                size={20}
-                color="#A0A0A0"
-                style={{ marginLeft: 8 }}
-              />
-            </TouchableOpacity>
           </View>
-          <Text className="font-comfortaa text-xs text-gray-400 mt-1">
-            Use a valid .ed email
-          </Text>
+          {errors.email && (
+            <Text style={{ color: "red", fontSize: 12 }}>{errors.email}</Text>
+          )}
         </View>
         <View style={{ marginBottom: 20 }}>
           <Text className="font-comfortaa-bold text-xs text-gray-500 mb-1">
@@ -271,7 +339,6 @@ const RegistrationStep: React.FC<StepProps> = ({
           </Text>
           <View
             style={{
-              flex: 1,
               flexDirection: "row",
               alignItems: "center",
               backgroundColor: "#fff",
@@ -279,9 +346,27 @@ const RegistrationStep: React.FC<StepProps> = ({
               borderWidth: 1,
               borderColor: "#CBD5E1",
               height: 52,
-              paddingHorizontal: 16,
+              paddingHorizontal: 8,
             }}
           >
+            <CountryPicker
+              countryCode={countryCode}
+              withFilter
+              withFlag
+              withCallingCode
+              withEmoji
+              onSelect={(c: Country) => {
+                setCountryCode(c.cca2);
+                setFormData((prev) => ({
+                  ...prev,
+                  countryCallingCode: c.callingCode[0],
+                }));
+              }}
+              containerButtonStyle={{ marginRight: 8 }}
+            />
+            <Text style={{ marginRight: 4, fontSize: 16 }}>
+              +{formData.countryCallingCode || ""}
+            </Text>
             <TextInput
               value={formData.phoneNumber}
               onChangeText={(text) =>
@@ -297,6 +382,11 @@ const RegistrationStep: React.FC<StepProps> = ({
               }}
             />
           </View>
+          {errors.phoneNumber && (
+            <Text style={{ color: "red", fontSize: 12 }}>
+              {errors.phoneNumber}
+            </Text>
+          )}
         </View>
         <View className="mt-2 mb-4">
           <TouchableOpacity onPress={onLogin} className="self-center">
@@ -675,119 +765,6 @@ const PaymentStep: React.FC<StepProps> = ({ formData, setFormData }) => {
             </TouchableOpacity>
           </View>
 
-          {formData.paymentMethod === "card" && (
-            <View>
-              <Text className="font-comfortaa-bold text-base text-gray-800 mb-4">
-                <Ionicons
-                  name="information-circle-outline"
-                  size={20}
-                  color="#333"
-                  style={{ marginRight: 4 }}
-                />{" "}
-                Card Information
-              </Text>
-
-              <View className="mb-4">
-                <Text className="font-comfortaa-bold text-xs text-gray-500 mb-1">
-                  Card number
-                </Text>
-                <View className="flex-row items-center bg-white border border-[#CBD5E1] rounded-2xl px-4 py-3">
-                  <TextInput
-                    className="flex-1 font-comfortaa text-gray-700 text-base"
-                    value={formData.cardDetails?.cardNumber || ""}
-                    onChangeText={(text) =>
-                      setFormData((prev) => ({
-                        ...prev,
-                        cardDetails: {
-                          ...prev.cardDetails,
-                          cardNumber: text,
-                          expiry: prev.cardDetails?.expiry || "",
-                          cvv: prev.cardDetails?.cvv || "",
-                        },
-                      }))
-                    }
-                    placeholder="1234 5678 9012 3456"
-                    placeholderTextColor="#A0A0A0"
-                    keyboardType="number-pad"
-                  />
-                  <Image
-                    source={{
-                      uri: "https://cdn-icons-png.flaticon.com/512/349/349228.png",
-                    }}
-                    style={{ width: 24, height: 16, marginLeft: 8 }}
-                  />
-                </View>
-              </View>
-
-              <View className="flex-row gap-4 mb-4">
-                <View className="flex-1">
-                  <Text className="font-comfortaa-bold text-xs text-gray-500 mb-1">
-                    Expiry Date
-                  </Text>
-                  <View className="flex-row items-center bg-white border border-[#CBD5E1] rounded-2xl px-4 py-3">
-                    <TextInput
-                      className="flex-1 font-comfortaa text-gray-700 text-base"
-                      value={formData.cardDetails?.expiry || ""}
-                      onChangeText={(text) =>
-                        setFormData((prev) => ({
-                          ...prev,
-                          cardDetails: {
-                            ...prev.cardDetails,
-                            expiry: text,
-                            cardNumber: prev.cardDetails?.cardNumber || "",
-                            cvv: prev.cardDetails?.cvv || "",
-                          },
-                        }))
-                      }
-                      placeholder="02/28"
-                      placeholderTextColor="#A0A0A0"
-                      keyboardType="number-pad"
-                    />
-                    <Ionicons
-                      name="calendar-outline"
-                      size={20}
-                      color="#A0A0A0"
-                    />
-                  </View>
-                </View>
-
-                <View className="flex-1">
-                  <Text className="font-comfortaa-bold text-xs text-gray-500 mb-1">
-                    CVC/CVV
-                  </Text>
-                  <View className="flex-row items-center bg-white border border-[#CBD5E1] rounded-2xl px-4 py-3">
-                    <TextInput
-                      className="flex-1 font-comfortaa text-gray-700 text-base"
-                      value={formData.cardDetails?.cvv || ""}
-                      onChangeText={(text) =>
-                        setFormData((prev) => ({
-                          ...prev,
-                          cardDetails: {
-                            ...prev.cardDetails,
-                            cvv: text,
-                            cardNumber: prev.cardDetails?.cardNumber || "",
-                            expiry: prev.cardDetails?.expiry || "",
-                          },
-                        }))
-                      }
-                      placeholder="356"
-                      placeholderTextColor="#A0A0A0"
-                      keyboardType="number-pad"
-                      secureTextEntry
-                    />
-                    <TouchableOpacity>
-                      <Ionicons
-                        name="information-circle-outline"
-                        size={20}
-                        color="#A0A0A0"
-                      />
-                    </TouchableOpacity>
-                  </View>
-                </View>
-              </View>
-            </View>
-          )}
-
           <View className="mt-4 bg-[#F3FCF7] p-3 rounded-xl flex-row items-center">
             <Ionicons
               name="shield-checkmark"
@@ -811,24 +788,35 @@ export default function ParentSignup() {
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
   const [formData, setFormData] = useState<FormData>(initialFormData);
+  const [countryCode, setCountryCode] = useState<CountryCode>("US");
+  const [country, setCountry] = useState<Country | null>(null);
+  const [errors, setErrors] = useState<any>({});
 
   const handleLogin = () => {
     router.push("/auth/login");
   };
 
   const handleNext = async () => {
+    const validationErrors = validateForm(formData, step);
+    setErrors(validationErrors);
+    if (Object.keys(validationErrors).length > 0) {
+      Alert.alert(
+        "Validation Error",
+        "Please complete all required fields before proceeding."
+      );
+      return;
+    }
     if (step < STEPS.length - 1) {
       setStep(step + 1);
     } else {
       // Final step - submit the form
       try {
         setIsLoading(true);
-
         // Prepare registration data
         const registrationData: ParentRegistrationRequest = {
           email: formData.email,
           password: formData.password,
-          phoneNumber: formData.phoneNumber,
+          phoneNumber: `+${formData.countryCallingCode}${formData.phoneNumber}`,
           firstName: formData.firstName,
           lastName: formData.lastName,
           homeAddress: formData.homeAddress,
@@ -843,10 +831,8 @@ export default function ParentSignup() {
             formData.paymentMethod === "card" ? formData.cardDetails : null,
           profilePicture: formData.profilePicture || undefined,
         };
-
         const response = await authService.registerParent(registrationData);
         console.log("Registration successful:", response);
-
         // Show success screen for 3 seconds then navigate to login
         setShowSuccess(true);
         setTimeout(() => {
@@ -902,6 +888,11 @@ export default function ParentSignup() {
           onLogin={handleLogin}
           formData={formData}
           setFormData={setFormData}
+          errors={errors}
+          countryCode={countryCode}
+          setCountryCode={setCountryCode}
+          country={country}
+          setCountry={setCountry}
         />
       )}
       {step === 1 && (
