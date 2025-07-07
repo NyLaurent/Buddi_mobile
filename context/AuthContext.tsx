@@ -295,6 +295,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       return;
     }
 
+    // Allow referralTeacher to navigate freely within head-teacher routes
+    if (user.role === "referralTeacher") {
+      if (segments[0] === "head-teacher") {
+        return; // Allow free navigation within head-teacher routes
+      }
+      // Optionally, redirect to /head-teacher if not in a protected route
+      if (!inProtectedRoute) {
+        router.replace("/head-teacher");
+      }
+      return;
+    }
+
     // Allow approved buddis to navigate freely within buddi routes
     if (user.role === "buddi" && buddiDetails) {
       const isApprovedBuddi = [
