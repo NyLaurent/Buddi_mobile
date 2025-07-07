@@ -16,6 +16,7 @@ export const AUTH_ENDPOINTS = {
   RESEND_VERIFICATION: '/auth/resend-verification',
   PROFILE: '/auth/profile',
   UPLOAD_INTERVIEW_VIDEO: (buddiId: number) => `/buddi/interview/${buddiId}/uploadBuddiInterviewVideo/video`,
+  REGISTER_REFERRAL_TEACHER: 'https://backend-service-hw1rh.kinsta.app/api/v1/referralTeacher/register',
 } as const;
 
 // User Endpoints

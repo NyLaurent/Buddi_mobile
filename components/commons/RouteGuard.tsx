@@ -105,6 +105,9 @@ export const RouteGuard: React.FC<RouteGuardProps> = ({
             }
           }
           break;
+        case "referralTeacher":
+          // For now, no approval logic, but you can add checks here if needed
+          break;
       }
     }
   }, [

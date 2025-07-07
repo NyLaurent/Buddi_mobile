@@ -402,4 +402,42 @@ export interface UpdatePickupStatusRequest {
     latitude: number;
     longitude: number;
   };
+}
+
+export interface ReferralTeacherRegistrationRequest {
+  email: string;
+  password: string;
+  phoneNumber: string;
+  firstName: string;
+  lastName: string;
+  homeAddress: string;
+  schoolName: string;
+  schoolEmail: string;
+  position: string;
+}
+
+export interface ReferralTeacherRegistrationResponse {
+  user: {
+    userId: string;
+    email: string;
+    password: string;
+    phoneNumber: string;
+    firstName: string;
+    lastName: string;
+    homeAddress: string;
+    role: string;
+    updatedAt: string;
+    createdAt: string;
+  };
+  teacher: {
+    approvedReferrals: number;
+    recommendingFiles: any[];
+    id: number;
+    schoolName: string;
+    schoolEmail: string;
+    position: string;
+    userId: string;
+    updatedAt: string;
+    createdAt: string;
+  };
 } 

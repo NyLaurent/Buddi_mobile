@@ -2,15 +2,17 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { authorizedApi, STORAGE_KEYS, unauthorizedApi } from './config';
 import { AUTH_ENDPOINTS } from './endpoints';
 import {
-  ApiResponse,
-  AuthResponse,
-  BuddiRegistrationRequest,
-  BuddiRegistrationResponse,
-  LoginRequest,
-  LoginResponse,
-  ParentRegistrationRequest,
-  ParentRegistrationResponse,
-  RegisterRequest
+    ApiResponse,
+    AuthResponse,
+    BuddiRegistrationRequest,
+    BuddiRegistrationResponse,
+    LoginRequest,
+    LoginResponse,
+    ParentRegistrationRequest,
+    ParentRegistrationResponse,
+    ReferralTeacherRegistrationRequest,
+    ReferralTeacherRegistrationResponse,
+    RegisterRequest
 } from './types';
 
 // Sanitized user interface without password
@@ -307,6 +309,26 @@ class AuthService {
       return response.data;
     } catch (error) {
       console.error('Error uploading interview video:', error);
+      throw this.handleAuthError(error);
+    }
+  }
+
+  /**
+   * Register new referral teacher (head teacher)
+   */
+  async registerReferralTeacher(data: ReferralTeacherRegistrationRequest): Promise<ReferralTeacherRegistrationResponse> {
+    try {
+      const response = await unauthorizedApi.post<ReferralTeacherRegistrationResponse>(
+        AUTH_ENDPOINTS.REGISTER_REFERRAL_TEACHER,
+        data,
+        {
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        }
+      );
+      return response.data;
+    } catch (error: any) {
       throw this.handleAuthError(error);
     }
   }

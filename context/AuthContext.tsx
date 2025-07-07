@@ -13,7 +13,7 @@ export interface User {
   lastName: string;
   phoneNumber: string;
   homeAddress: string;
-  role: "buddi" | "parent" | "admin" | "minorAdmin" | "head-teacher";
+  role: "buddi" | "parent" | "admin" | "minorAdmin" | "referralTeacher";
   createdAt: string;
   updatedAt: string;
 }
@@ -410,6 +410,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 
         return "/auth/waitlist";
 
+      case "referralTeacher":
+        return "/head-teacher";
+
       default:
         return "/auth/login";
     }
@@ -512,6 +515,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 
       if (cleanUser.role === "admin" || cleanUser.role === "minorAdmin") {
         targetRoute = "/admin";
+      } else if (cleanUser.role === "referralTeacher") {
+        targetRoute = "/head-teacher";
       } else if (cleanUser.role === "buddi") {
         if (apiUser.Buddi) {
           console.log("Login - Buddi status:", apiUser.Buddi.status);
