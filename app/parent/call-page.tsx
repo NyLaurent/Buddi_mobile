@@ -1,4 +1,6 @@
 import { Ionicons, MaterialIcons } from "@expo/vector-icons";
+import { LinearGradient } from "expo-linear-gradient";
+import { useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
 import {
   Alert,
@@ -16,8 +18,6 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import PageHeader from "../../components/commons/PageHeader";
 import { useAuth } from "../../context/AuthContext";
 import { ChildrenService, CoverageService } from "../../services/api";
-
-
 
 export default function CallPage() {
   const [description, setDescription] = useState("");
@@ -176,9 +176,10 @@ export default function CallPage() {
       const kids = await ChildrenService.getChildrenByParent(
         parentDetails.id.toString()
       );
-      setRegisteredKids(kids);
+      setRegisteredKids(Array.isArray(kids) ? kids : []);
     } catch (err: any) {
       setKidsError(err.message || "Failed to fetch registered kids.");
+      setRegisteredKids([]); // Defensive: avoid undefined
     } finally {
       setKidsLoading(false);
     }
@@ -195,6 +196,11 @@ export default function CallPage() {
   };
 
   // For time picker, use a simple text input for now (can be replaced with a picker later)
+
+  // Debug: log registeredKids before rendering
+  console.log("registeredKids (before render):", registeredKids);
+
+  const router = useRouter();
 
   return (
     <SafeAreaView style={{ backgroundColor: "#F6F7FB" }}>
@@ -428,50 +434,59 @@ export default function CallPage() {
               Loading your registered kids...
             </Text>
           </View>
-        ) : registeredKids.length > 0 ? (
+        ) : Array.isArray(registeredKids) && registeredKids.length > 0 ? (
           <View style={{ marginHorizontal: 16, marginTop: 8, marginBottom: 0 }}>
-            <View
+            <LinearGradient
+              colors={["#FFB347", "#FB8500"]}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
               style={{
-                backgroundColor: "#E0F7FA",
-                borderRadius: 16,
-                padding: 18,
-                shadowColor: "#4f46e5",
-                shadowOpacity: 0.08,
-                shadowRadius: 8,
-                shadowOffset: { width: 0, height: 2 },
-                elevation: 2,
+                borderRadius: 20,
+                padding: 20,
+                shadowColor: "#FB8500",
+                shadowOpacity: 0.15,
+                shadowRadius: 12,
+                shadowOffset: { width: 0, height: 4 },
+                elevation: 4,
               }}
             >
               <Text
                 style={{
                   fontFamily: "Comfortaa-Bold",
-                  fontSize: 16,
-                  color: "#232B3A",
-                  marginBottom: 8,
+                  fontSize: 18,
+                  color: "#fff",
+                  marginBottom: 14,
+                  letterSpacing: 0.5,
                 }}
               >
-                Your Registered Kids
+                One of your registered kids
               </Text>
-              {registeredKids.map((kid) => (
-                <View
-                  key={kid.id}
-                  style={{
-                    backgroundColor: "#fff",
-                    borderRadius: 12,
-                    padding: 12,
-                    marginBottom: 10,
-                    borderWidth: 1,
-                    borderColor: "#E0E0E0",
-                  }}
-                >
+              <View
+                style={{
+                  flexDirection: "row",
+                  alignItems: "center",
+                  backgroundColor: "rgba(255,255,255,0.92)",
+                  borderRadius: 16,
+                  padding: 16,
+                  marginBottom: 12,
+                }}
+              >
+                <Ionicons
+                  name="person-circle"
+                  size={44}
+                  color="#FB8500"
+                  style={{ marginRight: 16 }}
+                />
+                <View style={{ flex: 1 }}>
                   <Text
                     style={{
-                      fontFamily: "Comfortaa-Medium",
-                      fontSize: 15,
-                      color: "#232B3A",
+                      fontFamily: "Comfortaa-Bold",
+                      fontSize: 16,
+                      color: "#FB8500",
+                      marginBottom: 2,
                     }}
                   >
-                    {kid.name}{" "}
+                    {registeredKids[0].name}{" "}
                     <Text
                       style={{
                         color: "#6B7280",
@@ -479,32 +494,97 @@ export default function CallPage() {
                         fontSize: 13,
                       }}
                     >
-                      (Age: {kid.age})
+                      (Age: {registeredKids[0].age})
                     </Text>
                   </Text>
                   <Text
                     style={{
                       fontFamily: "Comfortaa-Regular",
-                      fontSize: 13,
-                      color: "#4f46e5",
+                      fontSize: 14,
+                      color: "#232B3A",
                       marginTop: 2,
                     }}
                   >
-                    School: {kid.schoolName}
+                    <Ionicons name="school" size={14} color="#FB8500" /> School:{" "}
+                    <Text style={{ color: "#FB8500" }}>
+                      {registeredKids[0].schoolName}
+                    </Text>
                   </Text>
                   <Text
                     style={{
                       fontFamily: "Comfortaa-Regular",
-                      fontSize: 13,
-                      color: "#6B7280",
+                      fontSize: 14,
+                      color: "#232B3A",
                       marginTop: 2,
                     }}
                   >
-                    Pickup Address: {kid.pickupAddress}
+                    <Ionicons name="location" size={14} color="#FB8500" />{" "}
+                    Pickup Address:{" "}
+                    <Text style={{ color: "#FB8500" }}>
+                      {registeredKids[0].pickupAddress}
+                    </Text>
                   </Text>
                 </View>
-              ))}
-            </View>
+              </View>
+              <View
+                style={{
+                  flexDirection: "row",
+                  justifyContent: "flex-end",
+                  gap: 10,
+                  marginTop: 4,
+                }}
+              >
+                <TouchableOpacity
+                  style={{
+                    backgroundColor: "#fff",
+                    borderRadius: 10,
+                    paddingVertical: 10,
+                    paddingHorizontal: 18,
+                    shadowColor: "#FB8500",
+                    shadowOpacity: 0.12,
+                    shadowRadius: 4,
+                    shadowOffset: { width: 0, height: 2 },
+                    marginRight: 6,
+                  }}
+                  onPress={() => setShowKidModal(true)}
+                  activeOpacity={0.85}
+                >
+                  <Text
+                    style={{
+                      color: "#FB8500",
+                      fontFamily: "Comfortaa-Medium",
+                      fontSize: 15,
+                    }}
+                  >
+                    Add More
+                  </Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={{
+                    backgroundColor: "#fff",
+                    borderRadius: 10,
+                    paddingVertical: 10,
+                    paddingHorizontal: 18,
+                    shadowColor: "#FB8500",
+                    shadowOpacity: 0.12,
+                    shadowRadius: 4,
+                    shadowOffset: { width: 0, height: 2 },
+                  }}
+                  onPress={() => router.push("/parent/all-kids")}
+                  activeOpacity={0.85}
+                >
+                  <Text
+                    style={{
+                      color: "#FB8500",
+                      fontFamily: "Comfortaa-Medium",
+                      fontSize: 15,
+                    }}
+                  >
+                    See More
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            </LinearGradient>
           </View>
         ) : kidsError ? (
           <View
