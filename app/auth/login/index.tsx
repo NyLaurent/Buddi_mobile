@@ -31,20 +31,24 @@ const LoginScreen = () => {
       return;
     }
 
+    setIsLoading(true);
     try {
-      setIsLoading(true);
       await login(email.trim(), password);
       // Navigation will be handled automatically by AuthContext
     } catch (error: any) {
-      console.error("Login error:", error);
+      setIsLoading(false); // Ensure loading is reset on error
+      let message = error?.message || "An unexpected error occurred. Please try again.";
+      if (message.toLowerCase().includes("invalid credentials")) {
+        message = "Invalid credentials. Please check your email and password.";
+      }
       Alert.alert(
         "Login Failed",
-        error.message || "Invalid credentials. Please try again.",
+        message,
         [{ text: "OK" }]
       );
-    } finally {
-      setIsLoading(false);
+      return;
     }
+    setIsLoading(false); // Also reset loading if login does not throw but does not navigate
   };
 
   const handleSignUp = () => {

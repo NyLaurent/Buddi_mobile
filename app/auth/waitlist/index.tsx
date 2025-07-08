@@ -206,10 +206,12 @@ const WaitlistScreen = () => {
 
   return (
     <SafeAreaView className="flex-1 bg-white">
-      <StatusBar
-        style="dark"
-        backgroundColor={PRIMARY_COLOR}
-        translucent={false}
+      
+       <StatusBar
+       style="dark"
+       backgroundColor={PRIMARY_COLOR}
+       translucent={false}
+    
       />
       <ScrollView contentContainerStyle={{ flexGrow: 1, paddingBottom: 24 }}>
         {/* Header with profile */}

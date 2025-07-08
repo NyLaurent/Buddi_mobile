@@ -169,3 +169,14 @@ export const SEARCH_ENDPOINTS = {
   PICKUPS: '/search/pickups',
   SCHOOLS: '/search/schools',
 } as const; 
+
+// Children Endpoints
+export const CHILDREN_ENDPOINTS = {
+  REGISTER: '/children/register',
+  GET_BY_PARENT: (parentId: string) => `/children/parent/${parentId}`,
+} as const; 
+
+// Coverage Endpoints
+export const COVERAGE_ENDPOINTS = {
+  CREATE_REQUEST: '/coverage/buddi-requests',
+} as const; 

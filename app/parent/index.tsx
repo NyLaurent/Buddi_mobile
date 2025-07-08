@@ -4,6 +4,7 @@ import {
   Ionicons,
   MaterialIcons,
 } from "@expo/vector-icons";
+import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
 import React from "react";
 import {
@@ -20,9 +21,10 @@ import Calendar from "../../components/commons/Calendar";
 import KidPickupCard from "../../components/parent/KidPickupCard";
 import PaymentAlert from "../../components/parent/PaymentAlert";
 import { useAuth } from "../../context/AuthContext";
+
 export default function ParentDashboard() {
   const [selectedDate, setSelectedDate] = React.useState(new Date());
-  const { user, logout } = useAuth();
+  const { user, logout, parentDetails } = useAuth();
   const router = useRouter();
 
   const handleLogout = () => {
@@ -121,10 +123,12 @@ export default function ParentDashboard() {
         <View className="flex-row items-center justify-between mt-6 mb-2 px-1">
           <View>
             <Text className="text-2xl font-comfortaa-bold">
-              Good morning, Jane
+              Good morning, {user?.firstName || "Parent"}
             </Text>
             <Text className="text-gray-500 font-comfortaa mt-1">
-              Glad to see you again, Parent! <Text className="text-lg">😊</Text>
+              Glad to see you again,{" "}
+              {user?.role === "parent" ? "Parent" : user?.role}!{" "}
+              <Text className="text-lg">😊</Text>
             </Text>
           </View>
           <Image
@@ -132,6 +136,97 @@ export default function ParentDashboard() {
             className="w-14 h-14 rounded-full bg-gray-100"
             resizeMode="cover"
           />
+        </View>
+        {/* Call to Action Rectangle */}
+        <View
+          style={{
+            borderRadius: 18,
+            marginTop: 18,
+            marginBottom: 10,
+            overflow: "hidden",
+            shadowColor: "#FF932E",
+            shadowOffset: { width: 0, height: 4 },
+            shadowOpacity: 0.15,
+            shadowRadius: 12,
+            elevation: 4,
+          }}
+        >
+          <LinearGradient
+            colors={["#FF932E", "#FFB86C"]}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={{ padding: 20, borderRadius: 18 }}
+          >
+            <View
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                marginBottom: 10,
+              }}
+            >
+              <FontAwesome5
+                name="user-friends"
+                size={28}
+                color="#fff"
+                style={{ marginRight: 12 }}
+              />
+              <Text
+                style={{
+                  color: "#fff",
+                  fontFamily: "Comfortaa-Bold",
+                  fontSize: 18,
+                  flex: 1,
+                }}
+              >
+                Ready to connect?
+              </Text>
+            </View>
+            <Text
+              style={{
+                color: "#fff",
+                fontFamily: "Comfortaa-Regular",
+                fontSize: 15,
+                marginBottom: 18,
+              }}
+            >
+              Start your journey by creating a call and discover amazing Buddis
+              to help your family!
+            </Text>
+            <TouchableOpacity
+              style={{
+                backgroundColor: "#fff",
+                borderRadius: 999,
+                paddingVertical: 12,
+                paddingHorizontal: 28,
+                alignSelf: "flex-start",
+                flexDirection: "row",
+                alignItems: "center",
+                shadowColor: "#FF932E",
+                shadowOffset: { width: 0, height: 2 },
+                shadowOpacity: 0.12,
+                shadowRadius: 6,
+                elevation: 2,
+              }}
+              onPress={() => router.push("/parent/call-page")}
+              activeOpacity={0.85}
+            >
+              <FontAwesome5
+                name="search"
+                size={18}
+                color="#FF932E"
+                style={{ marginRight: 10 }}
+              />
+              <Text
+                style={{
+                  color: "#FF932E",
+                  fontFamily: "Comfortaa-Bold",
+                  fontSize: 16,
+                }}
+              >
+                Find Your Buddi Now
+              </Text>
+            </TouchableOpacity>
+          </LinearGradient>
         </View>
 
         {/* Stats Cards */}
@@ -174,6 +269,7 @@ export default function ParentDashboard() {
 
         {/* Payment Alert */}
         <PaymentAlert />
+        {/* Callup Review */}
 
         {/* Pickup Schedule */}
         <View className="mb-4">

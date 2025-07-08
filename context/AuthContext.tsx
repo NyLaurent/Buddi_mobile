@@ -574,6 +574,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       console.log("Login - Final target route:", targetRoute);
       router.replace(targetRoute as any);
     } catch (error) {
+      setIsLoading(false); // Ensure loader is hidden on error
+      setIsLoggingIn(false); // Also reset logging in state
       console.error("Login error:", error);
       throw error;
     }
@@ -814,8 +816,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
                 : "/parent";
 
               // Change URL and force reload
-              window.location.href = targetUrl;
-              window.location.reload();
+              router.replace(targetUrl as any);
             }
           }
         } catch (error) {

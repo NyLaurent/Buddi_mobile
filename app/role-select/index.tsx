@@ -3,6 +3,7 @@ import { useRouter } from "expo-router";
 import React, { useState } from "react";
 import { Image, ScrollView, Text, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { StatusBar } from "expo-status-bar";
 
 const PRIMARY_COLOR = "#FF932E";
 const LIGHT_ORANGE = "#FFF5E6";
@@ -46,6 +47,7 @@ const RoleSelect = () => {
 
   return (
     <SafeAreaView className="flex-1 bg-white">
+      <StatusBar style="dark" backgroundColor="#fff" translucent={false} />
       <ScrollView
         contentContainerStyle={{
           flexGrow: 1,

@@ -4,8 +4,8 @@
 // ===============================
 
 // Core API Configuration
-export { unauthorizedApi, authorizedApi, STORAGE_KEYS } from './config';
-export type { ApiResponse, ApiError } from './config';
+export { authorizedApi, STORAGE_KEYS, unauthorizedApi } from './config';
+export type { ApiError } from './config';
 
 // API Endpoints
 export * from './endpoints';
@@ -26,6 +26,8 @@ export * from './types';
 // export { default as UploadService } from './upload.service';
 // export { default as SchoolService } from './school.service';
 // export { default as AnalyticsService } from './analytics.service';
+export { default as ChildrenService } from './children.service';
+export { default as CoverageService } from './coverage.service';
 
 // ===============================
 // Utility Functions (to be implemented)

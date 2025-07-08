@@ -1,5 +1,5 @@
 import React from "react";
-import { ScrollView, StatusBar } from "react-native";
+import { ScrollView, StatusBar,View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 const Payments = () => {
