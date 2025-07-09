@@ -6,7 +6,7 @@
 export const AUTH_ENDPOINTS = {
   LOGIN: '/auth/login',
   REGISTER: '/auth/register',
-  REGISTER_BUDDI: '/auth/register/buddi',
+  REGISTER_BUDDI: 'https://backend-service-hw1rh.kinsta.app/api/v1/auth/register/buddi',
   REGISTER_PARENT: '/auth/register/parent',
   LOGOUT: '/auth/logout',
   REFRESH_TOKEN: '/auth/refresh',

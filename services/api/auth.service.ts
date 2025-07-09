@@ -4,8 +4,6 @@ import { AUTH_ENDPOINTS } from './endpoints';
 import {
   ApiResponse,
   AuthResponse,
-  BuddiRegistrationRequest,
-  BuddiRegistrationResponse,
   LoginRequest,
   LoginResponse,
   ParentRegistrationRequest,
@@ -103,27 +101,34 @@ class AuthService {
   /**
    * Register new buddi with form data
    */
-  async registerBuddi(data: BuddiRegistrationRequest): Promise<BuddiRegistrationResponse> {
+  async registerBuddi(data: any): Promise<any> {
     try {
+      // Debug: Log the incoming data
+      console.log('Buddi registration data:', data);
+      console.log('Resume file:', data.resume);
+      console.log('Profile picture:', data.profilePicture);
+
       // Create form data
       const formData = new FormData();
 
       // Add all text fields
       Object.entries(data).forEach(([key, value]) => {
-        if (value !== undefined && !(value instanceof File)) {
-          formData.append(key, value);
+        if (value !== undefined && value !== null && value !== '' && !(value instanceof File) && !(value && typeof value === 'object' && 'uri' in value) && key !== 'resume' && key !== 'profilePicture') {
+          formData.append(key, value.toString());
         }
       });
 
       // Add files if present
-      if (data.profilePicture) {
-        formData.append('profilePicture', data.profilePicture);
+      if (data.resume && typeof data.resume === 'object' && 'uri' in data.resume) {
+        console.log('Adding resume file to FormData');
+        formData.append('resume', data.resume as any);
       }
-      if (data.resume) {
-        formData.append('resume', data.resume);
+      if (data.profilePicture && typeof data.profilePicture === 'object' && 'uri' in data.profilePicture) {
+        console.log('Adding profile picture to FormData');
+        formData.append('profilePicture', data.profilePicture as any);
       }
 
-      const response = await unauthorizedApi.post<ApiResponse<BuddiRegistrationResponse>>(
+      const response = await unauthorizedApi.post(
         AUTH_ENDPOINTS.REGISTER_BUDDI,
         formData,
         {
@@ -133,7 +138,7 @@ class AuthService {
         }
       );
 
-      return response.data.data;
+      return response.data;
     } catch (error: any) {
       throw this.handleAuthError(error);
     }

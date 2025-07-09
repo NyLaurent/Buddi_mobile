@@ -24,7 +24,6 @@ import CountryPicker, {
 import { SafeAreaView } from "react-native-safe-area-context";
 import SuccessScreen from "../../../../components/commons/SuccessScreen";
 import authService from "../../../../services/api/auth.service";
-import { BuddiRegistrationRequest } from "../../../../services/api/types";
 
 const PRIMARY_COLOR = "#FF932E";
 const STEPS = [
@@ -55,10 +54,11 @@ interface FormData {
   teacherEmail: string;
   customReferral: string;
   referralOccupation: string;
-  resume: File | null;
+  resume: { uri: string; name: string; type: string; size: number } | null;
   gender: string;
   dob: string;
-  profilePicture: File | null;
+  profilePicture: { uri: string; name: string; type: string; size: number } | null;
+  profilePictureUri: string | null;
   showPassword: boolean;
   showConfirmPassword: boolean;
 }
@@ -86,6 +86,7 @@ const initialFormData: FormData = {
   gender: GENDERS[0],
   dob: "",
   profilePicture: null,
+  profilePictureUri: null,
   showPassword: false,
   showConfirmPassword: false,
 };
@@ -101,61 +102,131 @@ interface StepProps {
   setCountry: React.Dispatch<React.SetStateAction<Country | null>>;
 }
 
-// Validation function
+// Enhanced validation function with better error messages
 function validateForm(formData: FormData, step: number) {
   const errors: any = {};
 
   if (step === 0) {
     // Registration step validation
-    if (!formData.firstName) errors.firstName = "First name is required";
-    if (!formData.lastName) errors.lastName = "Last name is required";
-    if (!formData.email) errors.email = "Email is required";
-    else if (!/^[^@\s]+@[^@\s]+\.edu$/.test(formData.email))
+    if (!formData.firstName.trim()) {
+      errors.firstName = "First name is required";
+    } else if (formData.firstName.trim().length < 2) {
+      errors.firstName = "First name must be at least 2 characters";
+    }
+
+    if (!formData.lastName.trim()) {
+      errors.lastName = "Last name is required";
+    } else if (formData.lastName.trim().length < 2) {
+      errors.lastName = "Last name must be at least 2 characters";
+    }
+
+    if (!formData.email.trim()) {
+      errors.email = "Email is required";
+    } else if (!/^[^@\s]+@[^@\s]+\.edu$/.test(formData.email.trim())) {
       errors.email = "Email must be a valid .edu email address";
-    if (!formData.password) errors.password = "Password is required";
-    else if (
+    }
+
+    if (!formData.password) {
+      errors.password = "Password is required";
+    } else if (formData.password.length < 8) {
+      errors.password = "Password must be at least 8 characters long";
+    } else if (
       !/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?]).{8,}$/.test(
         formData.password
       )
     ) {
       errors.password =
-        "Password must be at least 8 characters and include uppercase, lowercase, number, and special character";
+        "Password must include uppercase, lowercase, number, and special character";
     }
-    if (formData.password !== formData.confirmPassword)
+
+    if (formData.password !== formData.confirmPassword) {
       errors.confirmPassword = "Passwords do not match";
-    if (!formData.phoneNumber) errors.phoneNumber = "Phone number is required";
-    if (!formData.countryCallingCode)
+    }
+
+    if (!formData.phoneNumber.trim()) {
+      errors.phoneNumber = "Phone number is required";
+    } else if (!/^\d{7,15}$/.test(formData.phoneNumber.trim())) {
+      errors.phoneNumber = "Please enter a valid phone number";
+    }
+
+    if (!formData.countryCallingCode) {
       errors.phoneNumber = "Please select a country code";
-    if (!formData.homeAddress) errors.homeAddress = "Home address is required";
-    if (!formData.dob) errors.dob = "Date of birth is required";
-    if (formData.gender === GENDERS[0])
+    }
+
+    if (!formData.homeAddress.trim()) {
+      errors.homeAddress = "Home address is required";
+    } else if (formData.homeAddress.trim().length < 5) {
+      errors.homeAddress = "Please enter a complete address";
+    }
+
+    if (!formData.dob) {
+      errors.dob = "Date of birth is required";
+    } else {
+      const dobDate = new Date(formData.dob);
+      const today = new Date();
+      const age = today.getFullYear() - dobDate.getFullYear();
+      if (age < 16 || age > 100) {
+        errors.dob = "You must be between 16 and 100 years old";
+      }
+    }
+
+    if (formData.gender === GENDERS[0]) {
       errors.gender = "Please select your gender";
+    }
   }
 
   if (step === 1) {
     // Academic details validation
-    if (!formData.currentSchool)
+    if (!formData.currentSchool.trim()) {
       errors.currentSchool = "Current school is required";
-    if (!formData.AreaOfStudy) errors.AreaOfStudy = "Area of study is required";
+    } else if (formData.currentSchool.trim().length < 3) {
+      errors.currentSchool = "Please enter a valid school name";
+    }
+
+    if (!formData.AreaOfStudy.trim()) {
+      errors.AreaOfStudy = "Area of study is required";
+    } else if (formData.AreaOfStudy.trim().length < 2) {
+      errors.AreaOfStudy = "Please enter a valid area of study";
+    }
+
+    if (formData.Gpa && !/^\d+(\.\d{1,2})?$/.test(formData.Gpa)) {
+      errors.Gpa = "Please enter a valid GPA (e.g., 3.5)";
+    }
   }
 
   if (step === 3) {
     // References validation
-    if (!formData.teacherEmail && !formData.customReferral) {
+    if (!formData.teacherEmail.trim() && !formData.customReferral.trim()) {
       errors.references =
         "Please provide at least one reference (Head Teacher or Custom Reference)";
     }
+
     if (
-      formData.teacherEmail &&
-      !/^[^@\s]+@[^@\s]+\.edu$/.test(formData.teacherEmail)
+      formData.teacherEmail.trim() &&
+      !/^[^@\s]+@[^@\s]+\.edu$/.test(formData.teacherEmail.trim())
     ) {
       errors.teacherEmail = "Head Teacher email must be a valid .edu email";
     }
+
     if (
-      formData.customReferral &&
-      !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(formData.customReferral)
+      formData.customReferral.trim() &&
+      !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(formData.customReferral.trim())
     ) {
       errors.customReferral = "Please enter a valid email address";
+    }
+
+    if (
+      formData.teacherPhoneNumber.trim() &&
+      !/^\d{7,15}$/.test(formData.teacherPhoneNumber.trim())
+    ) {
+      errors.teacherPhoneNumber = "Please enter a valid phone number";
+    }
+
+    if (
+      formData.customReferralPhoneNumber.trim() &&
+      !/^\d{7,15}$/.test(formData.customReferralPhoneNumber.trim())
+    ) {
+      errors.customReferralPhoneNumber = "Please enter a valid phone number";
     }
   }
 
@@ -184,10 +255,18 @@ const RegistrationStep: React.FC<StepProps> = ({
     if (!result.canceled && result.assets && result.assets[0].uri) {
       // Create a File object from the image URI
       const uri = result.assets[0].uri;
-      const response = await fetch(uri);
-      const blob = await response.blob();
-      const file = new File([blob], "profile.jpg", { type: "image/jpeg" });
-      setFormData((prev) => ({ ...prev, profilePicture: file }));
+      // For React Native, we need to create a file object with URI and metadata
+      const file = {
+        uri: uri,
+        name: "profile.jpg",
+        type: "image/jpeg",
+        size: result.assets[0].fileSize || 0,
+      };
+      setFormData((prev) => ({
+        ...prev,
+        profilePicture: file,
+        profilePictureUri: uri, // Store URI for display
+      }));
     }
   };
 
@@ -221,9 +300,9 @@ const RegistrationStep: React.FC<StepProps> = ({
             className="w-28 h-28 rounded-full border-2 border-dashed border-gray-300 items-center justify-center mb-2 overflow-hidden relative"
             style={{ borderStyle: "dashed" }}
           >
-            {formData.profilePicture ? (
+            {formData.profilePictureUri ? (
               <Image
-                source={{ uri: URL.createObjectURL(formData.profilePicture) }}
+                source={{ uri: formData.profilePictureUri }}
                 className="w-full h-full rounded-full"
               />
             ) : (
@@ -708,27 +787,8 @@ const ResumeStep: React.FC<StepProps> = ({ formData, setFormData }) => {
   const pickDocument = async () => {
     try {
       const result = await DocumentPicker.getDocumentAsync({
-        type: [
-          // PDF formats
-          "application/pdf",
-          // Microsoft Office formats
-          "application/msword",
-          "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-          "application/vnd.ms-excel",
-          "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-          "application/vnd.ms-powerpoint",
-          "application/vnd.openxmlformats-officedocument.presentationml.presentation",
-          // Image formats
-          "image/*",
-          // Text formats
-          "text/plain",
-          // Rich Text Format
-          "application/rtf",
-          // OpenDocument formats
-          "application/vnd.oasis.opendocument.text",
-          "application/vnd.oasis.opendocument.spreadsheet",
-          "application/vnd.oasis.opendocument.presentation",
-        ],
+        // Allow all file types
+        type: "*/*",
         copyToCacheDirectory: true,
       });
 
@@ -739,11 +799,17 @@ const ResumeStep: React.FC<StepProps> = ({ formData, setFormData }) => {
         result.assets.length > 0
       ) {
         const uri = result.assets[0].uri;
-        const response = await fetch(uri);
-        const blob = await response.blob();
-        const file = new File([blob], result.assets[0].name, {
-          type: result.assets[0].mimeType,
-        });
+        // For React Native, we need to create a file object with URI and metadata
+        const file = {
+          uri: uri,
+          name: result.assets[0].name || "resume.pdf",
+          type: result.assets[0].mimeType || "application/pdf",
+          size: result.assets[0].size || 0,
+        };
+        console.log("Resume file created:", file);
+        console.log("File name:", file.name);
+        console.log("File type:", file.type);
+        console.log("File size:", file.size);
         setFormData((prev) => ({ ...prev, resume: file }));
       }
     } catch (error) {
@@ -820,7 +886,7 @@ const ResumeStep: React.FC<StepProps> = ({ formData, setFormData }) => {
           Upload Your Resume here
         </Text>
         <Text className="font-comfortaa text-xs text-gray-500">
-          Allowed formats: PDF, Word, Excel, PowerPoint, Images, Text files
+          All file types are supported
         </Text>
       </TouchableOpacity>
 
@@ -1200,7 +1266,7 @@ export default function BuddiSignup() {
     if (Object.keys(validationErrors).length > 0) {
       Alert.alert(
         "Validation Error",
-        "Please Complete all fields before proceeding."
+        "Please complete all required fields correctly before proceeding."
       );
       return;
     }
@@ -1218,32 +1284,48 @@ export default function BuddiSignup() {
             ? "FEMALE"
             : "OTHER";
 
-        // Convert form data to registration request
-        const registrationData: BuddiRegistrationRequest = {
-          ...formData,
+        // Prepare registration data
+        const registrationData = {
+          email: formData.email.trim(),
+          password: formData.password,
+          phoneNumber: `+${
+            formData.countryCallingCode
+          }${formData.phoneNumber.trim()}`,
+          firstName: formData.firstName.trim(),
+          lastName: formData.lastName.trim(),
+          homeAddress: formData.homeAddress.trim(),
+          currentSchool: formData.currentSchool.trim(),
+          AreaOfStudy: formData.AreaOfStudy.trim(),
+          Gpa: formData.Gpa.trim() || undefined,
+          teacherEmail: formData.teacherEmail.trim() || undefined,
+          teacherPhoneNumber: formData.teacherPhoneNumber.trim()
+            ? `+${
+                formData.teacherCountryCode
+              }${formData.teacherPhoneNumber.trim()}`
+            : undefined,
+          customReferral: formData.customReferral.trim() || undefined,
+          referralOccupation: formData.referralOccupation.trim() || undefined,
+          resume: formData.resume || undefined,
+          profilePicture: formData.profilePicture || undefined,
           gender: mappedGender,
           dob: formData.dob
             ? new Date(formData.dob).toISOString().split("T")[0]
             : "",
-          resume: formData.resume || undefined,
-          profilePicture: formData.profilePicture || undefined,
-          phoneNumber: `+${formData.countryCallingCode}${formData.phoneNumber}`,
-          teacherPhoneNumber: formData.teacherPhoneNumber
-            ? `+${formData.teacherCountryCode}${formData.teacherPhoneNumber}`
-            : "",
         };
+
+        console.log("Submitting registration data:", registrationData);
 
         const response = await authService.registerBuddi(registrationData);
 
         console.log("Registration successful:", response);
 
-        // Show success screen for 2 seconds then redirect to login
+        // Show success screen for 3 seconds then redirect to login
         setShowSuccess(true);
         setTimeout(() => {
           router.push("/auth/login");
-        }, 2000);
+        }, 3000);
       } catch (error: any) {
-        console.error("Registration error (details):", error, error?.response);
+        console.error("Registration error:", error);
         Alert.alert(
           "Registration Failed",
           error.message ||
