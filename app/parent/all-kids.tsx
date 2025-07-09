@@ -18,6 +18,11 @@ import { ChildrenService } from "../../services/api";
 
 export default function AllKidsPage() {
   const { parentDetails } = useAuth();
+  // Log parentDetails and parentDetails.id on mount and when parentDetails changes
+  useEffect(() => {
+    console.log("parentDetails from useAuth:", parentDetails);
+    console.log("parentId used for API:", parentDetails?.id);
+  }, [parentDetails]);
   const [kids, setKids] = useState<
     import("../../services/api/children.service").Child[]
   >([]);
@@ -51,6 +56,18 @@ export default function AllKidsPage() {
 
   const handleUpdate = async () => {
     if (!updatingKid || !parentDetails?.id) return;
+    console.log("parentDetails before update:", parentDetails);
+    console.log("parentId used for update API:", parentDetails.id);
+    console.log("Updating kid:", {
+      childId: updatingKid.id,
+      parentId: parentDetails.id,
+      payload: {
+        name: updateForm.name,
+        age: Number(updateForm.age),
+        schoolName: updateForm.schoolName,
+        pickupAddress: updateForm.pickupAddress,
+      },
+    });
     setUpdateLoading(true);
     setUpdateError(null);
     try {
@@ -77,6 +94,12 @@ export default function AllKidsPage() {
 
   const handleDelete = (kidId: string) => {
     if (!parentDetails?.id) return;
+    console.log("parentDetails before delete:", parentDetails);
+    console.log("parentId used for delete API:", parentDetails.id);
+    console.log("Deleting kid:", {
+      childId: kidId,
+      parentId: parentDetails.id,
+    });
     Alert.alert("Delete Kid", "Are you sure you want to delete this kid?", [
       { text: "Cancel", style: "cancel" },
       {

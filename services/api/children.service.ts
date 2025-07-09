@@ -61,7 +61,7 @@ const ChildrenService = {
   },
   async updateChild(childId: string, parentId: string, data: Omit<RegisterChildRequest, 'parentId'>): Promise<Child> {
     try {
-      const response = await authorizedApi.put(CHILDREN_ENDPOINTS.UPDATE(childId, parentId), data);
+      const response = await authorizedApi.put(CHILDREN_ENDPOINTS.UPDATE(parentId, childId), data);
       return response.data;
     } catch (err: any) {
       let message = 'Failed to update child.';
@@ -83,7 +83,7 @@ const ChildrenService = {
   },
   async deleteChild(childId: string, parentId: string): Promise<void> {
     try {
-      await authorizedApi.delete(CHILDREN_ENDPOINTS.DELETE(childId, parentId));
+      await authorizedApi.delete(CHILDREN_ENDPOINTS.DELETE(parentId, childId));
     } catch (err: any) {
       let message = 'Failed to delete child.';
       if (err?.response?.data?.message) {

@@ -176,8 +176,8 @@ export const SEARCH_ENDPOINTS = {
 export const CHILDREN_ENDPOINTS = {
   REGISTER: '/children/register',
   GET_BY_PARENT: (parentId: string) => `/children/parent/childrens/${parentId}`,
-  UPDATE: (childId: string, parentId: string) => `/children/${childId}/${parentId}`,
-  DELETE: (childId: string, parentId: string) => `/children/${childId}/${parentId}`,
+  UPDATE: (parentId: string, childId: string) => `/children/update/${parentId}/${childId}`,
+  DELETE: (parentId: string, childId: string) => `/children/delete/${parentId}/${childId}`,
 } as const; 
 
 // Coverage Endpoints
