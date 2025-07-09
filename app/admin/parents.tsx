@@ -1,20 +1,52 @@
+import CoverageAlertCard from "@/components/admin/CoverageAlertCard";
+import ParentsTable from "@/components/admin/ParentsTable";
+import AnalyticsCard from "@/components/commons/AnalyticsCard";
 import PageHeader from "@/components/commons/PageHeader";
-import { Ionicons, MaterialIcons } from "@expo/vector-icons";
-import React, { useState } from "react";
+import { ParentRecord, ParentService } from "@/services/api";
+import { authorizedApi } from "@/services/api/config";
+import { Ionicons } from "@expo/vector-icons";
+import React, { useEffect, useState } from "react";
 import {
+  ActivityIndicator,
   Image,
+  Modal,
   ScrollView,
   StatusBar,
   StyleSheet,
   Text,
-  TextInput,
   TouchableOpacity,
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
+// Types
+interface Child {
+  name: string;
+  age: number;
+  school: string;
+}
+
+interface Parent {
+  id: string;
+  name: string;
+  email: string;
+  phone: string;
+  image: string;
+  children: Child[];
+  status: "Active" | "Pending";
+  joinDate: string;
+  totalPickups: number;
+  currentBuddi: string | null;
+}
+
+interface ParentCardProps {
+  parent: Parent;
+  onViewDetails: () => void;
+  onMessage: () => void;
+}
+
 // Mock data for Parents
-const parentsList = [
+const parentsList: Parent[] = [
   {
     id: "1",
     name: "Sarah Johnson",
@@ -59,51 +91,7 @@ const parentsList = [
   },
 ];
 
-interface AnalyticsCardProps {
-  title: string;
-  value: string;
-  subtitle: string;
-  icon: keyof typeof Ionicons.glyphMap;
-  borderColor: string;
-  iconBgColor: string;
-  iconColor: string;
-  showMenu?: boolean;
-}
-
-const AnalyticsCard = ({
-  title,
-  value,
-  subtitle,
-  icon,
-  borderColor,
-  iconBgColor,
-  iconColor,
-  showMenu = true,
-}: AnalyticsCardProps) => {
-  return (
-    <View style={[styles.analyticsCard, { borderColor: borderColor }]}>
-      {showMenu && (
-        <TouchableOpacity style={styles.cardMenu}>
-          <Ionicons name="ellipsis-vertical" size={16} color="#8A8A8A" />
-        </TouchableOpacity>
-      )}
-
-      <Text style={styles.cardTitle}>{title}</Text>
-
-      <View style={styles.cardContent}>
-        <View style={[styles.iconContainer, { backgroundColor: iconBgColor }]}>
-          <Ionicons name={icon} size={24} color={iconColor} />
-        </View>
-        <View style={styles.cardStats}>
-          <Text style={styles.cardValue}>{value}</Text>
-          <Text style={styles.cardSubtitle}>{subtitle}</Text>
-        </View>
-      </View>
-    </View>
-  );
-};
-
-const ParentCard = ({ parent, onViewDetails, onMessage }) => {
+const ParentCard = ({ parent, onViewDetails, onMessage }: ParentCardProps) => {
   const statusColor = parent.status === "Active" ? "#10B981" : "#F59E0B";
   const statusBg = parent.status === "Active" ? "#D1FAE5" : "#FEF3C7";
 
@@ -216,6 +204,104 @@ export default function AdminParentsPage() {
   const [activeTab, setActiveTab] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
 
+  // Parent table state
+  const [parentData, setParentData] = useState<ParentRecord[]>([]);
+  const [parentCurrentPage, setParentCurrentPage] = useState(1);
+  const [parentTotalPages, setParentTotalPages] = useState(1);
+  const [parentLoading, setParentLoading] = useState(false);
+  const [parentError, setParentError] = useState("");
+
+  // Modal state for approval/rejection
+  const [modalVisible, setModalVisible] = useState(false);
+  const [selectedParent, setSelectedParent] = useState<ParentRecord | null>(
+    null
+  );
+  const [actionLoading, setActionLoading] = useState(false);
+  const [actionError, setActionError] = useState("");
+  const [actionSuccess, setActionSuccess] = useState("");
+
+  const handleActionClick = (parent: ParentRecord) => {
+    setSelectedParent(parent);
+    setModalVisible(true);
+    setActionError("");
+    setActionSuccess("");
+  };
+
+  const handleApprove = async () => {
+    if (!selectedParent) return;
+    setActionLoading(true);
+    setActionError("");
+    try {
+      await authorizedApi.patch(`/parent/${selectedParent.id}/approval`, {
+        status: "approved",
+      });
+      setActionSuccess("Parent approved successfully.");
+      setTimeout(() => {
+        setModalVisible(false);
+        setSelectedParent(null);
+        setActionSuccess("");
+        // Refresh table
+        ParentService.getAllParents(parentCurrentPage, 10).then((res) => {
+          setParentData(res.data || []);
+          setParentTotalPages(res.totalPages || 1);
+        });
+      }, 1000);
+    } catch (err: any) {
+      setActionError(
+        err?.response?.data?.message ||
+          err?.message ||
+          "Failed to approve parent."
+      );
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleReject = async () => {
+    if (!selectedParent) return;
+    setActionLoading(true);
+    setActionError("");
+    try {
+      await authorizedApi.patch(`/parent/${selectedParent.id}/approval`, {
+        status: "rejected",
+      });
+      setActionSuccess("Parent rejected successfully.");
+      setTimeout(() => {
+        setModalVisible(false);
+        setSelectedParent(null);
+        setActionSuccess("");
+        // Refresh table
+        ParentService.getAllParents(parentCurrentPage, 10).then((res) => {
+          setParentData(res.data || []);
+          setParentTotalPages(res.totalPages || 1);
+        });
+      }, 1000);
+    } catch (err: any) {
+      setActionError(
+        err?.response?.data?.message ||
+          err?.message ||
+          "Failed to reject parent."
+      );
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (activeTab !== "all") return;
+    setParentLoading(true);
+    setParentError("");
+    ParentService.getAllParents(parentCurrentPage, 10)
+      .then((res) => {
+        setParentData(res.data || []);
+        setParentTotalPages(res.totalPages || 1);
+      })
+      .catch((err) => {
+        setParentError(err?.message || "Failed to fetch parents");
+      })
+      .finally(() => setParentLoading(false));
+  }, [parentCurrentPage, activeTab]);
+
   const filteredParents = parentsList.filter((parent) => {
     const matchesSearch =
       parent.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -279,87 +365,85 @@ export default function AdminParentsPage() {
         </View>
 
         {/* Analytics Cards - 2x2 Grid */}
-        <View style={styles.analyticsGrid}>
-          <View style={styles.analyticsRow}>
-            <AnalyticsCard
-              title="Total Parents"
-              value="12"
-              subtitle="2 Schools"
-              icon="flash"
-              borderColor="#3B82F6"
-              iconBgColor="#3B82F6"
-              iconColor="#ffffff"
-            />
-            <AnalyticsCard
-              title="Pending Approval"
-              value="3"
-              subtitle="All time"
-              icon="shield-checkmark"
-              borderColor="#8B5CF6"
-              iconBgColor="#8B5CF6"
-              iconColor="#ffffff"
-            />
-          </View>
-          <View style={styles.analyticsRow}>
-            <AnalyticsCard
-              title="Feedbacks by Parents"
-              value="3"
-              subtitle="Connected"
-              icon="people"
-              borderColor="#EF4444"
-              iconBgColor="#EF4444"
-              iconColor="#ffffff"
-            />
-            <AnalyticsCard
-              title="Pending Approval"
-              value="2"
-              subtitle="2 Schools"
-              icon="person"
-              borderColor="#A855F7"
-              iconBgColor="#A855F7"
-              iconColor="#ffffff"
-            />
-          </View>
-        </View>
-
-        {/* Search Bar */}
-        <View className="mx-4 mb-4">
-          <View className="bg-gray-50 rounded-xl px-4 py-3 flex-row items-center">
-            <Ionicons name="search" size={20} color="#9CA3AF" />
-            <TextInput
-              placeholder="Search parents by name or email..."
-              value={searchQuery}
-              onChangeText={setSearchQuery}
-              className="flex-1 ml-3 font-comfortaa text-gray-700"
-              placeholderTextColor="#9CA3AF"
-            />
-          </View>
-        </View>
-
-        {/* Parents List */}
         {activeTab === "all" && (
           <>
-            {filteredParents.length > 0 ? (
-              filteredParents.map((parent) => (
-                <ParentCard
-                  key={parent.id}
-                  parent={parent}
-                  onViewDetails={() =>
-                    console.log("View details for:", parent.name)
-                  }
-                  onMessage={() => console.log("Message:", parent.name)}
+            <View
+              style={{
+                flexDirection: "row",
+                flexWrap: "wrap",
+                justifyContent: "space-between",
+                paddingHorizontal: 16,
+                marginBottom: 24,
+              }}
+            >
+              <View style={{ width: "48%", marginBottom: 12 }}>
+                <AnalyticsCard
+                  icon={<Ionicons name="flash" size={36} color="#29B6F6" />}
+                  title="Total Parents"
+                  value="12"
+                  subtitle="2 Schools"
                 />
-              ))
-            ) : (
-              <View className="bg-white rounded-xl p-8 mx-4 items-center">
-                <MaterialIcons name="search-off" size={48} color="#9CA3AF" />
-                <Text className="font-comfortaa-bold text-lg text-gray-600 mt-4">
-                  No Parents Found
-                </Text>
-                <Text className="font-comfortaa text-gray-500 text-center mt-2">
-                  Try adjusting your search criteria
-                </Text>
               </View>
+              <View style={{ width: "48%", marginBottom: 12 }}>
+                <AnalyticsCard
+                  icon={
+                    <Ionicons name="cash-outline" size={36} color="#5B4DF7" />
+                  }
+                  title="Pending Approval"
+                  value="3"
+                  subtitle="All time"
+                />
+              </View>
+              <View style={{ width: "48%", marginBottom: 12 }}>
+                <AnalyticsCard
+                  icon={<Ionicons name="people" size={36} color="#FF4D67" />}
+                  title="Feedbacks by Parents"
+                  value="3"
+                  subtitle="Connected"
+                />
+              </View>
+              <View style={{ width: "48%", marginBottom: 12 }}>
+                <AnalyticsCard
+                  icon={
+                    <Ionicons name="person-circle" size={36} color="#B36AFF" />
+                  }
+                  title="Pending Approval"
+                  value="2"
+                  subtitle="2 Schools"
+                />
+              </View>
+            </View>
+            <CoverageAlertCard
+              title="21 Buddis Need Coverage For Today"
+              subtitle="Review this before effects!"
+              description="Please review Buddis requesting coverage to ensure availability and reliability."
+              primaryButton={{
+                label: "Handle Coverages",
+                icon: <Ionicons name="reload" size={20} color="#fff" />,
+                onPress: () => {
+                  // TODO: Add navigation or action here
+                },
+              }}
+            />
+            {/* Parent Table */}
+            {parentLoading ? (
+              <Text style={{ textAlign: "center", marginTop: 24 }}>
+                Loading...
+              </Text>
+            ) : parentError ? (
+              <Text
+                style={{ textAlign: "center", color: "red", marginTop: 24 }}
+              >
+                {parentError}
+              </Text>
+            ) : (
+              <ParentsTable
+                data={parentData.filter((p) => p.User)}
+                currentPage={parentCurrentPage}
+                totalPages={parentTotalPages}
+                onPageChange={setParentCurrentPage}
+                onActionClick={handleActionClick}
+              />
             )}
           </>
         )}
@@ -376,6 +460,152 @@ export default function AdminParentsPage() {
             </Text>
           </View>
         )}
+        <Modal
+          visible={modalVisible}
+          transparent
+          animationType="fade"
+          onRequestClose={() => {
+            setModalVisible(false);
+            setSelectedParent(null);
+          }}
+        >
+          <View
+            style={{
+              flex: 1,
+              backgroundColor: "rgba(0,0,0,0.3)",
+              justifyContent: "center",
+              alignItems: "center",
+            }}
+          >
+            <View
+              style={{
+                backgroundColor: "#fff",
+                borderRadius: 16,
+                padding: 24,
+                width: 320,
+                alignItems: "center",
+              }}
+            >
+              <Text
+                style={{
+                  fontFamily: "Comfortaa-Bold",
+                  fontSize: 18,
+                  color: "#23272F",
+                  marginBottom: 8,
+                }}
+              >
+                {selectedParent
+                  ? `${selectedParent.User?.firstName} ${selectedParent.User?.lastName}`
+                  : ""}
+              </Text>
+              <Text
+                style={{
+                  fontFamily: "Comfortaa-Regular",
+                  fontSize: 15,
+                  color: "#666",
+                  marginBottom: 16,
+                }}
+              >
+                What action would you like to take?
+              </Text>
+              {actionError ? (
+                <Text style={{ color: "#FF4D67", marginBottom: 8 }}>
+                  {actionError}
+                </Text>
+              ) : null}
+              {actionSuccess ? (
+                <Text style={{ color: "#10B981", marginBottom: 8 }}>
+                  {actionSuccess}
+                </Text>
+              ) : null}
+              <View style={{ flexDirection: "row", gap: 12, marginTop: 8 }}>
+                <TouchableOpacity
+                  style={{
+                    backgroundColor: "#10B981",
+                    borderRadius: 8,
+                    paddingVertical: 10,
+                    paddingHorizontal: 18,
+                    marginRight: 8,
+                    flexDirection: "row",
+                    alignItems: "center",
+                  }}
+                  onPress={handleApprove}
+                  disabled={actionLoading}
+                >
+                  {actionLoading ? (
+                    <ActivityIndicator color="#fff" size={18} />
+                  ) : (
+                    <Ionicons
+                      name="checkmark-circle"
+                      size={20}
+                      color="#fff"
+                      style={{ marginRight: 6 }}
+                    />
+                  )}
+                  <Text
+                    style={{
+                      color: "#fff",
+                      fontFamily: "Comfortaa-Bold",
+                      fontSize: 15,
+                    }}
+                  >
+                    Approve
+                  </Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={{
+                    backgroundColor: "#FF4D67",
+                    borderRadius: 8,
+                    paddingVertical: 10,
+                    paddingHorizontal: 18,
+                    flexDirection: "row",
+                    alignItems: "center",
+                  }}
+                  onPress={handleReject}
+                  disabled={actionLoading}
+                >
+                  {actionLoading ? (
+                    <ActivityIndicator color="#fff" size={18} />
+                  ) : (
+                    <Ionicons
+                      name="close-circle"
+                      size={20}
+                      color="#fff"
+                      style={{ marginRight: 6 }}
+                    />
+                  )}
+                  <Text
+                    style={{
+                      color: "#fff",
+                      fontFamily: "Comfortaa-Bold",
+                      fontSize: 15,
+                    }}
+                  >
+                    Reject
+                  </Text>
+                </TouchableOpacity>
+              </View>
+              <TouchableOpacity
+                style={{ marginTop: 18 }}
+                onPress={() => {
+                  setModalVisible(false);
+                  setSelectedParent(null);
+                }}
+                disabled={actionLoading}
+              >
+                <Text
+                  style={{
+                    color: "#666",
+                    fontFamily: "Comfortaa-Regular",
+                    fontSize: 15,
+                  }}
+                >
+                  Cancel
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </Modal>
       </ScrollView>
     </SafeAreaView>
   );

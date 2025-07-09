@@ -30,7 +30,7 @@ export const USER_ENDPOINTS = {
 
 // Parent Endpoints
 export const PARENT_ENDPOINTS = {
-  LIST: '/parents',
+  LIST: '/parent', // singular!
   DETAILS: (id: string) => `/parents/${id}`,
   CREATE: '/parents',
   UPDATE: (id: string) => `/parents/${id}`,

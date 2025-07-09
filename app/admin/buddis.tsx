@@ -455,7 +455,7 @@ export default function AdminBuddisPage() {
               <Text
                 style={{
                   fontSize: 18,
-                  fontWeight: "bold",
+              
                   color: "#23272F",
                   fontFamily: "Comfortaa-Bold",
                   marginBottom: 12,

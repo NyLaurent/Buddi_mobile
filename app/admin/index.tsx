@@ -99,7 +99,7 @@ export default function AdminDashboard() {
                   }}
                 >
                   Role: {user.role.charAt(0).toUpperCase() + user.role.slice(1)}
-                </Text>
+              </Text>
               </>
             )}
           </View>
@@ -129,8 +129,9 @@ export default function AdminDashboard() {
             flexWrap: "wrap",
             justifyContent: "space-between",
             marginBottom: 16,
+            paddingHorizontal: 16,
+            paddingTop: 12,
           }}
-          className="px-2 pt-3"
         >
           <View style={{ width: "48%", marginBottom: 12 }}>
             <AnalyticsCard

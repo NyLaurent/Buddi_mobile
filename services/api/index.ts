@@ -4,7 +4,7 @@
 // ===============================
 
 // Core API Configuration
-export { authorizedApi, STORAGE_KEYS, unauthorizedApi } from './config';
+export { STORAGE_KEYS, authorizedApi, unauthorizedApi } from './config';
 export type { ApiError } from './config';
 
 // API Endpoints
@@ -18,8 +18,9 @@ export * from './types';
 // ===============================
 // export { default as AuthService } from './auth.service';
 // export { default as PickupService } from './pickup.service';
-// export { default as ParentService } from './parent.service';
 export { default as BuddiService } from './buddi.service';
+export { default as ParentService } from './parent.service';
+export type { ParentListResponse, ParentRecord } from './parent.service';
 // export { default as AdminService } from './admin.service';
 // export { default as PaymentService } from './payment.service';
 // export { default as NotificationService } from './notification.service';
