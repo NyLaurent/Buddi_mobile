@@ -24,10 +24,11 @@ export default function AdminDashboard() {
 
   const handleLogout = () => {
     console.log("Logout button clicked!"); // Debug log
-    
-    // For web compatibility, logout directly without Alert confirmation
-    // TODO: Add proper web-compatible confirmation modal later
-    handleLogoutConfirmed();
+    // Show confirmation modal before logout
+    Alert.alert("Logout", "Are you sure you want to logout?", [
+      { text: "Cancel", style: "cancel" },
+      { text: "Logout", style: "destructive", onPress: handleLogoutConfirmed },
+    ]);
   };
 
   const handleLogoutConfirmed = async () => {
@@ -40,7 +41,7 @@ export default function AdminDashboard() {
     } catch (error) {
       console.error("Logout error:", error); // Debug log
       // For web, use window.alert as fallback
-      if (typeof window !== 'undefined') {
+      if (typeof window !== "undefined") {
         window.alert("Failed to logout. Please try again.");
       }
     }
@@ -59,7 +60,15 @@ export default function AdminDashboard() {
           paddingBottom: 20,
         }}
       >
-        <View className="flex-row justify-between items-center px-1 pt-6">
+        <View
+          style={{
+            flexDirection: "row",
+            justifyContent: "space-between",
+            alignItems: "center",
+            paddingHorizontal: 16,
+            paddingTop: 24,
+          }}
+        >
           <View>
             <Image
               source={require("../../assets/images/logo.png")}
@@ -67,9 +76,31 @@ export default function AdminDashboard() {
               resizeMode="contain"
             />
             {user && (
-              <Text className="text-sm text-gray-600 font-comfortaa mt-1">
-                Welcome, {user.firstName}
-              </Text>
+              <>
+                <Text
+                  style={{
+                    fontFamily: "Comfortaa-Bold",
+                    fontSize: 20,
+                    color: "#FF932E",
+                    marginTop: 8,
+                    marginBottom: 2,
+                    letterSpacing: 0.2,
+                  }}
+                >
+                  Welcome,{" "}
+                  <Text style={{ color: "#232B3A" }}>{user.firstName}</Text>
+                </Text>
+                <Text
+                  style={{
+                    fontFamily: "Comfortaa-Regular",
+                    fontSize: 14,
+                    color: "#6B7280",
+                    marginBottom: 2,
+                  }}
+                >
+                  Role: {user.role.charAt(0).toUpperCase() + user.role.slice(1)}
+                </Text>
+              </>
             )}
           </View>
           <View className="flex-row items-center gap-2 pr-1">

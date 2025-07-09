@@ -54,6 +54,8 @@ export const BUDDI_ENDPOINTS = {
   APPROVE_APPLICATION: (id: string) => `/buddies/${id}/approve`,
   REJECT_APPLICATION: (id: string) => `/buddies/${id}/reject`,
   BACKGROUND_CHECK: (id: string) => `/buddies/${id}/background-check`,
+  BY_STATUS: (status: string, page: number, limit: number) => `/buddi/buddies/status/${status}?page=${page}&limit=${limit}`,
+  STATUS_UPDATE: (id: string) => `/buddi/buddies/${id}/status`,
 } as const;
 
 // Pickup Endpoints  

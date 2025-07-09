@@ -8,6 +8,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
 import React from "react";
 import {
+  Alert,
   Image,
   ScrollView,
   StatusBar,
@@ -29,7 +30,11 @@ export default function ParentDashboard() {
 
   const handleLogout = () => {
     console.log("Logout button clicked!"); // Debug log
-    handleLogoutConfirmed();
+    // Show confirmation modal before logout
+    Alert.alert("Logout", "Are you sure you want to logout?", [
+      { text: "Cancel", style: "cancel" },
+      { text: "Logout", style: "destructive", onPress: handleLogoutConfirmed },
+    ]);
   };
 
   const handleLogoutConfirmed = async () => {

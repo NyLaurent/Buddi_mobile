@@ -3,6 +3,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import React, { useRef, useState } from "react";
 import {
+  Alert,
   Image,
   NativeScrollEvent,
   NativeSyntheticEvent,
@@ -14,7 +15,10 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
+import {
+  SafeAreaView,
+  useSafeAreaInsets,
+} from "react-native-safe-area-context";
 import AnalyticsCard from "../../components/commons/AnalyticsCard";
 import Calendar from "../../components/commons/Calendar";
 import CongratulationsCard from "../../components/commons/CongratulationsCard";
@@ -33,7 +37,7 @@ export default function BuddiHome() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { user, logout } = useAuth();
-  
+
   const handleScroll = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
     const contentOffset = event.nativeEvent.contentOffset.x;
     const cardWidth = 300 + 12; // card width + margin
@@ -43,7 +47,11 @@ export default function BuddiHome() {
 
   const handleLogout = () => {
     console.log("Logout button clicked!"); // Debug log
-    handleLogoutConfirmed();
+    // Show confirmation modal before logout
+    Alert.alert("Logout", "Are you sure you want to logout?", [
+      { text: "Cancel", style: "cancel" },
+      { text: "Logout", style: "destructive", onPress: handleLogoutConfirmed },
+    ]);
   };
 
   const handleLogoutConfirmed = async () => {
@@ -55,17 +63,17 @@ export default function BuddiHome() {
       router.replace("/auth/login");
     } catch (error) {
       console.error("Logout error:", error); // Debug log
-      if (typeof window !== 'undefined') {
+      if (typeof window !== "undefined") {
         window.alert("Failed to logout. Please try again.");
       }
     }
   };
 
   return (
-    <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
-      <StatusBar 
-        barStyle="dark-content" 
-        backgroundColor="transparent" 
+    <SafeAreaView style={styles.container} edges={["top", "left", "right"]}>
+      <StatusBar
+        barStyle="dark-content"
+        backgroundColor="transparent"
         translucent={true}
       />
       <ScrollView

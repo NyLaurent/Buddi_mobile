@@ -2,6 +2,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import React from "react";
 import {
+  Alert,
   Image,
   ScrollView,
   StatusBar,
@@ -22,10 +23,11 @@ const HeadTeacherDashboard = () => {
 
   const handleLogout = () => {
     console.log("Logout button clicked!"); // Debug log
-
-    // For web compatibility, logout directly without Alert confirmation
-    // TODO: Add proper web-compatible confirmation modal later
-    handleLogoutConfirmed();
+    // Show confirmation modal before logout
+    Alert.alert("Logout", "Are you sure you want to logout?", [
+      { text: "Cancel", style: "cancel" },
+      { text: "Logout", style: "destructive", onPress: handleLogoutConfirmed },
+    ]);
   };
 
   const handleLogoutConfirmed = async () => {

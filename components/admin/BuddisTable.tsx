@@ -13,57 +13,48 @@ interface BuddiData {
   id: string;
   name: string;
   email: string;
-  totalJobs: number;
-  currentStatus: "Unemployed" | "Employed" | "Pending";
-  rating: number;
+  status: string;
+  areaOfStudy: string;
+  currentSchool: string;
 }
 
 interface BuddisTableProps {
   data: BuddiData[];
+  currentPage: number;
+  totalPages: number;
+  onPageChange: (page: number) => void;
+  onActionClick?: (buddi: BuddiData) => void;
 }
 
-const BuddisTable: React.FC<BuddisTableProps> = ({ data }) => {
+const BuddisTable: React.FC<BuddisTableProps> = ({
+  data,
+  currentPage,
+  totalPages,
+  onPageChange,
+  onActionClick,
+}) => {
   const [searchText, setSearchText] = useState("");
-  const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 5;
+  // Remove internal pagination state
+  // const [currentPage, setCurrentPage] = useState(1);
+  // const itemsPerPage = 5;
 
   const filteredData = data.filter(
     (item) =>
-      item.name.toLowerCase().includes(searchText.toLowerCase()) ||
-      item.email.toLowerCase().includes(searchText.toLowerCase())
+      (item.name ? item.name.toLowerCase() : "").includes(
+        searchText.toLowerCase()
+      ) ||
+      (item.email ? item.email.toLowerCase() : "").includes(
+        searchText.toLowerCase()
+      )
   );
 
-  const totalPages = Math.ceil(filteredData.length / itemsPerPage);
-  const startIndex = (currentPage - 1) * itemsPerPage;
-  const currentData = filteredData.slice(startIndex, startIndex + itemsPerPage);
+  // No slicing, show all data passed in
+  // const totalPages = Math.ceil(filteredData.length / itemsPerPage);
+  // const startIndex = (currentPage - 1) * itemsPerPage;
+  // const currentData = filteredData.slice(startIndex, startIndex + itemsPerPage);
+  const currentData = filteredData;
 
-  const renderStars = (rating: number) => {
-    return (
-      <View style={styles.starsContainer}>
-        {[1, 2, 3, 4, 5].map((star) => (
-          <Ionicons
-            key={star}
-            name="star"
-            size={16}
-            color={star <= rating ? "#FF9500" : "#E0E0E0"}
-          />
-        ))}
-      </View>
-    );
-  };
-
-  const getStatusStyle = (status: string) => {
-    switch (status) {
-      case "Unemployed":
-        return { backgroundColor: "#E3F2FD", color: "#1976D2" };
-      case "Employed":
-        return { backgroundColor: "#E8F5E8", color: "#388E3C" };
-      case "Pending":
-        return { backgroundColor: "#FFF3E0", color: "#F57C00" };
-      default:
-        return { backgroundColor: "#F5F5F5", color: "#666" };
-    }
-  };
+ 
 
   return (
     <View style={styles.container}>
@@ -113,50 +104,90 @@ const BuddisTable: React.FC<BuddisTableProps> = ({ data }) => {
             <View style={styles.nameColumn}>
               <Text style={styles.headerText}>Name</Text>
             </View>
-            <View style={styles.jobsColumn}>
-              <Text style={styles.headerText}>Total Jobs & Current Status</Text>
+            <View style={styles.emailColumn}>
+              <Text style={styles.headerText}>Email</Text>
+            </View>
+            <View style={styles.areaColumn}>
+              <Text style={styles.headerText}>Area of Study</Text>
+            </View>
+            <View style={styles.schoolColumn}>
+              <Text style={styles.headerText}>Current School</Text>
+            </View>
+            <View style={styles.statusColumn}>
+              <Text style={styles.headerText}>Status</Text>
+            </View>
+            <View style={styles.actionsColumn}>
+              <Text style={styles.headerText}>Actions</Text>
             </View>
           </View>
 
           {/* Table Rows */}
           {currentData.map((item) => (
-            <TouchableOpacity key={item.id} style={styles.tableRow}>
+            <TouchableOpacity
+              key={item.id}
+              style={styles.tableRow}
+              activeOpacity={1}
+            >
               <View style={styles.nameColumn}>
                 <View style={styles.userInfo}>
                   <View style={styles.avatar}>
                     <Text style={styles.avatarText}>
                       {item.name
-                        .split(" ")
-                        .map((n) => n[0])
-                        .join("")}
+                        ? item.name
+                            .split(" ")
+                            .map((n) => n[0])
+                            .join("")
+                        : "?"}
                     </Text>
                   </View>
                   <View>
                     <Text style={styles.userName}>{item.name}</Text>
-                    <Text style={styles.userEmail}>{item.email}</Text>
-                    {renderStars(item.rating)}
                   </View>
                 </View>
               </View>
-              <View style={styles.jobsColumn}>
-                <View style={styles.jobsInfo}>
-                  <Text style={styles.jobsNumber}>{item.totalJobs}</Text>
-                  <View
-                    style={[
-                      styles.statusBadge,
-                      getStatusStyle(item.currentStatus),
-                    ]}
+              <View style={styles.emailColumn}>
+                <Text style={styles.userEmail}>{item.email}</Text>
+              </View>
+              <View style={styles.areaColumn}>
+                <Text style={styles.userEmail}>{item.areaOfStudy}</Text>
+              </View>
+              <View style={styles.schoolColumn}>
+                <Text style={styles.userEmail}>{item.currentSchool}</Text>
+              </View>
+              <View style={styles.statusColumn}>
+                <View
+                  style={{
+                    backgroundColor: "#FF9500",
+                    borderRadius: 12,
+                    paddingHorizontal: 12,
+                    paddingVertical: 4,
+                    alignSelf: "flex-start",
+                  }}
+                >
+                  <Text
+                    style={{
+                      color: "#fff",
+                      fontWeight: "bold",
+                      fontFamily: "Comfortaa-Regular",
+                      fontSize: 12,
+                    }}
                   >
-                    <Text
-                      style={[
-                        styles.statusText,
-                        { color: getStatusStyle(item.currentStatus).color },
-                      ]}
-                    >
-                      {item.currentStatus}
-                    </Text>
-                  </View>
+                    {item.status}
+                  </Text>
                 </View>
+              </View>
+              <View style={styles.actionsColumn}>
+                <TouchableOpacity
+                  onPress={() => onActionClick && onActionClick(item)}
+                  style={{ alignItems: "center", justifyContent: "center" }}
+                  accessibilityLabel="Show actions"
+                >
+                  <Ionicons
+                    name="ellipsis-horizontal-circle"
+                    size={28}
+                    color="#FF9500"
+                  />
+                </TouchableOpacity>
               </View>
             </TouchableOpacity>
           ))}
@@ -170,7 +201,7 @@ const BuddisTable: React.FC<BuddisTableProps> = ({ data }) => {
             styles.pageButton,
             currentPage === 1 && styles.disabledButton,
           ]}
-          onPress={() => setCurrentPage(Math.max(1, currentPage - 1))}
+          onPress={() => onPageChange(Math.max(1, currentPage - 1))}
           disabled={currentPage === 1}
         >
           <Ionicons
@@ -186,26 +217,70 @@ const BuddisTable: React.FC<BuddisTableProps> = ({ data }) => {
         </TouchableOpacity>
 
         <View style={styles.pageNumbers}>
-          {[1, 2, 3, 4, 5, 6].slice(0, totalPages).map((page) => (
-            <TouchableOpacity
-              key={page}
-              style={[
-                styles.pageNumber,
-                currentPage === page && styles.activePage,
-              ]}
-              onPress={() => setCurrentPage(page)}
-            >
-              <Text
-                style={[
-                  styles.pageNumberText,
-                  currentPage === page && styles.activePageText,
-                ]}
-              >
-                {page}
-              </Text>
-            </TouchableOpacity>
-          ))}
-          {totalPages > 6 && <Text style={styles.ellipsis}>...</Text>}
+          {(() => {
+            const pages = [];
+            const maxVisible = 5;
+
+            if (totalPages <= maxVisible) {
+              // Show all pages if total is 5 or less
+              for (let i = 1; i <= totalPages; i++) {
+                pages.push(i);
+              }
+            } else {
+              // Show first 3 pages, ellipsis, current page, ellipsis, last page
+              if (currentPage <= 3) {
+                for (let i = 1; i <= 4; i++) {
+                  pages.push(i);
+                }
+                pages.push("ellipsis");
+                pages.push(totalPages);
+              } else if (currentPage >= totalPages - 2) {
+                pages.push(1);
+                pages.push("ellipsis");
+                for (let i = totalPages - 3; i <= totalPages; i++) {
+                  pages.push(i);
+                }
+              } else {
+                pages.push(1);
+                pages.push("ellipsis");
+                pages.push(currentPage - 1);
+                pages.push(currentPage);
+                pages.push(currentPage + 1);
+                pages.push("ellipsis");
+                pages.push(totalPages);
+              }
+            }
+
+            return pages.map((page, index) => {
+              if (page === "ellipsis") {
+                return (
+                  <Text key={`ellipsis-${index}`} style={styles.ellipsis}>
+                    ...
+                  </Text>
+                );
+              }
+              const pageNumber = page as number;
+              return (
+                <TouchableOpacity
+                  key={pageNumber}
+                  style={[
+                    styles.pageNumber,
+                    currentPage === pageNumber && styles.activePage,
+                  ]}
+                  onPress={() => onPageChange(pageNumber)}
+                >
+                  <Text
+                    style={[
+                      styles.pageNumberText,
+                      currentPage === pageNumber && styles.activePageText,
+                    ]}
+                  >
+                    {pageNumber}
+                  </Text>
+                </TouchableOpacity>
+              );
+            });
+          })()}
         </View>
 
         <TouchableOpacity
@@ -213,7 +288,7 @@ const BuddisTable: React.FC<BuddisTableProps> = ({ data }) => {
             styles.pageButton,
             currentPage === totalPages && styles.disabledButton,
           ]}
-          onPress={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
+          onPress={() => onPageChange(Math.min(totalPages, currentPage + 1))}
           disabled={currentPage === totalPages}
         >
           <Text
@@ -322,8 +397,21 @@ const styles = StyleSheet.create({
   nameColumn: {
     width: 300,
   },
-  jobsColumn: {
-    width: 300,
+  emailColumn: {
+    width: 200,
+  },
+  areaColumn: {
+    width: 200,
+  },
+  schoolColumn: {
+    width: 200,
+  },
+  statusColumn: {
+    width: 150,
+    alignItems: "center",
+  },
+  actionsColumn: {
+    width: 150,
     alignItems: "center",
   },
   headerText: {
