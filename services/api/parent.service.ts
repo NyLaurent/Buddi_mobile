@@ -43,9 +43,39 @@ export interface ParentListResponse {
   data: ParentRecord[];
 }
 
+// Pickup Request Types (from API response example and types.ts)
+export interface ParentPickupRequest {
+  id: number;
+  parentId: string;
+  childId: string;
+  description: string;
+  availableDays: string[];
+  pickupTime: string;
+  kidsCount: number;
+  fromZone: string;
+  toZone: string;
+  status: string;
+  matchedBuddiId: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ParentPickupRequestsResponse {
+  message: string;
+  currentPage: number;
+  totalPages: number;
+  totalRecords: number;
+  data: ParentPickupRequest[];
+}
+
 const ParentService = {
   async getAllParents(page: number, limit: number): Promise<ParentListResponse> {
     const response = await authorizedApi.get(PARENT_ENDPOINTS.LIST + `/all?page=${page}&limit=${limit}`);
+    return response.data;
+  },
+
+  async getMyPickupRequests(parentId: string): Promise<ParentPickupRequestsResponse> {
+    const response = await authorizedApi.get(`/parent/buddi-requests/my-requests/${parentId}`);
     return response.data;
   },
 };

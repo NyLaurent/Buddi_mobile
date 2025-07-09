@@ -1,4 +1,5 @@
 import { Ionicons, MaterialIcons } from "@expo/vector-icons";
+import DateTimePicker from "@react-native-community/datetimepicker";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
@@ -49,6 +50,7 @@ export default function CallPage() {
   const [pickupSuccess, setPickupSuccess] = useState<string | null>(null);
 
   const [selectedChildId, setSelectedChildId] = useState("");
+  const [showTimePicker, setShowTimePicker] = useState(false);
 
   const toggleDay = (day: string) => {
     setAvailableDays((prev) =>
@@ -196,6 +198,16 @@ export default function CallPage() {
   };
 
   // For time picker, use a simple text input for now (can be replaced with a picker later)
+  // Time picker handler
+  const handleTimeChange = (event: any, selectedDate?: Date | undefined) => {
+    setShowTimePicker(Platform.OS === "ios");
+    if (selectedDate) {
+      // Format to HH:mm
+      const hours = selectedDate.getHours().toString().padStart(2, "0");
+      const minutes = selectedDate.getMinutes().toString().padStart(2, "0");
+      setPickupTime(`${hours}:${minutes}`);
+    }
+  };
 
   // Debug: log registeredKids before rendering
   console.log("registeredKids (before render):", registeredKids);
@@ -916,26 +928,54 @@ export default function CallPage() {
               color="#4f46e5"
               style={{ marginRight: 8 }}
             />
-            <TextInput
-              value={pickupTime}
-              onChangeText={setPickupTime}
-              placeholder="07:30"
-              placeholderTextColor="#BDBDBD"
-              keyboardType={
-                Platform.OS === "ios" ? "numbers-and-punctuation" : "numeric"
-              }
+            <TouchableOpacity
+              onPress={() => setShowTimePicker(true)}
               style={{
                 borderWidth: 1,
                 borderColor: "#E0E0E0",
                 borderRadius: 12,
                 padding: 12,
                 backgroundColor: "#F9FAFB",
-                fontFamily: "Comfortaa-Regular",
-                fontSize: 15,
-                color: "#232B3A",
                 flex: 1,
+                flexDirection: "row",
+                alignItems: "center",
               }}
-            />
+              activeOpacity={0.85}
+            >
+              <Text
+                style={{
+                  fontFamily: "Comfortaa-Regular",
+                  fontSize: 15,
+                  color: pickupTime ? "#232B3A" : "#BDBDBD",
+                }}
+              >
+                {pickupTime
+                  ? `Selected Time: ${pickupTime}`
+                  : "Select Pickup Time"}
+              </Text>
+            </TouchableOpacity>
+            {showTimePicker && (
+              <DateTimePicker
+                testID="dateTimePicker"
+                value={
+                  pickupTime
+                    ? (() => {
+                        const [h, m] = pickupTime.split(":");
+                        const d = new Date();
+                        d.setHours(Number(h));
+                        d.setMinutes(Number(m));
+                        d.setSeconds(0);
+                        d.setMilliseconds(0);
+                        return d;
+                      })()
+                    : new Date()
+                }
+                mode="time"
+                is24Hour={true}
+                display="default"
+                onChange={handleTimeChange}
+              />
+            )}
           </View>
           {/* Kids Count */}
           <Text
