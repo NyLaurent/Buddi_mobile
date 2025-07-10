@@ -34,9 +34,6 @@ const BuddisTable: React.FC<BuddisTableProps> = ({
   onActionClick,
 }) => {
   const [searchText, setSearchText] = useState("");
-  // Remove internal pagination state
-  // const [currentPage, setCurrentPage] = useState(1);
-  // const itemsPerPage = 5;
 
   const filteredData = data.filter(
     (item) =>
@@ -48,24 +45,46 @@ const BuddisTable: React.FC<BuddisTableProps> = ({
       )
   );
 
-  // No slicing, show all data passed in
-  // const totalPages = Math.ceil(filteredData.length / itemsPerPage);
-  // const startIndex = (currentPage - 1) * itemsPerPage;
-  // const currentData = filteredData.slice(startIndex, startIndex + itemsPerPage);
   const currentData = filteredData;
 
- 
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case "approved":
+        return "#34C759";
+      case "pending":
+        return "#FF932E";
+      case "rejected":
+        return "#FF3B30";
+      default:
+        return "#FF932E";
+    }
+  };
+
+  const getStatusBg = (status: string) => {
+    switch (status) {
+      case "approved":
+        return "#E8F5E9";
+      case "pending":
+        return "#FFF3E0";
+      case "rejected":
+        return "#FFEBEE";
+      default:
+        return "#FFF3E0";
+    }
+  };
 
   return (
     <View style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
-        <View>
+        <View style={styles.headerContent}>
           <Text style={styles.title}>All Buddis</Text>
-          <Text style={styles.subtitle}>Click on a buddi to view details</Text>
+          <Text style={styles.subtitle}>
+            {currentData.length} buddis • Page {currentPage} of {totalPages}
+          </Text>
         </View>
-        <TouchableOpacity>
-          <Ionicons name="ellipsis-horizontal" size={24} color="#666" />
+        <TouchableOpacity style={styles.headerButton}>
+          <Ionicons name="ellipsis-horizontal" size={20} color="#666" />
         </TouchableOpacity>
       </View>
 
@@ -74,20 +93,20 @@ const BuddisTable: React.FC<BuddisTableProps> = ({
         <View style={styles.searchBox}>
           <Ionicons
             name="search"
-            size={20}
+            size={18}
             color="#999"
             style={styles.searchIcon}
           />
           <TextInput
             style={styles.searchInput}
-            placeholder="Search"
+            placeholder="Search buddis by name or email..."
             value={searchText}
             onChangeText={setSearchText}
             placeholderTextColor="#999"
           />
         </View>
         <TouchableOpacity style={styles.filterButton}>
-          <Ionicons name="options" size={20} color="#666" />
+          <Ionicons name="options" size={18} color="#666" />
           <Text style={styles.filterText}>Filter</Text>
         </TouchableOpacity>
       </View>
@@ -122,11 +141,10 @@ const BuddisTable: React.FC<BuddisTableProps> = ({
           </View>
 
           {/* Table Rows */}
-          {currentData.map((item) => (
-            <TouchableOpacity
+          {currentData.map((item, index) => (
+            <View
               key={item.id}
-              style={styles.tableRow}
-              activeOpacity={1}
+              style={[styles.tableRow, index % 2 === 0 && styles.evenRow]}
             >
               <View style={styles.nameColumn}>
                 <View style={styles.userInfo}>
@@ -146,7 +164,9 @@ const BuddisTable: React.FC<BuddisTableProps> = ({
                 </View>
               </View>
               <View style={styles.emailColumn}>
-                <Text style={styles.userEmail}>{item.email}</Text>
+                <Text style={styles.userEmail} numberOfLines={1}>
+                  {item.email}
+                </Text>
               </View>
               <View style={styles.areaColumn}>
                 <Text style={styles.userEmail}>{item.areaOfStudy}</Text>
@@ -156,40 +176,38 @@ const BuddisTable: React.FC<BuddisTableProps> = ({
               </View>
               <View style={styles.statusColumn}>
                 <View
-                  style={{
-                    backgroundColor: "#FF9500",
-                    borderRadius: 12,
-                    paddingHorizontal: 12,
-                    paddingVertical: 4,
-                    alignSelf: "flex-start",
-                  }}
+                  style={[
+                    styles.statusBadge,
+                    { backgroundColor: getStatusBg(item.status) },
+                  ]}
                 >
+                  <View
+                    style={[
+                      styles.statusDot,
+                      { backgroundColor: getStatusColor(item.status) },
+                    ]}
+                  />
                   <Text
-                    style={{
-                      color: "#fff",
-                      fontWeight: "bold",
-                      fontFamily: "Comfortaa-Regular",
-                      fontSize: 12,
-                    }}
+                    style={[
+                      styles.statusText,
+                      { color: getStatusColor(item.status) },
+                    ]}
                   >
-                    {item.status}
+                    {item.status.charAt(0).toUpperCase() + item.status.slice(1)}
                   </Text>
                 </View>
               </View>
               <View style={styles.actionsColumn}>
                 <TouchableOpacity
                   onPress={() => onActionClick && onActionClick(item)}
-                  style={{ alignItems: "center", justifyContent: "center" }}
-                  accessibilityLabel="Show actions"
+                  style={styles.viewButton}
+                  accessibilityLabel="View buddi details"
                 >
-                  <Ionicons
-                    name="ellipsis-horizontal-circle"
-                    size={28}
-                    color="#FF9500"
-                  />
+                  <Ionicons name="eye" size={16} color="#fff" />
+                  <Text style={styles.viewButtonText}>View</Text>
                 </TouchableOpacity>
               </View>
-            </TouchableOpacity>
+            </View>
           ))}
         </View>
       </ScrollView>
@@ -207,12 +225,12 @@ const BuddisTable: React.FC<BuddisTableProps> = ({
           <Ionicons
             name="chevron-back"
             size={16}
-            color={currentPage === 1 ? "#ccc" : "#666"}
+            color={currentPage === 1 ? "#ccc" : "#FF932E"}
           />
           <Text
             style={[styles.pageText, currentPage === 1 && styles.disabledText]}
           >
-            Prev
+            Previous
           </Text>
         </TouchableOpacity>
 
@@ -222,12 +240,10 @@ const BuddisTable: React.FC<BuddisTableProps> = ({
             const maxVisible = 5;
 
             if (totalPages <= maxVisible) {
-              // Show all pages if total is 5 or less
               for (let i = 1; i <= totalPages; i++) {
                 pages.push(i);
               }
             } else {
-              // Show first 3 pages, ellipsis, current page, ellipsis, last page
               if (currentPage <= 3) {
                 for (let i = 1; i <= 4; i++) {
                   pages.push(i);
@@ -302,7 +318,7 @@ const BuddisTable: React.FC<BuddisTableProps> = ({
           <Ionicons
             name="chevron-forward"
             size={16}
-            color={currentPage === totalPages ? "#ccc" : "#666"}
+            color={currentPage === totalPages ? "#ccc" : "#FF932E"}
           />
         </TouchableOpacity>
       </View>
@@ -313,62 +329,81 @@ const BuddisTable: React.FC<BuddisTableProps> = ({
 const styles = StyleSheet.create({
   container: {
     backgroundColor: "#fff",
-    borderRadius: 12,
-    padding: 16,
+    borderRadius: 16,
+    padding: 24,
     marginTop: 20,
     borderWidth: 1,
-    borderColor: "#F0F0F0",
+    borderColor: "#f0f0f0",
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
   },
   header: {
     flexDirection: "row",
     justifyContent: "space-between",
-    alignItems: "flex-start",
-    marginBottom: 20,
+    alignItems: "center",
+    marginBottom: 24,
+  },
+  headerContent: {
+    flex: 1,
   },
   title: {
-    fontSize: 18,
-    fontWeight: "600",
-    color: "#23272F",
-    fontFamily: "Comfortaa-Regular",
+    fontSize: 24,
+    color: "#1a1a1a",
+    fontFamily: "Comfortaa-Bold",
+    marginBottom: 4,
   },
   subtitle: {
     fontSize: 14,
-    color: "#999",
-    marginTop: 4,
+    color: "#666",
     fontFamily: "Comfortaa-Regular",
+  },
+  headerButton: {
+    padding: 8,
+    borderRadius: 8,
+    backgroundColor: "#f8f9fa",
   },
   searchContainer: {
     flexDirection: "row",
     alignItems: "center",
-    marginBottom: 20,
+    marginBottom: 24,
     gap: 12,
   },
   searchBox: {
     flex: 1,
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#F8F9FA",
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    height: 44,
+    backgroundColor: "#f8f9fa",
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    height: 48,
+    borderWidth: 1,
+    borderColor: "#e9ecef",
   },
   searchIcon: {
-    marginRight: 8,
+    marginRight: 12,
   },
   searchInput: {
     flex: 1,
     fontSize: 16,
-    color: "#23272F",
+    color: "#1a1a1a",
     fontFamily: "Comfortaa-Regular",
   },
   filterButton: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#F8F9FA",
-    borderRadius: 8,
+    backgroundColor: "#f8f9fa",
+    borderRadius: 12,
     paddingHorizontal: 16,
-    height: 44,
+    height: 48,
     gap: 8,
+    borderWidth: 1,
+    borderColor: "#e9ecef",
   },
   filterText: {
     fontSize: 16,
@@ -376,29 +411,33 @@ const styles = StyleSheet.create({
     fontFamily: "Comfortaa-Regular",
   },
   tableContainer: {
-    marginBottom: 20,
+    marginBottom: 24,
   },
   table: {
-    minWidth: 600,
+    minWidth: 900,
   },
   tableHeader: {
     flexDirection: "row",
-    borderBottomWidth: 1,
-    borderBottomColor: "#F0F0F0",
-    paddingBottom: 12,
+    borderBottomWidth: 2,
+    borderBottomColor: "#f0f0f0",
+    paddingBottom: 16,
     marginBottom: 8,
   },
   tableRow: {
     flexDirection: "row",
-    paddingVertical: 16,
+    paddingVertical: 20,
     borderBottomWidth: 1,
-    borderBottomColor: "#F8F9FA",
+    borderBottomColor: "#f8f9fa",
+    alignItems: "center",
+  },
+  evenRow: {
+    backgroundColor: "#fafbfc",
   },
   nameColumn: {
     width: 300,
   },
   emailColumn: {
-    width: 200,
+    width: 220,
   },
   areaColumn: {
     width: 200,
@@ -407,18 +446,20 @@ const styles = StyleSheet.create({
     width: 200,
   },
   statusColumn: {
-    width: 150,
+    width: 140,
     alignItems: "center",
   },
   actionsColumn: {
-    width: 150,
+    width: 120,
     alignItems: "center",
   },
   headerText: {
     fontSize: 14,
     fontWeight: "600",
     color: "#666",
-    fontFamily: "Comfortaa-Regular",
+    fontFamily: "Comfortaa-Bold",
+    textTransform: "uppercase" as any,
+    letterSpacing: 0.5,
   },
   userInfo: {
     flexDirection: "row",
@@ -441,55 +482,79 @@ const styles = StyleSheet.create({
   },
   userName: {
     fontSize: 16,
-    fontWeight: "500",
-    color: "#23272F",
-    fontFamily: "Comfortaa-Regular",
+    fontWeight: "600",
+    color: "#1a1a1a",
+    fontFamily: "Comfortaa-Bold",
   },
   userEmail: {
     fontSize: 14,
     color: "#666",
-    marginTop: 2,
-    fontFamily: "Comfortaa-Regular",
-  },
-  starsContainer: {
-    flexDirection: "row",
-    marginTop: 4,
-    gap: 2,
-  },
-  jobsInfo: {
-    alignItems: "center",
-    gap: 8,
-  },
-  jobsNumber: {
-    fontSize: 18,
-    fontWeight: "600",
-    color: "#23272F",
     fontFamily: "Comfortaa-Regular",
   },
   statusBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    borderRadius: 20,
     paddingHorizontal: 12,
-    paddingVertical: 4,
-    borderRadius: 12,
+    paddingVertical: 6,
+    gap: 6,
+  },
+  statusDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
   },
   statusText: {
     fontSize: 12,
-    fontWeight: "500",
-    fontFamily: "Comfortaa-Regular",
+    fontWeight: "600",
+    fontFamily: "Comfortaa-Bold",
+    textTransform: "uppercase" as any,
+    letterSpacing: 0.5,
+  },
+  viewButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#FF932E",
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    gap: 6,
+    shadowColor: "#FF932E",
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  viewButtonText: {
+    fontSize: 13,
+    color: "#fff",
+    fontFamily: "Comfortaa-Bold",
   },
   pagination: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
+    paddingTop: 16,
+    borderTopWidth: 1,
+    borderTopColor: "#f0f0f0",
   },
   pageButton: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 4,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
+    gap: 6,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 12,
+    backgroundColor: "#f8f9fa",
+    borderWidth: 1,
+    borderColor: "#e9ecef",
   },
   disabledButton: {
     opacity: 0.5,
+    backgroundColor: "#f5f5f5",
   },
   pageText: {
     fontSize: 14,
@@ -505,19 +570,24 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   pageNumber: {
-    width: 32,
-    height: 32,
-    borderRadius: 6,
+    width: 36,
+    height: 36,
+    borderRadius: 8,
     alignItems: "center",
     justifyContent: "center",
+    backgroundColor: "#f8f9fa",
+    borderWidth: 1,
+    borderColor: "#e9ecef",
   },
   activePage: {
-    backgroundColor: "#4F46E5",
+    backgroundColor: "#FF932E",
+    borderColor: "#FF932E",
   },
   pageNumberText: {
     fontSize: 14,
     color: "#666",
     fontFamily: "Comfortaa-Regular",
+    fontWeight: "500",
   },
   activePageText: {
     color: "#fff",
@@ -527,6 +597,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: "#666",
     fontFamily: "Comfortaa-Regular",
+    paddingHorizontal: 8,
   },
 });
 

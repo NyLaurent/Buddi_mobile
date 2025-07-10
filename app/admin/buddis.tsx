@@ -129,10 +129,10 @@ export default function AdminBuddisPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pendingPage]);
 
-  const handleApprove = async (id: string) => {
+  const handleApprove = async (id: string, currentStatus: string) => {
     setActionLoading(id + "-approve");
     try {
-      await BuddiService.approveBuddi(id);
+      await BuddiService.approveBuddi(id, currentStatus);
       Alert.alert("Success", "Buddi approved successfully.");
       fetchBuddies();
     } catch (err: any) {
@@ -300,7 +300,7 @@ export default function AdminBuddisPage() {
             </View>
 
             {/* Coverage Alert Section */}
-            <View>
+            {/* <View>
               <CoverageAlertCard
                 title="21 Buddis Need Coverage For Today"
                 subtitle="Review this before effects!"
@@ -314,44 +314,45 @@ export default function AdminBuddisPage() {
                   },
                 }}
               />
-            </View>
+            </View> */}
             {/* Buddi Status Tabs */}
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              style={{ marginVertical: 16 }}
-            >
-              {buddiStatuses.map((status) => (
-                <TouchableOpacity
-                  key={status.id}
-                  style={{
-                    paddingVertical: 8,
-                    paddingHorizontal: 18,
-                    borderRadius: 20,
-                    backgroundColor:
-                      activeStatus === status.id ? "#4F46E5" : "#F5F5F5",
-                    marginRight: 10,
-                    borderWidth: 1,
-                    borderColor:
-                      activeStatus === status.id ? "#4F46E5" : "#E8E8E8",
-                  }}
-                  onPress={() => {
-                    setActiveStatus(status.id);
-                    setPage(1);
-                  }}
-                >
-                  <Text
-                    style={{
-                      color: activeStatus === status.id ? "#fff" : "#23272F",
-                      fontFamily: "Comfortaa-Regular",
-                      fontWeight: "500",
+            <View style={styles.statusTabsContainer}>
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={styles.statusTabsScroll}
+              >
+                {buddiStatuses.map((status) => (
+                  <TouchableOpacity
+                    key={status.id}
+                    style={[
+                      styles.statusTab,
+                      activeStatus === status.id && styles.activeStatusTab,
+                    ]}
+                    onPress={() => {
+                      setActiveStatus(status.id);
+                      setPage(1);
                     }}
                   >
-                    {status.label}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </ScrollView>
+                    <View
+                      style={[
+                        styles.statusDot,
+                        activeStatus === status.id && styles.activeStatusDot,
+                      ]}
+                    />
+                    <Text
+                      style={[
+                        styles.statusTabText,
+                        activeStatus === status.id &&
+                          styles.activeStatusTabText,
+                      ]}
+                    >
+                      {status.label}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
+            </View>
             {/* Buddis Table Section */}
             {loading ? (
               <View style={{ alignItems: "center", marginVertical: 32 }}>
@@ -401,7 +402,12 @@ export default function AdminBuddisPage() {
                 currentPage={page}
                 totalPages={Math.ceil(total / limit)}
                 onPageChange={setPage}
-                onActionClick={openActionModal}
+                onActionClick={(buddi) => {
+                  router.push({
+                    pathname: "/admin/buddi-details/[id]",
+                    params: { id: buddi.id },
+                  });
+                }}
               />
             )}
           </View>
@@ -455,7 +461,7 @@ export default function AdminBuddisPage() {
               <Text
                 style={{
                   fontSize: 18,
-              
+
                   color: "#23272F",
                   fontFamily: "Comfortaa-Bold",
                   marginBottom: 12,
@@ -1113,5 +1119,67 @@ const styles = StyleSheet.create({
   analyticsRow: {
     flexDirection: "row",
     justifyContent: "space-between",
+  },
+  statusTabsContainer: {
+    marginVertical: 20,
+    backgroundColor: "#fff",
+    borderRadius: 12,
+    paddingVertical: 8,
+    borderWidth: 1,
+    borderColor: "#f0f0f0",
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  statusTabsScroll: {
+    paddingHorizontal: 16,
+  },
+  statusTab: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 12,
+    backgroundColor: "#f8f9fa",
+    marginRight: 12,
+    borderWidth: 1,
+    borderColor: "#e9ecef",
+    gap: 8,
+  },
+  activeStatusTab: {
+    backgroundColor: "#FF932E",
+    borderColor: "#FF932E",
+    shadowColor: "#FF932E",
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  statusDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: "#ccc",
+  },
+  activeStatusDot: {
+    backgroundColor: "#fff",
+  },
+  statusTabText: {
+    fontSize: 14,
+    color: "#666",
+    fontFamily: "Comfortaa-Regular",
+    fontWeight: "500",
+  },
+  activeStatusTabText: {
+    color: "#fff",
+    fontFamily: "Comfortaa-Bold",
   },
 });

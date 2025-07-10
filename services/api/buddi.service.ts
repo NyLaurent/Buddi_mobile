@@ -18,6 +18,41 @@ export interface Buddi {
   };
 }
 
+export interface BuddiDetails {
+  id: number;
+  currentSchool: string;
+  AreaOfStudy: string;
+  Gpa: string;
+  status: string;
+  teacherEmail: string;
+  dob: string;
+  gender: string;
+  teacherPhoneNumber: string;
+  customReferral: string;
+  referralOccupation: string;
+  resume: string;
+  profilePicture: string | null;
+  rating: number | null;
+  isInterviewVideoSubmitted: boolean;
+  totalEarnings: number;
+  createdAt: string;
+  updatedAt: string;
+  userId: string;
+  User: {
+    userId: string;
+    email: string;
+    password: string;
+    phoneNumber: string;
+    firstName: string;
+    lastName: string;
+    homeAddress: string;
+    role: string;
+    createdAt: string;
+    updatedAt: string;
+  };
+  Videos: any[];
+}
+
 export interface BuddiListResponse {
   data: Buddi[];
   total: number;
@@ -157,14 +192,63 @@ const BuddiService = {
       throw new Error(message);
     }
   },
-  async approveBuddi(id: string, reason?: string): Promise<void> {
-    await authorizedApi.put(BUDDI_ENDPOINTS.APPROVE_APPLICATION(id), reason ? { reason } : undefined);
+  async approveBuddi(id: string, currentStatus: string, reason?: string): Promise<void> {
+    // Determine the next status based on current status
+    const getNextStatus = (status: string) => {
+      switch (status) {
+        case "RegisterApprovalPending":
+          return "Registered";
+        case "Registered":
+          return "submissionApproved";
+        case "submissionApproved":
+          return "referenceApproved";
+        case "referenceApproved":
+          return "verified";
+        case "verified":
+          return "approved";
+        default:
+          return "approved";
+      }
+    };
+
+    const nextStatus = getNextStatus(currentStatus);
+    await authorizedApi.put(`/buddi/buddies/${id}/status`, { 
+      status: nextStatus, 
+      reason: reason || `Advanced to ${nextStatus} by admin` 
+    });
   },
   async rejectBuddi(id: string, reason?: string): Promise<void> {
-    await authorizedApi.put(BUDDI_ENDPOINTS.REJECT_APPLICATION(id), reason ? { reason } : undefined);
+    await authorizedApi.put(`/buddi/buddies/${id}/status`, { 
+      status: "rejected", 
+      reason: reason || "Rejected by admin" 
+    });
   },
   async updateStatus(id: string, status: string, reason: string): Promise<void> {
     await authorizedApi.put(BUDDI_ENDPOINTS.STATUS_UPDATE(id), { status, reason });
+  },
+
+  async getBuddiInfo(buddiId: string): Promise<{ message: string; data: BuddiDetails }> {
+    try {
+      const response = await authorizedApi.get(`/buddi/single/${buddiId}`);
+      // The API returns the data directly, not wrapped in a data property
+      return { message: "Success", data: response.data };
+    } catch (err: any) {
+      let message = 'Failed to fetch buddi information.';
+      if (err?.response?.data?.message) {
+        message = err.response.data.message;
+      } else if (err?.message) {
+        if (err.message.includes('Network')) {
+          message = 'Network error. Please check your connection and try again.';
+        } else if (err.message.includes('timeout')) {
+          message = 'Request timed out. Please try again.';
+        } else {
+          message = err.message;
+        }
+      } else if (typeof err === 'string') {
+        message = err;
+      }
+      throw new Error(message);
+    }
   },
 };
 
