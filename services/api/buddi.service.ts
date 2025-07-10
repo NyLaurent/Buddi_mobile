@@ -47,6 +47,17 @@ export interface AvailableCallsResponse {
   data: AvailableCall[];
 }
 
+export interface CallDetailsResponse {
+  message: string;
+  data: AvailableCall;
+}
+
+export interface ApplyForCallRequest {
+  buddiRequestId: number;
+  buddiId: number;
+  message: string;
+}
+
 const BuddiService = {
   async getAvailableCalls(page: number = 1, limit: number = 5): Promise<AvailableCallsResponse> {
     try {
@@ -54,6 +65,51 @@ const BuddiService = {
       return response.data;
     } catch (err: any) {
       let message = 'Failed to fetch available calls.';
+      if (err?.response?.data?.message) {
+        message = err.response.data.message;
+      } else if (err?.message) {
+        if (err.message.includes('Network')) {
+          message = 'Network error. Please check your connection and try again.';
+        } else if (err.message.includes('timeout')) {
+          message = 'Request timed out. Please try again.';
+        } else {
+          message = err.message;
+        }
+      } else if (typeof err === 'string') {
+        message = err;
+      }
+      throw new Error(message);
+    }
+  },
+
+  async getCallDetails(callId: number): Promise<CallDetailsResponse> {
+    try {
+      const response = await authorizedApi.get(`/coverage/buddi-request/${callId}`);
+      return response.data;
+    } catch (err: any) {
+      let message = 'Failed to fetch call details.';
+      if (err?.response?.data?.message) {
+        message = err.response.data.message;
+      } else if (err?.message) {
+        if (err.message.includes('Network')) {
+          message = 'Network error. Please check your connection and try again.';
+        } else if (err.message.includes('timeout')) {
+          message = 'Request timed out. Please try again.';
+        } else {
+          message = err.message;
+        }
+      } else if (typeof err === 'string') {
+        message = err;
+      }
+      throw new Error(message);
+    }
+  },
+
+  async applyForCall(request: ApplyForCallRequest): Promise<void> {
+    try {
+      await authorizedApi.post('/application/apply', request);
+    } catch (err: any) {
+      let message = 'Failed to submit application.';
       if (err?.response?.data?.message) {
         message = err.response.data.message;
       } else if (err?.message) {

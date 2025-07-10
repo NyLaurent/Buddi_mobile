@@ -3,7 +3,6 @@ import { useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
 import {
   ActivityIndicator,
-  Alert,
   RefreshControl,
   ScrollView,
   StatusBar,
@@ -13,6 +12,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import AvailableCallCard from "../../components/commons/AvailableCallCard";
+import ApplyModal from "../../components/modals/ApplyModal";
 import { useAuth } from "../../context/AuthContext";
 import BuddiService, { AvailableCall } from "../../services/api/buddi.service";
 
@@ -24,6 +24,8 @@ export default function AvailableCallsScreen() {
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [totalRecords, setTotalRecords] = useState(0);
+  const [showApplyModal, setShowApplyModal] = useState(false);
+  const [selectedCallId, setSelectedCallId] = useState<number | null>(null);
 
   const router = useRouter();
   const { user } = useAuth();
@@ -37,14 +39,9 @@ export default function AvailableCallsScreen() {
       }
       setError(null);
 
-      const response = await BuddiService.getAvailableCalls(page, 5);
+      const response = await BuddiService.getAvailableCalls(page, 4);
 
-      if (isRefresh || page === 1) {
-        setCalls(response.data);
-      } else {
-        setCalls((prev) => [...prev, ...response.data]);
-      }
-
+      setCalls(response.data);
       setCurrentPage(response.currentPage);
       setTotalPages(response.totalPages);
       setTotalRecords(response.totalRecords);
@@ -65,32 +62,38 @@ export default function AvailableCallsScreen() {
     fetchCalls(1, true);
   };
 
-  const handleLoadMore = () => {
+  const handleNextPage = () => {
     if (currentPage < totalPages && !loading) {
       fetchCalls(currentPage + 1);
     }
   };
 
+  const handlePreviousPage = () => {
+    if (currentPage > 1 && !loading) {
+      fetchCalls(currentPage - 1);
+    }
+  };
+
   const handleApplyPress = (callId: number) => {
-    Alert.alert(
-      "Apply for Call",
-      "Are you sure you want to apply for this pickup request?",
-      [
-        { text: "Cancel", style: "cancel" },
-        {
-          text: "Apply",
-          style: "default",
-          onPress: () => {
-            // TODO: Implement apply logic
-            Alert.alert(
-              "Application Submitted",
-              "Your application has been submitted successfully! The parent will be notified.",
-              [{ text: "OK", onPress: () => router.back() }]
-            );
-          },
-        },
-      ]
-    );
+    setSelectedCallId(callId);
+    setShowApplyModal(true);
+  };
+
+  const handleModalClose = () => {
+    setShowApplyModal(false);
+    setSelectedCallId(null);
+  };
+
+  const handleApplicationSuccess = () => {
+    // Optionally refresh the calls list
+    fetchCalls(currentPage, true);
+  };
+
+  const handleViewDetails = (callId: number) => {
+    router.push({
+      pathname: "/buddi/call-details/[id]",
+      params: { id: callId.toString() },
+    });
   };
 
   const handleBackPress = () => {
@@ -165,24 +168,66 @@ export default function AvailableCallsScreen() {
             key={call.id}
             call={call}
             onApplyPress={handleApplyPress}
+            onViewDetails={handleViewDetails}
           />
         ))}
 
-        {currentPage < totalPages && (
-          <TouchableOpacity
-            style={styles.loadMoreButton}
-            onPress={handleLoadMore}
-            disabled={loading}
-          >
-            {loading ? (
-              <ActivityIndicator size="small" color="#FF932E" />
-            ) : (
-              <>
-                <FontAwesome5 name="plus" size={16} color="#FF932E" />
-                <Text style={styles.loadMoreText}>Load More Calls</Text>
-              </>
-            )}
-          </TouchableOpacity>
+        {/* Pagination Controls */}
+        {totalPages > 1 && (
+          <View style={styles.paginationContainer}>
+            <TouchableOpacity
+              style={[
+                styles.paginationButton,
+                currentPage === 1 && styles.paginationButtonDisabled,
+              ]}
+              onPress={handlePreviousPage}
+              disabled={currentPage === 1 || loading}
+            >
+              <FontAwesome5
+                name="chevron-left"
+                size={16}
+                color={currentPage === 1 ? "#ccc" : "#FF932E"}
+              />
+              <Text
+                style={[
+                  styles.paginationButtonText,
+                  currentPage === 1 && styles.paginationButtonTextDisabled,
+                ]}
+              >
+                Previous
+              </Text>
+            </TouchableOpacity>
+
+            <View style={styles.pageInfo}>
+              <Text style={styles.pageInfoText}>
+                Page {currentPage} of {totalPages}
+              </Text>
+            </View>
+
+            <TouchableOpacity
+              style={[
+                styles.paginationButton,
+                currentPage === totalPages && styles.paginationButtonDisabled,
+              ]}
+              onPress={handleNextPage}
+              disabled={currentPage === totalPages || loading}
+            >
+              <Text
+                style={[
+                  styles.paginationButtonText,
+                  currentPage === totalPages &&
+                    styles.paginationButtonTextDisabled,
+                ]}
+              >
+                Next
+              </Text>
+              <FontAwesome5
+                name="chevron-right"
+                size={16}
+                color={currentPage === totalPages ? "#ccc" : "#FF932E"}
+              />
+            </TouchableOpacity>
+          </View>
         )}
       </ScrollView>
     );
@@ -193,6 +238,13 @@ export default function AvailableCallsScreen() {
       <StatusBar barStyle="dark-content" backgroundColor="#fff" />
       {renderHeader()}
       {renderContent()}
+
+      <ApplyModal
+        visible={showApplyModal}
+        onClose={handleModalClose}
+        callId={selectedCallId || 0}
+        onSuccess={handleApplicationSuccess}
+      />
     </SafeAreaView>
   );
 }
@@ -290,22 +342,44 @@ const styles = {
     textAlign: "center" as const,
     lineHeight: 20,
   },
-  loadMoreButton: {
+  paginationContainer: {
     flexDirection: "row" as const,
     alignItems: "center" as const,
-    justifyContent: "center" as const,
-    backgroundColor: "#fff",
+    justifyContent: "space-between" as const,
     paddingVertical: 16,
     marginHorizontal: 16,
-    marginTop: 8,
+    marginTop: 16,
     borderRadius: 12,
+  },
+  paginationButton: {
+    flexDirection: "row" as const,
+    alignItems: "center" as const,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 8,
+    backgroundColor: "#fff",
     borderWidth: 1,
     borderColor: "#FF932E",
   },
-  loadMoreText: {
+  paginationButtonDisabled: {
+    borderColor: "#e9ecef",
+    backgroundColor: "#f8f9fa",
+  },
+  paginationButtonText: {
     fontFamily: "Comfortaa-Bold",
     fontSize: 14,
     color: "#FF932E",
-    marginLeft: 8,
+    marginHorizontal: 4,
+  },
+  paginationButtonTextDisabled: {
+    color: "#ccc",
+  },
+  pageInfo: {
+    alignItems: "center" as const,
+  },
+  pageInfoText: {
+    fontFamily: "Comfortaa-Regular",
+    fontSize: 14,
+    color: "#666",
   },
 };

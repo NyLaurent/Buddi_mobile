@@ -6,11 +6,13 @@ import { AvailableCall } from "../../services/api/buddi.service";
 interface AvailableCallCardProps {
   call: AvailableCall;
   onApplyPress: (callId: number) => void;
+  onViewDetails?: (callId: number) => void;
 }
 
 export default function AvailableCallCard({
   call,
   onApplyPress,
+  onViewDetails,
 }: AvailableCallCardProps) {
   const formatTime = (time: string) => {
     // Handle time format like "07:30" or "2566" (invalid format)
@@ -154,7 +156,7 @@ export default function AvailableCallCard({
 
           <TouchableOpacity
             style={styles.detailsButton}
-            onPress={() => onApplyPress(call.id)}
+            onPress={() => onViewDetails?.(call.id)}
             activeOpacity={0.8}
           >
             <FontAwesome5
