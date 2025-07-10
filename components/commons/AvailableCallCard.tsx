@@ -141,17 +141,27 @@ export default function AvailableCallCard({
         {/* Buttons Row */}
         <View style={styles.buttonsRow}>
           <TouchableOpacity
-            style={styles.applyButton}
-            onPress={() => onApplyPress(call.id)}
-            activeOpacity={0.8}
+            style={[
+              styles.applyButton,
+              call.status === "matched" && styles.applyButtonDisabled,
+            ]}
+            onPress={() => call.status !== "matched" && onApplyPress(call.id)}
+            activeOpacity={call.status === "matched" ? 1 : 0.8}
+            disabled={call.status === "matched"}
           >
             <FontAwesome5
-              name="hand-holding-heart"
+              name={
+                call.status === "matched"
+                  ? "check-circle"
+                  : "hand-holding-heart"
+              }
               size={16}
               color="#fff"
               style={{ marginRight: 6 }}
             />
-            <Text style={styles.applyButtonText}>Apply Now</Text>
+            <Text style={styles.applyButtonText}>
+              {call.status === "matched" ? "Matched" : "Apply Now"}
+            </Text>
           </TouchableOpacity>
 
           <TouchableOpacity
@@ -313,6 +323,10 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: "600",
     fontFamily: "Comfortaa-Regular",
+  },
+  applyButtonDisabled: {
+    backgroundColor: "#34C759",
+    opacity: 0.8,
   },
   detailsButton: {
     flexDirection: "row",

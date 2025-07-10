@@ -278,17 +278,27 @@ export default function CallDetailsScreen() {
 
         {/* Apply Button */}
         <TouchableOpacity
-          style={styles.applyButton}
-          onPress={handleApplyPress}
-          activeOpacity={0.8}
+          style={[
+            styles.applyButton,
+            callDetails.status === "matched" && styles.applyButtonDisabled,
+          ]}
+          onPress={() => callDetails.status !== "matched" && handleApplyPress()}
+          activeOpacity={callDetails.status === "matched" ? 1 : 0.8}
+          disabled={callDetails.status === "matched"}
         >
           <FontAwesome5
-            name="hand-holding-heart"
+            name={
+              callDetails.status === "matched"
+                ? "check-circle"
+                : "hand-holding-heart"
+            }
             size={20}
             color="#fff"
             style={{ marginRight: 12 }}
           />
-          <Text style={styles.applyButtonText}>Apply Now</Text>
+          <Text style={styles.applyButtonText}>
+            {callDetails.status === "matched" ? "Already Matched" : "Apply Now"}
+          </Text>
         </TouchableOpacity>
       </ScrollView>
     );
@@ -544,6 +554,11 @@ const styles = {
     shadowOpacity: 0.3,
     shadowRadius: 8,
     elevation: 4,
+  },
+  applyButtonDisabled: {
+    backgroundColor: "#34C759",
+    opacity: 0.8,
+    shadowColor: "#34C759",
   },
   applyButtonText: {
     fontFamily: "Comfortaa-Bold",
