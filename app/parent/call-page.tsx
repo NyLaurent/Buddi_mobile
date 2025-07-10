@@ -944,8 +944,8 @@ export default function CallPage() {
             >
               <Text
                 style={{
-                  fontFamily: "Comfortaa-Regular",
-                  fontSize: 15,
+                fontFamily: "Comfortaa-Regular",
+                fontSize: 15,
                   color: pickupTime ? "#232B3A" : "#BDBDBD",
                 }}
               >
@@ -974,7 +974,7 @@ export default function CallPage() {
                 is24Hour={true}
                 display="default"
                 onChange={handleTimeChange}
-              />
+            />
             )}
           </View>
           {/* Kids Count */}

@@ -20,6 +20,7 @@ import {
   useSafeAreaInsets,
 } from "react-native-safe-area-context";
 import AnalyticsCard from "../../components/commons/AnalyticsCard";
+import AvailableCallsCard from "../../components/commons/AvailableCallsCard";
 import Calendar from "../../components/commons/Calendar";
 import CongratulationsCard from "../../components/commons/CongratulationsCard";
 import PickupCard from "../../components/commons/PickupCard";
@@ -115,6 +116,14 @@ export default function BuddiHome() {
         <Text className="text-gray-500 font-comfortaa mx-5">
           Happy that you are back 😊
         </Text>
+
+        {/* Available Calls CTA Card */}
+        <AvailableCallsCard
+          onApplyPress={() => {
+            router.push("/buddi/available-calls");
+          }}
+          availableCalls={12}
+        />
 
         {/* Analytics Cards */}
         <View className="flex-row justify-between px-4 pt-4 gap-3">

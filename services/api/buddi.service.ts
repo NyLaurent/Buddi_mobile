@@ -23,7 +23,54 @@ export interface BuddiListResponse {
   total: number;
 }
 
+export interface AvailableCall {
+  id: number;
+  parentId: string;
+  childId: string;
+  description: string;
+  availableDays: string[];
+  pickupTime: string;
+  kidsCount: number;
+  fromZone: string;
+  toZone: string;
+  status: string;
+  matchedBuddiId: number | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface AvailableCallsResponse {
+  message: string;
+  currentPage: number;
+  totalPages: number;
+  totalRecords: number;
+  data: AvailableCall[];
+}
+
 const BuddiService = {
+  async getAvailableCalls(page: number = 1, limit: number = 5): Promise<AvailableCallsResponse> {
+    try {
+      const response = await authorizedApi.get(`/parent/requests/all?page=${page}&limit=${limit}`);
+      return response.data;
+    } catch (err: any) {
+      let message = 'Failed to fetch available calls.';
+      if (err?.response?.data?.message) {
+        message = err.response.data.message;
+      } else if (err?.message) {
+        if (err.message.includes('Network')) {
+          message = 'Network error. Please check your connection and try again.';
+        } else if (err.message.includes('timeout')) {
+          message = 'Request timed out. Please try again.';
+        } else {
+          message = err.message;
+        }
+      } else if (typeof err === 'string') {
+        message = err;
+      }
+      throw new Error(message);
+    }
+  },
+
   async getBuddiesByStatus(status: string, page: number, limit: number): Promise<BuddiListResponse> {
     try {
       const response = await authorizedApi.get(BUDDI_ENDPOINTS.BY_STATUS(status, page, limit));
