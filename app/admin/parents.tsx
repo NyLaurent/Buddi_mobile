@@ -1,10 +1,10 @@
-import CoverageAlertCard from "@/components/admin/CoverageAlertCard";
 import ParentsTable from "@/components/admin/ParentsTable";
 import AnalyticsCard from "@/components/commons/AnalyticsCard";
 import PageHeader from "@/components/commons/PageHeader";
 import { ParentRecord, ParentService } from "@/services/api";
 import { authorizedApi } from "@/services/api/config";
 import { Ionicons } from "@expo/vector-icons";
+import { useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
 import {
   ActivityIndicator,
@@ -201,6 +201,7 @@ const ParentCard = ({ parent, onViewDetails, onMessage }: ParentCardProps) => {
 };
 
 export default function AdminParentsPage() {
+  const router = useRouter();
   const [activeTab, setActiveTab] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
 
@@ -221,10 +222,10 @@ export default function AdminParentsPage() {
   const [actionSuccess, setActionSuccess] = useState("");
 
   const handleActionClick = (parent: ParentRecord) => {
-    setSelectedParent(parent);
-    setModalVisible(true);
-    setActionError("");
-    setActionSuccess("");
+    router.push({
+      pathname: "/admin/parent-details/[id]",
+      params: { id: parent.id },
+    });
   };
 
   const handleApprove = async () => {
@@ -413,7 +414,7 @@ export default function AdminParentsPage() {
                 />
               </View>
             </View>
-            <CoverageAlertCard
+            {/* <CoverageAlertCard
               title="21 Buddis Need Coverage For Today"
               subtitle="Review this before effects!"
               description="Please review Buddis requesting coverage to ensure availability and reliability."
@@ -424,7 +425,7 @@ export default function AdminParentsPage() {
                   // TODO: Add navigation or action here
                 },
               }}
-            />
+            /> */}
             {/* Parent Table */}
             {parentLoading ? (
               <Text style={{ textAlign: "center", marginTop: 24 }}>

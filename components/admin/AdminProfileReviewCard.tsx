@@ -1,20 +1,18 @@
 import { Ionicons } from "@expo/vector-icons";
 import React from "react";
-import { Image, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 
 interface AdminProfileReviewCardProps {
-  image: string;
   name: string;
   email: string;
   phone: string;
   date: string;
   time: string;
-  status?: "Active" | "Inactive";
+  status?: "Active" | "Inactive" | "Pending";
   onReview: () => void;
 }
 
 const AdminProfileReviewCard: React.FC<AdminProfileReviewCardProps> = ({
-  image,
   name,
   email,
   phone,
@@ -25,7 +23,9 @@ const AdminProfileReviewCard: React.FC<AdminProfileReviewCardProps> = ({
 }) => {
   return (
     <View style={styles.card}>
-      <Image source={{ uri: image }} style={styles.avatar} />
+      <View style={styles.avatarContainer}>
+        <Ionicons name="person" size={50} color="#666" />
+      </View>
       <Text style={styles.name}>{name}</Text>
       <Text style={styles.email}>{email}</Text>
       <View style={styles.phoneRow}>
@@ -42,7 +42,14 @@ const AdminProfileReviewCard: React.FC<AdminProfileReviewCardProps> = ({
       <View
         style={[
           styles.statusBadge,
-          { backgroundColor: status === "Active" ? "#4CAF50" : "#9E9E9E" },
+          {
+            backgroundColor:
+              status === "Active"
+                ? "#4CAF50"
+                : status === "Pending"
+                ? "#FF932E"
+                : "#9E9E9E",
+          },
         ]}
       >
         <Text style={styles.statusText}>{status}</Text>
@@ -76,12 +83,16 @@ const styles = StyleSheet.create({
     margin: 12,
     width: 280,
   },
-  avatar: {
+  avatarContainer: {
     width: 110,
     height: 110,
     borderRadius: 55,
     marginBottom: 16,
-    backgroundColor: "#eee",
+    backgroundColor: "#f0f0f0",
+    justifyContent: "center",
+    alignItems: "center",
+    borderWidth: 2,
+    borderColor: "#e0e0e0",
   },
   name: {
     fontSize: 22,

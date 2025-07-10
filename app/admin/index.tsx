@@ -1,6 +1,5 @@
 import AdminProfileReviewCard from "@/components/admin/AdminProfileReviewCard";
 import AdminVideoReviewCard from "@/components/admin/AdminVideoReviewCard";
-import CoverageAlertCard from "@/components/admin/CoverageAlertCard";
 import ParentRequestCard from "@/components/admin/ParentRequestCard";
 import AnalyticsCard from "@/components/commons/AnalyticsCard";
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
@@ -31,6 +30,7 @@ export default function AdminDashboard() {
     []
   );
   const [parents, setParents] = useState<ParentRecord[]>([]);
+  const [pendingParents, setPendingParents] = useState<ParentRecord[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -100,9 +100,23 @@ export default function AdminDashboard() {
     }
   };
 
+  const fetchPendingParents = async () => {
+    try {
+      const response = await ParentService.getAllParents(1, 100);
+      const pending = response.data.filter(
+        (parent) => parent.approvalStage === "pending"
+      );
+      setPendingParents(pending.slice(0, 3)); // Get first 3 pending parents
+      console.log("Fetched pending parents:", pending);
+    } catch (err: any) {
+      console.error("Error fetching pending parents:", err);
+    }
+  };
+
   useEffect(() => {
     fetchParentRequests();
     fetchParents();
+    fetchPendingParents();
   }, []);
 
   const formatDate = (dateString: string) => {
@@ -302,16 +316,14 @@ export default function AdminDashboard() {
           </View>
         </View>
 
-       
-
         {/* Profile Reviews Section */}
         <View style={styles.profileReviewsSection}>
           <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>Profile Reviews</Text>
+            <Text style={styles.sectionTitle}> Parents Profile Reviews</Text>
             <TouchableOpacity
               style={styles.viewAllButton}
               onPress={() => {
-                router.push("/admin/buddis" as any);
+                router.push("/admin/parents" as any);
               }}
             >
               <Text style={styles.viewAllText}>View All</Text>
@@ -328,44 +340,51 @@ export default function AdminDashboard() {
             showsHorizontalScrollIndicator={false}
             contentContainerStyle={styles.profileReviewsContainer}
           >
-            <AdminProfileReviewCard
-              image="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150"
-              name="Brian F"
-              email="sarah.j@email.com"
-              phone="+1 (555) 123-4567"
-              date="Dec 15, 2024"
-              time="2:30 PM"
-              onReview={() => {
-                router.push("/admin/buddis" as any);
-              }}
-            />
-            <AdminProfileReviewCard
-              image="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150"
-              name="Michael Chen"
-              email="m.chen@email.com"
-              phone="+1 (555) 987-6543"
-              date="Dec 14, 2024"
-              time="10:15 AM"
-              onReview={() => {
-                router.push("/admin/buddis" as any);
-              }}
-            />
-            <AdminProfileReviewCard
-              image="https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=150"
-              name="Emma Wilson"
-              email="emma.w@email.com"
-              phone="+1 (555) 456-7890"
-              date="Dec 13, 2024"
-              time="4:45 PM"
-              onReview={() => {
-                router.push("/admin/buddis" as any);
-              }}
-            />
+            {pendingParents.length > 0 ? (
+              pendingParents.map((parent, index) => (
+                <AdminProfileReviewCard
+                  key={parent.id}
+                  name={
+                    parent.User
+                      ? `${parent.User.firstName} ${parent.User.lastName}`
+                      : `Parent ${parent.id.slice(0, 8)}`
+                  }
+                  email={
+                    parent.User?.email ||
+                    `parent${parent.id.slice(0, 8)}@example.com`
+                  }
+                  phone={parent.User?.phoneNumber || "N/A"}
+                  date={formatDate(parent.createdAt)}
+                  time={formatTime(
+                    new Date(parent.createdAt).toLocaleTimeString()
+                  )}
+                  status="Pending"
+                  onReview={() => {
+                    router.push("/admin/parents" as any);
+                  }}
+                />
+              ))
+            ) : (
+              // Fallback cards if no pending parents
+              <>
+                <AdminProfileReviewCard
+                  name="No Pending Parents"
+                  email="No pending approvals"
+                  phone="N/A"
+                  date="N/A"
+                  time="N/A"
+                  status="Inactive"
+                  onReview={() => {
+                    router.push("/admin/parents" as any);
+                  }}
+                />
+              </>
+            )}
           </ScrollView>
         </View>
 
         {/* Pending Profile Videos Reviews Section */}
-        <View style={styles.videoReviewsSection}>
+        {/* <View style={styles.videoReviewsSection}>
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionTitle}>
               Pending Profile Videos Reviews
@@ -426,7 +445,7 @@ export default function AdminDashboard() {
               }}
             />
           </View>
-        </View>
+        </View> */}
 
         {/* Parent Requests Section */}
         <View style={styles.parentRequestsSection}>
