@@ -5,7 +5,9 @@ import ParentRequestCard from "@/components/admin/ParentRequestCard";
 import AnalyticsCard from "@/components/commons/AnalyticsCard";
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
+import React, { useEffect, useState } from "react";
 import {
+  ActivityIndicator,
   Alert,
   Image,
   ScrollView,
@@ -17,10 +19,141 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useAuth } from "../../context/AuthContext";
+import ParentService, {
+  ParentPickupRequest,
+  ParentRecord,
+} from "../../services/api/parent.service";
 
 export default function AdminDashboard() {
   const router = useRouter();
   const { user, logout } = useAuth();
+  const [parentRequests, setParentRequests] = useState<ParentPickupRequest[]>(
+    []
+  );
+  const [parents, setParents] = useState<ParentRecord[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  // Create a mapping of parentId to parent name
+  const getParentName = (parentId: string) => {
+    console.log("Looking for parentId:", parentId);
+    console.log("Available parents:", parents.length);
+
+    const parent = parents.find((p) => p.userId === parentId);
+    console.log("Found by userId:", parent);
+
+    if (parent?.User) {
+      const fullName = `${parent.User.firstName} ${parent.User.lastName}`;
+      console.log("Returning name:", fullName);
+      return fullName;
+    }
+
+    // If no parent found, try to find by id as well
+    const parentById = parents.find((p) => p.id === parentId);
+    console.log("Found by id:", parentById);
+
+    if (parentById?.User) {
+      const fullName = `${parentById.User.firstName} ${parentById.User.lastName}`;
+      console.log("Returning name by id:", fullName);
+      return fullName;
+    }
+
+    console.log("No parent found, returning fallback");
+    return `Parent ${parentId.slice(0, 8)}`;
+  };
+
+  const getParentEmail = (parentId: string) => {
+    const parent = parents.find((p) => p.userId === parentId);
+    if (parent?.User?.email) {
+      return parent.User.email;
+    }
+    // If no parent found, try to find by id as well
+    const parentById = parents.find((p) => p.id === parentId);
+    if (parentById?.User?.email) {
+      return parentById.User.email;
+    }
+    return `parent${parentId.slice(0, 8)}@example.com`;
+  };
+
+  const fetchParentRequests = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const response = await ParentService.getAllParentRequests(1, 10);
+      setParentRequests(response.data);
+    } catch (err: any) {
+      setError(err.message || "Failed to fetch parent requests");
+      console.error("Error fetching parent requests:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchParents = async () => {
+    try {
+      const response = await ParentService.getAllParents(1, 100); // Get more parents to ensure we have all
+      setParents(response.data);
+      console.log("Fetched parents data:", response.data);
+      console.log("Sample parent:", response.data[0]);
+    } catch (err: any) {
+      console.error("Error fetching parents:", err);
+    }
+  };
+
+  useEffect(() => {
+    fetchParentRequests();
+    fetchParents();
+  }, []);
+
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    return date
+      .toLocaleDateString("en-US", {
+        month: "short",
+        day: "2-digit",
+      })
+      .toUpperCase();
+  };
+
+  const formatTime = (time: string) => {
+    if (time.includes(":")) {
+      return time;
+    }
+    return time;
+  };
+
+  const getServiceType = (description: string) => {
+    if (description.toLowerCase().includes("pickup")) {
+      return "School Pickup";
+    }
+    return "Pickup Service";
+  };
+
+  const getDuration = (availableDays: string[]) => {
+    return `${availableDays.length} days per week`;
+  };
+
+  const calculateAnalytics = () => {
+    const totalRequests = parentRequests.length;
+    const pendingRequests = parentRequests.filter(
+      (req) => req.status === "pending"
+    ).length;
+    const matchedRequests = parentRequests.filter(
+      (req) => req.status === "matched"
+    ).length;
+    const completedRequests = parentRequests.filter(
+      (req) => req.status === "completed"
+    ).length;
+
+    return {
+      totalRequests,
+      pendingRequests,
+      matchedRequests,
+      completedRequests,
+    };
+  };
+
+  const analytics = calculateAnalytics();
 
   const handleLogout = () => {
     console.log("Logout button clicked!"); // Debug log
@@ -99,7 +232,7 @@ export default function AdminDashboard() {
                   }}
                 >
                   Role: {user.role.charAt(0).toUpperCase() + user.role.slice(1)}
-              </Text>
+                </Text>
               </>
             )}
           </View>
@@ -136,9 +269,9 @@ export default function AdminDashboard() {
           <View style={{ width: "48%", marginBottom: 12 }}>
             <AnalyticsCard
               icon={<Ionicons name="flash" size={36} color="#3BC3FF" />}
-              title="Total Buddis"
-              value="12"
-              subtitle="2 Schools"
+              title="Total Requests"
+              value={analytics.totalRequests.toString()}
+              subtitle="All time"
             />
           </View>
           <View style={{ width: "48%", marginBottom: 12 }}>
@@ -146,62 +279,30 @@ export default function AdminDashboard() {
               icon={
                 <MaterialCommunityIcons name="cash" size={36} color="#7B61FF" />
               }
-              title="Pending Payments"
-              value="3"
-              subtitle="All time"
+              title="Pending Requests"
+              value={analytics.pendingRequests.toString()}
+              subtitle="Need attention"
             />
           </View>
           <View style={{ width: "48%", marginBottom: 12 }}>
             <AnalyticsCard
               icon={<Ionicons name="people" size={36} color="#FF5A7D" />}
-              title="Registered Parents"
-              value="3"
-              subtitle="Connected"
+              title="Matched Requests"
+              value={analytics.matchedRequests.toString()}
+              subtitle="Successfully matched"
             />
           </View>
           <View style={{ width: "48%", marginBottom: 12 }}>
             <AnalyticsCard
               icon={<Ionicons name="person" size={36} color="#A259FF" />}
-              title="Pending Buddi Applications"
-              value="2"
-              subtitle="2 Schools"
+              title="Completed Requests"
+              value={analytics.completedRequests.toString()}
+              subtitle="Finished"
             />
           </View>
         </View>
 
-        <View>
-          <CoverageAlertCard
-            title="21 Buddis Need Coverage For Today"
-            subtitle="Review this before effects!"
-            description="Please review Buddis requesting coverage to ensure availability and reliability."
-            primaryButton={{
-              label: "Handle Coverages",
-              icon: <Ionicons name="reload" size={20} color="#fff" />,
-              onPress: () => {
-                router.push("/admin/buddis" as any);
-              },
-            }}
-          />
-          <CoverageAlertCard
-            title="New Buddi Applications Pending"
-            subtitle="8 applications require review"
-            description="Review new Buddi applications and references to maintain platform quality."
-            secondaryButton={{
-              label: "View All",
-              icon: <Ionicons name="eye-outline" size={20} color="#23272F" />,
-              onPress: () => {
-                /* handle deploy */
-              },
-            }}
-            primaryButton={{
-              label: "Review Now",
-              icon: <Ionicons name="person-outline" size={20} color="#fff" />,
-              onPress: () => {
-                router.push("/admin/buddis" as any);
-              },
-            }}
-          />
-        </View>
+       
 
         {/* Profile Reviews Section */}
         <View style={styles.profileReviewsSection}>
@@ -333,17 +434,10 @@ export default function AdminDashboard() {
             <Text style={styles.sectionTitle}>Parent Requests</Text>
             <TouchableOpacity
               style={styles.viewAllButton}
-              onPress={() => {
-                router.push("/admin/parents" as any);
-              }}
+              onPress={() => router.push("/admin/parent-requests" as any)}
             >
               <Text style={styles.viewAllText}>View All</Text>
-              <Ionicons
-                name="arrow-forward"
-                size={16}
-                color="#FF932E"
-                style={{ marginLeft: 4 }}
-              />
+              <Ionicons name="chevron-forward" size={16} color="#FF932E" />
             </TouchableOpacity>
           </View>
           <ScrollView
@@ -351,39 +445,44 @@ export default function AdminDashboard() {
             showsHorizontalScrollIndicator={false}
             contentContainerStyle={styles.parentRequestsContainer}
           >
-            <ParentRequestCard
-              date="MAR 05"
-              serviceType="Pickup & Baby Sitting"
-              duration="2hrs per Day"
-              parentName="Brian Ford"
-              parentEmail="brianford@lok.com"
-              parentAvatar="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150"
-              onProposeBuddis={() => {
-                router.push("/admin/buddis" as any);
-              }}
-            />
-            <ParentRequestCard
-              date="MAR 05"
-              serviceType="Pickup & Baby Sitting"
-              duration="2hrs per Day"
-              parentName="Brian Ford"
-              parentEmail="brianford@lok.com"
-              parentAvatar="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150"
-              onProposeBuddis={() => {
-                router.push("/admin/buddis" as any);
-              }}
-            />
-            <ParentRequestCard
-              date="MAR 06"
-              serviceType="School Pickup"
-              duration="1hr per Day"
-              parentName="Sarah Johnson"
-              parentEmail="sarah.j@email.com"
-              parentAvatar="https://images.unsplash.com/photo-1494790108755-2616b612b789?w=150"
-              onProposeBuddis={() => {
-                router.push("/admin/buddis" as any);
-              }}
-            />
+            {loading ? (
+              <View style={styles.loadingContainer}>
+                <ActivityIndicator size="small" color="#FF932E" />
+                <Text style={styles.loadingText}>Loading requests...</Text>
+              </View>
+            ) : error ? (
+              <View style={styles.errorContainer}>
+                <Text style={styles.errorText}>Error: {error}</Text>
+                <TouchableOpacity
+                  style={styles.retryButton}
+                  onPress={fetchParentRequests}
+                >
+                  <Text style={styles.retryButtonText}>Retry</Text>
+                </TouchableOpacity>
+              </View>
+            ) : parentRequests.length === 0 ? (
+              <View style={styles.emptyContainer}>
+                <Text style={styles.emptyText}>No parent requests found.</Text>
+              </View>
+            ) : (
+              parentRequests.slice(0, 3).map((request, index) => (
+                <ParentRequestCard
+                  key={request.id}
+                  date={formatDate(request.createdAt)}
+                  serviceType={getServiceType(request.description)}
+                  duration={getDuration(request.availableDays)}
+                  parentName={getParentName(request.parentId)}
+                  parentEmail={getParentEmail(request.parentId)}
+                  parentAvatar={undefined}
+                  onProposeBuddis={() => {
+                    router.push({
+                      pathname: "/admin/request-details/[id]",
+                      params: { id: request.id.toString() },
+                    });
+                  }}
+                />
+              ))
+            )}
           </ScrollView>
         </View>
       </ScrollView>
@@ -468,5 +567,50 @@ const styles = StyleSheet.create({
   },
   parentRequestsContainer: {
     padding: 2,
+  },
+  loadingContainer: {
+    flexDirection: "column",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 20,
+  },
+  loadingText: {
+    marginTop: 10,
+    color: "#666",
+    fontSize: 14,
+  },
+  errorContainer: {
+    flexDirection: "column",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 20,
+  },
+  errorText: {
+    color: "#FF5A7D",
+    fontSize: 16,
+    textAlign: "center",
+    marginBottom: 10,
+  },
+  retryButton: {
+    backgroundColor: "#FF932E",
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    borderRadius: 8,
+  },
+  retryButtonText: {
+    color: "white",
+    fontSize: 16,
+    fontFamily: "Comfortaa-Bold",
+  },
+  emptyContainer: {
+    flexDirection: "column",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 20,
+  },
+  emptyText: {
+    color: "#666",
+    fontSize: 16,
+    textAlign: "center",
   },
 });

@@ -65,18 +65,18 @@ const ParentRequestCard: React.FC<ParentRequestCardProps> = ({
           </View>
         </View>
 
-        {/* Propose Buddis Button */}
+        {/* View Request Button */}
         <TouchableOpacity
           style={styles.proposeButton}
           onPress={onProposeBuddis}
         >
           <Ionicons
-            name="person-add"
+            name="eye"
             size={20}
             color="#fff"
             style={{ marginRight: 8 }}
           />
-          <Text style={styles.proposeButtonText}>Propose Buddis</Text>
+          <Text style={styles.proposeButtonText}>View Request</Text>
         </TouchableOpacity>
       </View>
     </View>
@@ -90,7 +90,7 @@ const styles = StyleSheet.create({
     padding: 0,
     marginHorizontal: 8,
     marginVertical: 8,
-    width: 280,
+    width: 320,
     borderWidth: 1,
     borderColor: "#F2F2F2",
     shadowColor: "#23272F",
@@ -102,7 +102,7 @@ const styles = StyleSheet.create({
   },
   topHalf: {
     backgroundColor: "#F8F9FE",
-    padding: 20,
+    padding: 24,
     position: "relative",
     alignItems: "center",
     justifyContent: "center",
@@ -132,57 +132,57 @@ const styles = StyleSheet.create({
     height: 120,
   },
   bottomHalf: {
-    padding: 20,
+    padding: 24,
   },
   serviceInfo: {
-    marginBottom: 20,
+    marginBottom: 24,
   },
   serviceType: {
-    fontSize: 18,
+    fontSize: 20,
     fontWeight: "600",
     color: "#23272F",
-    marginBottom: 4,
+    marginBottom: 6,
     fontFamily: "Comfortaa-Regular",
   },
   duration: {
-    fontSize: 14,
+    fontSize: 15,
     color: "#8A8A8A",
     fontFamily: "Comfortaa-Regular",
   },
   parentInfo: {
-    marginBottom: 20,
+    marginBottom: 24,
   },
   parentDetails: {
     flexDirection: "row",
     alignItems: "center",
   },
   avatar: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    marginRight: 12,
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    marginRight: 16,
   },
   avatarPlaceholder: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: 48,
+    height: 48,
+    borderRadius: 24,
     backgroundColor: "#F2F2F2",
     justifyContent: "center",
     alignItems: "center",
-    marginRight: 12,
+    marginRight: 16,
   },
   parentText: {
     flex: 1,
   },
   parentName: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: "600",
     color: "#23272F",
-    marginBottom: 2,
+    marginBottom: 4,
     fontFamily: "Comfortaa-Regular",
   },
   parentEmail: {
-    fontSize: 14,
+    fontSize: 15,
     color: "#8A8A8A",
     fontFamily: "Comfortaa-Regular",
   },
@@ -192,8 +192,8 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     backgroundColor: "#FF932E",
     borderRadius: 30,
-    paddingVertical: 14,
-    paddingHorizontal: 24,
+    paddingVertical: 16,
+    paddingHorizontal: 28,
   },
   proposeButtonText: {
     color: "#fff",

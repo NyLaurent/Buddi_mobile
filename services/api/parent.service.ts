@@ -78,6 +78,52 @@ const ParentService = {
     const response = await authorizedApi.get(`/parent/buddi-requests/my-requests/${parentId}`);
     return response.data;
   },
+
+  async getAllParentRequests(page: number = 1, limit: number = 10): Promise<ParentPickupRequestsResponse> {
+    try {
+      const response = await authorizedApi.get(`/parent/requests/all?page=${page}&limit=${limit}`);
+      return response.data;
+    } catch (err: any) {
+      let message = 'Failed to fetch parent requests.';
+      if (err?.response?.data?.message) {
+        message = err.response.data.message;
+      } else if (err?.message) {
+        if (err.message.includes('Network')) {
+          message = 'Network error. Please check your connection and try again.';
+        } else if (err.message.includes('timeout')) {
+          message = 'Request timed out. Please try again.';
+        } else {
+          message = err.message;
+        }
+      } else if (typeof err === 'string') {
+        message = err;
+      }
+      throw new Error(message);
+    }
+  },
+
+  async getParentRequestDetails(requestId: number): Promise<{ message: string; data: ParentPickupRequest }> {
+    try {
+      const response = await authorizedApi.get(`/coverage/buddi-request/${requestId}`);
+      return response.data;
+    } catch (err: any) {
+      let message = 'Failed to fetch request details.';
+      if (err?.response?.data?.message) {
+        message = err.response.data.message;
+      } else if (err?.message) {
+        if (err.message.includes('Network')) {
+          message = 'Network error. Please check your connection and try again.';
+        } else if (err.message.includes('timeout')) {
+          message = 'Request timed out. Please try again.';
+        } else {
+          message = err.message;
+        }
+      } else if (typeof err === 'string') {
+        message = err;
+      }
+      throw new Error(message);
+    }
+  },
 };
 
 export default ParentService; 
