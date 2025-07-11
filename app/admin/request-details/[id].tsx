@@ -353,7 +353,7 @@ export default function RequestDetailsScreen() {
             onPress={() =>
               router.push({
                 pathname: "/admin/request-details/[id]/all-applications",
-                params: { id },
+                params: { id, parentId: requestDetails?.parentId },
               })
             }
           >
@@ -396,7 +396,7 @@ export default function RequestDetailsScreen() {
               onPress={() =>
                 router.push({
                   pathname: "/admin/request-details/[id]/all-applications",
-                  params: { id },
+                  params: { id, parentId: requestDetails?.parentId },
                 })
               }
             >

@@ -111,6 +111,36 @@ export interface Application {
   };
 }
 
+/**
+ * Propose up to 3 buddis for a parent call
+ * @param parentId - The parent request ID
+ * @param buddiIds - Array of 3 buddi IDs (as strings)
+ * @param recommendedBy - The admin user ID recommending
+ * @param reason - Reason for recommendation
+ */
+async function proposeBuddiRecommendations({
+  parentId,
+  buddiIds,
+  recommendedBy,
+  reason,
+}: {
+  parentId: string;
+  buddiIds: string[];
+  recommendedBy: string;
+  reason: string;
+}): Promise<any> {
+  const response = await authorizedApi.post(
+    "/coverage/buddi-recommendations/parent",
+    {
+      parentId,
+      buddiIds,
+      recommendedBy,
+      reason,
+    }
+  );
+  return response.data;
+}
+
 const ParentService = {
   async getAllParents(page: number, limit: number): Promise<ParentListResponse> {
     const response = await authorizedApi.get(PARENT_ENDPOINTS.LIST + `/all?page=${page}&limit=${limit}`);
@@ -221,6 +251,7 @@ const ParentService = {
       throw new Error(message);
     }
   },
+  proposeBuddiRecommendations,
 };
 
 export default ParentService; 
