@@ -144,17 +144,53 @@ const BuddiService = {
     try {
       await authorizedApi.post('/application/apply', request);
     } catch (err: any) {
+      // Handle specific HTTP status codes for better user experience
+      if (err?.response?.status === 409) {
+        throw new Error('ALREADY_APPLIED');
+      }
+      
+      // Handle other common HTTP status codes
+      if (err?.response?.status === 400) {
+        throw new Error('INVALID_REQUEST');
+      }
+      
+      if (err?.response?.status === 401) {
+        throw new Error('UNAUTHORIZED');
+      }
+      
+      if (err?.response?.status === 403) {
+        throw new Error('FORBIDDEN');
+      }
+      
+      if (err?.response?.status === 404) {
+        throw new Error('CALL_NOT_FOUND');
+      }
+      
+      if (err?.response?.status === 422) {
+        throw new Error('VALIDATION_ERROR');
+      }
+      
+      if (err?.response?.status >= 500) {
+        throw new Error('SERVER_ERROR');
+      }
+      
+      // Handle network and connection errors
+      if (err?.message) {
+        if (err.message.includes('Network') || err.message.includes('network')) {
+          throw new Error('NETWORK_ERROR');
+        } else if (err.message.includes('timeout') || err.message.includes('Timeout')) {
+          throw new Error('TIMEOUT_ERROR');
+        } else if (err.message.includes('ECONNREFUSED') || err.message.includes('ENOTFOUND')) {
+          throw new Error('CONNECTION_ERROR');
+        }
+      }
+      
+      // Handle generic errors
       let message = 'Failed to submit application.';
       if (err?.response?.data?.message) {
         message = err.response.data.message;
       } else if (err?.message) {
-        if (err.message.includes('Network')) {
-          message = 'Network error. Please check your connection and try again.';
-        } else if (err.message.includes('timeout')) {
-          message = 'Request timed out. Please try again.';
-        } else {
-          message = err.message;
-        }
+        message = err.message;
       } else if (typeof err === 'string') {
         message = err;
       }

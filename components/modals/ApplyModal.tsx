@@ -74,11 +74,105 @@ export default function ApplyModal({
         ]
       );
     } catch (error: any) {
-      Alert.alert(
-        "Application Failed",
-        error.message || "Something went wrong. Please try again.",
-        [{ text: "OK" }]
-      );
+      // Handle specific error cases for better user experience
+      switch (error.message) {
+        case 'ALREADY_APPLIED':
+          Alert.alert(
+            "Already Applied! 📝",
+            "You've already applied to this pickup request. The parent will review your application and get back to you soon!",
+            [
+              {
+                text: "Got it!",
+                onPress: () => {
+                  setMessage("");
+                  onClose();
+                  onSuccess?.();
+                },
+              },
+            ]
+          );
+          break;
+          
+        case 'INVALID_REQUEST':
+          Alert.alert(
+            "Invalid Request ⚠️",
+            "There was an issue with your application. Please check your message and try again.",
+            [{ text: "OK" }]
+          );
+          break;
+          
+        case 'UNAUTHORIZED':
+          Alert.alert(
+            "Session Expired 🔐",
+            "Please log in again to submit your application.",
+            [{ text: "OK" }]
+          );
+          break;
+          
+        case 'FORBIDDEN':
+          Alert.alert(
+            "Access Denied 🚫",
+            "You don't have permission to apply to this pickup request.",
+            [{ text: "OK" }]
+          );
+          break;
+          
+        case 'CALL_NOT_FOUND':
+          Alert.alert(
+            "Call Not Available ❌",
+            "This pickup request is no longer available. It may have been removed or already filled.",
+            [{ text: "OK" }]
+          );
+          break;
+          
+        case 'VALIDATION_ERROR':
+          Alert.alert(
+            "Invalid Information ⚠️",
+            "Please check your application details and try again.",
+            [{ text: "OK" }]
+          );
+          break;
+          
+        case 'SERVER_ERROR':
+          Alert.alert(
+            "Server Error 🔧",
+            "Our servers are experiencing issues. Please try again in a few minutes.",
+            [{ text: "OK" }]
+          );
+          break;
+          
+        case 'NETWORK_ERROR':
+          Alert.alert(
+            "No Internet Connection 📡",
+            "Please check your internet connection and try again.",
+            [{ text: "OK" }]
+          );
+          break;
+          
+        case 'TIMEOUT_ERROR':
+          Alert.alert(
+            "Request Timeout ⏰",
+            "The request took too long. Please check your connection and try again.",
+            [{ text: "OK" }]
+          );
+          break;
+          
+        case 'CONNECTION_ERROR':
+          Alert.alert(
+            "Connection Failed 🔌",
+            "Unable to connect to our servers. Please try again later.",
+            [{ text: "OK" }]
+          );
+          break;
+          
+        default:
+          Alert.alert(
+            "Application Failed",
+            error.message || "Something went wrong. Please try again.",
+            [{ text: "OK" }]
+          );
+          break;
+      }
     } finally {
       setLoading(false);
     }
