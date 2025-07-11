@@ -4,6 +4,7 @@ import React, { useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
+  Dimensions,
   ScrollView,
   StatusBar,
   Text,
@@ -71,7 +72,11 @@ export default function BuddiDetailsScreen() {
     setActionLoading(true);
     try {
       if (actionType === "approve") {
-        await BuddiService.approveBuddi(buddiDetails.id.toString(), buddiDetails.status, reason);
+        await BuddiService.approveBuddi(
+          buddiDetails.id.toString(),
+          buddiDetails.status,
+          reason
+        );
         Alert.alert("Success", "Buddi status updated successfully!");
       } else {
         await BuddiService.rejectBuddi(buddiDetails.id.toString(), reason);
@@ -200,7 +205,7 @@ export default function BuddiDetailsScreen() {
           <Ionicons name="person" size={48} color="#FF932E" />
           <Text style={styles.errorTitle}>Buddi Not Found</Text>
           <Text style={styles.errorText}>
-            The buddi you're looking for doesn't exist.
+            The buddi you&apos;re looking for doesn&apos;t exist.
           </Text>
         </View>
       );
@@ -342,39 +347,43 @@ export default function BuddiDetailsScreen() {
         </View>
 
         {/* Action Buttons Card - Only show for pending buddis */}
-        {buddiDetails.status !== "approved" &&
-          buddiDetails.status !== "rejected" && (
-            <View style={styles.actionCard}>
-              <View style={styles.cardHeader}>
-                <Ionicons name="shield-checkmark" size={20} color="#FF932E" />
-                <Text style={styles.cardTitle}>Admin Actions</Text>
-              </View>
-              <View style={styles.actionButtonsContainer}>
-                <TouchableOpacity
-                  style={[styles.actionButton, styles.approveButton]}
-                  onPress={handleApprove}
-                  disabled={actionLoading}
-                >
-                  <Ionicons name="checkmark-circle" size={20} color="#fff" />
-                  <Text style={styles.actionButtonText}>Approve</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={[styles.actionButton, styles.rejectButton]}
-                  onPress={handleReject}
-                  disabled={actionLoading}
-                >
-                  <Ionicons name="close-circle" size={20} color="#fff" />
-                  <Text style={styles.actionButtonText}>Reject</Text>
-                </TouchableOpacity>
-              </View>
-              {actionLoading && (
-                <View style={styles.loadingContainer}>
-                  <ActivityIndicator size="small" color="#FF932E" />
-                  <Text style={styles.loadingText}>Processing...</Text>
-                </View>
-              )}
+        {!(
+          buddiDetails.status === "approved" ||
+          buddiDetails.status === "referenceApproved" ||
+          buddiDetails.status === "verified" ||
+          buddiDetails.status === "rejected"
+        ) && (
+          <View style={styles.actionCard}>
+            <View style={styles.cardHeader}>
+              <Ionicons name="shield-checkmark" size={20} color="#FF932E" />
+              <Text style={styles.cardTitle}>Admin Actions</Text>
             </View>
-          )}
+            <View style={styles.actionButtonsContainer}>
+              <TouchableOpacity
+                style={[styles.actionButton, styles.approveButton]}
+                onPress={handleApprove}
+                disabled={actionLoading}
+              >
+                <Ionicons name="checkmark-circle" size={20} color="#fff" />
+                <Text style={styles.actionButtonText}>Approve</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.actionButton, styles.rejectButton]}
+                onPress={handleReject}
+                disabled={actionLoading}
+              >
+                <Ionicons name="close-circle" size={20} color="#fff" />
+                <Text style={styles.actionButtonText}>Reject</Text>
+              </TouchableOpacity>
+            </View>
+            {actionLoading && (
+              <View style={styles.loadingContainer}>
+                <ActivityIndicator size="small" color="#FF932E" />
+                <Text style={styles.loadingText}>Processing...</Text>
+              </View>
+            )}
+          </View>
+        )}
 
         {/* Referral Information Card */}
         <View style={styles.card}>
@@ -724,14 +733,14 @@ const styles = {
     backgroundColor: "#fff",
     borderRadius: 16,
     padding: 24,
-    width: "90%",
+    width: Dimensions.get("window").width * 0.9,
     alignItems: "center" as const,
   },
   modalHeader: {
     flexDirection: "row" as const,
     justifyContent: "space-between" as const,
     alignItems: "center" as const,
-    width: "100%",
+    width: Dimensions.get("window").width * 1.0,
     marginBottom: 16,
   },
   modalTitle: {
@@ -747,7 +756,7 @@ const styles = {
     textAlign: "center" as const,
   },
   reasonInput: {
-    width: "100%",
+    width: Dimensions.get("window").width * 0.9,
     height: 120,
     borderWidth: 1,
     borderColor: "#e9ecef",
@@ -761,7 +770,7 @@ const styles = {
   modalButtons: {
     flexDirection: "row" as const,
     justifyContent: "space-around" as const,
-    width: "100%",
+    width: Dimensions.get("window").width * 1.0,
     marginTop: 20,
   },
   modalButton: {

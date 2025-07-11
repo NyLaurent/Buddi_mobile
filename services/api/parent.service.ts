@@ -68,6 +68,49 @@ export interface ParentPickupRequestsResponse {
   data: ParentPickupRequest[];
 }
 
+export interface Application {
+  id: number;
+  buddiRequestId: number;
+  buddiId: number;
+  status: string;
+  message: string;
+  createdAt: string;
+  updatedAt: string;
+  Buddi: {
+    id: number;
+    currentSchool: string;
+    AreaOfStudy: string;
+    Gpa: string;
+    status: string;
+    teacherEmail: string;
+    dob: string;
+    gender: string;
+    teacherPhoneNumber: string;
+    customReferral: string;
+    referralOccupation: string;
+    resume: string;
+    profilePicture: string | null;
+    rating: number | null;
+    isInterviewVideoSubmitted: boolean;
+    totalEarnings: number;
+    createdAt: string;
+    updatedAt: string;
+    userId: string;
+    User?: {
+      userId: string;
+      email: string;
+      password: string;
+      phoneNumber: string;
+      firstName: string;
+      lastName: string;
+      homeAddress: string;
+      role: string;
+      createdAt: string;
+      updatedAt: string;
+    };
+  };
+}
+
 const ParentService = {
   async getAllParents(page: number, limit: number): Promise<ParentListResponse> {
     const response = await authorizedApi.get(PARENT_ENDPOINTS.LIST + `/all?page=${page}&limit=${limit}`);
@@ -108,6 +151,37 @@ const ParentService = {
       return response.data;
     } catch (err: any) {
       let message = 'Failed to fetch request details.';
+      if (err?.response?.data?.message) {
+        message = err.response.data.message;
+      } else if (err?.message) {
+        if (err.message.includes('Network')) {
+          message = 'Network error. Please check your connection and try again.';
+        } else if (err.message.includes('timeout')) {
+          message = 'Request timed out. Please try again.';
+        } else {
+          message = err.message;
+        }
+      } else if (typeof err === 'string') {
+        message = err;
+      }
+      throw new Error(message);
+    }
+  },
+
+  async getRequestApplications(requestId: number, page: number = 1, limit: number = 5): Promise<{
+    data: Application[];
+    pagination: {
+      total: number;
+      page: number;
+      limit: number;
+      totalPages: number;
+    };
+  }> {
+    try {
+      const response = await authorizedApi.get(`/application/request/${requestId}?page=${page}&limit=${limit}`);
+      return response.data;
+    } catch (err: any) {
+      let message = 'Failed to fetch applications.';
       if (err?.response?.data?.message) {
         message = err.response.data.message;
       } else if (err?.message) {

@@ -12,7 +12,9 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useAuth } from "../../../context/AuthContext";
+import BuddiService from "../../../services/api/buddi.service";
 import ParentService, {
+  Application,
   ParentPickupRequest,
   ParentRecord,
 } from "../../../services/api/parent.service";
@@ -22,8 +24,22 @@ export default function RequestDetailsScreen() {
   const [requestDetails, setRequestDetails] =
     useState<ParentPickupRequest | null>(null);
   const [parentData, setParentData] = useState<ParentRecord | null>(null);
+  const [applications, setApplications] = useState<Application[]>([]);
+  const [applicationsLoading, setApplicationsLoading] = useState(false);
+  const [applicationsError, setApplicationsError] = useState<string | null>(
+    null
+  );
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalApplications, setTotalApplications] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [buddiEmails, setBuddiEmails] = useState<{ [buddiId: string]: string }>(
+    {}
+  );
+  const [emailLoading, setEmailLoading] = useState<{
+    [buddiId: string]: boolean;
+  }>({});
 
   const router = useRouter();
   const { user } = useAuth();
@@ -42,6 +58,9 @@ export default function RequestDetailsScreen() {
 
       // Fetch parent data to get the parent name
       await fetchParentData(response.data.parentId);
+
+      // Fetch applications for this request
+      await fetchApplications(1);
     } catch (err: any) {
       setError(err.message || "Failed to fetch request details");
       console.error("Error fetching request details:", err);
@@ -61,6 +80,40 @@ export default function RequestDetailsScreen() {
       }
     } catch (err: any) {
       console.error("Error fetching parent data:", err);
+    }
+  };
+
+  const fetchApplications = async (page: number = 1) => {
+    try {
+      setApplicationsLoading(true);
+      setApplicationsError(null);
+
+      const response = await ParentService.getRequestApplications(
+        Number(id),
+        page,
+        5
+      );
+      setApplications(response.data);
+      setCurrentPage(response.pagination.page);
+      setTotalPages(response.pagination.totalPages);
+      setTotalApplications(response.pagination.total);
+    } catch (err: any) {
+      setApplicationsError(err.message || "Failed to fetch applications");
+      console.error("Error fetching applications:", err);
+    } finally {
+      setApplicationsLoading(false);
+    }
+  };
+
+  const handleNextPage = () => {
+    if (currentPage < totalPages && !applicationsLoading) {
+      fetchApplications(currentPage + 1);
+    }
+  };
+
+  const handlePreviousPage = () => {
+    if (currentPage > 1 && !applicationsLoading) {
+      fetchApplications(currentPage - 1);
     }
   };
 
@@ -125,6 +178,62 @@ export default function RequestDetailsScreen() {
       parentData?.User?.email ||
       `parent${requestDetails?.parentId.slice(0, 8)}@example.com`
     );
+  };
+
+  const getBuddiName = (application: Application) => {
+    if (application.Buddi?.User) {
+      return `${application.Buddi.User.firstName} ${application.Buddi.User.lastName}`;
+    }
+    return `Buddi ${application.buddiId}`;
+  };
+
+  // Fetch Buddi email if not present in application
+  const fetchBuddiEmail = async (buddiId: number) => {
+    setEmailLoading((prev) => ({ ...prev, [buddiId]: true }));
+    try {
+      const response = await BuddiService.getBuddiInfo(buddiId.toString());
+      const email = response.data.User?.email || "N/A";
+      setBuddiEmails((prev) => ({ ...prev, [buddiId]: email }));
+    } catch {
+      setBuddiEmails((prev) => ({ ...prev, [buddiId]: "N/A" }));
+    } finally {
+      setEmailLoading((prev) => ({ ...prev, [buddiId]: false }));
+    }
+  };
+
+  const getBuddiEmail = (application: Application) => {
+    if (application.Buddi?.User?.email) return application.Buddi.User.email;
+    const cached = buddiEmails[application.buddiId];
+    if (cached) return cached;
+    if (!emailLoading[application.buddiId])
+      fetchBuddiEmail(application.buddiId);
+    return "Loading...";
+  };
+
+  const getApplicationStatusColor = (status: string) => {
+    switch (status) {
+      case "pending":
+        return "#FF932E";
+      case "approved":
+        return "#34C759";
+      case "rejected":
+        return "#FF3B30";
+      default:
+        return "#FF932E";
+    }
+  };
+
+  const getApplicationStatusText = (status: string) => {
+    switch (status) {
+      case "pending":
+        return "Pending";
+      case "approved":
+        return "Approved";
+      case "rejected":
+        return "Rejected";
+      default:
+        return "Pending";
+    }
   };
 
   const renderHeader = () => (
@@ -201,6 +310,281 @@ export default function RequestDetailsScreen() {
               </View>
             </View>
           </LinearGradient>
+        </View>
+
+        {/* Quick Action Row */}
+        <View
+          style={{
+            flexDirection: "row",
+            alignItems: "center",
+            justifyContent: "space-between",
+            marginBottom: 12,
+            backgroundColor: "#FFF7ED",
+            borderRadius: 12,
+            padding: 12,
+            borderWidth: 1,
+            borderColor: "#FFE0B2",
+          }}
+        >
+          <Text
+            style={{
+              flex: 1,
+              fontFamily: "Comfortaa-Regular",
+              fontSize: 15,
+              color: "#B26A00",
+              marginRight: 12,
+            }}
+          >
+            View all buddis applied on this parent call and consider proposing
+            the best 3 of them.
+          </Text>
+          <TouchableOpacity
+            style={{
+              backgroundColor: "#FF932E",
+              paddingHorizontal: 20,
+              paddingVertical: 10,
+              borderRadius: 12,
+              shadowColor: "#FF932E",
+              shadowOffset: { width: 0, height: 2 },
+              shadowOpacity: 0.12,
+              shadowRadius: 4,
+              elevation: 2,
+            }}
+            onPress={() =>
+              router.push({
+                pathname: "/admin/request-details/[id]/all-applications",
+                params: { id },
+              })
+            }
+          >
+            <Text
+              style={{
+                color: "#fff",
+                fontFamily: "Comfortaa-Bold",
+                fontSize: 15,
+              }}
+            >
+              Propose
+            </Text>
+          </TouchableOpacity>
+        </View>
+        {/* Applications Table Title Row */}
+        <View
+          style={{
+            flexDirection: "row",
+            alignItems: "center",
+            justifyContent: "space-between",
+            marginBottom: 8,
+          }}
+        >
+          <Text
+            style={{
+              fontFamily: "Comfortaa-Bold",
+              fontSize: 14,
+              color: "#333",
+            }}
+          >
+            Applications for this request
+          </Text>
+          {totalApplications > 3 && (
+            <TouchableOpacity
+              style={{
+                paddingHorizontal: 16,
+                paddingVertical: 8,
+                borderRadius: 12,
+              }}
+              onPress={() =>
+                router.push({
+                  pathname: "/admin/request-details/[id]/all-applications",
+                  params: { id },
+                })
+              }
+            >
+              <Text
+                style={{
+                  color: "#FF932E",
+                  fontFamily: "Comfortaa-Bold",
+                  fontSize: 14,
+                }}
+              >
+                View All
+              </Text>
+            </TouchableOpacity>
+          )}
+        </View>
+        {/* Applications Table Card - moved here, just below status card */}
+        <View style={styles.applicationsCard}>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            style={styles.tableScrollContainer}
+          >
+            <View>
+              <View style={styles.applicationsHeaderRow}>
+                <Text
+                  style={[styles.applicationsHeaderCell, styles.headerName]}
+                >
+                  Name
+                </Text>
+                <Text
+                  style={[styles.applicationsHeaderCell, styles.headerEmail]}
+                >
+                  Email
+                </Text>
+                <Text
+                  style={[styles.applicationsHeaderCell, styles.headerApplied]}
+                >
+                  Applied
+                </Text>
+                <Text
+                  style={[styles.applicationsHeaderCell, styles.headerAction]}
+                >
+                  Action
+                </Text>
+              </View>
+              {applicationsLoading ? (
+                <View style={styles.tableLoadingContainer}>
+                  <ActivityIndicator size="small" color="#FB8500" />
+                  <Text style={styles.loadingText}>
+                    Loading applications...
+                  </Text>
+                </View>
+              ) : applicationsError ? (
+                <View style={styles.tableErrorContainer}>
+                  <Ionicons name="alert-circle" size={24} color="#FB8500" />
+                  <Text style={styles.errorText}>{applicationsError}</Text>
+                  <TouchableOpacity
+                    style={styles.retryButton}
+                    onPress={() => fetchApplications(currentPage)}
+                  >
+                    <Text style={styles.retryButtonText}>Try Again</Text>
+                  </TouchableOpacity>
+                </View>
+              ) : applications.length === 0 ? (
+                <View style={styles.tableEmptyContainer}>
+                  <Ionicons name="people-outline" size={48} color="#ccc" />
+                  <Text style={styles.tableEmptyTitle}>
+                    No Applications Yet
+                  </Text>
+                  <Text style={styles.tableEmptyText}>
+                    No buddis have applied to this pickup request yet.
+                  </Text>
+                </View>
+              ) : (
+                <>
+                  {applications.slice(0, 3).map((application, idx) => (
+                    <View
+                      key={application.id}
+                      style={[
+                        styles.applicationsRow,
+                        idx % 2 === 0 && styles.applicationsEvenRow,
+                      ]}
+                    >
+                      <View
+                        style={[styles.applicationsBuddiCell, styles.cellName]}
+                      >
+                        <Text style={styles.applicationsBuddiName}>
+                          {getBuddiName(application)}
+                        </Text>
+                      </View>
+                      <View
+                        style={[styles.applicationsBuddiCell, styles.cellEmail]}
+                      >
+                        <Text style={styles.applicationsBuddiEmail}>
+                          {getBuddiEmail(application)}
+                        </Text>
+                      </View>
+                      <View
+                        style={[
+                          styles.applicationsDateCell,
+                          styles.cellApplied,
+                        ]}
+                      >
+                        <Text style={styles.applicationsDateText}>
+                          {formatDate(application.createdAt)}
+                        </Text>
+                      </View>
+                      <View
+                        style={[
+                          styles.applicationsActionCell,
+                          styles.cellAction,
+                        ]}
+                      >
+                        <TouchableOpacity
+                          style={styles.viewButton}
+                          onPress={() => {
+                            if (application.Buddi?.id) {
+                              router.push({
+                                pathname: "/admin/buddi-details/[id]",
+                                params: { id: application.Buddi.id.toString() },
+                              });
+                            }
+                          }}
+                        >
+                          <Text style={styles.viewButtonText}>View</Text>
+                        </TouchableOpacity>
+                      </View>
+                    </View>
+                  ))}
+                </>
+              )}
+            </View>
+          </ScrollView>
+          {/* Pagination Controls */}
+          {totalPages > 1 && (
+            <View style={styles.paginationContainer}>
+              <TouchableOpacity
+                style={[
+                  styles.paginationButton,
+                  currentPage === 1 && styles.paginationButtonDisabled,
+                ]}
+                onPress={handlePreviousPage}
+                disabled={currentPage === 1 || applicationsLoading}
+              >
+                <Ionicons
+                  name="chevron-back"
+                  size={16}
+                  color={currentPage === 1 ? "#ccc" : "#FB8500"}
+                />
+                <Text
+                  style={[
+                    styles.paginationButtonText,
+                    currentPage === 1 && styles.paginationButtonTextDisabled,
+                  ]}
+                >
+                  Previous
+                </Text>
+              </TouchableOpacity>
+              <View style={styles.pageInfo}>
+                <Text style={styles.pageInfoText}>
+                  Page {currentPage} of {totalPages}
+                </Text>
+              </View>
+              <TouchableOpacity
+                style={[
+                  styles.paginationButton,
+                  currentPage === totalPages && styles.paginationButtonDisabled,
+                ]}
+                onPress={handleNextPage}
+                disabled={currentPage === totalPages || applicationsLoading}
+              >
+                <Text
+                  style={[
+                    styles.paginationButtonText,
+                    currentPage === totalPages &&
+                      styles.paginationButtonTextDisabled,
+                  ]}
+                >
+                  Next
+                </Text>
+                <Ionicons
+                  name="chevron-forward"
+                  size={16}
+                  color={currentPage === totalPages ? "#ccc" : "#FB8500"}
+                />
+              </TouchableOpacity>
+            </View>
+          )}
         </View>
 
         {/* Parent Information Card */}
@@ -477,7 +861,7 @@ const styles = {
   },
   cardTitle: {
     fontFamily: "Comfortaa-Bold",
-    fontSize: 18,
+    fontSize: 15,
     color: "#333",
     marginLeft: 12,
   },
@@ -557,11 +941,6 @@ const styles = {
     paddingVertical: 6,
     borderRadius: 16,
   },
-  dayText: {
-    fontFamily: "Comfortaa-Bold",
-    fontSize: 12,
-    color: "#fff",
-  },
   metadataContainer: {
     gap: 12,
   },
@@ -581,5 +960,246 @@ const styles = {
     fontSize: 14,
     color: "#333",
     flex: 1,
+  },
+  applicationsCard: {
+    backgroundColor: "#fff",
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 16,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 3,
+  },
+  applicationsHeaderRow: {
+    flexDirection: "row" as const,
+    backgroundColor: "#FF932E",
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 12,
+    marginBottom: 12,
+    alignItems: "center" as const,
+  },
+  applicationsHeaderCell: {
+    fontFamily: "Comfortaa-Bold",
+    fontSize: 14,
+    color: "#fff",
+    textAlign: "center" as const,
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    borderRightWidth: 1,
+    borderRightColor: "#fff",
+  },
+  applicationsRow: {
+    flexDirection: "row" as const,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: "#f0f0f0",
+  },
+  applicationsEvenRow: {
+    backgroundColor: "#f8f9fa",
+  },
+  applicationsBuddiCell: {
+    flex: 2,
+    alignItems: "flex-start" as const,
+  },
+  applicationsBuddiName: {
+    fontFamily: "Comfortaa-Bold",
+    fontSize: 14,
+    color: "#333",
+  },
+  applicationsBuddiEmail: {
+    fontFamily: "Comfortaa-Regular",
+    fontSize: 12,
+    color: "#666",
+    marginTop: 4,
+  },
+  applicationsSchoolCell: {
+    flex: 2,
+    alignItems: "flex-start" as const,
+  },
+  applicationsSchoolText: {
+    fontFamily: "Comfortaa-Bold",
+    fontSize: 14,
+    color: "#333",
+  },
+  applicationsStudyText: {
+    fontFamily: "Comfortaa-Regular",
+    fontSize: 12,
+    color: "#666",
+    marginTop: 4,
+  },
+  applicationsStatusCell: {
+    flex: 1,
+    alignItems: "center" as const,
+  },
+  tableStatusBadge: {
+    borderRadius: 16,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+  },
+  tableStatusText: {
+    fontFamily: "Comfortaa-Bold",
+    fontSize: 12,
+  },
+  applicationsDateCell: {
+    flex: 1,
+    alignItems: "center" as const,
+  },
+  applicationsDateText: {
+    fontFamily: "Comfortaa-Regular",
+    fontSize: 12,
+    color: "#666",
+  },
+  applicationsActionCell: {
+    flex: 1,
+    alignItems: "center" as const,
+  },
+  viewButton: {
+    backgroundColor: "#FF932E",
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 12,
+  },
+  viewButtonText: {
+    fontFamily: "Comfortaa-Bold",
+    fontSize: 14,
+    color: "#fff",
+  },
+  paginationContainer: {
+    flexDirection: "row" as const,
+    justifyContent: "space-between" as const,
+    alignItems: "center" as const,
+    marginTop: 20,
+    paddingHorizontal: 16,
+  },
+  paginationButton: {
+    flexDirection: "row" as const,
+    alignItems: "center" as const,
+    backgroundColor: "#FF932E",
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 12,
+  },
+  paginationButtonDisabled: {
+    backgroundColor: "#ccc",
+  },
+  paginationButtonText: {
+    fontFamily: "Comfortaa-Bold",
+    fontSize: 14,
+    color: "#fff",
+    marginLeft: 8,
+  },
+  paginationButtonTextDisabled: {
+    color: "#999",
+  },
+  pageInfo: {
+    backgroundColor: "#f0f0f0",
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 12,
+  },
+  pageInfoText: {
+    fontFamily: "Comfortaa-Regular",
+    fontSize: 14,
+    color: "#333",
+  },
+  loadingContainer: {
+    flexDirection: "row" as const,
+    alignItems: "center" as const,
+    justifyContent: "center" as const,
+    paddingVertical: 20,
+  },
+  errorContainer: {
+    alignItems: "center" as const,
+    paddingVertical: 20,
+  },
+  emptyContainer: {
+    alignItems: "center" as const,
+    paddingVertical: 20,
+  },
+  emptyTitle: {
+    fontFamily: "Comfortaa-Bold",
+    fontSize: 18,
+    color: "#333",
+    marginTop: 16,
+  },
+  emptyText: {
+    fontFamily: "Comfortaa-Regular",
+    fontSize: 14,
+    color: "#666",
+    marginTop: 8,
+    textAlign: "center" as const,
+    lineHeight: 20,
+  },
+  tableLoadingContainer: {
+    flexDirection: "row" as const,
+    alignItems: "center" as const,
+    justifyContent: "center" as const,
+    paddingVertical: 20,
+  },
+  tableErrorContainer: {
+    alignItems: "center" as const,
+    paddingVertical: 20,
+  },
+  tableEmptyContainer: {
+    alignItems: "center" as const,
+    paddingVertical: 20,
+  },
+  tableEmptyTitle: {
+    fontFamily: "Comfortaa-Bold",
+    fontSize: 18,
+    color: "#333",
+    marginTop: 16,
+  },
+  tableEmptyText: {
+    fontFamily: "Comfortaa-Regular",
+    fontSize: 14,
+    color: "#666",
+    marginTop: 8,
+    textAlign: "center" as const,
+    lineHeight: 20,
+  },
+  tableScrollContainer: {
+    flex: 1,
+  },
+  headerName: {
+    minWidth: 140,
+  },
+  headerEmail: {
+    minWidth: 180,
+  },
+  headerApplied: {
+    minWidth: 140,
+  },
+  headerAction: {
+    minWidth: 120,
+  },
+  cellName: {
+    borderRightWidth: 1,
+    borderRightColor: "#f0f0f0",
+    paddingHorizontal: 16,
+  },
+  cellEmail: {
+    borderRightWidth: 1,
+    borderRightColor: "#f0f0f0",
+    paddingHorizontal: 16,
+  },
+  cellApplied: {
+    borderRightWidth: 1,
+    borderRightColor: "#f0f0f0",
+    paddingHorizontal: 16,
+  },
+  cellAction: {
+    borderRightWidth: 1,
+    borderRightColor: "#f0f0f0",
+    paddingHorizontal: 16,
+  },
+  dayText: {
+    fontFamily: "Comfortaa-Bold",
+    fontSize: 14,
+    color: "#fff",
   },
 };
