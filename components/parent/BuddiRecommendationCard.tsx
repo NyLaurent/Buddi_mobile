@@ -1,6 +1,6 @@
 import { FontAwesome5, Ionicons } from "@expo/vector-icons";
 import React from "react";
-import { Text, TouchableOpacity, View } from "react-native";
+import { Image, Text, TouchableOpacity, View } from "react-native";
 
 interface BuddiRecommendationCardProps {
   buddi: {
@@ -122,43 +122,83 @@ const BuddiRecommendationCard: React.FC<BuddiRecommendationCardProps> = ({
 
       {/* Contact Info */}
       <View style={{ marginBottom: 12 }}>
-        <View
-          style={{
-            flexDirection: "row",
-            alignItems: "center",
-            marginBottom: 4,
-          }}
-        >
-          <Ionicons name="mail" size={16} color="#6B7280" />
-          <Text
-            style={{
-              fontFamily: "Comfortaa-Regular",
-              fontSize: 14,
-              color: "#6B7280",
-              marginLeft: 8,
-            }}
-          >
-            {buddi.User?.email}
-          </Text>
-        </View>
-        <View
-          style={{
-            flexDirection: "row",
-            alignItems: "center",
-            marginBottom: 4,
-          }}
-        >
-          <Ionicons name="call" size={16} color="#6B7280" />
-          <Text
-            style={{
-              fontFamily: "Comfortaa-Regular",
-              fontSize: 14,
-              color: "#6B7280",
-              marginLeft: 8,
-            }}
-          >
-            {buddi.User?.phoneNumber}
-          </Text>
+        <View style={{ flexDirection: "row", marginBottom: 12 }}>
+          {/* Profile Picture */}
+          <View style={{ marginRight: 16 }}>
+            {buddi.profilePicture ? (
+              <Image
+                source={{ uri: buddi.profilePicture }}
+                style={{
+                  width: 60,
+                  height: 60,
+                  borderRadius: 30,
+                  borderWidth: 2,
+                  borderColor: "#E5E7EB",
+                }}
+              />
+            ) : (
+              <View
+                style={{
+                  width: 60,
+                  height: 60,
+                  borderRadius: 30,
+                  backgroundColor: "#F4F7FE",
+                  borderWidth: 2,
+                  borderColor: "#E5E7EB",
+                  justifyContent: "center",
+                  alignItems: "center",
+                }}
+              >
+                <FontAwesome5 
+                  name="user-circle" 
+                  size={32} 
+                  color="#9CA3AF" 
+                />
+              </View>
+            )}
+          </View>
+
+          {/* Contact Info */}
+          <View style={{ flex: 1 }}>
+            <View
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                marginBottom: 4,
+              }}
+            >
+              <Ionicons name="mail" size={16} color="#6B7280" />
+              <Text
+                style={{
+                  fontFamily: "Comfortaa-Regular",
+                  fontSize: 14,
+                  color: "#6B7280",
+                  marginLeft: 8,
+                }}
+              >
+                {buddi.User?.email}
+              </Text>
+            </View>
+            <View
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                marginBottom: 4,
+              }}
+            >
+              <Ionicons name="call" size={16} color="#6B7280" />
+              <Text
+                style={{
+                  fontFamily: "Comfortaa-Regular",
+                  fontSize: 14,
+                  color: "#6B7280",
+                  marginLeft: 8,
+                }}
+              >
+                {buddi.User?.phoneNumber}
+              </Text>
+            </View>
+          </View>
         </View>
       </View>
 
