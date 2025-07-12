@@ -249,6 +249,25 @@ class AuthService {
   }
 
   /**
+   * Update user profile
+   */
+  async updateProfile(profileData: {
+    email?: string;
+    password?: string;
+    phoneNumber?: string;
+    firstName?: string;
+    lastName?: string;
+    homeAddress?: string;
+  }): Promise<any> {
+    try {
+      const response = await authorizedApi.patch(AUTH_ENDPOINTS.UPDATE_PROFILE, profileData);
+      return response.data;
+    } catch (error: any) {
+      throw this.handleAuthError(error);
+    }
+  }
+
+  /**
    * Check if user is authenticated
    */
   async isAuthenticated(): Promise<boolean> {

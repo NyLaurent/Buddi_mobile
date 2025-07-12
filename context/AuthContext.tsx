@@ -91,6 +91,7 @@ export interface AuthContextType {
   registerBuddi: (data: any) => Promise<void>;
   registerParent: (data: any) => Promise<void>;
   updateBuddiRecordingStatus: () => Promise<void>;
+  updateProfile: (profileData: any) => Promise<void>;
   refreshUserData: () => Promise<void>;
   clearAllStorage: () => Promise<void>; // Temporary for debugging
   startStatusPolling: () => void;
@@ -705,6 +706,70 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     }
   };
 
+  const updateProfile = async (profileData: any): Promise<void> => {
+    try {
+      console.log("AuthContext: Starting profile update...");
+
+      // Call the API to update profile
+      const response = await authService.updateProfile(profileData);
+      console.log("Profile update response:", response);
+
+      // Get fresh profile data after update
+      const freshProfile = await authService.getProfile();
+      console.log("Fresh profile after update:", freshProfile);
+
+      // Update user data in context
+      if (freshProfile.user) {
+        const {
+          Buddi,
+          Parent,
+          SuperAdmin,
+          MinorAdmin,
+          ReferralTeacher,
+          ...cleanUser
+        } = freshProfile.user;
+
+        setUser(cleanUser);
+
+        // Update role-specific data
+        if (cleanUser.role === "buddi" && freshProfile.user.Buddi) {
+          setBuddiDetails(freshProfile.user.Buddi);
+          await AsyncStorage.setItem(
+            "buddi_details",
+            JSON.stringify(freshProfile.user.Buddi)
+          );
+        }
+
+        if (cleanUser.role === "parent" && freshProfile.user.Parent) {
+          setParentDetails(freshProfile.user.Parent);
+          await AsyncStorage.setItem(
+            "parent_details",
+            JSON.stringify(freshProfile.user.Parent)
+          );
+        }
+
+        if (cleanUser.role === "superAdmin" && freshProfile.user.SuperAdmin) {
+          setSuperAdminDetails(freshProfile.user.SuperAdmin);
+          await AsyncStorage.setItem(
+            "super_admin_details",
+            JSON.stringify(freshProfile.user.SuperAdmin)
+          );
+        }
+
+        // Update user data in storage
+        await AsyncStorage.setItem(
+          STORAGE_KEYS.USER_DATA,
+          JSON.stringify(cleanUser)
+        );
+      }
+
+      console.log("AuthContext: Profile update completed successfully");
+    } catch (error) {
+      console.error("AuthContext: Profile update error:", error);
+      throw error;
+    }
+  };
+
   const refreshUserData = async (): Promise<void> => {
     // TODO: Implement API call to refresh user data
     await loadUserData();
@@ -916,6 +981,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     registerBuddi,
     registerParent,
     updateBuddiRecordingStatus,
+    updateProfile,
     refreshUserData,
     clearAllStorage,
     startStatusPolling,

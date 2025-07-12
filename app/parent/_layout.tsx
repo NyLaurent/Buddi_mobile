@@ -1,13 +1,11 @@
-
+import ParentBottomNav from "@/components/parent/ParentBottomNav";
 import { Stack } from "expo-router";
 import { Platform, StyleSheet, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import ParentBottomNav from "@/components/parent/ParentBottomNav";
 import { RouteGuard } from "../../components/commons/RouteGuard";
 
 export default function ParentLayout() {
   const insets = useSafeAreaInsets();
-  
 
   return (
     <RouteGuard allowedRoles={["parent"]} requireApproval={false}>
@@ -25,8 +23,7 @@ export default function ParentLayout() {
             <Stack.Screen name="my-buddi" />
             <Stack.Screen name="schedule" />
             <Stack.Screen name="payments" />
-            
-            
+            <Stack.Screen name="settings" />
           </Stack>
         </View>
         <View

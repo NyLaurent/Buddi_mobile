@@ -4,8 +4,9 @@ import { Ionicons } from "@expo/vector-icons";
 import { useEvent } from "expo";
 import { useRouter } from "expo-router";
 import { useVideoPlayer, VideoView } from "expo-video";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
+  ActivityIndicator,
   Dimensions,
   Image,
   Platform,
@@ -16,12 +17,19 @@ import {
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import ProfileEditModal from "../../components/commons/ProfileEditModal";
+import { useAuth } from "../../context/AuthContext";
+import AuthService from "../../services/api/auth.service";
 
 const BuddiProfile = () => {
   const [activeTab, setActiveTab] = useState("General");
+  const [profileData, setProfileData] = useState<any>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [showProfileEdit, setShowProfileEdit] = useState(false);
   const insets = useSafeAreaInsets();
   const { width } = Dimensions.get("window");
   const router = useRouter();
+  const { user, buddiDetails } = useAuth();
 
   const videoSource = require("../../assets/videos/intro.mp4");
   const player = useVideoPlayer(videoSource, (player) => {
@@ -33,6 +41,72 @@ const BuddiProfile = () => {
   });
 
   const cardWidth = Math.min(width * 0.85, 320);
+
+  // Fetch fresh profile data from API
+  useEffect(() => {
+    const fetchProfile = async () => {
+      try {
+        setIsLoading(true);
+        const response = await AuthService.getProfile();
+        console.log("Profile API response:", response);
+        setProfileData(response);
+      } catch (error) {
+        console.error("Error fetching profile:", error);
+        // Fallback to context data if API fails
+        setProfileData({ user, buddiDetails });
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    if (user) {
+      fetchProfile();
+    }
+  }, [user]);
+
+  // Get profile image or use placeholder
+  const profileImage =
+    profileData?.user?.Buddi?.profilePicture ||
+    buddiDetails?.profilePicture ||
+    "https://randomuser.me/api/portraits/men/32.jpg";
+
+  // Get full name from user data
+  const fullName = profileData?.user
+    ? `${profileData.user.firstName} ${profileData.user.lastName}`
+    : user
+    ? `${user.firstName} ${user.lastName}`
+    : "John Doe Smith";
+
+  // Get email from user data
+  const email = profileData?.user?.email || user?.email || "johndoe@gmail.com";
+
+  // Get phone from user data
+  const phone =
+    profileData?.user?.phoneNumber || user?.phoneNumber || "+250-786-564-922";
+
+  // Get school info from buddi details
+  const schoolInfo = profileData?.user?.Buddi
+    ? `${profileData.user.Buddi.currentSchool} – ${profileData.user.Buddi.AreaOfStudy}`
+    : buddiDetails
+    ? `${buddiDetails.currentSchool} – ${buddiDetails.AreaOfStudy}`
+    : "NYU – Year 2, Child Psychology";
+
+  // Get rating from buddi details
+  const rating = profileData?.user?.Buddi?.rating || buddiDetails?.rating || 5;
+
+  // Get resume status
+  const hasResume = profileData?.user?.Buddi?.resume || buddiDetails?.resume;
+
+  if (isLoading) {
+    return (
+      <View className="flex-1 bg-white justify-center items-center">
+        <ActivityIndicator size="large" color="#FF932E" />
+        <Text className="mt-4 text-gray-600 font-comfortaa">
+          Loading profile...
+        </Text>
+      </View>
+    );
+  }
 
   return (
     <View className="flex-1 bg-white">
@@ -47,10 +121,10 @@ const BuddiProfile = () => {
         }}
       >
         <Header
-          name="John Doe Smith"
-          email="johndoe@gmail.com"
-          profileImage="https://randomuser.me/api/portraits/men/32.jpg"
-          rating={5}
+          name={fullName}
+          email={email}
+          profileImage={profileImage}
+          rating={rating}
         />
 
         {/* Toggler Tabs */}
@@ -96,7 +170,10 @@ const BuddiProfile = () => {
                 <Text className="font-comfortaa-bold text-base">
                   Personal Details
                 </Text>
-                <TouchableOpacity className="bg-[#FF932E] px-4 py-2 rounded-xl flex-row items-center gap-2">
+                <TouchableOpacity
+                  className="bg-[#FF932E] px-4 py-2 rounded-xl flex-row items-center gap-2"
+                  onPress={() => setShowProfileEdit(true)}
+                >
                   <Text className="text-white font-comfortaa-bold">
                     Edit Profile
                   </Text>
@@ -109,7 +186,7 @@ const BuddiProfile = () => {
                     Full Names
                   </Text>
                   <Text className="font-comfortaa-bold text-base text-[#222] mt-1">
-                    John Doe
+                    {fullName}
                   </Text>
                 </View>
                 <View className="mb-4">
@@ -117,7 +194,7 @@ const BuddiProfile = () => {
                     Tel
                   </Text>
                   <Text className="font-comfortaa-bold text-base text-[#222] mt-1">
-                    +250-786-564-922
+                    {phone}
                   </Text>
                 </View>
                 <View className="mb-4">
@@ -125,7 +202,7 @@ const BuddiProfile = () => {
                     Email
                   </Text>
                   <Text className="font-comfortaa-bold text-base text-[#222] mt-1">
-                    johndoe@example.com
+                    {email}
                   </Text>
                 </View>
                 <View>
@@ -133,7 +210,7 @@ const BuddiProfile = () => {
                     School
                   </Text>
                   <Text className="font-comfortaa-bold text-base text-[#222] mt-1">
-                    NYU – Year 2, Child Psychology
+                    {schoolInfo}
                   </Text>
                 </View>
               </View>
@@ -220,10 +297,25 @@ const BuddiProfile = () => {
                   }}
                 >
                   <Text className="font-comfortaa-bold text-base">
-                    Maroon 5
+                    {fullName}
                   </Text>
                   <Text className="text-gray-400 text-xs mt-1">
-                    23 May 2025
+                    {profileData?.user?.createdAt
+                      ? new Date(profileData.user.createdAt).toLocaleDateString(
+                          "en-US",
+                          {
+                            day: "numeric",
+                            month: "short",
+                            year: "numeric",
+                          }
+                        )
+                      : user?.createdAt
+                      ? new Date(user.createdAt).toLocaleDateString("en-US", {
+                          day: "numeric",
+                          month: "short",
+                          year: "numeric",
+                        })
+                      : "23 May 2025"}
                   </Text>
                 </View>
               </View>
@@ -257,7 +349,9 @@ const BuddiProfile = () => {
                 <Text className="font-comfortaa-bold text-base mt-4">
                   Resume
                 </Text>
-                <Text className="text-gray-400 text-xs mt-1">PDF • 2.4 MB</Text>
+                <Text className="text-gray-400 text-xs mt-1">
+                  {hasResume ? "PDF • Available" : "PDF • Not uploaded"}
+                </Text>
               </View>
               {/* Action Buttons */}
               <View className="justify-center items-center space-y-4 ml-4 gap-5">
@@ -275,6 +369,12 @@ const BuddiProfile = () => {
           </View>
         )}
       </ScrollView>
+
+      {/* Profile Edit Modal */}
+      <ProfileEditModal
+        visible={showProfileEdit}
+        onClose={() => setShowProfileEdit(false)}
+      />
     </View>
   );
 };
