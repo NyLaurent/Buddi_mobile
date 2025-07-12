@@ -16,7 +16,8 @@ export const RouteGuard: React.FC<RouteGuardProps> = ({
   requireApproval = false,
   redirectTo = "/auth/login",
 }) => {
-  const { user, buddiDetails, parentDetails, isLoading } = useAuth();
+  const { user, buddiDetails, parentDetails, superAdminDetails, isLoading } =
+    useAuth();
   const router = useRouter();
   const segments = useSegments();
   const hasRedirected = useRef(false);
@@ -46,6 +47,9 @@ export const RouteGuard: React.FC<RouteGuardProps> = ({
     // Handle approval requirements based on role
     if (requireApproval) {
       switch (user.role) {
+        case "superAdmin":
+          // SuperAdmin has full access without approval checks
+          break;
         case "buddi":
           if (buddiDetails) {
             // Allow approved buddis to navigate freely within their portal
@@ -114,6 +118,7 @@ export const RouteGuard: React.FC<RouteGuardProps> = ({
     user,
     buddiDetails,
     parentDetails,
+    superAdminDetails,
     isLoading,
     allowedRoles,
     requireApproval,

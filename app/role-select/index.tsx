@@ -1,9 +1,9 @@
 import { FontAwesome5, Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
+import { StatusBar } from "expo-status-bar";
 import React, { useState } from "react";
 import { Image, ScrollView, Text, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { StatusBar } from "expo-status-bar";
 
 const PRIMARY_COLOR = "#FF932E";
 const LIGHT_ORANGE = "#FFF5E6";
@@ -73,6 +73,36 @@ const RoleSelect = () => {
             Select how you&apos;ll use Pickup Buddi to continue.
           </Text>
         </View>
+
+        {/* Go to Login CTA */}
+        <View className="px-6 mb-6">
+          <TouchableOpacity
+            className="flex-row items-center justify-center px-6 py-4 rounded-full border-2 border-primary bg-white"
+            onPress={() => router.push("/auth/login" as any)}
+            activeOpacity={0.8}
+          >
+            <Ionicons
+              name="log-in-outline"
+              size={20}
+              color={PRIMARY_COLOR}
+              style={{ marginRight: 8 }}
+            />
+            <Text
+              className="font-comfortaa-bold text-base"
+              style={{ color: PRIMARY_COLOR }}
+            >
+              Already have an account? Go to Login
+            </Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* Divider */}
+        <View className="flex-row items-center px-6 mb-6">
+          <View className="flex-1 h-px bg-gray-300" />
+          <Text className="mx-4 text-gray-500 font-comfortaa">or</Text>
+          <View className="flex-1 h-px bg-gray-300" />
+        </View>
+
         {/* Role Cards */}
         <View className="flex-1 w-full px-2 mt-2">
           {ROLES.map((role) => (

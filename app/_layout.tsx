@@ -37,6 +37,7 @@ const RootLayoutNav = () => {
       <Stack.Screen name="teacher" options={{ headerShown: false }} />
       <Stack.Screen name="parent" options={{ headerShown: false }} />
       <Stack.Screen name="admin" options={{ headerShown: false }} />
+      <Stack.Screen name="super-admin" options={{ headerShown: false }} />
       <Stack.Screen name="auth" options={{ headerShown: false }} />
     </Stack>
   );

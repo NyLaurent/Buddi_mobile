@@ -13,7 +13,13 @@ export interface User {
   lastName: string;
   phoneNumber: string;
   homeAddress: string;
-  role: "buddi" | "parent" | "admin" | "minorAdmin" | "referralTeacher";
+  role:
+    | "buddi"
+    | "parent"
+    | "admin"
+    | "minorAdmin"
+    | "referralTeacher"
+    | "superAdmin";
   createdAt: string;
   updatedAt: string;
 }
@@ -61,11 +67,21 @@ export interface ParentDetails {
   checkrReportId: any;
 }
 
+export interface SuperAdminDetails {
+  id: number;
+  userId: string;
+  superPrivileges: string[];
+  notes: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface AuthContextType {
   // State
   user: User | null;
   buddiDetails: BuddiDetails | null;
   parentDetails: ParentDetails | null;
+  superAdminDetails: SuperAdminDetails | null;
   isLoading: boolean;
   isAuthenticated: boolean;
 
@@ -104,6 +120,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   const [parentDetails, setParentDetails] = useState<ParentDetails | null>(
     null
   );
+  const [superAdminDetails, setSuperAdminDetails] =
+    useState<SuperAdminDetails | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isLoggingIn, setIsLoggingIn] = useState(false);
   const [showLoader, setShowLoader] = useState(false);
@@ -175,10 +193,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       const userData = await AsyncStorage.getItem(STORAGE_KEYS.USER_DATA);
       const buddiData = await AsyncStorage.getItem("buddi_details");
       const parentData = await AsyncStorage.getItem("parent_details");
+      const superAdminData = await AsyncStorage.getItem("super_admin_details");
 
       console.log("loadUserData - Loading from storage...");
       console.log("loadUserData - userData:", userData);
       console.log("loadUserData - parentData:", parentData);
+      console.log("loadUserData - superAdminData:", superAdminData);
 
       if (userData) {
         setUser(JSON.parse(userData));
@@ -190,6 +210,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         console.log("loadUserData - Setting parentDetails from storage");
         setParentDetails(JSON.parse(parentData));
       }
+      if (superAdminData) {
+        console.log("loadUserData - Setting superAdminDetails from storage");
+        setSuperAdminDetails(JSON.parse(superAdminData));
+      }
     } catch (error) {
       console.error("Error loading user data:", error);
     }
@@ -197,7 +221,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 
   const handleNavigation = () => {
     const inAuthGroup = segments[0] === "auth";
-    const inProtectedRoute = ["buddi", "parent", "admin"].includes(segments[0]);
+    const inProtectedRoute = [
+      "buddi",
+      "parent",
+      "admin",
+      "super-admin",
+    ].includes(segments[0]);
 
     // TEMPORARY: Allow unrestricted access to these routes for development
     // TODO: REMOVE THIS BEFORE PRODUCTION
@@ -284,6 +313,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       return;
     }
 
+    // Allow superAdmin to navigate freely within super-admin routes
+    if (user.role === "superAdmin") {
+      if (segments[0] === "super-admin") {
+        return; // Allow free navigation within super-admin routes
+      }
+      if (!inProtectedRoute) {
+        router.replace("/super-admin" as any);
+      }
+      return;
+    }
+
     // Allow admin to navigate freely within admin routes
     if (user.role === "admin" || user.role === "minorAdmin") {
       if (segments[0] === "admin") {
@@ -351,6 +391,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     console.log("getInitialRoute - ParentDetails:", parentDetails);
 
     switch (user.role) {
+      case "superAdmin":
+        return "/super-admin";
       case "admin":
       case "minorAdmin":
         return "/admin";
@@ -447,7 +489,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   const canAccessPortal = (): boolean => {
     if (!user) return false;
 
-    if (user.role === "admin" || user.role === "minorAdmin") return true;
+    if (
+      user.role === "superAdmin" ||
+      user.role === "admin" ||
+      user.role === "minorAdmin"
+    )
+      return true;
 
     if (user.role === "buddi" && buddiDetails) {
       return ["referenceApproved", "approved", "verified"].includes(
@@ -491,6 +538,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       console.log("Login - Clean user:", cleanUser);
       console.log("Login - Buddi data:", apiUser.Buddi);
       console.log("Login - Parent data:", apiUser.Parent);
+      console.log("Login - SuperAdmin data:", apiUser.SuperAdmin);
 
       setUser(cleanUser);
 
@@ -512,6 +560,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         );
       }
 
+      if (cleanUser.role === "superAdmin" && apiUser.SuperAdmin) {
+        const superAdminData = apiUser.SuperAdmin;
+        console.log("Login - Setting superAdmin data:", superAdminData);
+        setSuperAdminDetails(superAdminData);
+        await AsyncStorage.setItem(
+          "super_admin_details",
+          JSON.stringify(superAdminData)
+        );
+      }
+
       // Store clean user data
       await AsyncStorage.setItem(
         STORAGE_KEYS.USER_DATA,
@@ -525,7 +583,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 
       let targetRoute = "/auth/login";
 
-      if (cleanUser.role === "admin" || cleanUser.role === "minorAdmin") {
+      if (cleanUser.role === "superAdmin") {
+        targetRoute = "/super-admin";
+      } else if (
+        cleanUser.role === "admin" ||
+        cleanUser.role === "minorAdmin"
+      ) {
         targetRoute = "/admin";
       } else if (cleanUser.role === "referralTeacher") {
         targetRoute = "/head-teacher";
@@ -664,6 +727,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       setUser(null);
       setBuddiDetails(null);
       setParentDetails(null);
+      setSuperAdminDetails(null);
 
       console.log("AuthContext: Logout completed successfully"); // Debug log
     } catch (error) {
@@ -682,6 +746,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       setUser(null);
       setBuddiDetails(null);
       setParentDetails(null);
+      setSuperAdminDetails(null);
       setIsLoading(false);
       console.log("Storage cleared successfully!");
     } catch (error) {
@@ -841,6 +906,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     user,
     buddiDetails,
     parentDetails,
+    superAdminDetails,
     isLoading,
     isAuthenticated: !!user,
 
