@@ -165,7 +165,12 @@ export default function MyCallsPage() {
                 return kid ? [{ name: kid.name }] : [];
               })()}
               onRemove={() => {}}
-              onApplicants={() => {}}
+              onApplicants={() => {
+                router.push({
+                  pathname: "/parent/buddi-recommendations/[callId]",
+                  params: { callId: req.id.toString() },
+                });
+              }}
             />
           ))}
         </ScrollView>

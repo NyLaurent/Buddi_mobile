@@ -111,6 +111,60 @@ export interface Application {
   };
 }
 
+export interface BuddiRecommendation {
+  id: number;
+  parentId: string;
+  buddiIds: number[];
+  recommendedBy: string;
+  reason: string;
+  callId: number;
+  createdAt: string;
+  updatedAt: string;
+  buddis: {
+    id: number;
+    currentSchool: string;
+    AreaOfStudy: string;
+    Gpa: string;
+    status: string;
+    teacherEmail: string;
+    dob: string;
+    gender: string;
+    teacherPhoneNumber: string;
+    customReferral: string;
+    referralOccupation: string;
+    resume: string;
+    profilePicture: string | null;
+    rating: number | null;
+    isInterviewVideoSubmitted: boolean;
+    totalEarnings: number;
+    createdAt: string;
+    updatedAt: string;
+    userId: string;
+    User?: {
+      userId: string;
+      email: string;
+      password: string;
+      phoneNumber: string;
+      firstName: string;
+      lastName: string;
+      homeAddress: string;
+      role: string;
+      createdAt: string;
+      updatedAt: string;
+    };
+  }[];
+}
+
+export interface BuddiRecommendationsResponse {
+  data: BuddiRecommendation[];
+  pagination: {
+    total: number;
+    page: number;
+    limit: number;
+    totalPages: number;
+  };
+}
+
 /**
  * Propose up to 3 buddis for a parent call
  * @param parentId - The parent request ID
@@ -255,6 +309,30 @@ const ParentService = {
       throw new Error(message);
     }
   },
+
+  async getBuddiRecommendations(parentId: string, callId: number): Promise<BuddiRecommendationsResponse> {
+    try {
+      const response = await authorizedApi.get(`/coverage/getParentBuddiRecommendation/parent?parentId=${parentId}&callId=${callId}`);
+      return response.data;
+    } catch (err: any) {
+      let message = 'Failed to fetch buddi recommendations.';
+      if (err?.response?.data?.message) {
+        message = err.response.data.message;
+      } else if (err?.message) {
+        if (err.message.includes('Network')) {
+          message = 'Network error. Please check your connection and try again.';
+        } else if (err.message.includes('timeout')) {
+          message = 'Request timed out. Please try again.';
+        } else {
+          message = err.message;
+        }
+      } else if (typeof err === 'string') {
+        message = err;
+      }
+      throw new Error(message);
+    }
+  },
+
   proposeBuddiRecommendations,
 };
 
