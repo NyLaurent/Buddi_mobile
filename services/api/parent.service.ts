@@ -114,17 +114,20 @@ export interface Application {
 /**
  * Propose up to 3 buddis for a parent call
  * @param parentId - The parent request ID
+ * @param callId - The call/request ID
  * @param buddiIds - Array of 3 buddi IDs (as strings)
  * @param recommendedBy - The admin user ID recommending
  * @param reason - Reason for recommendation
  */
 async function proposeBuddiRecommendations({
   parentId,
+  callId,
   buddiIds,
   recommendedBy,
   reason,
 }: {
   parentId: string;
+  callId: string;
   buddiIds: string[];
   recommendedBy: string;
   reason: string;
@@ -133,6 +136,7 @@ async function proposeBuddiRecommendations({
     "/coverage/buddi-recommendations/parent",
     {
       parentId,
+      callId,
       buddiIds,
       recommendedBy,
       reason,

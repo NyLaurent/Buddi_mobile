@@ -129,7 +129,7 @@ export default function AllApplicationsPage() {
       Alert.alert("Error", "Parent ID is missing. Please try again.");
       return;
     }
-    
+
     setProposeLoading(true);
     try {
       console.log("Proposing buddis with data:", {
@@ -138,9 +138,10 @@ export default function AllApplicationsPage() {
         recommendedBy: user?.userId || "",
         reason: proposeReason.trim(),
       });
-      
+
       await ParentService.proposeBuddiRecommendations({
         parentId: String(parentId),
+        callId: String(requestId), // Add the call/request ID
         buddiIds: selectedBuddis.map((id) => id.toString()), // convert numbers to strings as API expects
         recommendedBy: user?.userId || "", // use admin user's userId
         reason: proposeReason.trim(), // trim whitespace
