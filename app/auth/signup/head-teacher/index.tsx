@@ -9,11 +9,11 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { CountryPicker, Country } from "react-native-country-codes-picker";
 import { SafeAreaView } from "react-native-safe-area-context";
 import SuccessScreen from "../../../../components/commons/SuccessScreen";
-import CountryPicker from 'react-native-country-picker-modal';
-import { CountryCode, Country } from 'react-native-country-picker-modal';
-import authService from '../../../../services/api/auth.service';
+import CountryPickerHeader from "../../../../components/commons/CountryPickerHeader";
+import authService from "../../../../services/api/auth.service";
 
 const PRIMARY_COLOR = "#FF932E";
 const STEPS = ["Registration", "School Details"];
@@ -28,6 +28,8 @@ const RegistrationStep = ({
   onLogin,
   errors,
 }: any) => {
+  const [showCountryPicker, setShowCountryPicker] = useState(false);
+
   return (
     <View className="flex-1 bg-white">
       <ScrollView
@@ -194,20 +196,15 @@ const RegistrationStep = ({
             Phone Number
           </Text>
           <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: '#fff', borderRadius: 16, borderWidth: 1, borderColor: '#CBD5E1', height: 52, paddingHorizontal: 8 }}>
-            <CountryPicker
-              countryCode={countryCode}
-              withFilter
-              withFlag
-              withCallingCode
-              withEmoji
-              onSelect={(c: Country) => {
-                setCountryCode(c.cca2);
-                setCountry(c);
-                setForm((f: any) => ({ ...f, countryCallingCode: c.callingCode[0] }));
-              }}
-              containerButtonStyle={{ marginRight: 8 }}
-            />
-            <Text style={{ marginRight: 4, fontSize: 16 }}>+{form.countryCallingCode || ''}</Text>
+            <TouchableOpacity
+              onPress={() => setShowCountryPicker(true)}
+              style={{ flexDirection: 'row', alignItems: 'center', marginRight: 8 }}
+            >
+              <Text style={{ fontSize: 16, color: '#333', fontFamily: 'Comfortaa-Medium' }}>
+                {form.countryCallingCode ? `+${form.countryCallingCode}` : '+1'}
+              </Text>
+              <Ionicons name="chevron-down" size={16} color="#666" style={{ marginLeft: 4 }} />
+            </TouchableOpacity>
             <TextInput
               value={form.phoneNumber}
               onChangeText={v => setForm((f: any) => ({ ...f, phoneNumber: v }))}
@@ -228,6 +225,67 @@ const RegistrationStep = ({
           </TouchableOpacity>
         </View>
       </ScrollView>
+
+      {/* Country Picker Modal */}
+      <CountryPicker
+        show={showCountryPicker}
+        pickerButtonOnPress={(item: Country) => {
+          setForm((f: any) => ({ ...f, countryCallingCode: item.dial_code }));
+          setCountryCode(item.code);
+          setCountry(item);
+          setShowCountryPicker(false);
+        }}
+        popularCountries={['US', 'CA', 'GB', 'AU', 'DE', 'FR']}
+        ListHeaderComponent={props => <CountryPickerHeader {...props} onClose={() => setShowCountryPicker(false)} />}
+        lang="en"
+        style={{
+          modal: {
+            backgroundColor: '#fff',
+            flex: 1,
+            margin: 0,
+            marginTop: 50,
+          },
+          backdrop: {
+            backgroundColor: 'rgba(0, 0, 0, 0.5)',
+            flex: 1,
+          },
+          textInput: {
+            height: 50,
+            borderRadius: 12,
+            borderWidth: 1,
+            borderColor: '#E5E7EB',
+            paddingHorizontal: 16,
+            fontSize: 16,
+            fontFamily: 'Comfortaa-Medium',
+            marginHorizontal: 16,
+            marginBottom: 16,
+          },
+          countryButtonStyles: {
+            paddingVertical: 16,
+            paddingHorizontal: 20,
+            borderBottomWidth: 1,
+            borderBottomColor: '#F3F4F6',
+          },
+          countryName: {
+            fontSize: 12,
+            fontFamily: 'Comfortaa-Medium',
+            color: '#374151',
+            maxWidth: 120,
+          },
+          dialCode: {
+            fontSize: 14,
+            fontFamily: 'Comfortaa-Medium',
+            color: '#6B7280',
+          },
+          flag: {
+            fontSize: 20,
+            marginRight: 12,
+          },
+          itemsList: {
+            flex: 1,
+          },
+        }}
+      />
     </View>
   );
 };
@@ -417,8 +475,8 @@ const HeadTeacherSignup = () => {
     position: '',
     termsAccepted: false,
   });
-  const [countryCode, setCountryCode] = useState<CountryCode>('US');
-  const [country, setCountry] = useState<Country | null>(null);
+  const [countryCode, setCountryCode] = useState<string>('US');
+  const [country, setCountry] = useState<any>(null);
   const [errors, setErrors] = useState<any>({});
   const [loading, setLoading] = useState(false);
   const router = useRouter();
@@ -440,7 +498,7 @@ const HeadTeacherSignup = () => {
         const payload = {
           email: form.email,
           password: form.password,
-          phoneNumber: `+${form.countryCallingCode}${form.phoneNumber}`,
+          phoneNumber: `${form.countryCallingCode}${form.phoneNumber}`,
           firstName: form.firstName,
           lastName: form.lastName,
           homeAddress: form.homeAddress,

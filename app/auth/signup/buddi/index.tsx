@@ -1,6 +1,4 @@
 import { Ionicons } from "@expo/vector-icons";
-import DateTimePicker from "@react-native-community/datetimepicker";
-import { Picker } from "@react-native-picker/picker";
 import * as DocumentPicker from "expo-document-picker";
 import * as ImagePicker from "expo-image-picker";
 import { useRouter } from "expo-router";
@@ -9,7 +7,6 @@ import {
   ActivityIndicator,
   Alert,
   Image,
-  Platform,
   ScrollView,
   StatusBar,
   Text,
@@ -17,11 +14,9 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import CountryPicker, {
-  Country,
-  CountryCode,
-} from "react-native-country-picker-modal";
+import { Country, CountryPicker } from "react-native-country-codes-picker";
 import { SafeAreaView } from "react-native-safe-area-context";
+import CountryPickerHeader from "../../../../components/commons/CountryPickerHeader";
 import SuccessScreen from "../../../../components/commons/SuccessScreen";
 import authService from "../../../../services/api/auth.service";
 
@@ -57,7 +52,12 @@ interface FormData {
   resume: { uri: string; name: string; type: string; size: number } | null;
   gender: string;
   dob: string;
-  profilePicture: { uri: string; name: string; type: string; size: number } | null;
+  profilePicture: {
+    uri: string;
+    name: string;
+    type: string;
+    size: number;
+  } | null;
   profilePictureUri: string | null;
   showPassword: boolean;
   showConfirmPassword: boolean;
@@ -96,8 +96,8 @@ interface StepProps {
   formData: FormData;
   setFormData: React.Dispatch<React.SetStateAction<FormData>>;
   errors: any;
-  countryCode: CountryCode;
-  setCountryCode: React.Dispatch<React.SetStateAction<CountryCode>>;
+  countryCode: string;
+  setCountryCode: React.Dispatch<React.SetStateAction<string>>;
   country: Country | null;
   setCountry: React.Dispatch<React.SetStateAction<Country | null>>;
 }
@@ -243,7 +243,7 @@ const RegistrationStep: React.FC<StepProps> = ({
   country,
   setCountry,
 }) => {
-  const [showDate, setShowDate] = useState(false);
+  const [showCountryPicker, setShowCountryPicker] = useState(false);
 
   const pickImage = async () => {
     let result = await ImagePicker.launchImageLibraryAsync({
@@ -253,19 +253,19 @@ const RegistrationStep: React.FC<StepProps> = ({
       quality: 0.7,
     });
     if (!result.canceled && result.assets && result.assets[0].uri) {
-      // Create a File object from the image URI
       const uri = result.assets[0].uri;
-      // For React Native, we need to create a file object with URI and metadata
-      const file = {
-        uri: uri,
-        name: "profile.jpg",
-        type: "image/jpeg",
-        size: result.assets[0].fileSize || 0,
-      };
+      const response = await fetch(uri);
+      const blob = await response.blob();
+      const file = new File([blob], "profile.jpg", { type: "image/jpeg" });
       setFormData((prev) => ({
         ...prev,
-        profilePicture: file,
-        profilePictureUri: uri, // Store URI for display
+        profilePicture: {
+          uri: uri,
+          name: "profile.jpg",
+          type: "image/jpeg",
+          size: blob.size,
+        },
+        profilePictureUri: uri,
       }));
     }
   };
@@ -282,16 +282,21 @@ const RegistrationStep: React.FC<StepProps> = ({
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
       >
-        <View className="items-center mb-2">
+        <View className="items-center mb-6">
           <Image
             source={require("../../../../assets/images/logo.png")}
             className="w-40 h-12 mb-4"
             resizeMode="contain"
           />
-          <Text className="text-2xl font-comfortaa-bold text-center text-gray-800 mb-2">
-            Registration
+          <Text className="text-xl font-comfortaa-bold text-center text-gray-800 mb-2">
+            Join Pickup Buddi
+          </Text>
+          <Text className="font-comfortaa text-center text-gray-500 mb-6 px-6">
+            Become a trusted Buddi and help parents with their children&apos;s
+            pickup needs.
           </Text>
         </View>
+
         {/* Profile photo uploader */}
         <View className="items-center mb-6">
           <TouchableOpacity
@@ -306,7 +311,9 @@ const RegistrationStep: React.FC<StepProps> = ({
                 className="w-full h-full rounded-full"
               />
             ) : (
-              <Ionicons name="person" size={64} color="#A0A0A0" />
+              <View className="w-full h-full rounded-full bg-[#E5F2FF] items-center justify-center">
+                <Ionicons name="person" size={64} color="#A0CBFF" />
+              </View>
             )}
             <View className="absolute bottom-2 right-2 bg-primary rounded-full p-2 border-2 border-white">
               <Ionicons name="camera" size={20} color="#fff" />
@@ -316,6 +323,7 @@ const RegistrationStep: React.FC<StepProps> = ({
             Add a Profile Photo
           </Text>
         </View>
+
         {/* Form fields */}
         <View style={{ flexDirection: "row", gap: 16, marginBottom: 20 }}>
           <View style={{ flex: 1 }}>
@@ -328,7 +336,7 @@ const RegistrationStep: React.FC<StepProps> = ({
               onChangeText={(text) =>
                 setFormData((prev) => ({ ...prev, firstName: text }))
               }
-              placeholder="John Doe"
+              placeholder="John"
               placeholderTextColor="#A0A0A0"
             />
             {errors.firstName ? (
@@ -347,7 +355,7 @@ const RegistrationStep: React.FC<StepProps> = ({
               onChangeText={(text) =>
                 setFormData((prev) => ({ ...prev, lastName: text }))
               }
-              placeholder="John Doe"
+              placeholder="Doe"
               placeholderTextColor="#A0A0A0"
             />
             {errors.lastName ? (
@@ -357,6 +365,7 @@ const RegistrationStep: React.FC<StepProps> = ({
             ) : null}
           </View>
         </View>
+
         <View style={{ marginBottom: 20 }}>
           <Text className="font-comfortaa-bold text-xs text-gray-500 mb-1">
             Email
@@ -374,21 +383,19 @@ const RegistrationStep: React.FC<StepProps> = ({
               onChangeText={(text) =>
                 setFormData((prev) => ({ ...prev, email: text }))
               }
-              placeholder="johndoe@university.edu"
+              placeholder="johndoe@example.edu"
               placeholderTextColor="#A0A0A0"
               keyboardType="email-address"
               autoCapitalize="none"
             />
           </View>
-          <Text className="font-comfortaa text-xs text-gray-400 mt-1">
-            Use a valid .edu email
-          </Text>
           {errors.email ? (
             <Text style={{ color: "red", fontSize: 12, marginTop: 4 }}>
               {errors.email}
             </Text>
           ) : null}
         </View>
+
         <View style={{ flexDirection: "row", gap: 16, marginBottom: 20 }}>
           <View style={{ flex: 1 }}>
             <Text className="font-comfortaa-bold text-xs text-gray-500 mb-1">
@@ -412,12 +419,12 @@ const RegistrationStep: React.FC<StepProps> = ({
                     showPassword: !prev.showPassword,
                   }))
                 }
+                style={{ marginRight: 8 }}
               >
                 <Ionicons
                   name={formData.showPassword ? "eye" : "eye-off"}
                   size={20}
                   color="#A0A0A0"
-                  style={{ marginLeft: 8 }}
                 />
               </TouchableOpacity>
             </View>
@@ -449,12 +456,12 @@ const RegistrationStep: React.FC<StepProps> = ({
                     showConfirmPassword: !prev.showConfirmPassword,
                   }))
                 }
+                style={{ marginRight: 8 }}
               >
                 <Ionicons
                   name={formData.showConfirmPassword ? "eye" : "eye-off"}
                   size={20}
                   color="#A0A0A0"
-                  style={{ marginLeft: 8 }}
                 />
               </TouchableOpacity>
             </View>
@@ -465,118 +472,8 @@ const RegistrationStep: React.FC<StepProps> = ({
             ) : null}
           </View>
         </View>
-        <View style={{ flexDirection: "row", gap: 16, marginBottom: 20 }}>
-          <View style={{ flex: 1 }}>
-            <Text className="font-comfortaa-bold text-xs text-gray-500 mb-1">
-              Date Of Birth
-            </Text>
-            <View
-              style={{
-                backgroundColor: "#fff",
-                borderWidth: 1,
-                borderColor: "#CBD5E1",
-                borderRadius: 16,
-                flexDirection: "row",
-                alignItems: "center",
-                height: 52,
-                paddingLeft: 16,
-              }}
-            >
-              <TextInput
-                className="flex-1 font-comfortaa text-gray-700 text-base"
-                value={formData.dob ? formData.dob : ""}
-                onChangeText={(text) => {
-                  // Basic validation for YYYY-MM-DD format
-                  if (text.length <= 10 && /^[\d-]*$/.test(text)) {
-                    setFormData((prev) => ({ ...prev, dob: text }));
-                  }
-                }}
-                placeholder="YYYY-MM-DD"
-                placeholderTextColor="#A0A0A0"
-              />
-              <TouchableOpacity
-                onPress={() => setShowDate(true)}
-                style={{
-                  padding: 12,
-                  borderLeftWidth: 1,
-                  borderLeftColor: "#CBD5E1",
-                }}
-              >
-                <Ionicons name="calendar" size={20} color="#A0A0A0" />
-              </TouchableOpacity>
-            </View>
-            {errors.dob ? (
-              <Text style={{ color: "red", fontSize: 12, marginTop: 4 }}>
-                {errors.dob}
-              </Text>
-            ) : null}
-            {showDate && (
-              <DateTimePicker
-                value={formData.dob ? new Date(formData.dob) : new Date()}
-                mode="date"
-                display={Platform.OS === "ios" ? "spinner" : "default"}
-                onChange={(event, date) => {
-                  setShowDate(false);
-                  if (date && event.type !== "dismissed") {
-                    setFormData((prev) => ({
-                      ...prev,
-                      dob: date.toISOString().split("T")[0],
-                    }));
-                  }
-                }}
-                maximumDate={new Date()}
-              />
-            )}
-          </View>
-          <View style={{ flex: 1 }}>
-            <Text className="font-comfortaa-bold text-xs text-gray-500 mb-1">
-              Gender
-            </Text>
-            <View
-              style={{
-                backgroundColor: "#fff",
-                borderWidth: 1,
-                borderColor: "#CBD5E1",
-                borderRadius: 16,
-                paddingHorizontal: 8,
-                height: 52,
-                justifyContent: "center",
-                overflow: "hidden",
-              }}
-            >
-              <Picker
-                selectedValue={formData.gender}
-                onValueChange={(value) =>
-                  setFormData((prev) => ({ ...prev, gender: value }))
-                }
-                style={{
-                  fontFamily: "Comfortaa",
-                  color: formData.gender === GENDERS[0] ? "#A0A0A0" : "#374151",
-                  height: 48,
-                  width: "100%",
-                  marginLeft: -8,
-                  marginBottom: 9,
-                }}
-                dropdownIconColor="#A0A0A0"
-                itemStyle={{ fontFamily: "Comfortaa" }}
-              >
-                {GENDERS.map((g, idx) => (
-                  <Picker.Item
-                    key={g}
-                    label={g}
-                    value={g}
-                    color={idx === 0 ? "#A0A0A0" : "#374151"}
-                  />
-                ))}
-              </Picker>
-            </View>
-            {errors.gender ? (
-              <Text style={{ color: "red", fontSize: 12, marginTop: 4 }}>
-                {errors.gender}
-              </Text>
-            ) : null}
-          </View>
-        </View>
+
+        {/* Phone Number Field */}
         <View style={{ marginBottom: 20 }}>
           <Text className="font-comfortaa-bold text-xs text-gray-500 mb-1">
             Phone Number
@@ -593,25 +490,32 @@ const RegistrationStep: React.FC<StepProps> = ({
               paddingHorizontal: 8,
             }}
           >
-            <CountryPicker
-              countryCode={countryCode}
-              withFilter
-              withFlag
-              withCallingCode
-              withEmoji
-              onSelect={(c: Country) => {
-                setCountryCode(c.cca2);
-                setCountry(c);
-                setFormData((prev) => ({
-                  ...prev,
-                  countryCallingCode: c.callingCode[0],
-                }));
+            <TouchableOpacity
+              onPress={() => setShowCountryPicker(true)}
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                marginRight: 8,
               }}
-              containerButtonStyle={{ marginRight: 8 }}
-            />
-            <Text style={{ marginRight: 4, fontSize: 16 }}>
-              +{formData.countryCallingCode || ""}
-            </Text>
+            >
+              <Text
+                style={{
+                  fontSize: 16,
+                  color: "#333",
+                  fontFamily: "Comfortaa-Medium",
+                }}
+              >
+                {formData.countryCallingCode
+                  ? `+${formData.countryCallingCode}`
+                  : "+1"}
+              </Text>
+              <Ionicons
+                name="chevron-down"
+                size={16}
+                color="#666"
+                style={{ marginLeft: 4 }}
+              />
+            </TouchableOpacity>
             <TextInput
               value={formData.phoneNumber}
               onChangeText={(text) =>
@@ -686,6 +590,75 @@ const RegistrationStep: React.FC<StepProps> = ({
           </Text>
         </View>
       </ScrollView>
+
+      {/* Country Picker Modal */}
+      <CountryPicker
+        show={showCountryPicker}
+        pickerButtonOnPress={(item: Country) => {
+          setCountryCode(item.code);
+          setCountry(item);
+          setFormData((prev) => ({
+            ...prev,
+            countryCallingCode: item.dial_code,
+          }));
+          setShowCountryPicker(false);
+        }}
+        popularCountries={["US", "CA", "GB", "AU", "DE", "FR"]}
+        ListHeaderComponent={(props) => (
+          <CountryPickerHeader
+            {...props}
+            onClose={() => setShowCountryPicker(false)}
+          />
+        )}
+        lang="en"
+        style={{
+          modal: {
+            backgroundColor: "#fff",
+            flex: 1,
+            margin: 0,
+            marginTop: 50,
+          },
+          backdrop: {
+            backgroundColor: "rgba(0, 0, 0, 0.5)",
+            flex: 1,
+          },
+          textInput: {
+            height: 50,
+            borderRadius: 12,
+            borderWidth: 1,
+            borderColor: "#E5E7EB",
+            paddingHorizontal: 16,
+            fontSize: 16,
+            fontFamily: "Comfortaa-Medium",
+            marginHorizontal: 16,
+            marginBottom: 16,
+          },
+          countryButtonStyles: {
+            paddingVertical: 16,
+            paddingHorizontal: 20,
+            borderBottomWidth: 1,
+            borderBottomColor: "#F3F4F6",
+          },
+          countryName: {
+            fontSize: 12,
+            fontFamily: "Comfortaa-Medium",
+            color: "#374151",
+            maxWidth: 120,
+          },
+          dialCode: {
+            fontSize: 14,
+            fontFamily: "Comfortaa-Medium",
+            color: "#6B7280",
+          },
+          flag: {
+            fontSize: 20,
+            marginRight: 12,
+          },
+          itemsList: {
+            flex: 1,
+          },
+        }}
+      />
     </View>
   );
 };
@@ -909,20 +882,23 @@ const ReferencesStep: React.FC<StepProps> = ({
   setCountry,
 }) => {
   const [activeTab, setActiveTab] = useState(0);
-  const [teacherCountryCode, setTeacherCountryCode] =
-    useState<CountryCode>("US");
+  const [teacherCountryCode, setTeacherCountryCode] = useState<string>("US");
   const [teacherCountry, setTeacherCountry] = useState<Country | null>(null);
   const [customReferralCountryCode, setCustomReferralCountryCode] =
-    useState<CountryCode>("US");
+    useState<string>("US");
   const [customReferralCountry, setCustomReferralCountry] =
     useState<Country | null>(null);
+  const [showTeacherCountryPicker, setShowTeacherCountryPicker] =
+    useState(false);
+  const [showCustomReferralCountryPicker, setShowCustomReferralCountryPicker] =
+    useState(false);
 
   const renderHeadTeacherContent = () => (
     <View style={{ marginTop: 24 }}>
-      {/* Email Field */}
+      {/* Teacher Email */}
       <View style={{ marginBottom: 20 }}>
         <Text className="font-comfortaa-bold text-xs text-gray-500 mb-1">
-          Head Teacher&apos;s Email
+          Teacher Email
         </Text>
         <View className="flex-row items-center bg-white border border-[#CBD5E1] rounded-2xl px-4 py-3">
           <Ionicons
@@ -937,15 +913,12 @@ const ReferencesStep: React.FC<StepProps> = ({
             onChangeText={(text) =>
               setFormData((prev) => ({ ...prev, teacherEmail: text }))
             }
-            placeholder="teacher@university.edu"
+            placeholder="teacher@school.edu"
             placeholderTextColor="#A0A0A0"
             keyboardType="email-address"
             autoCapitalize="none"
           />
         </View>
-        <Text className="font-comfortaa text-xs text-gray-400 mt-1 italic">
-          .edu email required for Head Teacher
-        </Text>
         {errors.teacherEmail ? (
           <Text style={{ color: "red", fontSize: 12, marginTop: 4 }}>
             {errors.teacherEmail}
@@ -953,14 +926,13 @@ const ReferencesStep: React.FC<StepProps> = ({
         ) : null}
       </View>
 
-      {/* Phone Number Field */}
+      {/* Teacher Phone Number Field */}
       <View style={{ marginBottom: 20 }}>
         <Text className="font-comfortaa-bold text-xs text-gray-500 mb-1">
-          Phone Number
+          Teacher Phone Number
         </Text>
         <View
           style={{
-            flex: 1,
             flexDirection: "row",
             alignItems: "center",
             backgroundColor: "#fff",
@@ -971,25 +943,32 @@ const ReferencesStep: React.FC<StepProps> = ({
             paddingHorizontal: 8,
           }}
         >
-          <CountryPicker
-            countryCode={teacherCountryCode}
-            withFilter
-            withFlag
-            withCallingCode
-            withEmoji
-            onSelect={(c: Country) => {
-              setTeacherCountryCode(c.cca2);
-              setTeacherCountry(c);
-              setFormData((prev) => ({
-                ...prev,
-                teacherCountryCode: c.callingCode[0],
-              }));
+          <TouchableOpacity
+            onPress={() => setShowTeacherCountryPicker(true)}
+            style={{
+              flexDirection: "row",
+              alignItems: "center",
+              marginRight: 8,
             }}
-            containerButtonStyle={{ marginRight: 8 }}
-          />
-          <Text style={{ marginRight: 4, fontSize: 16 }}>
-            +{formData.teacherCountryCode || ""}
-          </Text>
+          >
+            <Text
+              style={{
+                fontSize: 16,
+                color: "#333",
+                fontFamily: "Comfortaa-Medium",
+              }}
+            >
+              {formData.teacherCountryCode
+                ? `+${formData.teacherCountryCode}`
+                : "+1"}
+            </Text>
+            <Ionicons
+              name="chevron-down"
+              size={16}
+              color="#666"
+              style={{ marginLeft: 4 }}
+            />
+          </TouchableOpacity>
           <TextInput
             value={formData.teacherPhoneNumber}
             onChangeText={(text) =>
@@ -1049,7 +1028,6 @@ const ReferencesStep: React.FC<StepProps> = ({
         </Text>
         <View
           style={{
-            flex: 1,
             flexDirection: "row",
             alignItems: "center",
             backgroundColor: "#fff",
@@ -1060,25 +1038,32 @@ const ReferencesStep: React.FC<StepProps> = ({
             paddingHorizontal: 8,
           }}
         >
-          <CountryPicker
-            countryCode={customReferralCountryCode}
-            withFilter
-            withFlag
-            withCallingCode
-            withEmoji
-            onSelect={(c: Country) => {
-              setCustomReferralCountryCode(c.cca2);
-              setCustomReferralCountry(c);
-              setFormData((prev) => ({
-                ...prev,
-                customReferralCountryCode: c.callingCode[0],
-              }));
+          <TouchableOpacity
+            onPress={() => setShowCustomReferralCountryPicker(true)}
+            style={{
+              flexDirection: "row",
+              alignItems: "center",
+              marginRight: 8,
             }}
-            containerButtonStyle={{ marginRight: 8 }}
-          />
-          <Text style={{ marginRight: 4, fontSize: 16 }}>
-            +{formData.customReferralCountryCode || ""}
-          </Text>
+          >
+            <Text
+              style={{
+                fontSize: 16,
+                color: "#333",
+                fontFamily: "Comfortaa-Medium",
+              }}
+            >
+              {formData.customReferralCountryCode
+                ? `+${formData.customReferralCountryCode}`
+                : "+1"}
+            </Text>
+            <Ionicons
+              name="chevron-down"
+              size={16}
+              color="#666"
+              style={{ marginLeft: 4 }}
+            />
+          </TouchableOpacity>
           <TextInput
             value={formData.customReferralPhoneNumber}
             onChangeText={(text) =>
@@ -1127,116 +1112,224 @@ const ReferencesStep: React.FC<StepProps> = ({
   );
 
   return (
-    <ScrollView
-      contentContainerStyle={{
-        flexGrow: 1,
-        paddingHorizontal: 16,
-        paddingTop: 32,
-        paddingBottom: 32,
-      }}
-      keyboardShouldPersistTaps="handled"
-      showsVerticalScrollIndicator={false}
-    >
-      <View className="items-center mb-6">
-        <Image
-          source={require("../../../../assets/images/logo.png")}
-          className="w-40 h-12 mb-4"
-          resizeMode="contain"
-        />
-        <Text className="text-xl font-comfortaa-bold text-center text-gray-800 mb-2">
-          Add References
-        </Text>
-        <Text className="font-comfortaa text-center text-gray-500 mb-6 px-6">
-          Please provide at least one academic or professional reference to
-          support your qualifications.
-        </Text>
-      </View>
+    <View className="flex-1 bg-white">
+      <ScrollView
+        contentContainerStyle={{
+          flexGrow: 1,
+          paddingHorizontal: 16,
+          paddingTop: 32,
+          paddingBottom: 32,
+        }}
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
+      >
+        <View className="items-center mb-6">
+          <Image
+            source={require("../../../../assets/images/logo.png")}
+            className="w-40 h-12 mb-4"
+            resizeMode="contain"
+          />
+          <Text className="text-xl font-comfortaa-bold text-center text-gray-800 mb-2">
+            Add References
+          </Text>
+          <Text className="font-comfortaa text-center text-gray-500 mb-6 px-6">
+            Please provide at least one academic or professional reference to
+            support your qualifications.
+          </Text>
+        </View>
 
-      {/* Tab Switcher */}
-      <View className="flex-row bg-gray-100 rounded-2xl p-1 mb-4">
-        <TouchableOpacity
-          onPress={() => setActiveTab(0)}
-          style={{
-            flex: 1,
-            backgroundColor: activeTab === 0 ? "#fff" : "transparent",
-            borderRadius: 12,
-            padding: 12,
-            shadowColor: activeTab === 0 ? "#000" : "transparent",
-            shadowOffset: { width: 0, height: 2 },
-            shadowOpacity: 0.1,
-            shadowRadius: 4,
-            elevation: activeTab === 0 ? 2 : 0,
-          }}
-        >
-          <View className="flex-row items-center justify-center">
-            <Ionicons
-              name="school"
-              size={20}
-              color={activeTab === 0 ? PRIMARY_COLOR : "#6B7280"}
-              style={{ marginRight: 8 }}
-            />
+        {/* Tab Switcher */}
+        <View className="flex-row bg-gray-100 rounded-2xl p-1 mb-4">
+          <TouchableOpacity
+            onPress={() => setActiveTab(0)}
+            style={{
+              flex: 1,
+              backgroundColor: activeTab === 0 ? "#fff" : "transparent",
+              borderRadius: 12,
+              padding: 12,
+              shadowColor: activeTab === 0 ? "#000" : "transparent",
+              shadowOffset: { width: 0, height: 2 },
+              shadowOpacity: 0.1,
+              shadowRadius: 4,
+              elevation: activeTab === 0 ? 2 : 0,
+            }}
+          >
             <Text
-              className="font-comfortaa-bold text-sm"
-              style={{
-                color: activeTab === 0 ? PRIMARY_COLOR : "#6B7280",
-                fontFamily: "Comfortaa-Bold",
-              }}
+              className={`font-comfortaa-bold text-center ${
+                activeTab === 0 ? "text-primary" : "text-gray-500"
+              }`}
             >
               Head Teacher
             </Text>
-          </View>
-        </TouchableOpacity>
-        <TouchableOpacity
-          onPress={() => setActiveTab(1)}
-          style={{
-            flex: 1,
-            backgroundColor: activeTab === 1 ? "#fff" : "transparent",
-            borderRadius: 12,
-            padding: 12,
-            shadowColor: activeTab === 1 ? "#000" : "transparent",
-            shadowOffset: { width: 0, height: 2 },
-            shadowOpacity: 0.1,
-            shadowRadius: 4,
-            elevation: activeTab === 1 ? 2 : 0,
-          }}
-        >
-          <View className="flex-row items-center justify-center">
-            <Ionicons
-              name="person"
-              size={20}
-              color={activeTab === 1 ? PRIMARY_COLOR : "#6B7280"}
-              style={{ marginRight: 8 }}
-            />
+          </TouchableOpacity>
+          <TouchableOpacity
+            onPress={() => setActiveTab(1)}
+            style={{
+              flex: 1,
+              backgroundColor: activeTab === 1 ? "#fff" : "transparent",
+              borderRadius: 12,
+              padding: 12,
+              shadowColor: activeTab === 1 ? "#000" : "transparent",
+              shadowOffset: { width: 0, height: 2 },
+              shadowOpacity: 0.1,
+              shadowRadius: 4,
+              elevation: activeTab === 1 ? 2 : 0,
+            }}
+          >
             <Text
-              className="font-comfortaa-bold text-sm"
-              style={{
-                color: activeTab === 1 ? PRIMARY_COLOR : "#6B7280",
-                fontFamily: "Comfortaa-Bold",
-              }}
+              className={`font-comfortaa-bold text-center ${
+                activeTab === 1 ? "text-primary" : "text-gray-500"
+              }`}
             >
               Custom Reference
             </Text>
-          </View>
-        </TouchableOpacity>
-      </View>
+          </TouchableOpacity>
+        </View>
 
-      {activeTab === 0
-        ? renderHeadTeacherContent()
-        : renderCustomReferenceContent()}
+        {/* Tab Content */}
+        {activeTab === 0
+          ? renderHeadTeacherContent()
+          : renderCustomReferenceContent()}
+      </ScrollView>
 
-      {errors.references ? (
-        <Text
-          style={{
-            color: "red",
+      {/* Teacher Country Picker Modal */}
+      <CountryPicker
+        show={showTeacherCountryPicker}
+        pickerButtonOnPress={(item: Country) => {
+          setTeacherCountryCode(item.code);
+          setTeacherCountry(item);
+          setFormData((prev) => ({
+            ...prev,
+            teacherCountryCode: item.dial_code,
+          }));
+          setShowTeacherCountryPicker(false);
+        }}
+        popularCountries={["US", "CA", "GB", "AU", "DE", "FR"]}
+        ListHeaderComponent={(props) => (
+          <CountryPickerHeader
+            {...props}
+            onClose={() => setShowTeacherCountryPicker(false)}
+          />
+        )}
+        lang="en"
+        style={{
+          modal: {
+            backgroundColor: "#fff",
+            flex: 1,
+            margin: 0,
+            marginTop: 50,
+          },
+          backdrop: {
+            backgroundColor: "rgba(0, 0, 0, 0.5)",
+            flex: 1,
+          },
+          textInput: {
+            height: 50,
+            borderRadius: 12,
+            borderWidth: 1,
+            borderColor: "#E5E7EB",
+            paddingHorizontal: 16,
+            fontSize: 16,
+            fontFamily: "Comfortaa-Medium",
+            marginHorizontal: 16,
+            marginBottom: 16,
+          },
+          countryButtonStyles: {
+            paddingVertical: 16,
+            paddingHorizontal: 20,
+            borderBottomWidth: 1,
+            borderBottomColor: "#F3F4F6",
+          },
+          countryName: {
             fontSize: 12,
-            marginTop: 16,
-            textAlign: "center",
-          }}
-        >
-          {errors.references}
-        </Text>
-      ) : null}
-    </ScrollView>
+            fontFamily: "Comfortaa-Medium",
+            color: "#374151",
+            maxWidth: 120,
+          },
+          dialCode: {
+            fontSize: 14,
+            fontFamily: "Comfortaa-Medium",
+            color: "#6B7280",
+          },
+          flag: {
+            fontSize: 20,
+            marginRight: 12,
+          },
+          itemsList: {
+            flex: 1,
+          },
+        }}
+      />
+
+      {/* Custom Referral Country Picker Modal */}
+      <CountryPicker
+        show={showCustomReferralCountryPicker}
+        pickerButtonOnPress={(item: Country) => {
+          setCustomReferralCountryCode(item.code);
+          setCustomReferralCountry(item);
+          setFormData((prev) => ({
+            ...prev,
+            customReferralCountryCode: item.dial_code,
+          }));
+          setShowCustomReferralCountryPicker(false);
+        }}
+        popularCountries={["US", "CA", "GB", "AU", "DE", "FR"]}
+        ListHeaderComponent={(props) => (
+          <CountryPickerHeader
+            {...props}
+            onClose={() => setShowCustomReferralCountryPicker(false)}
+          />
+        )}
+        lang="en"
+        style={{
+          modal: {
+            backgroundColor: "#fff",
+            flex: 1,
+            margin: 0,
+            marginTop: 50,
+          },
+          backdrop: {
+            backgroundColor: "rgba(0, 0, 0, 0.5)",
+            flex: 1,
+          },
+          textInput: {
+            height: 50,
+            borderRadius: 12,
+            borderWidth: 1,
+            borderColor: "#E5E7EB",
+            paddingHorizontal: 16,
+            fontSize: 16,
+            fontFamily: "Comfortaa-Medium",
+            marginHorizontal: 16,
+            marginBottom: 16,
+          },
+          countryButtonStyles: {
+            paddingVertical: 16,
+            paddingHorizontal: 20,
+            borderBottomWidth: 1,
+            borderBottomColor: "#F3F4F6",
+          },
+          countryName: {
+            fontSize: 12,
+            fontFamily: "Comfortaa-Medium",
+            color: "#374151",
+            maxWidth: 120,
+          },
+          dialCode: {
+            fontSize: 14,
+            fontFamily: "Comfortaa-Medium",
+            color: "#6B7280",
+          },
+          flag: {
+            fontSize: 20,
+            marginRight: 12,
+          },
+          itemsList: {
+            flex: 1,
+          },
+        }}
+      />
+    </View>
   );
 };
 
@@ -1252,7 +1345,7 @@ export default function BuddiSignup() {
   const [showSuccess, setShowSuccess] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [formData, setFormData] = useState<FormData>(initialFormData);
-  const [countryCode, setCountryCode] = useState<CountryCode>("US");
+  const [countryCode, setCountryCode] = useState<string>("US");
   const [country, setCountry] = useState<Country | null>(null);
   const [errors, setErrors] = useState<any>({});
   const StepComponent = StepComponents[step];
@@ -1288,9 +1381,7 @@ export default function BuddiSignup() {
         const registrationData = {
           email: formData.email.trim(),
           password: formData.password,
-          phoneNumber: `+${
-            formData.countryCallingCode
-          }${formData.phoneNumber.trim()}`,
+          phoneNumber: `${formData.countryCallingCode}${formData.phoneNumber.trim()}`,
           firstName: formData.firstName.trim(),
           lastName: formData.lastName.trim(),
           homeAddress: formData.homeAddress.trim(),
@@ -1299,9 +1390,7 @@ export default function BuddiSignup() {
           Gpa: formData.Gpa.trim() || undefined,
           teacherEmail: formData.teacherEmail.trim() || undefined,
           teacherPhoneNumber: formData.teacherPhoneNumber.trim()
-            ? `+${
-                formData.teacherCountryCode
-              }${formData.teacherPhoneNumber.trim()}`
+            ? `${formData.teacherCountryCode}${formData.teacherPhoneNumber.trim()}`
             : undefined,
           customReferral: formData.customReferral.trim() || undefined,
           referralOccupation: formData.referralOccupation.trim() || undefined,

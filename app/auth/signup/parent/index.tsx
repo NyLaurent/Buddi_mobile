@@ -13,12 +13,10 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import CountryPicker, {
-  Country,
-  CountryCode,
-} from "react-native-country-picker-modal";
+import { CountryPicker, Country } from "react-native-country-codes-picker";
 import { SafeAreaView } from "react-native-safe-area-context";
 import SuccessScreen from "../../../../components/commons/SuccessScreen";
+import CountryPickerHeader from "../../../../components/commons/CountryPickerHeader";
 import authService from "../../../../services/api/auth.service";
 import { ParentRegistrationRequest } from "../../../../services/api/types";
 
@@ -118,7 +116,7 @@ function validateForm(formData: FormData, step: number) {
 const RegistrationStep: React.FC<
   StepProps & {
     errors: any;
-    countryCode: CountryCode;
+    countryCode: string;
     setCountryCode: any;
     country: Country | null;
     setCountry: any;
@@ -135,6 +133,7 @@ const RegistrationStep: React.FC<
 }) => {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [showCountryPicker, setShowCountryPicker] = useState(false);
 
   const pickImage = async () => {
     let result = await ImagePicker.launchImageLibraryAsync({
@@ -213,14 +212,9 @@ const RegistrationStep: React.FC<
               onChangeText={(text) =>
                 setFormData((prev) => ({ ...prev, firstName: text }))
               }
-              placeholder="John Doe"
+              placeholder="John"
               placeholderTextColor="#A0A0A0"
             />
-            {errors.firstName && (
-              <Text style={{ color: "red", fontSize: 12 }}>
-                {errors.firstName}
-              </Text>
-            )}
           </View>
           <View style={{ flex: 1 }}>
             <Text className="font-comfortaa-bold text-xs text-gray-500 mb-1">
@@ -232,80 +226,12 @@ const RegistrationStep: React.FC<
               onChangeText={(text) =>
                 setFormData((prev) => ({ ...prev, lastName: text }))
               }
-              placeholder="Smith"
+              placeholder="Doe"
               placeholderTextColor="#A0A0A0"
             />
-            {errors.lastName && (
-              <Text style={{ color: "red", fontSize: 12 }}>
-                {errors.lastName}
-              </Text>
-            )}
           </View>
         </View>
-        <View style={{ flexDirection: "row", gap: 16, marginBottom: 20 }}>
-          <View style={{ flex: 1 }}>
-            <Text className="font-comfortaa-bold text-xs text-gray-500 mb-1">
-              Password
-            </Text>
-            <View className="flex-row items-center bg-white border border-[#CBD5E1] rounded-2xl px-4">
-              <TextInput
-                className="flex-1 font-comfortaa text-gray-700 text-base py-3"
-                value={formData.password}
-                onChangeText={(text) =>
-                  setFormData((prev) => ({ ...prev, password: text }))
-                }
-                placeholder="********"
-                placeholderTextColor="#A0A0A0"
-                secureTextEntry={!showPassword}
-              />
-              <TouchableOpacity onPress={() => setShowPassword((v) => !v)}>
-                <Ionicons
-                  name={showPassword ? "eye" : "eye-off"}
-                  size={20}
-                  color="#A0A0A0"
-                  style={{ marginLeft: 8 }}
-                />
-              </TouchableOpacity>
-            </View>
-            {errors.password && (
-              <Text style={{ color: "red", fontSize: 12 }}>
-                {errors.password}
-              </Text>
-            )}
-          </View>
-          <View style={{ flex: 1 }}>
-            <Text className="font-comfortaa-bold text-xs text-gray-500 mb-1">
-              Confirm Password
-            </Text>
-            <View className="flex-row items-center bg-white border border-[#CBD5E1] rounded-2xl px-4">
-              <TextInput
-                className="flex-1 font-comfortaa text-gray-700 text-base py-3"
-                value={formData.confirmPassword}
-                onChangeText={(text) =>
-                  setFormData((prev) => ({ ...prev, confirmPassword: text }))
-                }
-                placeholder="********"
-                placeholderTextColor="#A0A0A0"
-                secureTextEntry={!showConfirmPassword}
-              />
-              <TouchableOpacity
-                onPress={() => setShowConfirmPassword((v) => !v)}
-              >
-                <Ionicons
-                  name={showConfirmPassword ? "eye" : "eye-off"}
-                  size={20}
-                  color="#A0A0A0"
-                  style={{ marginLeft: 8 }}
-                />
-              </TouchableOpacity>
-            </View>
-            {errors.confirmPassword && (
-              <Text style={{ color: "red", fontSize: 12 }}>
-                {errors.confirmPassword}
-              </Text>
-            )}
-          </View>
-        </View>
+
         <View style={{ marginBottom: 20 }}>
           <Text className="font-comfortaa-bold text-xs text-gray-500 mb-1">
             Email
@@ -333,6 +259,64 @@ const RegistrationStep: React.FC<
             <Text style={{ color: "red", fontSize: 12 }}>{errors.email}</Text>
           )}
         </View>
+
+        <View style={{ flexDirection: "row", gap: 16, marginBottom: 20 }}>
+          <View style={{ flex: 1 }}>
+            <Text className="font-comfortaa-bold text-xs text-gray-500 mb-1">
+              Password
+            </Text>
+            <View className="flex-row items-center bg-white border border-[#CBD5E1] rounded-2xl px-4">
+              <TextInput
+                className="flex-1 font-comfortaa text-gray-700 text-base py-3"
+                value={formData.password}
+                onChangeText={(text) =>
+                  setFormData((prev) => ({ ...prev, password: text }))
+                }
+                placeholder="********"
+                placeholderTextColor="#A0A0A0"
+                secureTextEntry={!showPassword}
+              />
+              <TouchableOpacity
+                onPress={() => setShowPassword(!showPassword)}
+                style={{ marginRight: 8 }}
+              >
+                <Ionicons
+                  name={showPassword ? "eye" : "eye-off"}
+                  size={20}
+                  color="#A0A0A0"
+                />
+              </TouchableOpacity>
+            </View>
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text className="font-comfortaa-bold text-xs text-gray-500 mb-1">
+              Confirm Password
+            </Text>
+            <View className="flex-row items-center bg-white border border-[#CBD5E1] rounded-2xl px-4">
+              <TextInput
+                className="flex-1 font-comfortaa text-gray-700 text-base py-3"
+                value={formData.confirmPassword}
+                onChangeText={(text) =>
+                  setFormData((prev) => ({ ...prev, confirmPassword: text }))
+                }
+                placeholder="********"
+                placeholderTextColor="#A0A0A0"
+                secureTextEntry={!showConfirmPassword}
+              />
+              <TouchableOpacity
+                onPress={() => setShowConfirmPassword(!showConfirmPassword)}
+                style={{ marginRight: 8 }}
+              >
+                <Ionicons
+                  name={showConfirmPassword ? "eye" : "eye-off"}
+                  size={20}
+                  color="#A0A0A0"
+                />
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+
         <View style={{ marginBottom: 20 }}>
           <Text className="font-comfortaa-bold text-xs text-gray-500 mb-1">
             Phone Number
@@ -349,24 +333,32 @@ const RegistrationStep: React.FC<
               paddingHorizontal: 8,
             }}
           >
-            <CountryPicker
-              countryCode={countryCode}
-              withFilter
-              withFlag
-              withCallingCode
-              withEmoji
-              onSelect={(c: Country) => {
-                setCountryCode(c.cca2);
-                setFormData((prev) => ({
-                  ...prev,
-                  countryCallingCode: c.callingCode[0],
-                }));
+            <TouchableOpacity
+              onPress={() => setShowCountryPicker(true)}
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                marginRight: 8,
               }}
-              containerButtonStyle={{ marginRight: 8 }}
-            />
-            <Text style={{ marginRight: 4, fontSize: 16 }}>
-              +{formData.countryCallingCode || ""}
-            </Text>
+            >
+              <Text
+                style={{
+                  fontSize: 16,
+                  color: "#333",
+                  fontFamily: "Comfortaa-Medium",
+                }}
+              >
+                {formData.countryCallingCode
+                  ? `+${formData.countryCallingCode}`
+                  : "+1"}
+              </Text>
+              <Ionicons
+                name="chevron-down"
+                size={16}
+                color="#666"
+                style={{ marginLeft: 4 }}
+              />
+            </TouchableOpacity>
             <TextInput
               value={formData.phoneNumber}
               onChangeText={(text) =>
@@ -397,6 +389,69 @@ const RegistrationStep: React.FC<
           </TouchableOpacity>
         </View>
       </ScrollView>
+
+      {/* Country Picker Modal */}
+      <CountryPicker
+        show={showCountryPicker}
+        pickerButtonOnPress={(item: Country) => {
+          setFormData((prev) => ({
+            ...prev,
+            countryCallingCode: item.dial_code,
+          }));
+          setCountryCode(item.code);
+          setCountry(item);
+          setShowCountryPicker(false);
+        }}
+        popularCountries={["US", "CA", "GB", "AU", "DE", "FR"]}
+        ListHeaderComponent={props => <CountryPickerHeader {...props} onClose={() => setShowCountryPicker(false)} />}
+        lang="en"
+        style={{
+          modal: {
+            backgroundColor: '#fff',
+            flex: 1,
+            margin: 0,
+            marginTop: 50,
+          },
+          backdrop: {
+            backgroundColor: 'rgba(0, 0, 0, 0.5)',
+            flex: 1,
+          },
+          textInput: {
+            height: 50,
+            borderRadius: 12,
+            borderWidth: 1,
+            borderColor: '#E5E7EB',
+            paddingHorizontal: 16,
+            fontSize: 16,
+            fontFamily: 'Comfortaa-Medium',
+            marginHorizontal: 16,
+            marginBottom: 16,
+          },
+          countryButtonStyles: {
+            paddingVertical: 16,
+            paddingHorizontal: 20,
+            borderBottomWidth: 1,
+            borderBottomColor: '#F3F4F6',
+          },
+          countryName: {
+            fontSize: 16,
+            fontFamily: 'Comfortaa-Medium',
+            color: '#374151',
+          },
+          dialCode: {
+            fontSize: 14,
+            fontFamily: 'Comfortaa-Medium',
+            color: '#6B7280',
+          },
+          flag: {
+            fontSize: 20,
+            marginRight: 12,
+          },
+          itemsList: {
+            flex: 1,
+          },
+        }}
+      />
     </View>
   );
 };
@@ -788,7 +843,7 @@ export default function ParentSignup() {
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
   const [formData, setFormData] = useState<FormData>(initialFormData);
-  const [countryCode, setCountryCode] = useState<CountryCode>("US");
+  const [countryCode, setCountryCode] = useState<string>("US");
   const [country, setCountry] = useState<Country | null>(null);
   const [errors, setErrors] = useState<any>({});
 
@@ -816,7 +871,7 @@ export default function ParentSignup() {
         const registrationData: ParentRegistrationRequest = {
           email: formData.email,
           password: formData.password,
-          phoneNumber: `+${formData.countryCallingCode}${formData.phoneNumber}`,
+          phoneNumber: `${formData.countryCallingCode}${formData.phoneNumber}`,
           firstName: formData.firstName,
           lastName: formData.lastName,
           homeAddress: formData.homeAddress,
