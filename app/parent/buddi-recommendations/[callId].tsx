@@ -118,8 +118,28 @@ export default function BuddiRecommendationsPage() {
   };
 
   const handleViewProfile = (buddiId: number) => {
-    // TODO: Navigate to buddi profile page
-    console.log("View profile for buddy:", buddiId);
+    // Find the buddi data from recommendations
+    const allBuddis = recommendations.flatMap((rec) => rec.buddis);
+    const buddiData = allBuddis.find((b) => b.id === buddiId);
+
+    console.log("handleViewProfile - buddiId:", buddiId);
+    console.log("handleViewProfile - allBuddis count:", allBuddis.length);
+    console.log("handleViewProfile - found buddiData:", buddiData);
+
+    if (buddiData) {
+      // Try a simpler approach with query parameters
+      const encodedData = encodeURIComponent(JSON.stringify(buddiData));
+      const url = `/parent/buddi-profile/${buddiId}?data=${encodedData}`;
+      console.log("handleViewProfile - navigating to:", url);
+
+      router.push(url as any);
+    } else {
+      console.error("Buddi data not found for ID:", buddiId);
+      console.error(
+        "Available buddi IDs:",
+        allBuddis.map((b) => b.id)
+      );
+    }
   };
 
   const handleRankBuddi = async (

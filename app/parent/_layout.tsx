@@ -24,6 +24,8 @@ export default function ParentLayout() {
             <Stack.Screen name="schedule" />
             <Stack.Screen name="payments" />
             <Stack.Screen name="settings" />
+            <Stack.Screen name="buddi-recommendations/[callId]" />
+            <Stack.Screen name="buddi-profile/[buddiId]" />
           </Stack>
         </View>
         <View
