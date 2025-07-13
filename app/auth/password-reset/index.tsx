@@ -1,6 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import React, { useState } from "react";
+import { useState } from "react";
 import { Image, Text, TextInput, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -36,17 +36,17 @@ const PasswordResetScreen = () => {
 
         {/* Header */}
         <View className="items-center">
-          <Text className="text-3xl font-comfortaa-bold text-gray-800 mb-2">
+          <Text className="text-3xl font-comfortaa-bold text-black mb-2">
             Password Recovery
           </Text>
-          <Text className="text-sm font-comfortaa text-center text-gray-500 mb-8">
+          <Text className="text-sm font-comfortaa text-center text-gray mb-8">
             Enter your email used in signup to get a confirmation code (OTP)
           </Text>
         </View>
 
         {/* Password Input */}
         <View className="mb-4">
-          <Text className="font-comfortaa-bold text-sm text-gray-600 mb-2">
+          <Text className="font-comfortaa-bold text-sm text-gray mb-2">
             Password
           </Text>
           <View className="flex-row items-center bg-white border border-[#CBD5E1] rounded-2xl px-4 py-3.5">
@@ -57,7 +57,7 @@ const PasswordResetScreen = () => {
               style={{ marginRight: 8 }}
             />
             <TextInput
-              className="flex-1 font-comfortaa text-gray-700 text-base"
+              className="flex-1 font-comfortaa text-gray text-base"
               value={password}
               onChangeText={setPassword}
               placeholder="**************"
@@ -76,7 +76,7 @@ const PasswordResetScreen = () => {
 
         {/* Confirm Password Input */}
         <View className="mb-8">
-          <Text className="font-comfortaa-bold text-sm text-gray-600 mb-2">
+          <Text className="font-comfortaa-bold text-sm text-gray mb-2">
             Confirm Password
           </Text>
           <View className="flex-row items-center bg-white border border-[#CBD5E1] rounded-2xl px-4 py-3.5">
@@ -87,7 +87,7 @@ const PasswordResetScreen = () => {
               style={{ marginRight: 8 }}
             />
             <TextInput
-              className="flex-1 font-comfortaa text-gray-700 text-base"
+              className="flex-1 font-comfortaa text-gray text-base"
               value={confirmPassword}
               onChangeText={setConfirmPassword}
               placeholder="**************"

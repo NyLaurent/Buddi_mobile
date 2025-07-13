@@ -288,10 +288,10 @@ const RegistrationStep: React.FC<StepProps> = ({
             className="w-40 h-12 mb-4"
             resizeMode="contain"
           />
-          <Text className="text-xl font-comfortaa-bold text-center text-gray-800 mb-2">
+          <Text className="text-xl font-comfortaa-bold text-center text-black mb-2">
             Join Pickup Buddi
           </Text>
-          <Text className="font-comfortaa text-center text-gray-500 mb-6 px-6">
+          <Text className="font-comfortaa text-center text-gray mb-6 px-6">
             Become a trusted Buddi and help parents with their children&apos;s
             pickup needs.
           </Text>
@@ -319,7 +319,7 @@ const RegistrationStep: React.FC<StepProps> = ({
               <Ionicons name="camera" size={20} color="#fff" />
             </View>
           </TouchableOpacity>
-          <Text className="font-comfortaa text-xs text-gray-500 mb-2">
+          <Text className="font-comfortaa text-xs text-gray mb-2">
             Add a Profile Photo
           </Text>
         </View>
@@ -327,11 +327,11 @@ const RegistrationStep: React.FC<StepProps> = ({
         {/* Form fields */}
         <View style={{ flexDirection: "row", gap: 16, marginBottom: 20 }}>
           <View style={{ flex: 1 }}>
-            <Text className="font-comfortaa-bold text-xs text-gray-500 mb-1">
+            <Text className="font-comfortaa-bold text-xs text-gray mb-1">
               First Name
             </Text>
             <TextInput
-              className="bg-white border border-[#CBD5E1] rounded-2xl px-4 py-3 font-comfortaa text-gray-700 text-base"
+              className="bg-white border border-[#CBD5E1] rounded-2xl px-4 py-3 font-comfortaa text-gray text-base"
               value={formData.firstName}
               onChangeText={(text) =>
                 setFormData((prev) => ({ ...prev, firstName: text }))
@@ -346,11 +346,11 @@ const RegistrationStep: React.FC<StepProps> = ({
             ) : null}
           </View>
           <View style={{ flex: 1 }}>
-            <Text className="font-comfortaa-bold text-xs text-gray-500 mb-1">
+            <Text className="font-comfortaa-bold text-xs text-gray mb-1">
               Last Name
             </Text>
             <TextInput
-              className="bg-white border border-[#CBD5E1] rounded-2xl px-4 py-3 font-comfortaa text-gray-700 text-base"
+              className="bg-white border border-[#CBD5E1] rounded-2xl px-4 py-3 font-comfortaa text-gray text-base"
               value={formData.lastName}
               onChangeText={(text) =>
                 setFormData((prev) => ({ ...prev, lastName: text }))
@@ -367,7 +367,7 @@ const RegistrationStep: React.FC<StepProps> = ({
         </View>
 
         <View style={{ marginBottom: 20 }}>
-          <Text className="font-comfortaa-bold text-xs text-gray-500 mb-1">
+          <Text className="font-comfortaa-bold text-xs text-gray mb-1">
             Email
           </Text>
           <View className="flex-row items-center bg-white border border-[#CBD5E1] rounded-2xl px-4 py-3">
@@ -378,7 +378,7 @@ const RegistrationStep: React.FC<StepProps> = ({
               style={{ marginRight: 8 }}
             />
             <TextInput
-              className="flex-1 font-comfortaa text-gray-700 text-base"
+              className="flex-1 font-comfortaa text-gray text-base"
               value={formData.email}
               onChangeText={(text) =>
                 setFormData((prev) => ({ ...prev, email: text }))
@@ -398,12 +398,12 @@ const RegistrationStep: React.FC<StepProps> = ({
 
         <View style={{ flexDirection: "row", gap: 16, marginBottom: 20 }}>
           <View style={{ flex: 1 }}>
-            <Text className="font-comfortaa-bold text-xs text-gray-500 mb-1">
+            <Text className="font-comfortaa-bold text-xs text-gray mb-1">
               Password
             </Text>
             <View className="flex-row items-center bg-white border border-[#CBD5E1] rounded-2xl px-4">
               <TextInput
-                className="flex-1 font-comfortaa text-gray-700 text-base py-3"
+                className="flex-1 font-comfortaa text-gray text-base py-3"
                 value={formData.password}
                 onChangeText={(text) =>
                   setFormData((prev) => ({ ...prev, password: text }))
@@ -435,12 +435,12 @@ const RegistrationStep: React.FC<StepProps> = ({
             ) : null}
           </View>
           <View style={{ flex: 1 }}>
-            <Text className="font-comfortaa-bold text-xs text-gray-500 mb-1">
+            <Text className="font-comfortaa-bold text-xs text-gray mb-1">
               Confirm Password
             </Text>
             <View className="flex-row items-center bg-white border border-[#CBD5E1] rounded-2xl px-4">
               <TextInput
-                className="flex-1 font-comfortaa text-gray-700 text-base py-3"
+                className="flex-1 font-comfortaa text-gray text-base py-3"
                 value={formData.confirmPassword}
                 onChangeText={(text) =>
                   setFormData((prev) => ({ ...prev, confirmPassword: text }))
@@ -475,7 +475,7 @@ const RegistrationStep: React.FC<StepProps> = ({
 
         {/* Phone Number Field */}
         <View style={{ marginBottom: 20 }}>
-          <Text className="font-comfortaa-bold text-xs text-gray-500 mb-1">
+          <Text className="font-comfortaa-bold text-xs text-gray mb-1">
             Phone Number
           </Text>
           <View
@@ -543,7 +543,7 @@ const RegistrationStep: React.FC<StepProps> = ({
 
         {/* Home Address Field */}
         <View style={{ marginBottom: 20 }}>
-          <Text className="font-comfortaa-bold text-xs text-gray-500 mb-1">
+          <Text className="font-comfortaa-bold text-xs text-gray mb-1">
             Home Address
           </Text>
           <View className="flex-row items-center bg-white border border-[#CBD5E1] rounded-2xl px-4 py-3">
@@ -554,7 +554,7 @@ const RegistrationStep: React.FC<StepProps> = ({
               style={{ marginRight: 8 }}
             />
             <TextInput
-              className="flex-1 font-comfortaa text-gray-700 text-base"
+              className="flex-1 font-comfortaa text-gray text-base"
               value={formData.homeAddress}
               onChangeText={(text) =>
                 setFormData((prev) => ({ ...prev, homeAddress: text }))
@@ -578,7 +578,7 @@ const RegistrationStep: React.FC<StepProps> = ({
 
         {/* Login link */}
         <View className="items-center mt-2 mb-6">
-          <Text className="font-comfortaa text-gray-400 text-base">
+          <Text className="font-comfortaa text-gray text-base">
             Already got any account?{" "}
             <Text
               className="text-primary font-comfortaa-bold"
@@ -686,20 +686,20 @@ const AcademicStep: React.FC<StepProps> = ({
           className="w-40 h-12 mb-4"
           resizeMode="contain"
         />
-        <Text className="text-xl font-comfortaa-bold text-center text-gray-800 mb-2">
+        <Text className="text-xl font-comfortaa-bold text-center text-black mb-2">
           Fill In Your Academic Details
         </Text>
-        <Text className="font-comfortaa text-center text-gray-500 mb-6 px-6">
+        <Text className="font-comfortaa text-center text-gray mb-6 px-6">
           Tell us about your current studies and academic background.
         </Text>
       </View>
 
       <View style={{ marginBottom: 20 }}>
-        <Text className="font-comfortaa-bold text-xs text-gray-500 mb-1">
+        <Text className="font-comfortaa-bold text-xs text-gray mb-1">
           Current School
         </Text>
         <TextInput
-          className="bg-white border border-[#CBD5E1] rounded-2xl px-4 py-3 font-comfortaa text-gray-700 text-base"
+          className="bg-white border border-[#CBD5E1] rounded-2xl px-4 py-3 font-comfortaa text-gray text-base"
           value={formData.currentSchool}
           onChangeText={(text) =>
             setFormData((prev) => ({ ...prev, currentSchool: text }))
@@ -715,11 +715,11 @@ const AcademicStep: React.FC<StepProps> = ({
       </View>
 
       <View style={{ marginBottom: 20 }}>
-        <Text className="font-comfortaa-bold text-xs text-gray-500 mb-1">
+        <Text className="font-comfortaa-bold text-xs text-gray mb-1">
           Area Of Study (Major)
         </Text>
         <TextInput
-          className="bg-white border border-[#CBD5E1] rounded-2xl px-4 py-3 font-comfortaa text-gray-700 text-base"
+          className="bg-white border border-[#CBD5E1] rounded-2xl px-4 py-3 font-comfortaa text-gray text-base"
           value={formData.AreaOfStudy}
           onChangeText={(text) =>
             setFormData((prev) => ({ ...prev, AreaOfStudy: text }))
@@ -735,12 +735,12 @@ const AcademicStep: React.FC<StepProps> = ({
       </View>
 
       <View style={{ marginBottom: 20 }}>
-        <Text className="font-comfortaa-bold text-xs text-gray-500 mb-1">
+        <Text className="font-comfortaa-bold text-xs text-gray mb-1">
           GPA (Optional)
         </Text>
         <View className="flex-row items-center bg-white border border-[#CBD5E1] rounded-2xl px-4 py-3">
           <TextInput
-            className="flex-1 font-comfortaa text-gray-700 text-base"
+            className="flex-1 font-comfortaa text-gray text-base"
             value={formData.Gpa}
             onChangeText={(text) =>
               setFormData((prev) => ({ ...prev, Gpa: text }))
@@ -808,10 +808,10 @@ const ResumeStep: React.FC<StepProps> = ({ formData, setFormData }) => {
           className="w-40 h-12 mb-4"
           resizeMode="contain"
         />
-        <Text className="text-xl font-comfortaa-bold text-center text-gray-800 mb-2">
+        <Text className="text-xl font-comfortaa-bold text-center text-black mb-2">
           Provide Your Resume
         </Text>
-        <Text className="font-comfortaa text-center text-gray-500 mb-8 px-6">
+        <Text className="font-comfortaa text-center text-gray mb-8 px-6">
           Help us understand your background better by uploading your most
           recent resume.
         </Text>
@@ -835,7 +835,7 @@ const ResumeStep: React.FC<StepProps> = ({ formData, setFormData }) => {
           {formData.resume ? (
             <View style={{ alignItems: "center" }}>
               <Ionicons name="document-text" size={64} color="#A0A0A0" />
-              <Text className="font-comfortaa text-sm text-gray-700 mt-2">
+              <Text className="font-comfortaa text-sm text-gray mt-2">
                 {formData.resume.name}
               </Text>
             </View>
@@ -855,15 +855,15 @@ const ResumeStep: React.FC<StepProps> = ({ formData, setFormData }) => {
             </View>
           )}
         </View>
-        <Text className="font-comfortaa-bold text-gray-700 text-base mb-2">
+        <Text className="font-comfortaa-bold text-gray text-base mb-2">
           Upload Your Resume here
         </Text>
-        <Text className="font-comfortaa text-xs text-gray-500">
+        <Text className="font-comfortaa text-xs text-gray">
           All file types are supported
         </Text>
       </TouchableOpacity>
 
-      <Text className="font-comfortaa text-center text-gray-500 px-8 mt-4">
+      <Text className="font-comfortaa text-center text-gray px-8 mt-4">
         Your resume helps us understand your background and experience. Make
         sure it reflects your strengths clearly.
       </Text>
@@ -897,7 +897,7 @@ const ReferencesStep: React.FC<StepProps> = ({
     <View style={{ marginTop: 24 }}>
       {/* Teacher Email */}
       <View style={{ marginBottom: 20 }}>
-        <Text className="font-comfortaa-bold text-xs text-gray-500 mb-1">
+        <Text className="font-comfortaa-bold text-xs text-gray mb-1">
           Teacher Email
         </Text>
         <View className="flex-row items-center bg-white border border-[#CBD5E1] rounded-2xl px-4 py-3">
@@ -908,7 +908,7 @@ const ReferencesStep: React.FC<StepProps> = ({
             style={{ marginRight: 8 }}
           />
           <TextInput
-            className="flex-1 font-comfortaa text-gray-700 text-base"
+            className="flex-1 font-comfortaa text-gray text-base"
             value={formData.teacherEmail}
             onChangeText={(text) =>
               setFormData((prev) => ({ ...prev, teacherEmail: text }))
@@ -928,7 +928,7 @@ const ReferencesStep: React.FC<StepProps> = ({
 
       {/* Teacher Phone Number Field */}
       <View style={{ marginBottom: 20 }}>
-        <Text className="font-comfortaa-bold text-xs text-gray-500 mb-1">
+        <Text className="font-comfortaa-bold text-xs text-gray mb-1">
           Teacher Phone Number
         </Text>
         <View
@@ -992,7 +992,7 @@ const ReferencesStep: React.FC<StepProps> = ({
     <View style={{ marginTop: 24 }}>
       {/* Custom Referral Email */}
       <View style={{ marginBottom: 20 }}>
-        <Text className="font-comfortaa-bold text-xs text-gray-500 mb-1">
+        <Text className="font-comfortaa-bold text-xs text-gray mb-1">
           Reference Email
         </Text>
         <View className="flex-row items-center bg-white border border-[#CBD5E1] rounded-2xl px-4 py-3">
@@ -1003,7 +1003,7 @@ const ReferencesStep: React.FC<StepProps> = ({
             style={{ marginRight: 8 }}
           />
           <TextInput
-            className="flex-1 font-comfortaa text-gray-700 text-base"
+            className="flex-1 font-comfortaa text-gray text-base"
             value={formData.customReferral}
             onChangeText={(text) =>
               setFormData((prev) => ({ ...prev, customReferral: text }))
@@ -1023,7 +1023,7 @@ const ReferencesStep: React.FC<StepProps> = ({
 
       {/* Custom Referral Phone Number Field */}
       <View style={{ marginBottom: 20 }}>
-        <Text className="font-comfortaa-bold text-xs text-gray-500 mb-1">
+        <Text className="font-comfortaa-bold text-xs text-gray mb-1">
           Reference Phone Number
         </Text>
         <View
@@ -1086,7 +1086,7 @@ const ReferencesStep: React.FC<StepProps> = ({
 
       {/* Custom Referral Occupation */}
       <View style={{ marginBottom: 20 }}>
-        <Text className="font-comfortaa-bold text-xs text-gray-500 mb-1">
+        <Text className="font-comfortaa-bold text-xs text-gray mb-1">
           Reference Occupation
         </Text>
         <View className="flex-row items-center bg-white border border-[#CBD5E1] rounded-2xl px-4 py-3">
@@ -1097,7 +1097,7 @@ const ReferencesStep: React.FC<StepProps> = ({
             style={{ marginRight: 8 }}
           />
           <TextInput
-            className="flex-1 font-comfortaa text-gray-700 text-base"
+            className="flex-1 font-comfortaa text-gray text-base"
             value={formData.referralOccupation}
             onChangeText={(text) =>
               setFormData((prev) => ({ ...prev, referralOccupation: text }))
@@ -1129,10 +1129,10 @@ const ReferencesStep: React.FC<StepProps> = ({
             className="w-40 h-12 mb-4"
             resizeMode="contain"
           />
-          <Text className="text-xl font-comfortaa-bold text-center text-gray-800 mb-2">
+          <Text className="text-xl font-comfortaa-bold text-center text-black mb-2">
             Add References
           </Text>
-          <Text className="font-comfortaa text-center text-gray-500 mb-6 px-6">
+          <Text className="font-comfortaa text-center text-gray mb-6 px-6">
             Please provide at least one academic or professional reference to
             support your qualifications.
           </Text>
@@ -1156,7 +1156,7 @@ const ReferencesStep: React.FC<StepProps> = ({
           >
             <Text
               className={`font-comfortaa-bold text-center ${
-                activeTab === 0 ? "text-primary" : "text-gray-500"
+                activeTab === 0 ? "text-primary" : "text-gray"
               }`}
             >
               Head Teacher
@@ -1178,7 +1178,7 @@ const ReferencesStep: React.FC<StepProps> = ({
           >
             <Text
               className={`font-comfortaa-bold text-center ${
-                activeTab === 1 ? "text-primary" : "text-gray-500"
+                activeTab === 1 ? "text-primary" : "text-gray"
               }`}
             >
               Custom Reference
@@ -1381,7 +1381,9 @@ export default function BuddiSignup() {
         const registrationData = {
           email: formData.email.trim(),
           password: formData.password,
-          phoneNumber: `${formData.countryCallingCode}${formData.phoneNumber.trim()}`,
+          phoneNumber: `${
+            formData.countryCallingCode
+          }${formData.phoneNumber.trim()}`,
           firstName: formData.firstName.trim(),
           lastName: formData.lastName.trim(),
           homeAddress: formData.homeAddress.trim(),
@@ -1390,7 +1392,9 @@ export default function BuddiSignup() {
           Gpa: formData.Gpa.trim() || undefined,
           teacherEmail: formData.teacherEmail.trim() || undefined,
           teacherPhoneNumber: formData.teacherPhoneNumber.trim()
-            ? `${formData.teacherCountryCode}${formData.teacherPhoneNumber.trim()}`
+            ? `${
+                formData.teacherCountryCode
+              }${formData.teacherPhoneNumber.trim()}`
             : undefined,
           customReferral: formData.customReferral.trim() || undefined,
           referralOccupation: formData.referralOccupation.trim() || undefined,

@@ -1,6 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import React, { useState } from "react";
+import { useState } from "react";
 import {
   Image,
   ScrollView,
@@ -89,9 +89,7 @@ const Settings = () => {
             </TouchableOpacity>
           </View>
           <Text className="font-comfortaa-bold text-lg mt-2">{fullName}</Text>
-          <Text className="text-gray-400 font-comfortaa text-sm mt-1">
-            {email}
-          </Text>
+          <Text className="text-gray font-comfortaa text-sm mt-1">{email}</Text>
           <View className="flex-row items-center justify-center mt-2">
             {[1, 2, 3, 4, 5].map((i) => (
               <Ionicons

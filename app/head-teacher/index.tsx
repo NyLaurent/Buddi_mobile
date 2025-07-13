@@ -1,6 +1,5 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import React from "react";
 import {
   Alert,
   Image,
@@ -67,7 +66,7 @@ const HeadTeacherDashboard = () => {
               resizeMode="contain"
             />
             {user && (
-              <Text className="text-lg text-gray-800 px-3 font-comfortaa-bold mt-1">
+              <Text className="text-lg text-black px-3 font-comfortaa-bold mt-1">
                 Hello, {user.firstName}
               </Text>
             )}

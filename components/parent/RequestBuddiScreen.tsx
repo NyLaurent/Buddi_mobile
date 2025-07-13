@@ -1,5 +1,5 @@
 import { Feather, Ionicons } from "@expo/vector-icons";
-import React, { useState } from "react";
+import { useState } from "react";
 
 import { router } from "expo-router";
 import {
@@ -71,7 +71,7 @@ const RequestBuddiScreen = () => {
             Fill in the details below to invite Buddis to apply.
           </Text>
           {/* Description */}
-          <Text className="text-sm text-gray-500 font-comfortaa mb-1">
+          <Text className="text-sm text-gray font-comfortaa mb-1">
             Description
           </Text>
           <TextInput
@@ -118,7 +118,7 @@ const RequestBuddiScreen = () => {
                 className="bg-gray-100 rounded-full px-3 py-1 flex-row items-center"
                 onPress={() => setShowAllDays(true)}
               >
-                <Text className="font-comfortaa text-gray-400 text-xs">
+                <Text className="font-comfortaa text-gray text-xs">
                   Add more
                 </Text>
                 <Feather
@@ -171,7 +171,7 @@ const RequestBuddiScreen = () => {
               >
                 <Text
                   className={`font-comfortaa-bold text-lg ${
-                    amPm === "AM" ? "text-white" : "text-gray-500"
+                    amPm === "AM" ? "text-white" : "text-gray"
                   }`}
                 >
                   AM
@@ -185,7 +185,7 @@ const RequestBuddiScreen = () => {
               >
                 <Text
                   className={`font-comfortaa-bold text-lg ${
-                    amPm === "PM" ? "text-white" : "text-gray-500"
+                    amPm === "PM" ? "text-white" : "text-gray"
                   }`}
                 >
                   PM
@@ -249,9 +249,9 @@ const RequestBuddiScreen = () => {
         </View>
       </ScrollView>
       <RequestBuddiSuccessModal
-  visible={successVisible}
-  onClose={() => setSuccessVisible(false)}
-/>
+        visible={successVisible}
+        onClose={() => setSuccessVisible(false)}
+      />
     </>
   );
 };

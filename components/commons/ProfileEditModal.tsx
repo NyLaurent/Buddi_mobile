@@ -108,9 +108,7 @@ const ProfileEditModal: React.FC<ProfileEditModalProps> = ({
         <View className="w-8 h-8 bg-[#FF932E]/10 rounded-full items-center justify-center mr-3">
           <Ionicons name={icon} size={16} color="#FF932E" />
         </View>
-        <Text className="text-gray-700 font-comfortaa-bold text-base">
-          {label}
-        </Text>
+        <Text className="text-gray font-comfortaa-bold text-base">{label}</Text>
       </View>
       <View className="relative">
         <TextInput
@@ -188,10 +186,10 @@ const ProfileEditModal: React.FC<ProfileEditModalProps> = ({
                 <Ionicons name="camera" size={12} color="white" />
               </View>
             </View>
-            <Text className="font-comfortaa-bold text-lg text-gray-800 mt-3">
+            <Text className="font-comfortaa-bold text-lg text-black mt-3">
               {user?.firstName} {user?.lastName}
             </Text>
-            <Text className="text-gray-500 font-comfortaa text-sm">
+            <Text className="text-gray font-comfortaa text-sm">
               {user?.role
                 ? user.role.charAt(0).toUpperCase() + user.role.slice(1)
                 : "User"}
@@ -205,7 +203,7 @@ const ProfileEditModal: React.FC<ProfileEditModalProps> = ({
             contentContainerStyle={{ paddingBottom: 40 }}
           >
             <View className="bg-white rounded-3xl p-6 shadow-sm border border-gray-100">
-              <Text className="font-comfortaa-bold text-lg text-gray-800 mb-6">
+              <Text className="font-comfortaa-bold text-lg text-black mb-6">
                 Personal Information
               </Text>
 

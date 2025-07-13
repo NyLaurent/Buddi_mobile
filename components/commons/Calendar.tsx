@@ -1,5 +1,5 @@
 import { Ionicons } from "@expo/vector-icons";
-import React, { useState } from "react";
+import { useState } from "react";
 import { Text, TouchableOpacity, View } from "react-native";
 
 interface CalendarProps {
@@ -106,7 +106,7 @@ const Calendar = ({
       <View className="flex-row justify-between mb-2">
         {weekDays.map((day) => (
           <View key={day} style={{ width: 40 }} className="items-center">
-            <Text className="font-comfortaa text-gray-500 text-sm">{day}</Text>
+            <Text className="font-comfortaa text-gray text-sm">{day}</Text>
           </View>
         ))}
       </View>
@@ -148,7 +148,7 @@ const Calendar = ({
                       ? "text-white"
                       : isToday(day)
                       ? "text-primary"
-                      : "text-gray-700"
+                      : "text-gray"
                   }`}
                   style={{
                     color: isDaySelected(day)

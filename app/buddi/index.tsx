@@ -1,7 +1,7 @@
 // app/buddi/index.tsx
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import React, { useRef, useState } from "react";
+import { useRef, useState } from "react";
 import {
   Alert,
   Image,
@@ -113,7 +113,7 @@ export default function BuddiHome() {
         <Text className="text-2xl font-comfortaa-bold m-4">
           Good morning, {user?.firstName || "Buddi"}
         </Text>
-        <Text className="text-gray-500 font-comfortaa mx-5">
+        <Text className="text-gray font-comfortaa mx-5">
           Happy that you are back 😊
         </Text>
 

@@ -1,4 +1,3 @@
-import React from "react";
 import { Image, Text, TouchableOpacity, View } from "react-native";
 
 interface SuccessScreenProps {
@@ -52,7 +51,7 @@ const SuccessScreen = ({
           {title}
         </Text>
 
-        <Text className="font-comfortaa text-center text-gray-500 mb-8">
+        <Text className="font-comfortaa text-center text-gray mb-8">
           {description}
         </Text>
 

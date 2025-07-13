@@ -37,15 +37,12 @@ const LoginScreen = () => {
       // Navigation will be handled automatically by AuthContext
     } catch (error: any) {
       setIsLoading(false); // Ensure loading is reset on error
-      let message = error?.message || "An unexpected error occurred. Please try again.";
+      let message =
+        error?.message || "An unexpected error occurred. Please try again.";
       if (message.toLowerCase().includes("invalid credentials")) {
         message = "Invalid credentials. Please check your email and password.";
       }
-      Alert.alert(
-        "Login Failed",
-        message,
-        [{ text: "OK" }]
-      );
+      Alert.alert("Login Failed", message, [{ text: "OK" }]);
       return;
     }
     setIsLoading(false); // Also reset loading if login does not throw but does not navigate
@@ -77,17 +74,17 @@ const LoginScreen = () => {
 
         {/* Header */}
         <View className="items-center">
-          <Text className="text-3xl font-comfortaa-bold text-gray-800 mb-2">
+          <Text className="text-3xl font-comfortaa-bold text-gray mb-2">
             Login
           </Text>
-          <Text className="text-sm font-comfortaa text-center text-gray-500 mb-8">
+          <Text className="text-sm font-comfortaa text-center text-gray mb-8">
             Sign In to access your Pickup Buddi account
           </Text>
         </View>
 
         {/* Email Input */}
         <View className="mb-4">
-          <Text className="font-comfortaa-bold text-sm text-gray-600 mb-2">
+          <Text className="font-comfortaa-bold text-sm text-gray mb-2">
             Email Address
           </Text>
           <View className="flex-row items-center bg-white border border-[#CBD5E1] rounded-2xl px-4 py-3.5">
@@ -98,7 +95,7 @@ const LoginScreen = () => {
               style={{ marginRight: 8 }}
             />
             <TextInput
-              className="flex-1 font-comfortaa text-gray-700 text-base"
+              className="flex-1 font-comfortaa text-gray text-base"
               value={email}
               onChangeText={setEmail}
               placeholder="Enter your email address..."
@@ -112,7 +109,7 @@ const LoginScreen = () => {
 
         {/* Password Input */}
         <View className="mb-6">
-          <Text className="font-comfortaa-bold text-sm text-gray-600 mb-2">
+          <Text className="font-comfortaa-bold text-sm text-gray mb-2">
             Password
           </Text>
           <View className="flex-row items-center bg-white border border-[#CBD5E1] rounded-2xl px-4 py-3.5">
@@ -123,7 +120,7 @@ const LoginScreen = () => {
               style={{ marginRight: 8 }}
             />
             <TextInput
-              className="flex-1 font-comfortaa text-gray-700 text-base"
+              className="flex-1 font-comfortaa text-gray text-base"
               value={password}
               onChangeText={setPassword}
               placeholder="**************"
@@ -163,7 +160,7 @@ const LoginScreen = () => {
                 <Ionicons name="checkmark" size={12} color="#fff" />
               )}
             </View>
-            <Text className="ml-2 font-comfortaa text-gray-700">
+            <Text className="ml-2 font-comfortaa text-gray">
               Keep me signed in
             </Text>
           </TouchableOpacity>
@@ -210,7 +207,7 @@ const LoginScreen = () => {
         {/* OR Divider */}
         <View className="flex-row items-center mb-6">
           <View className="flex-1 h-[1px] bg-gray-200" />
-          <Text className="mx-4 font-comfortaa text-gray-400">OR</Text>
+          <Text className="mx-4 font-comfortaa text-gray">OR</Text>
           <View className="flex-1 h-[1px] bg-gray-200" />
         </View>
 
@@ -228,7 +225,7 @@ const LoginScreen = () => {
               }}
               style={{ width: 20, height: 20, marginRight: 10 }}
             />
-            <Text className="font-comfortaa-bold text-gray-700 text-base">
+            <Text className="font-comfortaa-bold text-gray text-base">
               Sign In With Google
             </Text>
           </View>
@@ -236,7 +233,7 @@ const LoginScreen = () => {
 
         {/* Sign Up Link */}
         <View className="items-center flex-row">
-          <Text className="font-comfortaa text-gray-600">
+          <Text className="font-comfortaa text-gray">
             Don&apos;t have an account?{" "}
           </Text>
           <TouchableOpacity

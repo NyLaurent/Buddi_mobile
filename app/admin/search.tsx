@@ -1,5 +1,6 @@
+import PageHeader from "@/components/commons/PageHeader";
 import { Ionicons, MaterialIcons } from "@expo/vector-icons";
-import React, { useState } from "react";
+import { useState } from "react";
 import {
   Image,
   ScrollView,
@@ -11,7 +12,6 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import PageHeader from "@/components/commons/PageHeader";
 
 // Mock search results data
 const mockSearchResults = {
@@ -26,7 +26,7 @@ const mockSearchResults = {
       school: "Lincoln High School",
     },
     {
-      id: "2", 
+      id: "2",
       type: "buddi",
       name: "Emma Davis",
       email: "emma.davis@email.com",
@@ -47,7 +47,7 @@ const mockSearchResults = {
     },
     {
       id: "4",
-      type: "parent", 
+      type: "parent",
       name: "Michael Brown",
       email: "michael.brown@email.com",
       image: "https://randomuser.me/api/portraits/men/2.jpg",
@@ -60,7 +60,7 @@ const mockSearchResults = {
       id: "5",
       type: "payment",
       reference: "TXN001234",
-      amount: 125.50,
+      amount: 125.5,
       parentName: "Sarah Johnson",
       buddiName: "John Smith",
       status: "Completed",
@@ -75,7 +75,9 @@ const SearchResultCard = ({ item, onPress }) => {
       case "buddi":
         return <MaterialIcons name="person" size={20} color="#3B82F6" />;
       case "parent":
-        return <MaterialIcons name="family-restroom" size={20} color="#8B5CF6" />;
+        return (
+          <MaterialIcons name="family-restroom" size={20} color="#8B5CF6" />
+        );
       case "payment":
         return <MaterialIcons name="payment" size={20} color="#10B981" />;
       default:
@@ -107,7 +109,7 @@ const SearchResultCard = ({ item, onPress }) => {
         <View className="flex-row items-center justify-between mb-2">
           <View className="flex-row items-center">
             {getTypeIcon(item.type)}
-            <Text className="font-comfortaa-bold text-sm text-gray-800 ml-2">
+            <Text className="font-comfortaa-bold text-sm text-black ml-2">
               Payment {item.reference}
             </Text>
           </View>
@@ -123,10 +125,10 @@ const SearchResultCard = ({ item, onPress }) => {
             </Text>
           </View>
         </View>
-        <Text className="font-comfortaa text-gray-600 text-sm mb-1">
+        <Text className="font-comfortaa text-gray text-sm mb-1">
           ${item.amount.toFixed(2)} • {item.parentName} → {item.buddiName}
         </Text>
-        <Text className="font-comfortaa text-gray-500 text-xs">
+        <Text className="font-comfortaa text-gray text-xs">
           {new Date(item.date).toLocaleDateString()}
         </Text>
       </TouchableOpacity>
@@ -147,11 +149,11 @@ const SearchResultCard = ({ item, onPress }) => {
           <View className="flex-1">
             <View className="flex-row items-center">
               {getTypeIcon(item.type)}
-              <Text className="font-comfortaa-bold text-sm text-gray-800 ml-2">
+              <Text className="font-comfortaa-bold text-sm text-black ml-2">
                 {item.name}
               </Text>
             </View>
-            <Text className="font-comfortaa text-gray-500 text-xs">
+            <Text className="font-comfortaa text-gray text-xs">
               {item.email}
             </Text>
           </View>
@@ -169,12 +171,10 @@ const SearchResultCard = ({ item, onPress }) => {
         </View>
       </View>
       {item.type === "buddi" && (
-        <Text className="font-comfortaa text-gray-600 text-sm">
-          {item.school}
-        </Text>
+        <Text className="font-comfortaa text-gray text-sm">{item.school}</Text>
       )}
       {item.type === "parent" && (
-        <Text className="font-comfortaa text-gray-600 text-sm">
+        <Text className="font-comfortaa text-gray text-sm">
           {item.children} child{item.children !== 1 ? "ren" : ""}
         </Text>
       )}
@@ -182,7 +182,13 @@ const SearchResultCard = ({ item, onPress }) => {
   );
 };
 
-const QuickActionCard = ({ icon, title, description, onPress, color = "#FF932E" }) => (
+const QuickActionCard = ({
+  icon,
+  title,
+  description,
+  onPress,
+  color = "#FF932E",
+}) => (
   <TouchableOpacity
     onPress={onPress}
     className="bg-white rounded-xl p-4 mx-2 mb-4 border border-gray-100 min-w-[160px]"
@@ -193,12 +199,8 @@ const QuickActionCard = ({ icon, title, description, onPress, color = "#FF932E" 
     >
       {icon}
     </View>
-    <Text className="font-comfortaa-bold text-sm text-gray-800 mb-1">
-      {title}
-    </Text>
-    <Text className="font-comfortaa text-xs text-gray-500">
-      {description}
-    </Text>
+    <Text className="font-comfortaa-bold text-sm text-black mb-1">{title}</Text>
+    <Text className="font-comfortaa text-xs text-gray">{description}</Text>
   </TouchableOpacity>
 );
 
@@ -221,23 +223,24 @@ export default function AdminSearchPage() {
   ];
 
   const filteredResults = allResults.filter((item) => {
-    const matchesQuery = searchQuery.length === 0 || 
+    const matchesQuery =
+      searchQuery.length === 0 ||
       item.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
       item.email?.toLowerCase().includes(searchQuery.toLowerCase()) ||
       item.reference?.toLowerCase().includes(searchQuery.toLowerCase());
-    
+
     const matchesFilter = activeFilter === "all" || item.type === activeFilter;
-    
+
     return matchesQuery && matchesFilter;
   });
 
   const hasSearchQuery = searchQuery.length > 0;
 
   return (
-    <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
-      <StatusBar 
-        barStyle="dark-content" 
-        backgroundColor="transparent" 
+    <SafeAreaView style={styles.container} edges={["top", "left", "right"]}>
+      <StatusBar
+        barStyle="dark-content"
+        backgroundColor="transparent"
         translucent={true}
       />
       <ScrollView
@@ -259,7 +262,7 @@ export default function AdminSearchPage() {
               placeholder="Search buddis, parents, payments..."
               value={searchQuery}
               onChangeText={setSearchQuery}
-              className="flex-1 ml-3 font-comfortaa text-gray-700 text-base"
+              className="flex-1 ml-3 font-comfortaa text-gray text-base"
               placeholderTextColor="#9CA3AF"
               autoFocus
             />
@@ -275,7 +278,7 @@ export default function AdminSearchPage() {
           <>
             {/* Quick Actions */}
             <View className="mb-6">
-              <Text className="font-comfortaa-bold text-lg text-gray-800 mx-4 mb-4">
+              <Text className="font-comfortaa-bold text-lg text-black mx-4 mb-4">
                 Quick Actions
               </Text>
               <ScrollView
@@ -284,28 +287,52 @@ export default function AdminSearchPage() {
                 contentContainerStyle={{ paddingHorizontal: 16 }}
               >
                 <QuickActionCard
-                  icon={<MaterialIcons name="person-add" size={24} color="#3B82F6" />}
+                  icon={
+                    <MaterialIcons
+                      name="person-add"
+                      size={24}
+                      color="#3B82F6"
+                    />
+                  }
                   title="Add New Buddi"
                   description="Review applications"
                   onPress={() => console.log("Add Buddi")}
                   color="#3B82F6"
                 />
                 <QuickActionCard
-                  icon={<MaterialIcons name="family-restroom" size={24} color="#8B5CF6" />}
+                  icon={
+                    <MaterialIcons
+                      name="family-restroom"
+                      size={24}
+                      color="#8B5CF6"
+                    />
+                  }
                   title="Parent Support"
                   description="Help with issues"
                   onPress={() => console.log("Parent Support")}
                   color="#8B5CF6"
                 />
                 <QuickActionCard
-                  icon={<MaterialIcons name="assessment" size={24} color="#10B981" />}
+                  icon={
+                    <MaterialIcons
+                      name="assessment"
+                      size={24}
+                      color="#10B981"
+                    />
+                  }
                   title="Generate Report"
                   description="Platform analytics"
                   onPress={() => console.log("Generate Report")}
                   color="#10B981"
                 />
                 <QuickActionCard
-                  icon={<MaterialIcons name="support-agent" size={24} color="#F59E0B" />}
+                  icon={
+                    <MaterialIcons
+                      name="support-agent"
+                      size={24}
+                      color="#F59E0B"
+                    />
+                  }
                   title="Coverage Alert"
                   description="Handle requests"
                   onPress={() => console.log("Coverage Alert")}
@@ -316,11 +343,11 @@ export default function AdminSearchPage() {
 
             {/* Recent Activity */}
             <View className="mx-4">
-              <Text className="font-comfortaa-bold text-lg text-gray-800 mb-4">
+              <Text className="font-comfortaa-bold text-lg text-black mb-4">
                 Recent Activity
               </Text>
               <View className="bg-white rounded-xl p-4 border border-gray-100">
-                <Text className="font-comfortaa text-gray-500 text-center">
+                <Text className="font-comfortaa text-gray text-center">
                   Start typing to search across all platform data
                 </Text>
               </View>
@@ -332,7 +359,10 @@ export default function AdminSearchPage() {
             <ScrollView
               horizontal
               showsHorizontalScrollIndicator={false}
-              contentContainerStyle={{ paddingHorizontal: 16, marginBottom: 20 }}
+              contentContainerStyle={{
+                paddingHorizontal: 16,
+                marginBottom: 20,
+              }}
             >
               {filterOptions.map((filter) => (
                 <TouchableOpacity
@@ -344,7 +374,7 @@ export default function AdminSearchPage() {
                 >
                   <Text
                     className={`font-comfortaa ${
-                      activeFilter === filter.value ? "text-white" : "text-gray-600"
+                      activeFilter === filter.value ? "text-white" : "text-gray"
                     }`}
                   >
                     {filter.label}
@@ -355,7 +385,7 @@ export default function AdminSearchPage() {
 
             {/* Search Results */}
             <View className="mb-4">
-              <Text className="font-comfortaa-bold text-lg text-gray-800 mx-4 mb-4">
+              <Text className="font-comfortaa-bold text-lg text-black mx-4 mb-4">
                 Search Results ({filteredResults.length})
               </Text>
               {filteredResults.length > 0 ? (
@@ -369,10 +399,10 @@ export default function AdminSearchPage() {
               ) : (
                 <View className="bg-white rounded-xl p-8 mx-4 items-center">
                   <MaterialIcons name="search-off" size={48} color="#9CA3AF" />
-                  <Text className="font-comfortaa-bold text-lg text-gray-600 mt-4">
+                  <Text className="font-comfortaa-bold text-lg text-gray mt-4">
                     No Results Found
                   </Text>
-                  <Text className="font-comfortaa text-gray-500 text-center mt-2">
+                  <Text className="font-comfortaa text-gray text-center mt-2">
                     Try different keywords or filters
                   </Text>
                 </View>
@@ -390,4 +420,4 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: "#F9FAFB",
   },
-}); 
+});

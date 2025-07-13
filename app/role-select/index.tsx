@@ -1,7 +1,7 @@
 import { FontAwesome5, Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
-import React, { useState } from "react";
+import { useState } from "react";
 import { Image, ScrollView, Text, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -66,10 +66,10 @@ const RoleSelect = () => {
         </View>
         {/* Title & Subtitle */}
         <View className="items-center mb-6 px-6">
-          <Text className="text-2xl font-comfortaa-bold text-center text-gray-800 mb-1">
+          <Text className="text-2xl font-comfortaa-bold text-center text-black mb-1">
             Choose Your Role
           </Text>
-          <Text className="text-base font-comfortaa text-center text-gray-500">
+          <Text className="text-base font-comfortaa text-center text-gray">
             Select how you&apos;ll use Pickup Buddi to continue.
           </Text>
         </View>
@@ -99,7 +99,7 @@ const RoleSelect = () => {
         {/* Divider */}
         <View className="flex-row items-center px-6 mb-6">
           <View className="flex-1 h-px bg-gray-300" />
-          <Text className="mx-4 text-gray-500 font-comfortaa">or</Text>
+          <Text className="mx-4 text-gray font-comfortaa">or</Text>
           <View className="flex-1 h-px bg-gray-300" />
         </View>
 
@@ -144,12 +144,12 @@ const RoleSelect = () => {
               >
                 <View style={{ flex: 1 }}>
                   <Text
-                    className="font-comfortaa-bold text-lg text-gray-900 mb-1"
+                    className="font-comfortaa-bold text-lg text-black mb-1"
                     numberOfLines={1}
                   >
                     {role.label}
                   </Text>
-                  <Text className="font-comfortaa text-gray-500 text-sm">
+                  <Text className="font-comfortaa text-gray text-sm">
                     {role.description}
                   </Text>
                 </View>
@@ -191,7 +191,7 @@ const RoleSelect = () => {
         </View>
         {/* Info Text */}
         <View className="px-8 mt-2 mb-4">
-          <Text className="text-lg font-comfortaa text-center text-gray-400">
+          <Text className="text-lg font-comfortaa text-center text-gray">
             Your experience will be tailored based on the role you choose.
           </Text>
         </View>

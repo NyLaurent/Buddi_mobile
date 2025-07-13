@@ -9,10 +9,10 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import { CountryPicker, Country } from "react-native-country-codes-picker";
+import { Country, CountryPicker } from "react-native-country-codes-picker";
 import { SafeAreaView } from "react-native-safe-area-context";
-import SuccessScreen from "../../../../components/commons/SuccessScreen";
 import CountryPickerHeader from "../../../../components/commons/CountryPickerHeader";
+import SuccessScreen from "../../../../components/commons/SuccessScreen";
 import authService from "../../../../services/api/auth.service";
 
 const PRIMARY_COLOR = "#FF932E";
@@ -48,10 +48,10 @@ const RegistrationStep = ({
             className="w-40 h-12 mb-4"
             resizeMode="contain"
           />
-          <Text className="text-2xl font-comfortaa-bold text-center text-gray-800 mb-2">
+          <Text className="text-2xl font-comfortaa-bold text-center text-black mb-2">
             Registration
           </Text>
-          <Text className="text-sm font-comfortaa text-center text-gray-600 mb-6 px-8">
+          <Text className="text-sm font-comfortaa text-center text-gray mb-6 px-8">
             Join Pickup Buddi to help us verify Buddis and keep students safe.
             Let&apos;s start by gathering a few details.
           </Text>
@@ -60,25 +60,27 @@ const RegistrationStep = ({
         {/* Form fields */}
         <View style={{ flexDirection: "row", gap: 16, marginBottom: 20 }}>
           <View style={{ flex: 1 }}>
-            <Text className="font-comfortaa-bold text-xs text-gray-500 mb-1">
+            <Text className="font-comfortaa-bold text-xs text-gray mb-1">
               First Name
             </Text>
             <TextInput
-              className="bg-white border border-[#CBD5E1] rounded-2xl px-4 py-3 font-comfortaa text-gray-700 text-base"
+              className="bg-white border border-[#CBD5E1] rounded-2xl px-4 py-3 font-comfortaa text-gray text-base"
               value={form.firstName}
-              onChangeText={v => setForm((f: any) => ({ ...f, firstName: v }))}
+              onChangeText={(v) =>
+                setForm((f: any) => ({ ...f, firstName: v }))
+              }
               placeholder="John Doe"
               placeholderTextColor="#A0A0A0"
             />
           </View>
           <View style={{ flex: 1 }}>
-            <Text className="font-comfortaa-bold text-xs text-gray-500 mb-1">
+            <Text className="font-comfortaa-bold text-xs text-gray mb-1">
               Last Name
             </Text>
             <TextInput
-              className="bg-white border border-[#CBD5E1] rounded-2xl px-4 py-3 font-comfortaa text-gray-700 text-base"
+              className="bg-white border border-[#CBD5E1] rounded-2xl px-4 py-3 font-comfortaa text-gray text-base"
               value={form.lastName}
-              onChangeText={v => setForm((f: any) => ({ ...f, lastName: v }))}
+              onChangeText={(v) => setForm((f: any) => ({ ...f, lastName: v }))}
               placeholder="Smith"
               placeholderTextColor="#A0A0A0"
             />
@@ -93,13 +95,15 @@ const RegistrationStep = ({
         </View>
 
         <View style={{ marginBottom: 20 }}>
-          <Text className="font-comfortaa-bold text-xs text-gray-500 mb-1">
+          <Text className="font-comfortaa-bold text-xs text-gray mb-1">
             Home Address
           </Text>
           <TextInput
-            className="bg-white border border-[#CBD5E1] rounded-2xl px-4 py-3 font-comfortaa text-gray-700 text-base"
+            className="bg-white border border-[#CBD5E1] rounded-2xl px-4 py-3 font-comfortaa text-gray text-base"
             value={form.homeAddress}
-            onChangeText={v => setForm((f: any) => ({ ...f, homeAddress: v }))}
+            onChangeText={(v) =>
+              setForm((f: any) => ({ ...f, homeAddress: v }))
+            }
             placeholder="Enter your home address"
             placeholderTextColor="#A0A0A0"
           />
@@ -107,19 +111,25 @@ const RegistrationStep = ({
 
         <View style={{ flexDirection: "row", gap: 16, marginBottom: 20 }}>
           <View style={{ flex: 1 }}>
-            <Text className="font-comfortaa-bold text-xs text-gray-500 mb-1">
+            <Text className="font-comfortaa-bold text-xs text-gray mb-1">
               Password
             </Text>
             <View className="flex-row items-center bg-white border border-[#CBD5E1] rounded-2xl px-4">
               <TextInput
-                className="flex-1 font-comfortaa text-gray-700 text-base py-3"
+                className="flex-1 font-comfortaa text-gray text-base py-3"
                 value={form.password}
-                onChangeText={v => setForm((f: any) => ({ ...f, password: v }))}
+                onChangeText={(v) =>
+                  setForm((f: any) => ({ ...f, password: v }))
+                }
                 placeholder="********"
                 placeholderTextColor="#A0A0A0"
                 secureTextEntry={!form.showPassword}
               />
-              <TouchableOpacity onPress={() => setForm((f: any) => ({ ...f, showPassword: !f.showPassword }))}>
+              <TouchableOpacity
+                onPress={() =>
+                  setForm((f: any) => ({ ...f, showPassword: !f.showPassword }))
+                }
+              >
                 <Ionicons
                   name={form.showPassword ? "eye" : "eye-off"}
                   size={20}
@@ -130,20 +140,27 @@ const RegistrationStep = ({
             </View>
           </View>
           <View style={{ flex: 1 }}>
-            <Text className="font-comfortaa-bold text-xs text-gray-500 mb-1">
+            <Text className="font-comfortaa-bold text-xs text-gray mb-1">
               Confirm Password
             </Text>
             <View className="flex-row items-center bg-white border border-[#CBD5E1] rounded-2xl px-4">
               <TextInput
-                className="flex-1 font-comfortaa text-gray-700 text-base py-3"
+                className="flex-1 font-comfortaa text-gray text-base py-3"
                 value={form.confirmPassword}
-                onChangeText={v => setForm((f: any) => ({ ...f, confirmPassword: v }))}
+                onChangeText={(v) =>
+                  setForm((f: any) => ({ ...f, confirmPassword: v }))
+                }
                 placeholder="********"
                 placeholderTextColor="#A0A0A0"
                 secureTextEntry={!form.showConfirmPassword}
               />
               <TouchableOpacity
-                onPress={() => setForm((f: any) => ({ ...f, showConfirmPassword: !f.showConfirmPassword }))}
+                onPress={() =>
+                  setForm((f: any) => ({
+                    ...f,
+                    showConfirmPassword: !f.showConfirmPassword,
+                  }))
+                }
               >
                 <Ionicons
                   name={form.showConfirmPassword ? "eye" : "eye-off"}
@@ -157,7 +174,7 @@ const RegistrationStep = ({
         </View>
 
         <View style={{ marginBottom: 20 }}>
-          <Text className="font-comfortaa-bold text-xs text-gray-500 mb-1">
+          <Text className="font-comfortaa-bold text-xs text-gray mb-1">
             Email
           </Text>
           <View className="flex-row items-center bg-white border border-[#CBD5E1] rounded-2xl px-4 py-3">
@@ -168,9 +185,9 @@ const RegistrationStep = ({
               style={{ marginRight: 8 }}
             />
             <TextInput
-              className="flex-1 font-comfortaa text-gray-700 text-base"
+              className="flex-1 font-comfortaa text-gray text-base"
               value={form.email}
-              onChangeText={v => setForm((f: any) => ({ ...f, email: v }))}
+              onChangeText={(v) => setForm((f: any) => ({ ...f, email: v }))}
               placeholder="johndoe@example.com"
               placeholderTextColor="#A0A0A0"
               keyboardType="email-address"
@@ -185,40 +202,79 @@ const RegistrationStep = ({
               />
             </TouchableOpacity>
           </View>
-          <Text className="font-comfortaa text-xs text-gray-400 mt-1">
-            Use a valid .edu email please 
+          <Text className="font-comfortaa text-xs text-gray mt-1">
+            Use a valid .edu email please
           </Text>
-          {errors.email ? <Text style={{ color: 'red', fontSize: 12 }}>{errors.email}</Text> : null}
+          {errors.email ? (
+            <Text style={{ color: "red", fontSize: 12 }}>{errors.email}</Text>
+          ) : null}
         </View>
 
         <View style={{ marginBottom: 20 }}>
-          <Text className="font-comfortaa-bold text-xs text-gray-500 mb-1">
+          <Text className="font-comfortaa-bold text-xs text-gray mb-1">
             Phone Number
           </Text>
-          <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: '#fff', borderRadius: 16, borderWidth: 1, borderColor: '#CBD5E1', height: 52, paddingHorizontal: 8 }}>
+          <View
+            style={{
+              flexDirection: "row",
+              alignItems: "center",
+              backgroundColor: "#fff",
+              borderRadius: 16,
+              borderWidth: 1,
+              borderColor: "#CBD5E1",
+              height: 52,
+              paddingHorizontal: 8,
+            }}
+          >
             <TouchableOpacity
               onPress={() => setShowCountryPicker(true)}
-              style={{ flexDirection: 'row', alignItems: 'center', marginRight: 8 }}
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                marginRight: 8,
+              }}
             >
-              <Text style={{ fontSize: 16, color: '#333', fontFamily: 'Comfortaa-Medium' }}>
-                {form.countryCallingCode ? `+${form.countryCallingCode}` : '+1'}
+              <Text
+                style={{
+                  fontSize: 16,
+                  color: "#333",
+                  fontFamily: "Comfortaa-Medium",
+                }}
+              >
+                {form.countryCallingCode ? `+${form.countryCallingCode}` : "+1"}
               </Text>
-              <Ionicons name="chevron-down" size={16} color="#666" style={{ marginLeft: 4 }} />
+              <Ionicons
+                name="chevron-down"
+                size={16}
+                color="#666"
+                style={{ marginLeft: 4 }}
+              />
             </TouchableOpacity>
             <TextInput
               value={form.phoneNumber}
-              onChangeText={v => setForm((f: any) => ({ ...f, phoneNumber: v }))}
+              onChangeText={(v) =>
+                setForm((f: any) => ({ ...f, phoneNumber: v }))
+              }
               placeholder="Enter your phone number"
               keyboardType="phone-pad"
-              style={{ flex: 1, fontFamily: "comfortaa-medium", color: "#374151", fontSize: 14 }}
+              style={{
+                flex: 1,
+                fontFamily: "comfortaa-medium",
+                color: "#374151",
+                fontSize: 14,
+              }}
             />
           </View>
-          {errors.phoneNumber ? <Text style={{ color: 'red', fontSize: 12 }}>{errors.phoneNumber}</Text> : null}
+          {errors.phoneNumber ? (
+            <Text style={{ color: "red", fontSize: 12 }}>
+              {errors.phoneNumber}
+            </Text>
+          ) : null}
         </View>
 
         <View className="mt-2 mb-4">
           <TouchableOpacity onPress={onLogin} className="self-center">
-            <Text className="text-center font-comfortaa text-gray-600">
+            <Text className="text-center font-comfortaa text-gray">
               Already got any account?{" "}
               <Text className="text-primary font-comfortaa-bold">Login</Text>
             </Text>
@@ -235,28 +291,33 @@ const RegistrationStep = ({
           setCountry(item);
           setShowCountryPicker(false);
         }}
-        popularCountries={['US', 'CA', 'GB', 'AU', 'DE', 'FR']}
-        ListHeaderComponent={props => <CountryPickerHeader {...props} onClose={() => setShowCountryPicker(false)} />}
+        popularCountries={["US", "CA", "GB", "AU", "DE", "FR"]}
+        ListHeaderComponent={(props) => (
+          <CountryPickerHeader
+            {...props}
+            onClose={() => setShowCountryPicker(false)}
+          />
+        )}
         lang="en"
         style={{
           modal: {
-            backgroundColor: '#fff',
+            backgroundColor: "#fff",
             flex: 1,
             margin: 0,
             marginTop: 50,
           },
           backdrop: {
-            backgroundColor: 'rgba(0, 0, 0, 0.5)',
+            backgroundColor: "rgba(0, 0, 0, 0.5)",
             flex: 1,
           },
           textInput: {
             height: 50,
             borderRadius: 12,
             borderWidth: 1,
-            borderColor: '#E5E7EB',
+            borderColor: "#E5E7EB",
             paddingHorizontal: 16,
             fontSize: 16,
-            fontFamily: 'Comfortaa-Medium',
+            fontFamily: "Comfortaa-Medium",
             marginHorizontal: 16,
             marginBottom: 16,
           },
@@ -264,18 +325,18 @@ const RegistrationStep = ({
             paddingVertical: 16,
             paddingHorizontal: 20,
             borderBottomWidth: 1,
-            borderBottomColor: '#F3F4F6',
+            borderBottomColor: "#F3F4F6",
           },
           countryName: {
             fontSize: 12,
-            fontFamily: 'Comfortaa-Medium',
-            color: '#374151',
+            fontFamily: "Comfortaa-Medium",
+            color: "#374151",
             maxWidth: 120,
           },
           dialCode: {
             fontSize: 14,
-            fontFamily: 'Comfortaa-Medium',
-            color: '#6B7280',
+            fontFamily: "Comfortaa-Medium",
+            color: "#6B7280",
           },
           flag: {
             fontSize: 20,
@@ -309,30 +370,30 @@ const SchoolDetailsStep = ({ form, setForm, errors }: any) => {
             className="w-40 h-12 mb-4"
             resizeMode="contain"
           />
-          <Text className="text-2xl font-comfortaa-bold text-center text-gray-800 mb-2">
+          <Text className="text-2xl font-comfortaa-bold text-center text-black mb-2">
             School Details
           </Text>
-          <Text className="text-sm font-comfortaa text-center text-gray-600 mb-6 px-8">
+          <Text className="text-sm font-comfortaa text-center text-gray mb-6 px-8">
             Provide your school information to help us verify your role and
             build trust.
           </Text>
         </View>
 
         <View style={{ marginBottom: 20 }}>
-          <Text className="font-comfortaa-bold text-xs text-gray-500 mb-1">
+          <Text className="font-comfortaa-bold text-xs text-gray mb-1">
             Current School
           </Text>
           <TextInput
-            className="bg-white border border-[#CBD5E1] rounded-2xl px-4 py-3 font-comfortaa text-gray-700 text-base"
+            className="bg-white border border-[#CBD5E1] rounded-2xl px-4 py-3 font-comfortaa text-gray text-base"
             value={form.schoolName}
-            onChangeText={v => setForm((f: any) => ({ ...f, schoolName: v }))}
+            onChangeText={(v) => setForm((f: any) => ({ ...f, schoolName: v }))}
             placeholder="School name here"
             placeholderTextColor="#A0A0A0"
           />
         </View>
 
         <View style={{ marginBottom: 20 }}>
-          <Text className="font-comfortaa-bold text-xs text-gray-500 mb-1">
+          <Text className="font-comfortaa-bold text-xs text-gray mb-1">
             School Email
           </Text>
           <View className="flex-row items-center bg-white border border-[#CBD5E1] rounded-2xl px-4 py-3">
@@ -343,9 +404,11 @@ const SchoolDetailsStep = ({ form, setForm, errors }: any) => {
               style={{ marginRight: 8 }}
             />
             <TextInput
-              className="flex-1 font-comfortaa text-gray-700 text-base"
+              className="flex-1 font-comfortaa text-gray text-base"
               value={form.schoolEmail}
-              onChangeText={v => setForm((f: any) => ({ ...f, schoolEmail: v }))}
+              onChangeText={(v) =>
+                setForm((f: any) => ({ ...f, schoolEmail: v }))
+              }
               placeholder="'.edu' email"
               placeholderTextColor="#A0A0A0"
               keyboardType="email-address"
@@ -360,14 +423,18 @@ const SchoolDetailsStep = ({ form, setForm, errors }: any) => {
               />
             </TouchableOpacity>
           </View>
-          <Text className="font-comfortaa text-xs text-gray-400 mt-1">
+          <Text className="font-comfortaa text-xs text-gray mt-1">
             (Optional)
           </Text>
-          {errors.schoolEmail ? <Text style={{ color: 'red', fontSize: 12 }}>{errors.schoolEmail}</Text> : null}
+          {errors.schoolEmail ? (
+            <Text style={{ color: "red", fontSize: 12 }}>
+              {errors.schoolEmail}
+            </Text>
+          ) : null}
         </View>
 
         <View style={{ marginBottom: 20 }}>
-          <Text className="font-comfortaa-bold text-xs text-gray-500 mb-1">
+          <Text className="font-comfortaa-bold text-xs text-gray mb-1">
             Location of the school
           </Text>
           <View className="flex-row items-center bg-white border border-[#CBD5E1] rounded-2xl px-4 py-3">
@@ -378,9 +445,11 @@ const SchoolDetailsStep = ({ form, setForm, errors }: any) => {
               style={{ marginRight: 8 }}
             />
             <TextInput
-              className="flex-1 font-comfortaa text-gray-700 text-base"
+              className="flex-1 font-comfortaa text-gray text-base"
               value={form.schoolLocation}
-              onChangeText={v => setForm((f: any) => ({ ...f, schoolLocation: v }))}
+              onChangeText={(v) =>
+                setForm((f: any) => ({ ...f, schoolLocation: v }))
+              }
               placeholder="Enter school location"
               placeholderTextColor="#A0A0A0"
             />
@@ -388,7 +457,7 @@ const SchoolDetailsStep = ({ form, setForm, errors }: any) => {
         </View>
 
         <View style={{ marginBottom: 20 }}>
-          <Text className="font-comfortaa-bold text-xs text-gray-500 mb-1">
+          <Text className="font-comfortaa-bold text-xs text-gray mb-1">
             Position
           </Text>
           <View className="flex-row items-center bg-white border border-[#CBD5E1] rounded-2xl px-4 py-3">
@@ -399,9 +468,9 @@ const SchoolDetailsStep = ({ form, setForm, errors }: any) => {
               style={{ marginRight: 8 }}
             />
             <TextInput
-              className="flex-1 font-comfortaa text-gray-700 text-base"
+              className="flex-1 font-comfortaa text-gray text-base"
               value={form.position}
-              onChangeText={v => setForm((f: any) => ({ ...f, position: v }))}
+              onChangeText={(v) => setForm((f: any) => ({ ...f, position: v }))}
               placeholder="Enter your position"
               placeholderTextColor="#A0A0A0"
             />
@@ -410,7 +479,9 @@ const SchoolDetailsStep = ({ form, setForm, errors }: any) => {
 
         <View className="flex-row items-center mb-8 mt-4">
           <TouchableOpacity
-            onPress={() => setForm((f: any) => ({ ...f, termsAccepted: !f.termsAccepted }))}
+            onPress={() =>
+              setForm((f: any) => ({ ...f, termsAccepted: !f.termsAccepted }))
+            }
             className="mr-2"
           >
             <View
@@ -425,7 +496,7 @@ const SchoolDetailsStep = ({ form, setForm, errors }: any) => {
               )}
             </View>
           </TouchableOpacity>
-          <Text className="font-comfortaa text-sm text-gray-600">
+          <Text className="font-comfortaa text-sm text-gray">
             I agree to the{" "}
             <Text className="text-primary font-comfortaa-bold">Terms</Text> &{" "}
             <Text className="text-primary font-comfortaa-bold">Conditions</Text>
@@ -438,20 +509,29 @@ const SchoolDetailsStep = ({ form, setForm, errors }: any) => {
 
 function validateForm(form: any) {
   const errors: any = {};
-  if (!form.firstName) errors.firstName = 'First name is required';
-  if (!form.lastName) errors.lastName = 'Last name is required';
-  if (!form.homeAddress) errors.homeAddress = 'Home address is required';
-  if (!form.email) errors.email = 'Email is required';
-  else if (!/^[^@\s]+@[^@\s]+\.edu$/.test(form.email)) errors.email = 'Email must be a .edu email';
-  if (!form.password) errors.password = 'Password is required';
-  else if (!/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?]).{8,}$/.test(form.password)) errors.password = 'Password must be at least 8 characters, include uppercase, lowercase, number, and special character';
-  if (form.password !== form.confirmPassword) errors.confirmPassword = 'Passwords do not match';
-  if (!form.phoneNumber) errors.phoneNumber = 'Phone number is required';
-  if (!form.countryCallingCode) errors.phoneNumber = 'Select country code';
-  if (!form.schoolName) errors.schoolName = 'School name is required';
-  if (form.schoolEmail && !/^[^@\s]+@[^@\s]+\.edu$/.test(form.schoolEmail)) errors.schoolEmail = 'School email must be a .edu email';
-  if (!form.position) errors.position = 'Position is required';
-  if (!form.termsAccepted) errors.termsAccepted = 'You must accept the terms';
+  if (!form.firstName) errors.firstName = "First name is required";
+  if (!form.lastName) errors.lastName = "Last name is required";
+  if (!form.homeAddress) errors.homeAddress = "Home address is required";
+  if (!form.email) errors.email = "Email is required";
+  else if (!/^[^@\s]+@[^@\s]+\.edu$/.test(form.email))
+    errors.email = "Email must be a .edu email";
+  if (!form.password) errors.password = "Password is required";
+  else if (
+    !/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?]).{8,}$/.test(
+      form.password
+    )
+  )
+    errors.password =
+      "Password must be at least 8 characters, include uppercase, lowercase, number, and special character";
+  if (form.password !== form.confirmPassword)
+    errors.confirmPassword = "Passwords do not match";
+  if (!form.phoneNumber) errors.phoneNumber = "Phone number is required";
+  if (!form.countryCallingCode) errors.phoneNumber = "Select country code";
+  if (!form.schoolName) errors.schoolName = "School name is required";
+  if (form.schoolEmail && !/^[^@\s]+@[^@\s]+\.edu$/.test(form.schoolEmail))
+    errors.schoolEmail = "School email must be a .edu email";
+  if (!form.position) errors.position = "Position is required";
+  if (!form.termsAccepted) errors.termsAccepted = "You must accept the terms";
   return errors;
 }
 
@@ -459,23 +539,23 @@ const HeadTeacherSignup = () => {
   const [step, setStep] = useState(0);
   const [completed, setCompleted] = useState(false);
   const [form, setForm] = useState({
-    firstName: '',
-    lastName: '',
-    homeAddress: '',
-    email: '',
-    password: '',
-    confirmPassword: '',
+    firstName: "",
+    lastName: "",
+    homeAddress: "",
+    email: "",
+    password: "",
+    confirmPassword: "",
     showPassword: false,
     showConfirmPassword: false,
-    countryCallingCode: '',
-    phoneNumber: '',
-    schoolName: '',
-    schoolEmail: '',
-    schoolLocation: '',
-    position: '',
+    countryCallingCode: "",
+    phoneNumber: "",
+    schoolName: "",
+    schoolEmail: "",
+    schoolLocation: "",
+    position: "",
     termsAccepted: false,
   });
-  const [countryCode, setCountryCode] = useState<string>('US');
+  const [countryCode, setCountryCode] = useState<string>("US");
   const [country, setCountry] = useState<any>(null);
   const [errors, setErrors] = useState<any>({});
   const [loading, setLoading] = useState(false);
@@ -509,7 +589,7 @@ const HeadTeacherSignup = () => {
         await authService.registerReferralTeacher(payload);
         setCompleted(true);
       } catch (e: any) {
-        setErrors({ api: e.message || 'Registration failed' });
+        setErrors({ api: e.message || "Registration failed" });
       } finally {
         setLoading(false);
       }
@@ -582,7 +662,7 @@ const HeadTeacherSignup = () => {
           disabled={loading}
         >
           <Text className="font-comfortaa-bold text-white mr-2 text-base">
-            {loading ? 'Please wait...' : 'Next'}
+            {loading ? "Please wait..." : "Next"}
           </Text>
           <Ionicons name="arrow-forward" size={18} color="#fff" />
         </TouchableOpacity>
@@ -598,7 +678,9 @@ const HeadTeacherSignup = () => {
         />
       </View>
       {errors.api ? (
-        <Text style={{ color: 'red', textAlign: 'center', marginBottom: 10 }}>{errors.api}</Text>
+        <Text style={{ color: "red", textAlign: "center", marginBottom: 10 }}>
+          {errors.api}
+        </Text>
       ) : null}
     </SafeAreaView>
   );

@@ -1,7 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
-import React, { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   Alert,
   AppState,
@@ -206,12 +206,10 @@ const WaitlistScreen = () => {
 
   return (
     <SafeAreaView className="flex-1 bg-white">
-      
-       <StatusBar
-       style="dark"
-       backgroundColor={PRIMARY_COLOR}
-       translucent={false}
-    
+      <StatusBar
+        style="dark"
+        backgroundColor={PRIMARY_COLOR}
+        translucent={false}
       />
       <ScrollView contentContainerStyle={{ flexGrow: 1, paddingBottom: 24 }}>
         {/* Header with profile */}
@@ -272,7 +270,7 @@ const WaitlistScreen = () => {
             <Text className="font-comfortaa-bold text-lg mb-2">
               Registration Status
             </Text>
-            <Text className="font-comfortaa text-gray-600 mb-4">
+            <Text className="font-comfortaa text-gray mb-4">
               {userInfo.statusText}
             </Text>
 

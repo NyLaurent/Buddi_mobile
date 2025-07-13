@@ -1,6 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
-import { Link, useRouter } from "expo-router";
-import React, { useEffect, useState } from "react";
+import { useRouter } from "expo-router";
+import { useEffect, useState } from "react";
 import {
   Image,
   ImageBackground,
@@ -50,7 +50,10 @@ const VideoGuidelinesScreen = () => {
       if (!buddiDetails) return; // Wait for buddiDetails to load
 
       // Allow both Registered and submissionApproved status for guidelines
-      if (buddiDetails.status !== "Registered" && buddiDetails.status !== "submissionApproved") {
+      if (
+        buddiDetails.status !== "Registered" &&
+        buddiDetails.status !== "submissionApproved"
+      ) {
         setIsTransitioning(true);
         await router.replace("/auth/waitlist" as any);
         return;
@@ -137,7 +140,7 @@ const VideoGuidelinesScreen = () => {
               {/* Get Ready Section */}
               <View className="mb-6">
                 <View className="flex-row items-center mb-1">
-                  <Text className="text-xl font-comfortaa-bold text-gray-800">
+                  <Text className="text-xl font-comfortaa-bold text-black">
                     Get Ready for the interview!
                   </Text>
                   <Image
@@ -153,7 +156,7 @@ const VideoGuidelinesScreen = () => {
                 className="mb-6 border border-blue-200 rounded-2xl p-4"
                 style={{ backgroundColor: "#F5FAFF" }}
               >
-                <Text className="font-comfortaa text-gray-700 mb-2">
+                <Text className="font-comfortaa text-gray mb-2">
                   Your interview details
                 </Text>
 
@@ -161,10 +164,10 @@ const VideoGuidelinesScreen = () => {
                   <View className="h-12 w-12 rounded-full bg-gray-100 mr-4" />
 
                   <View className="flex-1">
-                    <Text className="text-lg font-comfortaa-bold text-gray-800">
+                    <Text className="text-lg font-comfortaa-bold text-black">
                       30 Questions
                     </Text>
-                    <Text className="text-xs font-comfortaa text-gray-500">
+                    <Text className="text-xs font-comfortaa text-gray">
                       Up to 30 mins
                     </Text>
                   </View>
@@ -186,7 +189,7 @@ const VideoGuidelinesScreen = () => {
 
               {/* Guidelines */}
               <View className="mb-6">
-                <Text className="font-comfortaa-bold text-gray-700 mb-3">
+                <Text className="font-comfortaa-bold text-gray mb-3">
                   Please read and acknowledge each guideline carefully:
                 </Text>
 
@@ -202,10 +205,10 @@ const VideoGuidelinesScreen = () => {
                     }}
                   />
                   <View className="flex-1">
-                    <Text className="font-comfortaa-bold text-gray-800">
+                    <Text className="font-comfortaa-bold text-black">
                       Camera Position & Lighting
                     </Text>
-                    <Text className="font-comfortaa text-xs text-gray-500 mb-1">
+                    <Text className="font-comfortaa text-xs text-gray mb-1">
                       Ensure you are well-lit and facing the camera directly.
                       Your face should be clearly visible and centered in the
                       frame.
@@ -233,10 +236,10 @@ const VideoGuidelinesScreen = () => {
                     }}
                   />
                   <View className="flex-1">
-                    <Text className="font-comfortaa-bold text-gray-800">
+                    <Text className="font-comfortaa-bold text-black">
                       No External Assistance
                     </Text>
-                    <Text className="font-comfortaa text-xs text-gray-500 mb-1">
+                    <Text className="font-comfortaa text-xs text-gray mb-1">
                       Do not use AI tools, chat assistants, or any external help
                       during the interview. Your answers must be genuine and
                       original.
@@ -264,10 +267,10 @@ const VideoGuidelinesScreen = () => {
                     }}
                   />
                   <View className="flex-1">
-                    <Text className="font-comfortaa-bold text-gray-800">
+                    <Text className="font-comfortaa-bold text-black">
                       Clear Communication
                     </Text>
-                    <Text className="font-comfortaa text-xs text-gray-500 mb-1">
+                    <Text className="font-comfortaa text-xs text-gray mb-1">
                       Speak clearly and maintain a professional demeanor. Take
                       your time to think before answering each question.
                     </Text>
@@ -294,10 +297,10 @@ const VideoGuidelinesScreen = () => {
                     }}
                   />
                   <View className="flex-1">
-                    <Text className="font-comfortaa-bold text-gray-800">
+                    <Text className="font-comfortaa-bold text-black">
                       Quiet Environment
                     </Text>
-                    <Text className="font-comfortaa text-xs text-gray-500 mb-1">
+                    <Text className="font-comfortaa text-xs text-gray mb-1">
                       Find a quiet space with minimal background noise. Ensure
                       you won&apos;t be interrupted during the interview
                       session.
@@ -340,10 +343,10 @@ const VideoGuidelinesScreen = () => {
       >
         <View className="flex-1 justify-center items-center bg-black/50">
           <View className="bg-white rounded-3xl p-6 m-4 w-[90%] max-w-[400px]">
-            <Text className="text-xl font-comfortaa-bold text-gray-800 mb-4 text-center">
+            <Text className="text-xl font-comfortaa-bold text-black mb-4 text-center">
               Ready to Begin?
             </Text>
-            <Text className="font-comfortaa text-gray-600 mb-6 text-center">
+            <Text className="font-comfortaa text-gray mb-6 text-center">
               Please confirm that you have read and understood all the interview
               guidelines. Once you start, you cannot pause the interview.
             </Text>
@@ -352,7 +355,7 @@ const VideoGuidelinesScreen = () => {
                 className="bg-gray-200 py-3 px-6 rounded-full"
                 onPress={() => setShowConfirmModal(false)}
               >
-                <Text className="font-comfortaa-bold text-gray-700">
+                <Text className="font-comfortaa-bold text-gray">
                   Re-read Guidelines
                 </Text>
               </TouchableOpacity>

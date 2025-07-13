@@ -1,6 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import React, { useState } from "react";
+import { useState } from "react";
 import {
   FlatList,
   KeyboardAvoidingView,
@@ -130,7 +130,7 @@ export default function TimesheetPage() {
                   {submittedTimeSheets.length}
                 </Text>
               </View>
-              <Text className="font-comfortaa text-gray-500 text-sm">
+              <Text className="font-comfortaa text-gray text-sm">
                 Submitted
               </Text>
             </View>
@@ -141,9 +141,7 @@ export default function TimesheetPage() {
                   {flaggedTimeSheets.length}
                 </Text>
               </View>
-              <Text className="font-comfortaa text-gray-500 text-sm">
-                Flagged
-              </Text>
+              <Text className="font-comfortaa text-gray text-sm">Flagged</Text>
             </View>
           </View>
 
@@ -158,7 +156,7 @@ export default function TimesheetPage() {
               >
                 <Text
                   className={`font-comfortaa-bold text-base ${
-                    activeTab === "submitted" ? "text-black" : "text-gray-400"
+                    activeTab === "submitted" ? "text-black" : "text-gray"
                   }`}
                 >
                   Submitted ({submittedTimeSheets.length})
@@ -172,7 +170,7 @@ export default function TimesheetPage() {
               >
                 <Text
                   className={`font-comfortaa-bold text-base ${
-                    activeTab === "flagged" ? "text-black" : "text-gray-400"
+                    activeTab === "flagged" ? "text-black" : "text-gray"
                   }`}
                 >
                   Flagged ({flaggedTimeSheets.length})

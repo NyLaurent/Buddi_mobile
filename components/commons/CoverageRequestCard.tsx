@@ -1,5 +1,4 @@
 import { Ionicons } from "@expo/vector-icons";
-import React from "react";
 import { Image, Text, TouchableOpacity, View } from "react-native";
 
 interface CoverageRequestCardProps {
@@ -63,9 +62,7 @@ const CoverageRequestCard = ({
         </View>
       </View>
       <View className="bg-[#F5F5F5] px-3 py-1 rounded-xl">
-        <Text className="text-gray-500 font-comfortaa text-sm">
-          {hourlyRate}
-        </Text>
+        <Text className="text-gray font-comfortaa text-sm">{hourlyRate}</Text>
       </View>
     </View>
 
@@ -74,16 +71,18 @@ const CoverageRequestCard = ({
       <View className="flex-row items-center">
         <Ionicons name="location" size={16} color="#34C759" />
         <View className="ml-2">
-          <Text className="text-gray-400 font-comfortaa text-xs">School</Text>
-          <Text className="font-comfortaa text-gray-900 text-sm">{school}</Text>
+          <Text className="text-gray font-comfortaa text-xs">School</Text>
+          <Text className="font-comfortaa text-black text-sm">{school}</Text>
         </View>
       </View>
       <Ionicons name="play" size={24} color="#3CB4FF" />
       <View className="flex-row items-center">
         <Ionicons name="home" size={16} color="#FF932E" />
         <View className="ml-2">
-          <Text className="text-gray-400 font-comfortaa text-xs">Home</Text>
-          <Text className="font-comfortaa-bold text-gray-900 text-sm ">{home}</Text>
+          <Text className="text-gray font-comfortaa text-xs">Home</Text>
+          <Text className="font-comfortaa-bold text-black text-sm ">
+            {home}
+          </Text>
         </View>
       </View>
     </View>
@@ -102,10 +101,8 @@ const CoverageRequestCard = ({
         />
       )}
       <View className="flex-1">
-        <Text className="font-comfortaa-bold text-gray-900">
-          {requesterName}
-        </Text>
-        <Text className="text-gray-500 font-comfortaa text-sm">
+        <Text className="font-comfortaa-bold text-black">{requesterName}</Text>
+        <Text className="text-gray font-comfortaa text-sm">
           {requesterEmail}
         </Text>
       </View>
@@ -120,7 +117,7 @@ const CoverageRequestCard = ({
         className="flex-row items-center border border-[#E8E8E8] bg-white py-2 px-3 rounded-2xl justify-center w-[140px]"
         onPress={onViewDetails}
       >
-        <Text className="text-gray-600 font-comfortaa-bold mr-2 text-sm">
+        <Text className="text-gray font-comfortaa-bold mr-2 text-sm">
           View Details
         </Text>
         <Ionicons name="arrow-forward" size={16} color="#666" />

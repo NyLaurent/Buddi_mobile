@@ -171,7 +171,7 @@ const SchedulePage = () => {
               >
                 <Text
                   className={`font-comfortaa-bold text-base ${
-                    activeTab === "pickups" ? "text-black" : "text-gray-400"
+                    activeTab === "pickups" ? "text-black" : "text-gray"
                   }`}
                 >
                   Your Pickups
@@ -185,7 +185,7 @@ const SchedulePage = () => {
               >
                 <Text
                   className={`font-comfortaa-bold text-base ${
-                    activeTab === "coverage" ? "text-black" : "text-gray-400"
+                    activeTab === "coverage" ? "text-black" : "text-gray"
                   }`}
                 >
                   Coverage requests

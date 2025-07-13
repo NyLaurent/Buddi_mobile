@@ -4,7 +4,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useEvent } from "expo";
 import { useRouter } from "expo-router";
 import { useVideoPlayer, VideoView } from "expo-video";
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Dimensions,
@@ -101,7 +101,7 @@ const BuddiProfile = () => {
     return (
       <View className="flex-1 bg-white justify-center items-center">
         <ActivityIndicator size="large" color="#FF932E" />
-        <Text className="mt-4 text-gray-600 font-comfortaa">
+        <Text className="mt-4 text-gray font-comfortaa">
           Loading profile...
         </Text>
       </View>
@@ -140,7 +140,7 @@ const BuddiProfile = () => {
           >
             <Text
               className={`font-comfortaa-bold ${
-                activeTab === "General" ? "text-[#FF932E]" : "text-gray-400"
+                activeTab === "General" ? "text-[#FF932E]" : "text-gray"
               }`}
             >
               General
@@ -154,7 +154,7 @@ const BuddiProfile = () => {
           >
             <Text
               className={`font-comfortaa-bold ${
-                activeTab === "Documents" ? "text-[#FF932E]" : "text-gray-400"
+                activeTab === "Documents" ? "text-[#FF932E]" : "text-gray"
               }`}
             >
               Documents
@@ -299,7 +299,7 @@ const BuddiProfile = () => {
                   <Text className="font-comfortaa-bold text-base">
                     {fullName}
                   </Text>
-                  <Text className="text-gray-400 text-xs mt-1">
+                  <Text className="text-gray text-xs mt-1">
                     {profileData?.user?.createdAt
                       ? new Date(profileData.user.createdAt).toLocaleDateString(
                           "en-US",
@@ -349,7 +349,7 @@ const BuddiProfile = () => {
                 <Text className="font-comfortaa-bold text-base mt-4">
                   Resume
                 </Text>
-                <Text className="text-gray-400 text-xs mt-1">
+                <Text className="text-gray text-xs mt-1">
                   {hasResume ? "PDF • Available" : "PDF • Not uploaded"}
                 </Text>
               </View>

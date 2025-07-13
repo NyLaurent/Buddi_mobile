@@ -1,6 +1,5 @@
 import { Feather } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import React from "react";
 import { Image, Text, TouchableOpacity, View } from "react-native";
 
 const NoBuddi = () => {
@@ -14,7 +13,7 @@ const NoBuddi = () => {
         className="w-32 h-32 mb-6"
         resizeMode="contain"
       />
-      <Text className="text-center text-gray-500 font-comfortaa mb-8 text-base">
+      <Text className="text-center text-gray font-comfortaa mb-8 text-base">
         You currently have no Buddi!
       </Text>
       <TouchableOpacity

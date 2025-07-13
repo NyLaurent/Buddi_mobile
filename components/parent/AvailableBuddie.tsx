@@ -4,7 +4,6 @@ import {
   Ionicons,
   MaterialIcons,
 } from "@expo/vector-icons";
-import React from "react";
 import { Image, Text, TouchableOpacity, View } from "react-native";
 import { buddieCardData } from "../../data/data";
 
@@ -22,14 +21,14 @@ const AvailableBuddie = () => {
           />
           <Text className="text-lg font-comfortaa-bold  mt-2">{data.name}</Text>
           <View>
-            <Text className="text-xs text-gray-400 font-comfortaa mt-1 w-full">
+            <Text className="text-xs text-gray font-comfortaa mt-1 w-full">
               {data.email}
             </Text>
           </View>
 
           <View className="flex-row items-center justify-center space-x-2 mt-2">
             <Feather name="phone" size={16} color="#6B7280" />
-            <Text className="text-xs text-gray-500 font-comfortaa">
+            <Text className="text-xs text-gray font-comfortaa">
               {data.phone}
             </Text>
           </View>
@@ -55,27 +54,25 @@ const AvailableBuddie = () => {
       {/* School Name (full width) */}
       <View className="flex-row items-center w-full mb-2">
         <Ionicons name="location" size={20} color="#22C55E" />
-        <Text className="text-[13px] text-gray-400 font-comfortaa ml-2">
+        <Text className="text-[13px] text-gray font-comfortaa ml-2">
           School
         </Text>
-        <Text className="text-base font-comfortaa-bold text-gray-900 ml-2">
+        <Text className="text-base font-comfortaa-bold text-black ml-2">
           {data.school.name}
         </Text>
       </View>
       {/* Home Section (full width) */}
       <View className="flex-row items-center w-full mb-2">
         <MaterialIcons name="home" size={20} color="#FF9100" />
-        <Text className="text-[13px] text-gray-400 font-comfortaa ml-2">
-          Home
-        </Text>
-        <Text className="text-base font-comfortaa-bold text-gray-900 ml-2">
+        <Text className="text-[13px] text-gray font-comfortaa ml-2">Home</Text>
+        <Text className="text-base font-comfortaa-bold text-black ml-2">
           {data.home.name}
         </Text>
       </View>
       {/* School, Name Row (full width) */}
       <View className="flex-row items-center w-full mb-2">
         <MaterialIcons name="school" size={18} color="#232B3A" />
-        <Text className="text-xs text-gray-500 font-comfortaa ml-2">
+        <Text className="text-xs text-gray font-comfortaa ml-2">
           {data.schoolName}
         </Text>
       </View>
@@ -99,7 +96,7 @@ const AvailableBuddie = () => {
       </View>
       <View className="border-b border-gray my-3" />
       {/* Assigned Kids */}
-      <Text className="text-base font-comfortaa-bold text-gray-700 mb-2 text-left">
+      <Text className="text-base font-comfortaa-bold text-gray mb-2 text-left">
         Assigned Kids:
       </Text>
       <View className="flex-row items-center justify-start gap-4 mb-6 w-full">

@@ -60,10 +60,10 @@ const CallUpReviewCard: React.FC<CallUpReviewCardProps> = ({
       </View>
       <View className="border-b border-gray my-2" />
       {/* Description */}
-      <Text className="text-base font-comfortaa-bold text-gray-900 mb-1">
+      <Text className="text-base font-comfortaa-bold text-black mb-1">
         Description
       </Text>
-      <Text className="text-xs text-gray-500 font-comfortaa mb-3">
+      <Text className="text-xs text-gray font-comfortaa mb-3">
         {description}
       </Text>
       {/* School/Home Row */}
@@ -80,23 +80,21 @@ const CallUpReviewCard: React.FC<CallUpReviewCardProps> = ({
         <Ionicons name="play" size={20} color="#60A5FA" />
         <View className="flex-row items-center">
           <MaterialIcons name="home" size={18} color="#FF9100" />
-          <Text className="text-xs text-gray-400 font-comfortaa ml-1">
-            Home
-          </Text>
+          <Text className="text-xs text-gray font-comfortaa ml-1">Home</Text>
           <Text className="text-sm font-comfortaa-bold text-grayText ml-1">
             {home}
           </Text>
         </View>
       </View>
       {/* Assigned Kids */}
-      <Text className="text-base font-comfortaa-bold text-gray-900 mb-2">
+      <Text className="text-base font-comfortaa-bold text-black mb-2">
         Assigned Kids:
       </Text>
       <View className="flex-row items-center gap-4 mb-6 w-full">
         {assignedKids.map((kid, idx) => (
           <View key={idx} className="flex-row items-center gap-1">
             <FontAwesome name="child" size={22} color="#232B3A" />
-            <Text className="text-base font-comfortaa text-gray-900">
+            <Text className="text-base font-comfortaa text-black">
               {kid.name}
             </Text>
           </View>
@@ -109,7 +107,7 @@ const CallUpReviewCard: React.FC<CallUpReviewCardProps> = ({
           onPress={onViewDetails}
         >
           <Ionicons name="eye" size={20} color="#6B7280" />
-          <Text className="text-gray-500 font-comfortaa-bold text-base ml-2">
+          <Text className="text-gray font-comfortaa-bold text-base ml-2">
             View Details
           </Text>
         </TouchableOpacity>

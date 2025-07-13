@@ -1,6 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import React, { useRef, useState } from "react";
+import { useRef, useState } from "react";
 import {
   Image,
   StyleSheet,
@@ -70,10 +70,10 @@ const OTPVerificationScreen = () => {
 
         {/* Header */}
         <View className="items-center">
-          <Text className="text-3xl font-comfortaa-bold text-gray-800 mb-2">
+          <Text className="text-3xl font-comfortaa-bold text-black mb-2">
             OTP Verification
           </Text>
-          <Text className="text-sm font-comfortaa text-center text-gray-500 mb-8">
+          <Text className="text-sm font-comfortaa text-center text-gray mb-8">
             Enter your email used in signup to get a confirmation code (OTP)
           </Text>
         </View>
@@ -95,14 +95,14 @@ const OTPVerificationScreen = () => {
                 maxLength={1}
                 textAlign="center"
                 selectTextOnFocus
-                className="font-comfortaa-bold text-xl text-gray-700"
+                className="font-comfortaa-bold text-xl text-gray"
               />
             ))}
           </View>
 
           {/* Didn't receive code? */}
           <View className="flex-row justify-center items-center mt-4">
-            <Text className="font-comfortaa text-gray-500 mr-2">
+            <Text className="font-comfortaa text-gray mr-2">
               Didn't receive code?
             </Text>
             <TouchableOpacity onPress={handleResend}>

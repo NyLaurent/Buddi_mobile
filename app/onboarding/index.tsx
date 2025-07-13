@@ -2,7 +2,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { LogOut } from "lucide-react-native";
-import React, { useRef, useState } from "react";
+import { useRef, useState } from "react";
 import {
   Animated,
   Dimensions,
@@ -168,12 +168,12 @@ const Onboarding = () => {
               resizeMode="contain"
             />
             {item.subtitle ? (
-              <Text className="text-lg font-comfortaa-bold text-center mt-2 text-gray-700">
+              <Text className="text-lg font-comfortaa-bold text-center mt-2 text-gray">
                 {item.subtitle}
               </Text>
             ) : null}
             {item.description ? (
-              <Text className="text-center font-comfortaa text-gray-500 mt-2 mb-4">
+              <Text className="text-center font-comfortaa text-gray mt-2 mb-4">
                 {item.description}
               </Text>
             ) : null}

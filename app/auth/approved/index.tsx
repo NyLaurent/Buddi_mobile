@@ -1,6 +1,5 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import React from "react";
 import { Image, ScrollView, Text, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -70,7 +69,7 @@ const ApprovedPage = () => {
               }}
             >
               <View className="flex-row justify-between items-center mb-4">
-                <Text className="text-xl font-comfortaa-bold text-gray-800">
+                <Text className="text-xl font-comfortaa-bold text-black">
                   Congratulations!
                 </Text>
                 <Image
@@ -91,10 +90,10 @@ const ApprovedPage = () => {
                 </View>
 
                 <View style={{ flex: 1, justifyContent: "center" }}>
-                  <Text className="font-comfortaa-bold text-lg text-gray-800 mb-1">
+                  <Text className="font-comfortaa-bold text-lg text-black mb-1">
                     Your Account was approved!
                   </Text>
-                  <Text className="font-comfortaa text-xs text-gray-500">
+                  <Text className="font-comfortaa text-xs text-gray">
                     2 hrs ago, 20th, May, 2025
                   </Text>
                 </View>
@@ -118,7 +117,7 @@ const ApprovedPage = () => {
                   color="#666"
                   style={{ marginRight: 8 }}
                 />
-                <Text className="font-comfortaa-bold text-gray-700 text-base">
+                <Text className="font-comfortaa-bold text-gray text-base">
                   Update Info
                 </Text>
               </TouchableOpacity>
@@ -182,11 +181,11 @@ const ApprovedPage = () => {
                 resizeMode="contain"
               />
 
-              <Text className="text-gray-800 text-lg font-comfortaa-bold text-center mt-5 mb-2">
+              <Text className="text-black text-lg font-comfortaa-bold text-center mt-5 mb-2">
                 Answer & Record Your Interview
               </Text>
 
-              <Text className="font-comfortaa text-center text-gray-500 mb-6">
+              <Text className="font-comfortaa text-center text-gray mb-6">
                 Record your responses to a few questions{"\n"}
                 to help us evaluate your fit
               </Text>

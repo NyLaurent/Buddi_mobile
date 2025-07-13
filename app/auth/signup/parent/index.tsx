@@ -13,10 +13,10 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import { CountryPicker, Country } from "react-native-country-codes-picker";
+import { Country, CountryPicker } from "react-native-country-codes-picker";
 import { SafeAreaView } from "react-native-safe-area-context";
-import SuccessScreen from "../../../../components/commons/SuccessScreen";
 import CountryPickerHeader from "../../../../components/commons/CountryPickerHeader";
+import SuccessScreen from "../../../../components/commons/SuccessScreen";
 import authService from "../../../../services/api/auth.service";
 import { ParentRegistrationRequest } from "../../../../services/api/types";
 
@@ -170,7 +170,7 @@ const RegistrationStep: React.FC<
             className="w-40 h-12 mb-4"
             resizeMode="contain"
           />
-          <Text className="text-2xl font-comfortaa-bold text-center text-gray-800 mb-2">
+          <Text className="text-2xl font-comfortaa-bold text-center text-black mb-2">
             Registration
           </Text>
         </View>
@@ -196,18 +196,18 @@ const RegistrationStep: React.FC<
               <Ionicons name="camera" size={20} color="#fff" />
             </View>
           </TouchableOpacity>
-          <Text className="font-comfortaa text-xs text-gray-500 mb-2">
+          <Text className="font-comfortaa text-xs text-gray mb-2">
             Add a Profile Photo
           </Text>
         </View>
         {/* Form fields */}
         <View style={{ flexDirection: "row", gap: 16, marginBottom: 20 }}>
           <View style={{ flex: 1 }}>
-            <Text className="font-comfortaa-bold text-xs text-gray-500 mb-1">
+            <Text className="font-comfortaa-bold text-xs text-gray mb-1">
               First Name
             </Text>
             <TextInput
-              className="bg-white border border-[#CBD5E1] rounded-2xl px-4 py-3 font-comfortaa text-gray-700 text-base"
+              className="bg-white border border-[#CBD5E1] rounded-2xl px-4 py-3 font-comfortaa text-gray text-base"
               value={formData.firstName}
               onChangeText={(text) =>
                 setFormData((prev) => ({ ...prev, firstName: text }))
@@ -217,11 +217,11 @@ const RegistrationStep: React.FC<
             />
           </View>
           <View style={{ flex: 1 }}>
-            <Text className="font-comfortaa-bold text-xs text-gray-500 mb-1">
+            <Text className="font-comfortaa-bold text-xs text-gray mb-1">
               Last Name
             </Text>
             <TextInput
-              className="bg-white border border-[#CBD5E1] rounded-2xl px-4 py-3 font-comfortaa text-gray-700 text-base"
+              className="bg-white border border-[#CBD5E1] rounded-2xl px-4 py-3 font-comfortaa text-gray text-base"
               value={formData.lastName}
               onChangeText={(text) =>
                 setFormData((prev) => ({ ...prev, lastName: text }))
@@ -233,7 +233,7 @@ const RegistrationStep: React.FC<
         </View>
 
         <View style={{ marginBottom: 20 }}>
-          <Text className="font-comfortaa-bold text-xs text-gray-500 mb-1">
+          <Text className="font-comfortaa-bold text-xs text-gray mb-1">
             Email
           </Text>
           <View className="flex-row items-center bg-white border border-[#CBD5E1] rounded-2xl px-4 py-3">
@@ -244,7 +244,7 @@ const RegistrationStep: React.FC<
               style={{ marginRight: 8 }}
             />
             <TextInput
-              className="flex-1 font-comfortaa text-gray-700 text-base"
+              className="flex-1 font-comfortaa text-gray text-base"
               value={formData.email}
               onChangeText={(text) =>
                 setFormData((prev) => ({ ...prev, email: text }))
@@ -262,12 +262,12 @@ const RegistrationStep: React.FC<
 
         <View style={{ flexDirection: "row", gap: 16, marginBottom: 20 }}>
           <View style={{ flex: 1 }}>
-            <Text className="font-comfortaa-bold text-xs text-gray-500 mb-1">
+            <Text className="font-comfortaa-bold text-xs text-gray mb-1">
               Password
             </Text>
             <View className="flex-row items-center bg-white border border-[#CBD5E1] rounded-2xl px-4">
               <TextInput
-                className="flex-1 font-comfortaa text-gray-700 text-base py-3"
+                className="flex-1 font-comfortaa text-gray text-base py-3"
                 value={formData.password}
                 onChangeText={(text) =>
                   setFormData((prev) => ({ ...prev, password: text }))
@@ -289,12 +289,12 @@ const RegistrationStep: React.FC<
             </View>
           </View>
           <View style={{ flex: 1 }}>
-            <Text className="font-comfortaa-bold text-xs text-gray-500 mb-1">
+            <Text className="font-comfortaa-bold text-xs text-gray mb-1">
               Confirm Password
             </Text>
             <View className="flex-row items-center bg-white border border-[#CBD5E1] rounded-2xl px-4">
               <TextInput
-                className="flex-1 font-comfortaa text-gray-700 text-base py-3"
+                className="flex-1 font-comfortaa text-gray text-base py-3"
                 value={formData.confirmPassword}
                 onChangeText={(text) =>
                   setFormData((prev) => ({ ...prev, confirmPassword: text }))
@@ -318,7 +318,7 @@ const RegistrationStep: React.FC<
         </View>
 
         <View style={{ marginBottom: 20 }}>
-          <Text className="font-comfortaa-bold text-xs text-gray-500 mb-1">
+          <Text className="font-comfortaa-bold text-xs text-gray mb-1">
             Phone Number
           </Text>
           <View
@@ -403,27 +403,32 @@ const RegistrationStep: React.FC<
           setShowCountryPicker(false);
         }}
         popularCountries={["US", "CA", "GB", "AU", "DE", "FR"]}
-        ListHeaderComponent={props => <CountryPickerHeader {...props} onClose={() => setShowCountryPicker(false)} />}
+        ListHeaderComponent={(props) => (
+          <CountryPickerHeader
+            {...props}
+            onClose={() => setShowCountryPicker(false)}
+          />
+        )}
         lang="en"
         style={{
           modal: {
-            backgroundColor: '#fff',
+            backgroundColor: "#fff",
             flex: 1,
             margin: 0,
             marginTop: 50,
           },
           backdrop: {
-            backgroundColor: 'rgba(0, 0, 0, 0.5)',
+            backgroundColor: "rgba(0, 0, 0, 0.5)",
             flex: 1,
           },
           textInput: {
             height: 50,
             borderRadius: 12,
             borderWidth: 1,
-            borderColor: '#E5E7EB',
+            borderColor: "#E5E7EB",
             paddingHorizontal: 16,
             fontSize: 16,
-            fontFamily: 'Comfortaa-Medium',
+            fontFamily: "Comfortaa-Medium",
             marginHorizontal: 16,
             marginBottom: 16,
           },
@@ -431,17 +436,17 @@ const RegistrationStep: React.FC<
             paddingVertical: 16,
             paddingHorizontal: 20,
             borderBottomWidth: 1,
-            borderBottomColor: '#F3F4F6',
+            borderBottomColor: "#F3F4F6",
           },
           countryName: {
             fontSize: 16,
-            fontFamily: 'Comfortaa-Medium',
-            color: '#374151',
+            fontFamily: "Comfortaa-Medium",
+            color: "#374151",
           },
           dialCode: {
             fontSize: 14,
-            fontFamily: 'Comfortaa-Medium',
-            color: '#6B7280',
+            fontFamily: "Comfortaa-Medium",
+            color: "#6B7280",
           },
           flag: {
             fontSize: 20,
@@ -507,17 +512,17 @@ const ChildInformationStep: React.FC<StepProps> = ({
             className="w-40 h-12 mb-4"
             resizeMode="contain"
           />
-          <Text className="text-2xl font-comfortaa-bold text-center text-gray-800 mb-2">
+          <Text className="text-2xl font-comfortaa-bold text-center text-black mb-2">
             Tell us more about your child(ren)
           </Text>
-          <Text className="text-sm font-comfortaa text-center text-gray-500 mb-6 px-8">
+          <Text className="text-sm font-comfortaa text-center text-gray mb-6 px-8">
             Help us get to know your child(ren) to match them with the perfect
             Buddi.
           </Text>
         </View>
 
         <View style={{ marginBottom: 20 }}>
-          <Text className="font-comfortaa-bold text-xs text-gray-500 mb-1">
+          <Text className="font-comfortaa-bold text-xs text-gray mb-1">
             Home Address
           </Text>
           <View className="flex-row items-center bg-white border border-[#CBD5E1] rounded-2xl px-4 py-3">
@@ -528,7 +533,7 @@ const ChildInformationStep: React.FC<StepProps> = ({
               style={{ marginRight: 8 }}
             />
             <TextInput
-              className="flex-1 font-comfortaa text-gray-700 text-base"
+              className="flex-1 font-comfortaa text-gray text-base"
               value={formData.homeAddress}
               onChangeText={(text) =>
                 setFormData((prev) => ({ ...prev, homeAddress: text }))
@@ -542,7 +547,7 @@ const ChildInformationStep: React.FC<StepProps> = ({
         {/* Children Information */}
         <View className="mb-4">
           <View className="flex-row items-center justify-between mb-3">
-            <Text className="font-comfortaa-bold text-base text-gray-800">
+            <Text className="font-comfortaa-bold text-base text-black">
               Children Information
             </Text>
             <TouchableOpacity
@@ -558,7 +563,7 @@ const ChildInformationStep: React.FC<StepProps> = ({
           {formData.children.map((child, index) => (
             <View key={index} className="mb-4 p-4 bg-gray-50 rounded-2xl">
               <View className="flex-row items-center justify-between mb-3">
-                <Text className="font-comfortaa-bold text-gray-700">
+                <Text className="font-comfortaa-bold text-gray">
                   Child {index + 1}
                 </Text>
                 {formData.children.length > 1 && (
@@ -572,11 +577,11 @@ const ChildInformationStep: React.FC<StepProps> = ({
               </View>
 
               <View style={{ marginBottom: 12 }}>
-                <Text className="font-comfortaa-bold text-xs text-gray-500 mb-1">
+                <Text className="font-comfortaa-bold text-xs text-gray mb-1">
                   Full Name
                 </Text>
                 <TextInput
-                  className="bg-white border border-[#CBD5E1] rounded-2xl px-4 py-3 font-comfortaa text-gray-700 text-base"
+                  className="bg-white border border-[#CBD5E1] rounded-2xl px-4 py-3 font-comfortaa text-gray text-base"
                   value={child.name}
                   onChangeText={(text) => updateChild(index, "name", text)}
                   placeholder="Child's full name"
@@ -586,11 +591,11 @@ const ChildInformationStep: React.FC<StepProps> = ({
 
               <View style={{ flexDirection: "row", gap: 12, marginBottom: 12 }}>
                 <View style={{ flex: 1 }}>
-                  <Text className="font-comfortaa-bold text-xs text-gray-500 mb-1">
+                  <Text className="font-comfortaa-bold text-xs text-gray mb-1">
                     Age
                   </Text>
                   <TextInput
-                    className="bg-white border border-[#CBD5E1] rounded-2xl px-4 py-3 font-comfortaa text-gray-700 text-base"
+                    className="bg-white border border-[#CBD5E1] rounded-2xl px-4 py-3 font-comfortaa text-gray text-base"
                     value={child.age}
                     onChangeText={(text) => updateChild(index, "age", text)}
                     placeholder="Age"
@@ -599,11 +604,11 @@ const ChildInformationStep: React.FC<StepProps> = ({
                   />
                 </View>
                 <View style={{ flex: 2 }}>
-                  <Text className="font-comfortaa-bold text-xs text-gray-500 mb-1">
+                  <Text className="font-comfortaa-bold text-xs text-gray mb-1">
                     School
                   </Text>
                   <TextInput
-                    className="bg-white border border-[#CBD5E1] rounded-2xl px-4 py-3 font-comfortaa text-gray-700 text-base"
+                    className="bg-white border border-[#CBD5E1] rounded-2xl px-4 py-3 font-comfortaa text-gray text-base"
                     value={child.school}
                     onChangeText={(text) => updateChild(index, "school", text)}
                     placeholder="School name"
@@ -637,7 +642,7 @@ const ChildInformationStep: React.FC<StepProps> = ({
               )}
             </View>
           </TouchableOpacity>
-          <Text className="font-comfortaa text-sm text-gray-600">
+          <Text className="font-comfortaa text-sm text-gray">
             I agree to the{" "}
             <Text className="text-primary font-comfortaa-bold">Terms</Text> &{" "}
             <Text className="text-primary font-comfortaa-bold">Conditions</Text>
@@ -667,20 +672,20 @@ const PaymentStep: React.FC<StepProps> = ({ formData, setFormData }) => {
             className="w-40 h-12 mb-4"
             resizeMode="contain"
           />
-          <Text className="text-2xl font-comfortaa-bold text-center text-gray-800">
+          <Text className="text-2xl font-comfortaa-bold text-center text-black">
             Complete Background
           </Text>
-          <Text className="text-2xl font-comfortaa-bold text-center text-gray-800 mb-2">
+          <Text className="text-2xl font-comfortaa-bold text-center text-black mb-2">
             Check Payment
           </Text>
-          <Text className="text-sm font-comfortaa text-center text-gray-500 mb-6 px-6">
+          <Text className="text-sm font-comfortaa text-center text-gray mb-6 px-6">
             Secure your child&apos;s safety and peace of mind. A small fee
             covers a thorough Buddi background screening.
           </Text>
         </View>
 
         <View className="mb-6">
-          <Text className="font-comfortaa-bold text-base text-gray-800 mb-4">
+          <Text className="font-comfortaa-bold text-base text-black mb-4">
             <Ionicons
               name="card-outline"
               size={20}
@@ -717,7 +722,7 @@ const PaymentStep: React.FC<StepProps> = ({ formData, setFormData }) => {
                 )}
               </View>
               <View className="flex-1">
-                <Text className="font-comfortaa-bold text-sm text-gray-700">
+                <Text className="font-comfortaa-bold text-sm text-gray">
                   Credit or debit card
                 </Text>
               </View>
@@ -770,7 +775,7 @@ const PaymentStep: React.FC<StepProps> = ({ formData, setFormData }) => {
                   <View className="w-3 h-3 rounded-full bg-primary" />
                 )}
               </View>
-              <Text className="font-comfortaa-bold text-sm text-gray-700">
+              <Text className="font-comfortaa-bold text-sm text-gray">
                 PayPal
               </Text>
               <Image
@@ -808,7 +813,7 @@ const PaymentStep: React.FC<StepProps> = ({ formData, setFormData }) => {
                   <View className="w-3 h-3 rounded-full bg-primary" />
                 )}
               </View>
-              <Text className="font-comfortaa-bold text-sm text-gray-700">
+              <Text className="font-comfortaa-bold text-sm text-gray">
                 Apple Pay
               </Text>
               <Ionicons
