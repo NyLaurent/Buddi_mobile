@@ -184,4 +184,5 @@ export const CHILDREN_ENDPOINTS = {
 // Coverage Endpoints
 export const COVERAGE_ENDPOINTS = {
   CREATE_REQUEST: '/coverage/buddi-requests',
+  MATCH_BUDDI: 'https://backend-service-hw1rh.kinsta.app/api/v1/coverage/match-buddi',
 } as const; 

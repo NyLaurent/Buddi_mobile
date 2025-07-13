@@ -15,7 +15,7 @@ interface CallUpReviewCardProps {
   schoolName: string;
   home: string;
   assignedKids: AssignedKid[];
-  onRemove: () => void;
+  onViewDetails: () => void;
   onApplicants: () => void;
 }
 
@@ -28,7 +28,7 @@ const CallUpReviewCard: React.FC<CallUpReviewCardProps> = ({
   schoolName,
   home,
   assignedKids,
-  onRemove,
+  onViewDetails,
   onApplicants,
 }) => {
   return (
@@ -106,11 +106,11 @@ const CallUpReviewCard: React.FC<CallUpReviewCardProps> = ({
       <View className="flex-row items-center justify-between mt-2">
         <TouchableOpacity
           className="flex-1 bg-[#F4F7FE] rounded-full py-3 items-center flex-row justify-center mr-2"
-          onPress={onRemove}
+          onPress={onViewDetails}
         >
-          <Ionicons name="close" size={20} color="#6B7280" />
+          <Ionicons name="eye" size={20} color="#6B7280" />
           <Text className="text-gray-500 font-comfortaa-bold text-base ml-2">
-            Remove
+            View Details
           </Text>
         </TouchableOpacity>
         <TouchableOpacity

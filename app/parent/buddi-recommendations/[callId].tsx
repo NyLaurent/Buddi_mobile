@@ -2,9 +2,10 @@ import { FontAwesome5, Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import React from "react";
-import { ScrollView, Text, TouchableOpacity, View } from "react-native";
+import { Alert, ScrollView, Text, TouchableOpacity, View } from "react-native";
 import BuddiRecommendationCard from "../../../components/parent/BuddiRecommendationCard";
 import { useAuth } from "../../../context/AuthContext";
+import CoverageService from "../../../services/api/coverage.service";
 import ParentService, {
   BuddiRecommendation,
 } from "../../../services/api/parent.service";
@@ -30,6 +31,7 @@ export default function BuddiRecommendationsPage() {
   const [isRankingMode, setIsRankingMode] = React.useState(false);
   const [topRankedBuddi, setTopRankedBuddi] = React.useState<any>(null);
   const [loadingTopRanked, setLoadingTopRanked] = React.useState(false);
+  const [isMatching, setIsMatching] = React.useState(false);
 
   React.useEffect(() => {
     const fetchRecommendations = async () => {
@@ -199,12 +201,75 @@ export default function BuddiRecommendationsPage() {
     setIsRankingMode(!isRankingMode);
   };
 
-  const handleMatchBuddi = () => {
-    if (topRankedBuddi) {
-      const buddiName = `${topRankedBuddi.User?.firstName} ${topRankedBuddi.User?.lastName}`;
-      // TODO: Implement the matching logic
-      alert(`Matching you with ${buddiName}!`);
+  const handleMatchBuddi = async () => {
+    if (!topRankedBuddi || !callId) {
+      Alert.alert("Error", "Unable to match buddy. Please try again.");
+      return;
     }
+
+    const buddiName = `${topRankedBuddi.User?.firstName} ${topRankedBuddi.User?.lastName}`;
+
+    // Show confirmation alert
+    Alert.alert(
+      "Confirm Matching",
+      `Are you sure you want to match with ${buddiName}?\n\nPlease confirm that you have:\n• Reviewed their profile thoroughly\n• Checked their ratings and experience\n• Read their teacher reference\n• Watched their interview video (if available)\n\nThis action will finalize your selection and cannot be undone.`,
+      [
+        {
+          text: "Cancel",
+          style: "cancel",
+        },
+        {
+          text: "Yes, Match Now",
+          style: "default",
+          onPress: async () => {
+            try {
+              setIsMatching(true);
+
+              // Call the API to match the buddi
+              const response = await CoverageService.matchBuddi({
+                requestId: parseInt(callId),
+                buddiId: topRankedBuddi.id,
+              });
+
+              // Show success message
+              Alert.alert(
+                "Success! 🎉",
+                `You have been successfully matched with ${buddiName}!\n\n${
+                  (response as any)?.data?.message ||
+                  "Your request has been processed and the buddi has been notified."
+                }\n\nYou will receive a confirmation email shortly with next steps.`,
+                [
+                  {
+                    text: "Great!",
+                    onPress: () => {
+                      // Navigate back or to a success page
+                      router.back();
+                    },
+                  },
+                ]
+              );
+            } catch (error: any) {
+              // Show error message
+              Alert.alert(
+                "Matching Failed",
+                error.message ||
+                  "Failed to match with the selected buddy. Please try again.",
+                [
+                  {
+                    text: "OK",
+                    onPress: () => {
+                      // Optionally refresh the page or show retry option
+                    },
+                  },
+                ]
+              );
+            } finally {
+              setIsMatching(false);
+            }
+          },
+        },
+      ]
+    );
   };
 
   return (
@@ -335,7 +400,7 @@ export default function BuddiRecommendationsPage() {
               {Object.keys(rankings).length >= 3 ? (
                 <TouchableOpacity
                   style={{
-                    backgroundColor: "#fff",
+                    backgroundColor: isMatching ? "#E5E7EB" : "#fff",
                     borderRadius: 999,
                     paddingVertical: 12,
                     paddingHorizontal: 24,
@@ -349,21 +414,31 @@ export default function BuddiRecommendationsPage() {
                   }}
                   onPress={handleMatchBuddi}
                   activeOpacity={0.85}
+                  disabled={isMatching}
                 >
-                  <FontAwesome5
-                    name="handshake"
-                    size={16}
-                    color="#FF932E"
-                    style={{ marginRight: 8 }}
-                  />
+                  {isMatching ? (
+                    <FontAwesome5
+                      name="spinner"
+                      size={16}
+                      color="#9CA3AF"
+                      style={{ marginRight: 8 }}
+                    />
+                  ) : (
+                    <FontAwesome5
+                      name="handshake"
+                      size={16}
+                      color="#FF932E"
+                      style={{ marginRight: 8 }}
+                    />
+                  )}
                   <Text
                     style={{
-                      color: "#FF932E",
+                      color: isMatching ? "#9CA3AF" : "#FF932E",
                       fontFamily: "Comfortaa-Bold",
                       fontSize: 14,
                     }}
                   >
-                    Match Him
+                    {isMatching ? "Matching..." : "Match Him"}
                   </Text>
                 </TouchableOpacity>
               ) : (

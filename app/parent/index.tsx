@@ -357,154 +357,296 @@ export default function ParentDashboard() {
                 </View>
               </View>
               <View style={{ flex: 1 }}>
-                {/* User-friendly message */}
-                <Text
-                  style={{
-                    color: "#fff",
-                    fontFamily: "Comfortaa-Regular",
-                    fontSize: 15,
-                    marginBottom: 10,
-                  }}
-                >
-                  Your call is being processed. We will notify you once a Buddi is
-                  matched!
-                </Text>
-                {/* Description and Status on same line, with icons */}
-                <View
-                  style={{
-                    flexDirection: "row",
-                    alignItems: "center",
-                    marginBottom: 8,
-                  }}
-                >
-                  <FontAwesome5
-                    name="align-left"
-                    size={16}
-                    color="#fff"
-                    style={{ marginRight: 6 }}
-                  />
-                  <Text
-                    style={{
-                      color: "#fff",
-                      fontFamily: "Comfortaa-Bold",
-                      fontSize: 15,
-                      marginRight: 6,
-                    }}
-                  >
-                    Description:
-                  </Text>
-                  <Text
-                    numberOfLines={1}
-                    ellipsizeMode="tail"
-                    style={{
-                      color: "#fff",
-                      fontFamily: "Comfortaa-Regular",
-                      fontSize: 15,
-                      flexShrink: 1,
-                    }}
-                  >
-                    {pickupRequests[0].description}
-                  </Text>
-                </View>
-                <View
-                  style={{
-                    flexDirection: "row",
-                    alignItems: "center",
-                    marginBottom: 2,
-                  }}
-                >
-                  <FontAwesome5
-                    name="info-circle"
-                    size={16}
-                    color="#fff"
-                    style={{ marginRight: 6 }}
-                  />
-                  <Text
-                    style={{
-                      color: "#fff",
-                      fontFamily: "Comfortaa-Bold",
-                      fontSize: 15,
-                      marginRight: 6,
-                    }}
-                  >
-                    Status:
-                  </Text>
-                  <Text
-                    style={{
-                      color: "#fff",
-                      fontFamily: "Comfortaa-Regular",
-                      fontSize: 15,
-                    }}
-                  >
-                    {pickupRequests[0].status === "pending"
-                      ? "Under Review"
-                      : pickupRequests[0].status.charAt(0).toUpperCase() +
-                        pickupRequests[0].status.slice(1)}
-                  </Text>
-                </View>
-                <TouchableOpacity
-                  style={{
-                    backgroundColor: "#fff",
-                    borderRadius: 999,
-                    paddingVertical: 8,
-                    paddingHorizontal: 22,
-                    alignSelf: "flex-start",
-                    flexDirection: "row",
-                    alignItems: "center",
-                    marginTop: 14,
-                    shadowColor: "#FF932E",
-                    shadowOffset: { width: 0, height: 2 },
-                    shadowOpacity: 0.1,
-                    shadowRadius: 4,
-                    elevation: 2,
-                  }}
-                  onPress={() => router.push("/parent/my-calls")}
-                  activeOpacity={0.85}
-                >
-                  <Text
-                    style={{
-                      color: "#FF932E",
-                      fontFamily: "Comfortaa-Bold",
-                      fontSize: 15,
-                      marginRight: 8,
-                    }}
-                  >
-                    See More
-                  </Text>
-                  <Ionicons name="arrow-forward" size={18} color="#FF932E" />
-                </TouchableOpacity>
-                {/* Create Another Call Button */}
-                <TouchableOpacity
-                  style={{
-                    backgroundColor: "#fff",
-                    borderRadius: 999,
-                    paddingVertical: 8,
-                    paddingHorizontal: 22,
-                    alignSelf: "flex-start",
-                    flexDirection: "row",
-                    alignItems: "center",
-                    marginTop: 10,
-                    shadowColor: "#FF932E",
-                    shadowOffset: { width: 0, height: 2 },
-                    shadowOpacity: 0.1,
-                    shadowRadius: 4,
-                    elevation: 2,
-                  }}
-                  onPress={() => router.push("/parent/call-page")}
-                  activeOpacity={0.85}
-                >
-                  <Text
-                    style={{
-                      color: "#FF932E",
-                      fontFamily: "Comfortaa-Bold",
-                      fontSize: 15,
-                      marginRight: 8,
-                    }}
-                  >
-                    Create Another Call
-                  </Text>
-                  <Ionicons name="add-circle-outline" size={18} color="#FF932E" />
-                </TouchableOpacity>
+                {/* Status-specific message */}
+                {pickupRequests[0].status === "matched" ? (
+                  <>
+                    {/* Matched Status - Special Layout */}
+                    <View
+                      style={{
+                        backgroundColor: "rgba(255,255,255,0.15)",
+                        borderRadius: 12,
+                        padding: 12,
+                        marginBottom: 12,
+                        borderWidth: 1,
+                        borderColor: "rgba(255,255,255,0.2)",
+                      }}
+                    >
+                      <View
+                        style={{
+                          flexDirection: "row",
+                          alignItems: "center",
+                          marginBottom: 6,
+                        }}
+                      >
+                        
+                        <Text
+                          style={{
+                            color: "#fff",
+                            fontFamily: "Comfortaa-Bold",
+                            fontSize: 16,
+                          }}
+                        >
+                          🎉 Successfully Matched!
+                        </Text>
+                      </View>
+                      <Text
+                        style={{
+                          color: "#fff",
+                          fontFamily: "Comfortaa-Regular",
+                          fontSize: 14,
+                          lineHeight: 20,
+                        }}
+                      >
+                        A Buddi has been assigned to your request. Review their
+                        profile and get ready for pickup!
+                      </Text>
+                    </View>
+                  </>
+                ) : (
+                  <>
+                    {/* Other Statuses - Original Layout */}
+                    <Text
+                      style={{
+                        color: "#fff",
+                        fontFamily: "Comfortaa-Regular",
+                        fontSize: 15,
+                        marginBottom: 10,
+                      }}
+                    >
+                      {pickupRequests[0].status === "pending"
+                        ? "Your call is being processed. We will notify you once a Buddi is matched!"
+                        : "Your call is being processed."}
+                    </Text>
+                  </>
+                )}
+
+                {/* Description and Status - Only show for non-matched statuses */}
+                {pickupRequests[0].status !== "matched" && (
+                  <>
+                    <View
+                      style={{
+                        flexDirection: "row",
+                        alignItems: "center",
+                        marginBottom: 8,
+                      }}
+                    >
+                      <FontAwesome5
+                        name="align-left"
+                        size={16}
+                        color="#fff"
+                        style={{ marginRight: 6 }}
+                      />
+                      <Text
+                        style={{
+                          color: "#fff",
+                          fontFamily: "Comfortaa-Bold",
+                          fontSize: 15,
+                          marginRight: 6,
+                        }}
+                      >
+                        Description:
+                      </Text>
+                      <Text
+                        numberOfLines={1}
+                        ellipsizeMode="tail"
+                        style={{
+                          color: "#fff",
+                          fontFamily: "Comfortaa-Regular",
+                          fontSize: 15,
+                          flexShrink: 1,
+                        }}
+                      >
+                        {pickupRequests[0].description}
+                      </Text>
+                    </View>
+                    <View
+                      style={{
+                        flexDirection: "row",
+                        alignItems: "center",
+                        marginBottom: 2,
+                      }}
+                    >
+                      <FontAwesome5
+                        name="info-circle"
+                        size={16}
+                        color="#fff"
+                        style={{ marginRight: 6 }}
+                      />
+                      <Text
+                        style={{
+                          color: "#fff",
+                          fontFamily: "Comfortaa-Bold",
+                          fontSize: 15,
+                          marginRight: 6,
+                        }}
+                      >
+                        Status:
+                      </Text>
+                      <Text
+                        style={{
+                          color: "#fff",
+                          fontFamily: "Comfortaa-Regular",
+                          fontSize: 15,
+                        }}
+                      >
+                        {pickupRequests[0].status === "pending"
+                          ? "Under Review"
+                          : pickupRequests[0].status.charAt(0).toUpperCase() +
+                            pickupRequests[0].status.slice(1)}
+                      </Text>
+                    </View>
+                  </>
+                )}
+                {/* Action Buttons - Different for matched status */}
+                {pickupRequests[0].status === "matched" ? (
+                  <>
+                    {/* View Recommendations Button for Matched Status */}
+                    <TouchableOpacity
+                      style={{
+                        backgroundColor: "#fff",
+                        borderRadius: 999,
+                        paddingVertical: 10,
+                        paddingHorizontal: 24,
+                        alignSelf: "flex-start",
+                        flexDirection: "row",
+                        alignItems: "center",
+                        marginTop: 14,
+                        shadowColor: "#FF932E",
+                        shadowOffset: { width: 0, height: 2 },
+                        shadowOpacity: 0.15,
+                        shadowRadius: 6,
+                        elevation: 3,
+                      }}
+                      onPress={() =>
+                        router.push({
+                          pathname: "/parent/buddi-recommendations/[callId]",
+                          params: { callId: pickupRequests[0].id.toString() },
+                        })
+                      }
+                      activeOpacity={0.85}
+                    >
+                      <FontAwesome5
+                        name="users"
+                        size={16}
+                        color="#FF932E"
+                        style={{ marginRight: 8 }}
+                      />
+                      <Text
+                        style={{
+                          color: "#FF932E",
+                          fontFamily: "Comfortaa-Bold",
+                          fontSize: 15,
+                        }}
+                      >
+                        View Matched Buddi
+                      </Text>
+                    </TouchableOpacity>
+                    {/* See More Button */}
+                    <TouchableOpacity
+                      style={{
+                        backgroundColor: "rgba(255,255,255,0.2)",
+                        borderRadius: 999,
+                        paddingVertical: 8,
+                        paddingHorizontal: 20,
+                        alignSelf: "flex-start",
+                        flexDirection: "row",
+                        alignItems: "center",
+                        marginTop: 10,
+                        borderWidth: 1,
+                        borderColor: "rgba(255,255,255,0.3)",
+                      }}
+                      onPress={() => router.push("/parent/my-calls")}
+                      activeOpacity={0.85}
+                    >
+                      <Text
+                        style={{
+                          color: "#fff",
+                          fontFamily: "Comfortaa-Bold",
+                          fontSize: 14,
+                          marginRight: 6,
+                        }}
+                      >
+                        See All Calls
+                      </Text>
+                      <Ionicons name="arrow-forward" size={16} color="#fff" />
+                    </TouchableOpacity>
+                  </>
+                ) : (
+                  <>
+                    {/* Original buttons for other statuses */}
+                    <TouchableOpacity
+                      style={{
+                        backgroundColor: "#fff",
+                        borderRadius: 999,
+                        paddingVertical: 8,
+                        paddingHorizontal: 22,
+                        alignSelf: "flex-start",
+                        flexDirection: "row",
+                        alignItems: "center",
+                        marginTop: 14,
+                        shadowColor: "#FF932E",
+                        shadowOffset: { width: 0, height: 2 },
+                        shadowOpacity: 0.1,
+                        shadowRadius: 4,
+                        elevation: 2,
+                      }}
+                      onPress={() => router.push("/parent/my-calls")}
+                      activeOpacity={0.85}
+                    >
+                      <Text
+                        style={{
+                          color: "#FF932E",
+                          fontFamily: "Comfortaa-Bold",
+                          fontSize: 15,
+                          marginRight: 8,
+                        }}
+                      >
+                        See More
+                      </Text>
+                      <Ionicons
+                        name="arrow-forward"
+                        size={18}
+                        color="#FF932E"
+                      />
+                    </TouchableOpacity>
+                    {/* Create Another Call Button */}
+                    <TouchableOpacity
+                      style={{
+                        backgroundColor: "#fff",
+                        borderRadius: 999,
+                        paddingVertical: 8,
+                        paddingHorizontal: 22,
+                        alignSelf: "flex-start",
+                        flexDirection: "row",
+                        alignItems: "center",
+                        marginTop: 10,
+                        shadowColor: "#FF932E",
+                        shadowOffset: { width: 0, height: 2 },
+                        shadowOpacity: 0.1,
+                        shadowRadius: 4,
+                        elevation: 2,
+                      }}
+                      onPress={() => router.push("/parent/call-page")}
+                      activeOpacity={0.85}
+                    >
+                      <Text
+                        style={{
+                          color: "#FF932E",
+                          fontFamily: "Comfortaa-Bold",
+                          fontSize: 15,
+                          marginRight: 8,
+                        }}
+                      >
+                        Create Another Call
+                      </Text>
+                      <Ionicons
+                        name="add-circle-outline"
+                        size={18}
+                        color="#FF932E"
+                      />
+                    </TouchableOpacity>
+                  </>
+                )}
               </View>
             </LinearGradient>
           </>

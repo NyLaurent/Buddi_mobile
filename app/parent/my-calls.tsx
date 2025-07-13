@@ -164,7 +164,12 @@ export default function MyCallsPage() {
                 const kid = kids.find((k) => k.id === req.childId);
                 return kid ? [{ name: kid.name }] : [];
               })()}
-              onRemove={() => {}}
+              onViewDetails={() => {
+                router.push({
+                  pathname: "/parent/call-details/[callId]",
+                  params: { callId: req.id.toString() },
+                });
+              }}
               onApplicants={() => {
                 router.push({
                   pathname: "/parent/buddi-recommendations/[callId]",

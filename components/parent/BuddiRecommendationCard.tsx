@@ -467,7 +467,7 @@ const BuddiRecommendationCard: React.FC<BuddiRecommendationCardProps> = ({
               color: isTopRanked ? "#fff" : "#9CA3AF",
             }}
           >
-            Match Buddy
+            Match Buddi
           </Text>
         </TouchableOpacity>
         <TouchableOpacity
