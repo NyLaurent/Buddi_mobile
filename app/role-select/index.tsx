@@ -199,7 +199,7 @@ const RoleSelect = () => {
         <View className="flex-row justify-between items-center px-6 mb-6">
           <TouchableOpacity
             className="flex-row items-center px-6 py-3 rounded-full border border-gray bg-white"
-            onPress={() => router.back()}
+            onPress={() => router.push("/auth/login" as any)}
           >
             <Ionicons
               name="arrow-back"
