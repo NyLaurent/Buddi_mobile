@@ -38,12 +38,22 @@ interface BuddiRecommendationCardProps {
   };
   onSelectBuddy: (buddiId: number) => void;
   onViewProfile: (buddiId: number) => void;
+  onRankBuddi: (buddiId: number, rating: number, comment: string) => void;
+  currentRank?: number;
+  isRanking?: boolean;
+  rankingDate?: string;
+  isTopRanked?: boolean;
 }
 
 const BuddiRecommendationCard: React.FC<BuddiRecommendationCardProps> = ({
   buddi,
   onSelectBuddy,
   onViewProfile,
+  onRankBuddi,
+  currentRank,
+  isRanking = false,
+  rankingDate,
+  isTopRanked = false,
 }) => {
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -74,12 +84,17 @@ const BuddiRecommendationCard: React.FC<BuddiRecommendationCardProps> = ({
   return (
     <View
       style={{
-        backgroundColor: "#fff",
-        borderWidth: 1,
-        borderColor: "#E5E7EB",
+        backgroundColor: isTopRanked ? "#FFF7ED" : "#fff",
+        borderWidth: isTopRanked ? 2 : 1,
+        borderColor: isTopRanked ? "#FF932E" : "#E5E7EB",
         borderRadius: 16,
         padding: 16,
         marginBottom: 12,
+        shadowColor: isTopRanked ? "#FF932E" : "#000",
+        shadowOffset: { width: 0, height: isTopRanked ? 4 : 2 },
+        shadowOpacity: isTopRanked ? 0.15 : 0.1,
+        shadowRadius: isTopRanked ? 8 : 4,
+        elevation: isTopRanked ? 6 : 2,
       }}
     >
       {/* Header with Status */}
@@ -91,32 +106,64 @@ const BuddiRecommendationCard: React.FC<BuddiRecommendationCardProps> = ({
           marginBottom: 12,
         }}
       >
-        <Text
-          style={{
-            fontFamily: "Comfortaa-Bold",
-            fontSize: 18,
-            color: "#1F2937",
-          }}
-        >
-          {buddi.User?.firstName} {buddi.User?.lastName}
-        </Text>
-        <View
-          style={{
-            backgroundColor: getStatusColor(buddi.status) + "20",
-            paddingHorizontal: 8,
-            paddingVertical: 4,
-            borderRadius: 8,
-          }}
-        >
+        <View style={{ flexDirection: "row", alignItems: "center", flex: 1 }}>
+          {isTopRanked && (
+            <FontAwesome5
+              name="crown"
+              size={16}
+              color="#FF932E"
+              style={{ marginRight: 8 }}
+            />
+          )}
           <Text
             style={{
-              fontFamily: "Comfortaa-Medium",
-              fontSize: 12,
-              color: getStatusColor(buddi.status),
+              fontFamily: "Comfortaa-Bold",
+              fontSize: 18,
+              color: isTopRanked ? "#FF932E" : "#1F2937",
             }}
           >
-            {getStatusText(buddi.status)}
+            {buddi.User?.firstName} {buddi.User?.lastName}
           </Text>
+        </View>
+        <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+          {isTopRanked && (
+            <View
+              style={{
+                backgroundColor: "#FF932E",
+                paddingHorizontal: 8,
+                paddingVertical: 4,
+                borderRadius: 8,
+              }}
+            >
+              <Text
+                style={{
+                  fontFamily: "Comfortaa-Bold",
+                  fontSize: 10,
+                  color: "#fff",
+                }}
+              >
+                TOP RANKED
+              </Text>
+            </View>
+          )}
+          <View
+            style={{
+              backgroundColor: getStatusColor(buddi.status) + "20",
+              paddingHorizontal: 8,
+              paddingVertical: 4,
+              borderRadius: 8,
+            }}
+          >
+            <Text
+              style={{
+                fontFamily: "Comfortaa-Medium",
+                fontSize: 12,
+                color: getStatusColor(buddi.status),
+              }}
+            >
+              {getStatusText(buddi.status)}
+            </Text>
+          </View>
         </View>
       </View>
 
@@ -149,11 +196,7 @@ const BuddiRecommendationCard: React.FC<BuddiRecommendationCardProps> = ({
                   alignItems: "center",
                 }}
               >
-                <FontAwesome5 
-                  name="user-circle" 
-                  size={32} 
-                  color="#9CA3AF" 
-                />
+                <FontAwesome5 name="user-circle" size={32} color="#9CA3AF" />
               </View>
             )}
           </View>
@@ -267,32 +310,170 @@ const BuddiRecommendationCard: React.FC<BuddiRecommendationCardProps> = ({
         </View>
       </View>
 
+      {/* Ranking Section */}
+      {isRanking && (
+        <View style={{ marginBottom: 16 }}>
+          <Text
+            style={{
+              fontFamily: "Comfortaa-Bold",
+              fontSize: 14,
+              color: "#1F2937",
+              marginBottom: 8,
+            }}
+          >
+            Rank this Buddy
+          </Text>
+          <View style={{ flexDirection: "row", gap: 8, marginBottom: 8 }}>
+            {[1, 2, 3].map((rank) => (
+              <TouchableOpacity
+                key={rank}
+                style={{
+                  flex: 1,
+                  backgroundColor: currentRank === rank ? "#FF932E" : "#F3F4F6",
+                  paddingVertical: 8,
+                  borderRadius: 6,
+                  alignItems: "center",
+                  borderWidth: 1,
+                  borderColor: currentRank === rank ? "#FF932E" : "#E5E7EB",
+                }}
+                onPress={() =>
+                  onRankBuddi(
+                    buddi.id,
+                    rank,
+                    `Ranked as ${
+                      rank === 1 ? "1st" : rank === 2 ? "2nd" : "3rd"
+                    } choice`
+                  )
+                }
+              >
+                <Text
+                  style={{
+                    fontFamily: "Comfortaa-Bold",
+                    fontSize: 14,
+                    color: currentRank === rank ? "#fff" : "#6B7280",
+                  }}
+                >
+                  {rank === 1 ? "1st" : rank === 2 ? "2nd" : "3rd"}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+          {currentRank && (
+            <Text
+              style={{
+                fontFamily: "Comfortaa-Regular",
+                fontSize: 12,
+                color: "#22C55E",
+                textAlign: "center",
+              }}
+            >
+              ✓ Ranked as{" "}
+              {currentRank === 1 ? "1st" : currentRank === 2 ? "2nd" : "3rd"}{" "}
+              choice
+            </Text>
+          )}
+        </View>
+      )}
+
+      {/* Show Current Ranking (when not in ranking mode) */}
+      {!isRanking && currentRank && (
+        <View style={{ marginBottom: 16 }}>
+          <View
+            style={{
+              backgroundColor: "#F0F9FF",
+              padding: 12,
+              borderRadius: 8,
+              borderWidth: 1,
+              borderColor: "#0EA5E9",
+              alignItems: "center",
+            }}
+          >
+            <View
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                marginBottom: 4,
+              }}
+            >
+              <Text
+                style={{
+                  fontFamily: "Comfortaa-Bold",
+                  fontSize: 16,
+                  color: "#0EA5E9",
+                  marginRight: 8,
+                }}
+              >
+                {currentRank === 1 ? "🥇" : currentRank === 2 ? "🥈" : "🥉"}
+              </Text>
+              <Text
+                style={{
+                  fontFamily: "Comfortaa-Bold",
+                  fontSize: 14,
+                  color: "#0EA5E9",
+                }}
+              >
+                Your{" "}
+                {currentRank === 1 ? "1st" : currentRank === 2 ? "2nd" : "3rd"}{" "}
+                Choice
+              </Text>
+            </View>
+            <Text
+              style={{
+                fontFamily: "Comfortaa-Regular",
+                fontSize: 12,
+                color: "#0369A1",
+                textAlign: "center",
+              }}
+            >
+              {currentRank === 1
+                ? "This buddy will be automatically assigned to your call"
+                : "Backup choice in case 1st choice is unavailable"}
+            </Text>
+            {rankingDate && (
+              <Text
+                style={{
+                  fontFamily: "Comfortaa-Regular",
+                  fontSize: 10,
+                  color: "#0369A1",
+                  textAlign: "center",
+                  marginTop: 4,
+                }}
+              >
+                Ranked on {new Date(rankingDate).toLocaleDateString()}
+              </Text>
+            )}
+          </View>
+        </View>
+      )}
+
       {/* Action Buttons */}
       <View style={{ flexDirection: "row", gap: 12 }}>
         <TouchableOpacity
           style={{
             flex: 1,
-            backgroundColor: "#FF932E",
+            backgroundColor: isTopRanked ? "#FF932E" : "#E5E7EB",
             paddingVertical: 12,
             borderRadius: 8,
             alignItems: "center",
+            opacity: isTopRanked ? 1 : 0.6,
           }}
-          onPress={() => onSelectBuddy(buddi.id)}
+          onPress={() => isTopRanked && onSelectBuddy(buddi.id)}
+          disabled={!isTopRanked}
         >
           <Text
             style={{
               fontFamily: "Comfortaa-Bold",
               fontSize: 14,
-              color: "#fff",
+              color: isTopRanked ? "#fff" : "#9CA3AF",
             }}
           >
-            Select Buddy
+            Match Buddy
           </Text>
         </TouchableOpacity>
         <TouchableOpacity
           style={{
             flex: 1,
-            backgroundColor: "#F3F4F6",
+            backgroundColor: isTopRanked ? "#F3F4F6" : "#FF932E",
             paddingVertical: 12,
             borderRadius: 8,
             alignItems: "center",
@@ -303,7 +484,7 @@ const BuddiRecommendationCard: React.FC<BuddiRecommendationCardProps> = ({
             style={{
               fontFamily: "Comfortaa-Bold",
               fontSize: 14,
-              color: "#6B7280",
+              color: isTopRanked ? "#6B7280" : "#fff",
             }}
           >
             View Profile

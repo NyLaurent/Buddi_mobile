@@ -333,6 +333,80 @@ const ParentService = {
     }
   },
 
+  async rankBuddi(parentId: string, buddiId: number, rating: number, comment: string): Promise<any> {
+    try {
+      const response = await authorizedApi.post('/rankings/rank', {
+        parentId,
+        buddiId,
+        rating,
+        comment,
+      });
+      return response.data;
+    } catch (err: any) {
+      let message = 'Failed to rank buddi.';
+      if (err?.response?.data?.message) {
+        message = err.response.data.message;
+      } else if (err?.message) {
+        if (err.message.includes('Network')) {
+          message = 'Network error. Please check your connection and try again.';
+        } else if (err.message.includes('timeout')) {
+          message = 'Request timed out. Please try again.';
+        } else {
+          message = err.message;
+        }
+      } else if (typeof err === 'string') {
+        message = err;
+      }
+      throw new Error(message);
+    }
+  },
+
+  async getBuddiRankings(parentId: string): Promise<any> {
+    try {
+      const response = await authorizedApi.get(`/rankings/my-rankings/${parentId}`);
+      return response.data;
+    } catch (err: any) {
+      let message = 'Failed to fetch buddi rankings.';
+      if (err?.response?.data?.message) {
+        message = err.response.data.message;
+      } else if (err?.message) {
+        if (err.message.includes('Network')) {
+          message = 'Network error. Please check your connection and try again.';
+        } else if (err.message.includes('timeout')) {
+          message = 'Request timed out. Please try again.';
+        } else {
+          message = err.message;
+        }
+      } else if (typeof err === 'string') {
+        message = err;
+      }
+      throw new Error(message);
+    }
+  },
+
+  async getTopRankedBuddi(parentId: string): Promise<any> {
+    try {
+      const response = await authorizedApi.get(`/rankings/top-ranked/${parentId}`);
+      return response.data;
+    } catch (err: any) {
+      let message = 'Failed to fetch top ranked buddi.';
+      if (err?.response?.data?.message) {
+        message = err.response.data.message;
+      } else if (err?.message) {
+        if (err.message.includes('Network')) {
+          message = 'Network error. Please check your connection and try again.';
+        } else if (err.message.includes('timeout')) {
+          message = 'Request timed out. Please try again.';
+        } else {
+          message = err.message;
+        }
+      } else if (typeof err === 'string') {
+        message = err;
+      }
+      throw new Error(message);
+    }
+  },
+
   proposeBuddiRecommendations,
 };
 

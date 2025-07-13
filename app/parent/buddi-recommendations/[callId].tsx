@@ -1,4 +1,5 @@
 import { FontAwesome5, Ionicons } from "@expo/vector-icons";
+import { LinearGradient } from "expo-linear-gradient";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import React from "react";
 import { ScrollView, Text, TouchableOpacity, View } from "react-native";
@@ -17,6 +18,18 @@ export default function BuddiRecommendationsPage() {
   >([]);
   const [loading, setLoading] = React.useState(true);
   const [error, setError] = React.useState<string | null>(null);
+  const [rankings, setRankings] = React.useState<{ [buddiId: number]: number }>(
+    {}
+  );
+  const [rankingDates, setRankingDates] = React.useState<{
+    [buddiId: number]: string;
+  }>({});
+  const [rankingLoading, setRankingLoading] = React.useState<{
+    [buddiId: number]: boolean;
+  }>({});
+  const [isRankingMode, setIsRankingMode] = React.useState(false);
+  const [topRankedBuddi, setTopRankedBuddi] = React.useState<any>(null);
+  const [loadingTopRanked, setLoadingTopRanked] = React.useState(false);
 
   React.useEffect(() => {
     const fetchRecommendations = async () => {
@@ -38,6 +51,67 @@ export default function BuddiRecommendationsPage() {
     fetchRecommendations();
   }, [parentDetails?.id, callId]);
 
+  // Fetch existing rankings when recommendations are loaded
+  React.useEffect(() => {
+    const fetchRankings = async () => {
+      if (!parentDetails?.id || recommendations.length === 0) return;
+
+      try {
+        const res = await ParentService.getBuddiRankings(
+          parentDetails.id.toString()
+        );
+
+        // Convert the rankings array to the format we use in state
+        // Handle duplicates by taking the most recent ranking for each buddi
+        const rankingsMap: { [buddiId: number]: number } = {};
+        const datesMap: { [buddiId: number]: string } = {};
+        if (res.data && Array.isArray(res.data)) {
+          // Sort by createdAt to get the most recent rankings first
+          const sortedRankings = res.data.sort(
+            (a: any, b: any) =>
+              new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+          );
+
+          // Take the first (most recent) ranking for each buddi
+          sortedRankings.forEach((ranking: any) => {
+            if (!rankingsMap[ranking.buddiId]) {
+              rankingsMap[ranking.buddiId] = ranking.rating;
+              datesMap[ranking.buddiId] = ranking.createdAt;
+            }
+          });
+        }
+        setRankings(rankingsMap);
+        setRankingDates(datesMap);
+      } catch (err: any) {
+        // Silently fail for rankings fetch - it's not critical
+        console.log("Could not fetch existing rankings:", err.message);
+      }
+    };
+
+    fetchRankings();
+  }, [parentDetails?.id, recommendations.length]);
+
+  // Get top-ranked buddy from existing rankings
+  React.useEffect(() => {
+    if (Object.keys(rankings).length > 0) {
+      // Find the buddy with rating 1 (top ranked)
+      const topRankedId = Object.keys(rankings).find(
+        (buddiId) => rankings[parseInt(buddiId)] === 1
+      );
+
+      if (topRankedId) {
+        // Find the buddy in recommendations
+        const topRankedBuddi = recommendations
+          .flatMap((rec) => rec.buddis)
+          .find((b) => b.id === parseInt(topRankedId));
+
+        setTopRankedBuddi(topRankedBuddi || null);
+      }
+    } else {
+      setTopRankedBuddi(null);
+    }
+  }, [rankings, recommendations]);
+
   const handleSelectBuddy = (buddiId: number) => {
     // TODO: Implement buddy selection logic
     console.log("Selected buddy:", buddiId);
@@ -46,6 +120,71 @@ export default function BuddiRecommendationsPage() {
   const handleViewProfile = (buddiId: number) => {
     // TODO: Navigate to buddi profile page
     console.log("View profile for buddy:", buddiId);
+  };
+
+  const handleRankBuddi = async (
+    buddiId: number,
+    rating: number,
+    comment: string
+  ) => {
+    if (!parentDetails?.id) return;
+
+    // Check if this rank is already taken by another buddy
+    const existingRank = rankings[buddiId];
+    const isRankTaken =
+      Object.values(rankings).includes(rating) && existingRank !== rating;
+
+    if (isRankTaken) {
+      alert(
+        `Rank ${rating} is already assigned to another buddy. Please choose a different rank.`
+      );
+      return;
+    }
+
+    setRankingLoading((prev) => ({ ...prev, [buddiId]: true }));
+
+    try {
+      await ParentService.rankBuddi(
+        parentDetails.id.toString(),
+        buddiId,
+        rating,
+        comment
+      );
+
+      setRankings((prev) => ({ ...prev, [buddiId]: rating }));
+      setRankingDates((prev) => ({
+        ...prev,
+        [buddiId]: new Date().toISOString(),
+      }));
+
+      // Check if we have ranked all 3 buddies
+      const allBuddis = recommendations.flatMap((rec) => rec.buddis);
+      const rankedCount = Object.keys(rankings).length + 1; // +1 for current ranking
+
+      if (rankedCount >= 3) {
+        // All buddies ranked, show success message and exit ranking mode
+        alert(
+          "All buddies have been ranked! The 1st ranked buddy will be automatically assigned to your call."
+        );
+        setIsRankingMode(false); // Exit ranking mode automatically
+      }
+    } catch (err: any) {
+      alert(err.message || "Failed to rank buddy. Please try again.");
+    } finally {
+      setRankingLoading((prev) => ({ ...prev, [buddiId]: false }));
+    }
+  };
+
+  const toggleRankingMode = () => {
+    setIsRankingMode(!isRankingMode);
+  };
+
+  const handleMatchBuddi = () => {
+    if (topRankedBuddi) {
+      const buddiName = `${topRankedBuddi.User?.firstName} ${topRankedBuddi.User?.lastName}`;
+      // TODO: Implement the matching logic
+      alert(`Matching you with ${buddiName}!`);
+    }
   };
 
   return (
@@ -75,6 +214,341 @@ export default function BuddiRecommendationsPage() {
         </Text>
       </View>
 
+      {/* Top Ranked Buddy CTA Card */}
+      {topRankedBuddi && (
+        <View
+          style={{
+            marginHorizontal: 16,
+            marginBottom: 20,
+            borderRadius: 18,
+            overflow: "hidden",
+            shadowColor: "#FF932E",
+            shadowOffset: { width: 0, height: 4 },
+            shadowOpacity: 0.15,
+            shadowRadius: 12,
+            elevation: 4,
+          }}
+        >
+          <LinearGradient
+            colors={["#FF932E", "#FFB86C"]}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={{ padding: 20, borderRadius: 18 }}
+          >
+            {/* Header with Icon */}
+            <View
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                marginBottom: 12,
+              }}
+            >
+              <View
+                style={{
+                  backgroundColor: "rgba(255,255,255,0.18)",
+                  borderRadius: 999,
+                  padding: 12,
+                  marginRight: 12,
+                  borderWidth: 2,
+                  borderColor: "#fff",
+                }}
+              >
+                <FontAwesome5 name="crown" size={24} color="#fff" />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text
+                  style={{
+                    color: "#fff",
+                    fontFamily: "Comfortaa-Bold",
+                    fontSize: 18,
+                    marginBottom: 2,
+                  }}
+                >
+                  {Object.keys(rankings).length >= 3
+                    ? "All Buddies Ranked!"
+                    : "Your Top Choice"}
+                </Text>
+                <View
+                  style={{
+                    backgroundColor: "#fff",
+                    paddingHorizontal: 12,
+                    paddingVertical: 6,
+                    borderRadius: 20,
+                    shadowColor: "#000",
+                    shadowOffset: { width: 0, height: 2 },
+                    shadowOpacity: 0.1,
+                    shadowRadius: 4,
+                    elevation: 3,
+                  }}
+                >
+                  <Text
+                    style={{
+                      color: "#FF932E",
+                      fontFamily: "Comfortaa-Bold",
+                      fontSize: 16,
+                    }}
+                  >
+                    {topRankedBuddi?.User?.firstName}{" "}
+                    {topRankedBuddi?.User?.lastName}
+                  </Text>
+                </View>
+              </View>
+            </View>
+
+            {/* Description */}
+            <Text
+              style={{
+                color: "#fff",
+                fontFamily: "Comfortaa-Regular",
+                fontSize: 15,
+                marginBottom: 16,
+                lineHeight: 22,
+              }}
+            >
+              {Object.keys(rankings).length >= 3
+                ? "Ready to match with your 1st ranked buddy! Review all recommendations first, then proceed with matching."
+                : "First analyze all buddies proposed, then rank them before matching your top choice."}
+            </Text>
+
+            {/* Action Buttons */}
+            <View style={{ flexDirection: "row", gap: 12 }}>
+              {Object.keys(rankings).length >= 3 ? (
+                <TouchableOpacity
+                  style={{
+                    backgroundColor: "#fff",
+                    borderRadius: 999,
+                    paddingVertical: 12,
+                    paddingHorizontal: 24,
+                    flexDirection: "row",
+                    alignItems: "center",
+                    shadowColor: "#FF932E",
+                    shadowOffset: { width: 0, height: 2 },
+                    shadowOpacity: 0.12,
+                    shadowRadius: 6,
+                    elevation: 2,
+                  }}
+                  onPress={handleMatchBuddi}
+                  activeOpacity={0.85}
+                >
+                  <FontAwesome5
+                    name="handshake"
+                    size={16}
+                    color="#FF932E"
+                    style={{ marginRight: 8 }}
+                  />
+                  <Text
+                    style={{
+                      color: "#FF932E",
+                      fontFamily: "Comfortaa-Bold",
+                      fontSize: 14,
+                    }}
+                  >
+                    Match Him
+                  </Text>
+                </TouchableOpacity>
+              ) : (
+                <TouchableOpacity
+                  style={{
+                    backgroundColor: "#fff",
+                    borderRadius: 999,
+                    paddingVertical: 12,
+                    paddingHorizontal: 24,
+                    flexDirection: "row",
+                    alignItems: "center",
+                    shadowColor: "#FF932E",
+                    shadowOffset: { width: 0, height: 2 },
+                    shadowOpacity: 0.12,
+                    shadowRadius: 6,
+                    elevation: 2,
+                  }}
+                  onPress={toggleRankingMode}
+                  activeOpacity={0.85}
+                >
+                  <FontAwesome5
+                    name="star"
+                    size={16}
+                    color="#FF932E"
+                    style={{ marginRight: 8 }}
+                  />
+                  <Text
+                    style={{
+                      color: "#FF932E",
+                      fontFamily: "Comfortaa-Bold",
+                      fontSize: 14,
+                    }}
+                  >
+                    {isRankingMode ? "Exit Ranking" : "View Rankings"}
+                  </Text>
+                </TouchableOpacity>
+              )}
+
+              {/* View All Buddies Button */}
+              {/* <TouchableOpacity
+                style={{
+                  backgroundColor: "rgba(255,255,255,0.2)",
+                  borderRadius: 999,
+                  paddingVertical: 12,
+                  paddingHorizontal: 20,
+                  borderWidth: 1,
+                  borderColor: "rgba(255,255,255,0.3)",
+                }}
+                onPress={() => {
+                  // Scroll to recommendations
+                }}
+                activeOpacity={0.7}
+              >
+                <Text
+                  style={{
+                    color: "#fff",
+                    fontFamily: "Comfortaa-Bold",
+                    fontSize: 14,
+                  }}
+                >
+                  View All
+                </Text>
+              </TouchableOpacity> */}
+            </View>
+          </LinearGradient>
+        </View>
+      )}
+
+      {/* Ranking Mode Toggle (only show when not all ranked) */}
+      {recommendations.length > 0 && Object.keys(rankings).length < 3 && (
+        <View style={{ paddingHorizontal: 16, marginBottom: 16 }}>
+          {(() => {
+            const rankedCount = Object.keys(rankings).length;
+
+            // If 2 are ranked, show "Rank the last one"
+            if (rankedCount === 2) {
+              return (
+                <>
+                  <TouchableOpacity
+                    style={{
+                      backgroundColor: isRankingMode ? "#22C55E" : "#FF932E",
+                      paddingHorizontal: 16,
+                      paddingVertical: 8,
+                      borderRadius: 8,
+                      alignItems: "center",
+                    }}
+                    onPress={toggleRankingMode}
+                  >
+                    <Text
+                      style={{
+                        fontFamily: "Comfortaa-Bold",
+                        fontSize: 14,
+                        color: "#fff",
+                      }}
+                    >
+                      {isRankingMode
+                        ? "Exit Ranking Mode"
+                        : "Rank the Last Buddy"}
+                    </Text>
+                  </TouchableOpacity>
+                  {isRankingMode && (
+                    <Text
+                      style={{
+                        fontFamily: "Comfortaa-Regular",
+                        fontSize: 12,
+                        color: "#6B7280",
+                        textAlign: "center",
+                        marginTop: 8,
+                      }}
+                    >
+                      Rank the last buddy to complete your selection.
+                    </Text>
+                  )}
+                </>
+              );
+            }
+
+            // If 1 is ranked, show "Rank the other 2"
+            if (rankedCount === 1) {
+              return (
+                <>
+                  <TouchableOpacity
+                    style={{
+                      backgroundColor: isRankingMode ? "#22C55E" : "#FF932E",
+                      paddingHorizontal: 16,
+                      paddingVertical: 8,
+                      borderRadius: 8,
+                      alignItems: "center",
+                    }}
+                    onPress={toggleRankingMode}
+                  >
+                    <Text
+                      style={{
+                        fontFamily: "Comfortaa-Bold",
+                        fontSize: 14,
+                        color: "#fff",
+                      }}
+                    >
+                      {isRankingMode
+                        ? "Exit Ranking Mode"
+                        : "Rank the Other 2 Buddies"}
+                    </Text>
+                  </TouchableOpacity>
+                  {isRankingMode && (
+                    <Text
+                      style={{
+                        fontFamily: "Comfortaa-Regular",
+                        fontSize: 12,
+                        color: "#6B7280",
+                        textAlign: "center",
+                        marginTop: 8,
+                      }}
+                    >
+                      Rank the remaining 2 buddies to complete your selection.
+                    </Text>
+                  )}
+                </>
+              );
+            }
+
+            // If 0 are ranked, show "Start Ranking Buddies"
+            return (
+              <>
+                <TouchableOpacity
+                  style={{
+                    backgroundColor: isRankingMode ? "#22C55E" : "#FF932E",
+                    paddingHorizontal: 16,
+                    paddingVertical: 8,
+                    borderRadius: 8,
+                    alignItems: "center",
+                  }}
+                  onPress={toggleRankingMode}
+                >
+                  <Text
+                    style={{
+                      fontFamily: "Comfortaa-Bold",
+                      fontSize: 14,
+                      color: "#fff",
+                    }}
+                  >
+                    {isRankingMode
+                      ? "Exit Ranking Mode"
+                      : "Start Ranking Buddies"}
+                  </Text>
+                </TouchableOpacity>
+                {isRankingMode && (
+                  <Text
+                    style={{
+                      fontFamily: "Comfortaa-Regular",
+                      fontSize: 12,
+                      color: "#6B7280",
+                      textAlign: "center",
+                      marginTop: 8,
+                    }}
+                  >
+                    Rank your top 3 choices. The 1st ranked buddy will be
+                    automatically assigned.
+                  </Text>
+                )}
+              </>
+            );
+          })()}
+        </View>
+      )}
+
       {loading ? (
         <Text style={{ textAlign: "center", marginTop: 40 }}>
           Loading recommendations...
@@ -92,7 +566,6 @@ export default function BuddiRecommendationsPage() {
             paddingHorizontal: 32,
           }}
         >
-          
           <View style={{ alignItems: "center", marginBottom: 24 }}>
             <View
               style={{
@@ -203,6 +676,11 @@ export default function BuddiRecommendationsPage() {
                   buddi={buddi}
                   onSelectBuddy={handleSelectBuddy}
                   onViewProfile={handleViewProfile}
+                  onRankBuddi={handleRankBuddi}
+                  currentRank={rankings[buddi.id]}
+                  isRanking={isRankingMode}
+                  rankingDate={rankingDates[buddi.id]}
+                  isTopRanked={topRankedBuddi?.id === buddi.id}
                 />
               ))}
             </View>
