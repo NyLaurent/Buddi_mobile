@@ -12,6 +12,9 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useAuth } from "../../context/AuthContext";
+import ParentService, {
+  ParentPickupRequest,
+} from "../../services/api/parent.service";
 
 interface ChatItem {
   id: string;
@@ -23,40 +26,47 @@ interface ChatItem {
   unreadCount: number;
 }
 
-export default function BuddiMessagesScreen() {
+export default function ParentMessagesScreen() {
   const [chatItems, setChatItems] = useState<ChatItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
-  const { user } = useAuth();
+  const { user, parentDetails } = useAuth();
 
   useEffect(() => {
     fetchMatchedCalls();
-  }, []);
+  }, [parentDetails?.id]);
 
   const fetchMatchedCalls = async () => {
+    if (!parentDetails?.id) return;
+
     try {
       setLoading(true);
       setError(null);
 
-      // For now, we'll show a placeholder since we need to implement
-      // an API endpoint to get buddi's matched calls
-      // This would be similar to parent's getMyPickupRequests but for buddi
+      const response = await ParentService.getMyPickupRequests(
+        parentDetails.id.toString()
+      );
 
-      // Placeholder data - replace with actual API call
-      const mockChatItems: ChatItem[] = [
-        {
-          id: "1",
-          roomId: "parent123-buddi456",
-          otherUserName: "Parent",
+      // Filter only matched calls and convert to chat items
+      const matchedCalls = response.data.filter(
+        (call: ParentPickupRequest) =>
+          call.status === "matched" && call.matchedBuddiId
+      );
+
+      const chatItemsData: ChatItem[] = matchedCalls.map(
+        (call: ParentPickupRequest) => ({
+          id: call.id.toString(),
+          roomId: `${call.parentId}-${call.matchedBuddiId}`,
+          otherUserName: "Buddi", // You can get this from API if needed
           otherUserAvatar: "https://randomuser.me/api/portraits/men/32.jpg",
           lastMessage: "Tap to start chatting about pickup details",
-          timestamp: new Date().toLocaleDateString(),
-          unreadCount: 0,
-        },
-      ];
+          timestamp: new Date(call.updatedAt).toLocaleDateString(),
+          unreadCount: 0, // You can implement unread count logic
+        })
+      );
 
-      setChatItems(mockChatItems);
+      setChatItems(chatItemsData);
     } catch (err: any) {
       setError(err.message || "Failed to fetch messages");
       console.error("Error fetching messages:", err);
@@ -67,11 +77,11 @@ export default function BuddiMessagesScreen() {
 
   const handleChatPress = (chatItem: ChatItem) => {
     router.push({
-      pathname: "/buddi/chat/[roomId]",
+      pathname: "/parent/chat/[roomId]",
       params: {
         roomId: chatItem.roomId,
-        parentName: chatItem.otherUserName,
-        parentAvatar: chatItem.otherUserAvatar,
+        buddiName: chatItem.otherUserName,
+        buddiAvatar: chatItem.otherUserAvatar,
       },
     });
   };
@@ -109,7 +119,8 @@ export default function BuddiMessagesScreen() {
       <FontAwesome5 name="comments" size={64} color="#E5E7EB" />
       <Text style={styles.emptyTitle}>No Messages Yet</Text>
       <Text style={styles.emptyText}>
-        You&apos;ll see your chat conversations here once you have matched calls.
+        You&apos;ll see your chat conversations here once you have matched
+        calls.
       </Text>
     </View>
   );

@@ -109,7 +109,10 @@ export default function ParentDashboard() {
           <View className="flex-row items-center gap-3 pr-1">
             {/* Message Icon with badge */}
             <View className="relative">
-              <TouchableOpacity className="p-2 bg-orange-400 rounded-xl shadow-sm">
+              <TouchableOpacity
+                className="p-2 bg-orange-400 rounded-xl shadow-sm"
+                onPress={() => router.push("/parent/messages")}
+              >
                 <Ionicons
                   name="chatbubble-ellipses-outline"
                   size={22}

@@ -97,8 +97,11 @@ export default function BuddiHome() {
             <TouchableOpacity className="p-2 bg-primary rounded-xl shadow-sm">
               <Ionicons name="search-outline" size={20} color="white" />
             </TouchableOpacity>
-            <TouchableOpacity className="p-2 bg-primary rounded-xl shadow-sm">
-              <Ionicons name="notifications-outline" size={20} color="white" />
+            <TouchableOpacity
+              className="p-2 bg-primary rounded-xl shadow-sm"
+              onPress={() => router.push("/buddi/messages")}
+            >
+              <Ionicons name="chatbubbles-outline" size={20} color="white" />
             </TouchableOpacity>
             <TouchableOpacity
               className="p-2 bg-red-500 rounded-xl shadow-sm"

@@ -15,8 +15,10 @@ interface CallUpReviewCardProps {
   schoolName: string;
   home: string;
   assignedKids: AssignedKid[];
+  status?: string;
   onViewDetails: () => void;
   onApplicants: () => void;
+  onChat?: () => void;
 }
 
 const CallUpReviewCard: React.FC<CallUpReviewCardProps> = ({
@@ -28,8 +30,10 @@ const CallUpReviewCard: React.FC<CallUpReviewCardProps> = ({
   schoolName,
   home,
   assignedKids,
+  status,
   onViewDetails,
   onApplicants,
+  onChat,
 }) => {
   return (
     <View className="bg-white rounded-2xl border border-gray px-4 py-5 my-3 w-full max-w-[420px] self-center">
@@ -113,15 +117,28 @@ const CallUpReviewCard: React.FC<CallUpReviewCardProps> = ({
             View Details
           </Text>
         </TouchableOpacity>
-        <TouchableOpacity
-          className="flex-1 bg-[#FF9100] rounded-full py-3 items-center flex-row justify-center ml-2"
-          onPress={onApplicants}
-        >
-          <Ionicons name="people" size={20} color="white" />
-          <Text className="text-white font-comfortaa-bold text-base ml-2">
-            Applicants
-          </Text>
-        </TouchableOpacity>
+
+        {status === "matched" && onChat ? (
+          <TouchableOpacity
+            className="flex-1 bg-[#3B82F6] rounded-full py-3 items-center flex-row justify-center ml-2"
+            onPress={onChat}
+          >
+            <Ionicons name="chatbubbles" size={20} color="white" />
+            <Text className="text-white font-comfortaa-bold text-base ml-2">
+              Chat
+            </Text>
+          </TouchableOpacity>
+        ) : (
+          <TouchableOpacity
+            className="flex-1 bg-[#FF9100] rounded-full py-3 items-center flex-row justify-center ml-2"
+            onPress={onApplicants}
+          >
+            <Ionicons name="people" size={20} color="white" />
+            <Text className="text-white font-comfortaa-bold text-base ml-2">
+              Applicants
+            </Text>
+          </TouchableOpacity>
+        )}
       </View>
     </View>
   );

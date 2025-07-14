@@ -160,6 +160,7 @@ export default function MyCallsPage() {
               description={req.description}
               schoolName={req.fromZone}
               home={req.toZone}
+              status={req.status}
               assignedKids={(() => {
                 const kid = kids.find((k) => k.id === req.childId);
                 return kid ? [{ name: kid.name }] : [];
@@ -175,6 +176,20 @@ export default function MyCallsPage() {
                   pathname: "/parent/buddi-recommendations/[callId]",
                   params: { callId: req.id.toString() },
                 });
+              }}
+              onChat={() => {
+                if (req.status === "matched" && req.matchedBuddiId) {
+                  const chatRoomId = `${req.parentId}-${req.matchedBuddiId}`;
+                  router.push({
+                    pathname: "/parent/chat/[roomId]",
+                    params: {
+                      roomId: chatRoomId,
+                      buddiName: "Buddi",
+                      buddiAvatar:
+                        "https://randomuser.me/api/portraits/men/32.jpg",
+                    },
+                  });
+                }
               }}
             />
           ))}

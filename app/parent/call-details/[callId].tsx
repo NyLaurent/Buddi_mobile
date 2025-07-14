@@ -748,32 +748,81 @@ export default function CallDetailsPage() {
               >
                 Successfully matched with a buddi for this request.
               </Text>
-              <TouchableOpacity
-                style={{
-                  backgroundColor: "#22C55E",
-                  borderRadius: 8,
-                  paddingVertical: 8,
-                  paddingHorizontal: 16,
-                  alignSelf: "flex-start",
-                }}
-                onPress={() => {
-                  // TODO: Navigate to buddi profile or chat
-                  console.log(
-                    "View matched buddi profile:",
-                    callDetails.matchedBuddiId
-                  );
-                }}
-              >
-                <Text
+              <View style={{ flexDirection: "row", gap: 8, marginTop: 8 }}>
+                <TouchableOpacity
                   style={{
-                    fontFamily: "Comfortaa-Bold",
-                    fontSize: 14,
-                    color: "#fff",
+                    backgroundColor: "#22C55E",
+                    borderRadius: 8,
+                    paddingVertical: 8,
+                    paddingHorizontal: 16,
+                    flexDirection: "row",
+                    alignItems: "center",
+                  }}
+                  onPress={() => {
+                    // TODO: Navigate to buddi profile
+                    console.log(
+                      "View matched buddi profile:",
+                      callDetails.matchedBuddiId
+                    );
                   }}
                 >
-                  View Buddi Profile
-                </Text>
-              </TouchableOpacity>
+                  <FontAwesome5
+                    name="user"
+                    size={12}
+                    color="#fff"
+                    style={{ marginRight: 4 }}
+                  />
+                  <Text
+                    style={{
+                      fontFamily: "Comfortaa-Bold",
+                      fontSize: 14,
+                      color: "#fff",
+                    }}
+                  >
+                    View Profile
+                  </Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={{
+                    backgroundColor: "#3B82F6",
+                    borderRadius: 8,
+                    paddingVertical: 8,
+                    paddingHorizontal: 16,
+                    flexDirection: "row",
+                    alignItems: "center",
+                  }}
+                  onPress={() => {
+                    // Navigate to chat with buddi
+                    const chatRoomId = `${callDetails.parentId}-${callDetails.matchedBuddiId}`;
+                    router.push({
+                      pathname: "/parent/chat/[roomId]",
+                      params: {
+                        roomId: chatRoomId,
+                        buddiName: "Buddi", // You can get this from API if needed
+                        buddiAvatar:
+                          "https://randomuser.me/api/portraits/men/32.jpg",
+                      },
+                    });
+                  }}
+                >
+                  <FontAwesome5
+                    name="comments"
+                    size={12}
+                    color="#fff"
+                    style={{ marginRight: 4 }}
+                  />
+                  <Text
+                    style={{
+                      fontFamily: "Comfortaa-Bold",
+                      fontSize: 14,
+                      color: "#fff",
+                    }}
+                  >
+                    Message Buddi
+                  </Text>
+                </TouchableOpacity>
+              </View>
             </View>
           </View>
         )}

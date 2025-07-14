@@ -1,7 +1,7 @@
 import { FontAwesome5, Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import {
   ActivityIndicator,
   ScrollView,
@@ -17,6 +17,7 @@ import BuddiService from "../../../services/api/buddi.service";
 
 interface CallDetails {
   id: number;
+  parentId: string;
   description: string;
   availableDays: string[];
   pickupTime: string;
@@ -24,6 +25,7 @@ interface CallDetails {
   fromZone: string;
   toZone: string;
   status: string;
+  matchedBuddiId: number | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -300,6 +302,34 @@ export default function CallDetailsScreen() {
             {callDetails.status === "matched" ? "Already Matched" : "Apply Now"}
           </Text>
         </TouchableOpacity>
+
+        {/* Chat Button - Only show for matched calls */}
+        {callDetails.status === "matched" && callDetails.matchedBuddiId && (
+          <TouchableOpacity
+            style={styles.chatButton}
+            onPress={() => {
+              // Navigate to chat with parent
+              const chatRoomId = `${callDetails.parentId}-${callDetails.matchedBuddiId}`;
+              router.push({
+                pathname: "/buddi/chat/[roomId]",
+                params: {
+                  roomId: chatRoomId,
+                  parentName: "Parent", // You can get this from API if needed
+                  parentAvatar:
+                    "https://randomuser.me/api/portraits/men/32.jpg",
+                },
+              });
+            }}
+          >
+            <FontAwesome5
+              name="comments"
+              size={20}
+              color="#fff"
+              style={{ marginRight: 12 }}
+            />
+            <Text style={styles.chatButtonText}>Message Parent</Text>
+          </TouchableOpacity>
+        )}
       </ScrollView>
     );
   };
@@ -561,6 +591,25 @@ const styles = {
     shadowColor: "#34C759",
   },
   applyButtonText: {
+    fontFamily: "Comfortaa-Bold",
+    fontSize: 18,
+    color: "#fff",
+  },
+  chatButton: {
+    backgroundColor: "#3B82F6",
+    flexDirection: "row" as const,
+    alignItems: "center" as const,
+    justifyContent: "center" as const,
+    paddingVertical: 16,
+    borderRadius: 16,
+    marginTop: 12,
+    shadowColor: "#3B82F6",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  chatButtonText: {
     fontFamily: "Comfortaa-Bold",
     fontSize: 18,
     color: "#fff",
