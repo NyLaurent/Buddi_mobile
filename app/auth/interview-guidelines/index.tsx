@@ -156,7 +156,7 @@ const VideoGuidelinesScreen = () => {
                 className="mb-6 border border-blue-200 rounded-2xl p-4"
                 style={{ backgroundColor: "#F5FAFF" }}
               >
-                <Text className="font-comfortaa text-gray mb-2">
+                <Text className="font-comfortaa text-[#71727A] mb-2">
                   Your interview details
                 </Text>
 
@@ -167,7 +167,7 @@ const VideoGuidelinesScreen = () => {
                     <Text className="text-lg font-comfortaa-bold text-black">
                       30 Questions
                     </Text>
-                    <Text className="text-xs font-comfortaa text-gray">
+                    <Text className="text-xs font-comfortaa text-[#71727A]">
                       Up to 30 mins
                     </Text>
                   </View>
@@ -189,7 +189,7 @@ const VideoGuidelinesScreen = () => {
 
               {/* Guidelines */}
               <View className="mb-6">
-                <Text className="font-comfortaa-bold text-gray mb-3">
+                <Text className="font-comfortaa-bold text-[#71727A] mb-3">
                   Please read and acknowledge each guideline carefully:
                 </Text>
 
@@ -208,7 +208,7 @@ const VideoGuidelinesScreen = () => {
                     <Text className="font-comfortaa-bold text-black">
                       Camera Position & Lighting
                     </Text>
-                    <Text className="font-comfortaa text-xs text-gray mb-1">
+                    <Text className="font-comfortaa text-xs text-[#71727A] mb-1">
                       Ensure you are well-lit and facing the camera directly.
                       Your face should be clearly visible and centered in the
                       frame.
@@ -239,7 +239,7 @@ const VideoGuidelinesScreen = () => {
                     <Text className="font-comfortaa-bold text-black">
                       No External Assistance
                     </Text>
-                    <Text className="font-comfortaa text-xs text-gray mb-1">
+                    <Text className="font-comfortaa text-xs text-[#71727A] mb-1">
                       Do not use AI tools, chat assistants, or any external help
                       during the interview. Your answers must be genuine and
                       original.
@@ -270,7 +270,7 @@ const VideoGuidelinesScreen = () => {
                     <Text className="font-comfortaa-bold text-black">
                       Clear Communication
                     </Text>
-                    <Text className="font-comfortaa text-xs text-gray mb-1">
+                    <Text className="font-comfortaa text-xs text-[#71727A] mb-1">
                       Speak clearly and maintain a professional demeanor. Take
                       your time to think before answering each question.
                     </Text>
@@ -300,7 +300,7 @@ const VideoGuidelinesScreen = () => {
                     <Text className="font-comfortaa-bold text-black">
                       Quiet Environment
                     </Text>
-                    <Text className="font-comfortaa text-xs text-gray mb-1">
+                    <Text className="font-comfortaa text-xs text-[#71727A] mb-1">
                       Find a quiet space with minimal background noise. Ensure
                       you won&apos;t be interrupted during the interview
                       session.
@@ -346,7 +346,7 @@ const VideoGuidelinesScreen = () => {
             <Text className="text-xl font-comfortaa-bold text-black mb-4 text-center">
               Ready to Begin?
             </Text>
-            <Text className="font-comfortaa text-gray mb-6 text-center">
+            <Text className="font-comfortaa text-[#71727A] mb-6 text-center">
               Please confirm that you have read and understood all the interview
               guidelines. Once you start, you cannot pause the interview.
             </Text>
@@ -355,7 +355,7 @@ const VideoGuidelinesScreen = () => {
                 className="bg-gray-200 py-3 px-6 rounded-full"
                 onPress={() => setShowConfirmModal(false)}
               >
-                <Text className="font-comfortaa-bold text-gray">
+                <Text className="font-comfortaa-bold text-[#71727A]">
                   Re-read Guidelines
                 </Text>
               </TouchableOpacity>

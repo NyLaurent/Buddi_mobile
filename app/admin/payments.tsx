@@ -98,7 +98,7 @@ const PaymentCard = ({ payment, onViewDetails, onProcessRefund }) => {
             </Text>
           </View>
         </View>
-        <Text className="font-comfortaa text-gray text-sm">
+        <Text className="font-comfortaa text-[#71727A] text-sm">
           {payment.reference}
         </Text>
       </View>
@@ -114,7 +114,9 @@ const PaymentCard = ({ payment, onViewDetails, onProcessRefund }) => {
             <Text className="font-comfortaa-bold text-sm text-black">
               {payment.parentName}
             </Text>
-            <Text className="font-comfortaa text-xs text-gray">Parent</Text>
+            <Text className="font-comfortaa text-xs text-[#71727A]">
+              Parent
+            </Text>
           </View>
         </View>
         <Ionicons name="arrow-forward" size={16} color="#9CA3AF" />
@@ -123,7 +125,7 @@ const PaymentCard = ({ payment, onViewDetails, onProcessRefund }) => {
             <Text className="font-comfortaa-bold text-sm text-black">
               {payment.buddiName}
             </Text>
-            <Text className="font-comfortaa text-xs text-gray">Buddi</Text>
+            <Text className="font-comfortaa text-xs text-[#71727A]">Buddi</Text>
           </View>
           <Image
             source={{ uri: payment.buddiImage }}
@@ -135,28 +137,28 @@ const PaymentCard = ({ payment, onViewDetails, onProcessRefund }) => {
       {/* Payment Details */}
       <View className="bg-gray-50 rounded-lg p-3 mb-3">
         <View className="flex-row items-center justify-between mb-2">
-          <Text className="font-comfortaa text-xs text-gray">Child</Text>
-          <Text className="font-comfortaa-bold text-sm text-gray">
+          <Text className="font-comfortaa text-xs text-[#71727A]">Child</Text>
+          <Text className="font-comfortaa-bold text-sm text-[#71727A]">
             {payment.childName}
           </Text>
         </View>
         <View className="flex-row items-center justify-between mb-2">
-          <Text className="font-comfortaa text-xs text-gray">Pickups</Text>
-          <Text className="font-comfortaa-bold text-sm text-gray">
+          <Text className="font-comfortaa text-xs text-[#71727A]">Pickups</Text>
+          <Text className="font-comfortaa-bold text-sm text-[#71727A]">
             {payment.pickupCount} trips
           </Text>
         </View>
         <View className="flex-row items-center justify-between mb-2">
-          <Text className="font-comfortaa text-xs text-gray">Date</Text>
-          <Text className="font-comfortaa-bold text-sm text-gray">
+          <Text className="font-comfortaa text-xs text-[#71727A]">Date</Text>
+          <Text className="font-comfortaa-bold text-sm text-[#71727A]">
             {new Date(payment.date).toLocaleDateString()}
           </Text>
         </View>
         <View className="flex-row items-center justify-between">
-          <Text className="font-comfortaa text-xs text-gray">
+          <Text className="font-comfortaa text-xs text-[#71727A]">
             Payment Method
           </Text>
-          <Text className="font-comfortaa-bold text-sm text-gray">
+          <Text className="font-comfortaa-bold text-sm text-[#71727A]">
             {payment.paymentMethod} ****{payment.lastFour}
           </Text>
         </View>
@@ -169,7 +171,7 @@ const PaymentCard = ({ payment, onViewDetails, onProcessRefund }) => {
           className="flex-1 bg-gray-100 rounded-lg py-2 px-3 flex-row items-center justify-center"
         >
           <Ionicons name="eye-outline" size={16} color="#4B5563" />
-          <Text className="font-comfortaa text-gray ml-2 text-sm">
+          <Text className="font-comfortaa text-[#71727A] ml-2 text-sm">
             View Details
           </Text>
         </TouchableOpacity>
@@ -256,7 +258,9 @@ export default function AdminPaymentsPage() {
                 ${completedAmount.toFixed(0)}
               </Text>
             </View>
-            <Text className="font-comfortaa text-gray text-sm">Completed</Text>
+            <Text className="font-comfortaa text-[#71727A] text-sm">
+              Completed
+            </Text>
           </View>
           <View className="bg-white rounded-xl p-4 flex-1 mx-1 border border-gray-100">
             <View className="flex-row items-center mb-2">
@@ -265,7 +269,9 @@ export default function AdminPaymentsPage() {
                 ${pendingAmount.toFixed(0)}
               </Text>
             </View>
-            <Text className="font-comfortaa text-gray text-sm">Pending</Text>
+            <Text className="font-comfortaa text-[#71727A] text-sm">
+              Pending
+            </Text>
           </View>
           <View className="bg-white rounded-xl p-4 flex-1 ml-2 border border-gray-100">
             <View className="flex-row items-center mb-2">
@@ -274,7 +280,7 @@ export default function AdminPaymentsPage() {
                 ${totalAmount.toFixed(0)}
               </Text>
             </View>
-            <Text className="font-comfortaa text-gray text-sm">
+            <Text className="font-comfortaa text-[#71727A] text-sm">
               Total Volume
             </Text>
           </View>
@@ -288,7 +294,7 @@ export default function AdminPaymentsPage() {
               placeholder="Search by parent, buddi, or reference..."
               value={searchQuery}
               onChangeText={setSearchQuery}
-              className="flex-1 ml-3 font-comfortaa text-gray"
+              className="flex-1 ml-3 font-comfortaa text-[#71727A]"
               placeholderTextColor="#9CA3AF"
             />
           </View>
@@ -310,7 +316,9 @@ export default function AdminPaymentsPage() {
             >
               <Text
                 className={`font-comfortaa ${
-                  selectedFilter === filter.value ? "text-white" : "text-gray"
+                  selectedFilter === filter.value
+                    ? "text-white"
+                    : "text-[#71727A]"
                 }`}
               >
                 {filter.label}
@@ -336,10 +344,10 @@ export default function AdminPaymentsPage() {
         ) : (
           <View className="bg-white rounded-xl p-8 mx-4 items-center">
             <MaterialIcons name="search-off" size={48} color="#9CA3AF" />
-            <Text className="font-comfortaa-bold text-lg text-gray mt-4">
+            <Text className="font-comfortaa-bold text-lg text-[#71727A] mt-4">
               No Payments Found
             </Text>
-            <Text className="font-comfortaa text-gray text-center mt-2">
+            <Text className="font-comfortaa text-[#71727A] text-center mt-2">
               Try adjusting your search or filter criteria
             </Text>
           </View>

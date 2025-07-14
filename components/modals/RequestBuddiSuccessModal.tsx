@@ -1,5 +1,4 @@
 import { Feather } from "@expo/vector-icons";
-import React from "react";
 import { Modal, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 
 interface RequestBuddiSuccessModalProps {
@@ -36,7 +35,7 @@ const RequestBuddiSuccessModal = ({
               <Text className="text-2xl font-comfortaa-bold text-center mb-2">
                 Is everything correct?
               </Text>
-              <Text className="text-grayText font-comfortaa text-center mb-6">
+              <Text className="text-[#71727A]Text font-comfortaa text-center mb-6">
                 Please review the information before submitting
               </Text>
 

@@ -168,12 +168,12 @@ const Onboarding = () => {
               resizeMode="contain"
             />
             {item.subtitle ? (
-              <Text className="text-lg font-comfortaa-bold text-center mt-2 text-gray">
+              <Text className="text-lg font-comfortaa-bold text-center mt-2 text-[#71727A]">
                 {item.subtitle}
               </Text>
             ) : null}
             {item.description ? (
-              <Text className="text-center font-comfortaa text-gray mt-2 mb-4">
+              <Text className="text-center font-comfortaa text-[#71727A] mt-2 mb-4">
                 {item.description}
               </Text>
             ) : null}

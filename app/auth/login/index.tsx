@@ -1,6 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import React, { useState } from "react";
+import { useState } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -74,17 +74,17 @@ const LoginScreen = () => {
 
         {/* Header */}
         <View className="items-center">
-          <Text className="text-3xl font-comfortaa-bold text-gray mb-2">
+          <Text className="text-3xl font-comfortaa-bold text-[#71727A] mb-2">
             Login
           </Text>
-          <Text className="text-sm font-comfortaa text-center text-gray mb-8">
+          <Text className="text-sm font-comfortaa text-center text-[#71727A] mb-8">
             Sign In to access your Pickup Buddi account
           </Text>
         </View>
 
         {/* Email Input */}
         <View className="mb-4">
-          <Text className="font-comfortaa-bold text-sm text-gray mb-2">
+          <Text className="font-comfortaa-bold text-sm text-[#71727A] mb-2">
             Email Address
           </Text>
           <View className="flex-row items-center bg-white border border-[#CBD5E1] rounded-2xl px-4 py-3.5">
@@ -95,7 +95,7 @@ const LoginScreen = () => {
               style={{ marginRight: 8 }}
             />
             <TextInput
-              className="flex-1 font-comfortaa text-gray text-base"
+              className="flex-1 font-comfortaa text-[#71727A] text-base"
               value={email}
               onChangeText={setEmail}
               placeholder="Enter your email address..."
@@ -109,7 +109,7 @@ const LoginScreen = () => {
 
         {/* Password Input */}
         <View className="mb-6">
-          <Text className="font-comfortaa-bold text-sm text-gray mb-2">
+          <Text className="font-comfortaa-bold text-sm text-[#71727A] mb-2">
             Password
           </Text>
           <View className="flex-row items-center bg-white border border-[#CBD5E1] rounded-2xl px-4 py-3.5">
@@ -120,7 +120,7 @@ const LoginScreen = () => {
               style={{ marginRight: 8 }}
             />
             <TextInput
-              className="flex-1 font-comfortaa text-gray text-base"
+              className="flex-1 font-comfortaa text-[#71727A] text-base"
               value={password}
               onChangeText={setPassword}
               placeholder="**************"
@@ -160,7 +160,7 @@ const LoginScreen = () => {
                 <Ionicons name="checkmark" size={12} color="#fff" />
               )}
             </View>
-            <Text className="ml-2 font-comfortaa text-gray">
+            <Text className="ml-2 font-comfortaa text-[#71727A]">
               Keep me signed in
             </Text>
           </TouchableOpacity>
@@ -207,7 +207,7 @@ const LoginScreen = () => {
         {/* OR Divider */}
         <View className="flex-row items-center mb-6">
           <View className="flex-1 h-[1px] bg-gray-200" />
-          <Text className="mx-4 font-comfortaa text-gray">OR</Text>
+          <Text className="mx-4 font-comfortaa text-[#71727A]">OR</Text>
           <View className="flex-1 h-[1px] bg-gray-200" />
         </View>
 
@@ -225,7 +225,7 @@ const LoginScreen = () => {
               }}
               style={{ width: 20, height: 20, marginRight: 10 }}
             />
-            <Text className="font-comfortaa-bold text-gray text-base">
+            <Text className="font-comfortaa-bold text-[#71727A] text-base">
               Sign In With Google
             </Text>
           </View>
@@ -233,7 +233,7 @@ const LoginScreen = () => {
 
         {/* Sign Up Link */}
         <View className="items-center flex-row">
-          <Text className="font-comfortaa text-gray">
+          <Text className="font-comfortaa text-[#71727A]">
             Don&apos;t have an account?{" "}
           </Text>
           <TouchableOpacity

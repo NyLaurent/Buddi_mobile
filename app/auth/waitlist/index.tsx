@@ -270,7 +270,7 @@ const WaitlistScreen = () => {
             <Text className="font-comfortaa-bold text-lg mb-2">
               Registration Status
             </Text>
-            <Text className="font-comfortaa text-gray mb-4">
+            <Text className="font-comfortaa text-[#71727A] mb-4">
               {userInfo.statusText}
             </Text>
 

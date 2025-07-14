@@ -47,13 +47,18 @@ const BuddiProfile = () => {
     const fetchProfile = async () => {
       try {
         setIsLoading(true);
+        console.log("BuddiProfile: Starting profile fetch...");
         const response = await AuthService.getProfile();
-        console.log("Profile API response:", response);
+        console.log("BuddiProfile: Profile API response:", response);
         setProfileData(response);
       } catch (error) {
-        console.error("Error fetching profile:", error);
+        console.error("BuddiProfile: Error fetching profile:", error);
         // Fallback to context data if API fails
-        setProfileData({ user, buddiDetails });
+        console.log("BuddiProfile: Using fallback data:", { user, buddiDetails });
+        setProfileData({ 
+          user: user || null, 
+          buddiDetails: buddiDetails || null 
+        });
       } finally {
         setIsLoading(false);
       }
@@ -61,47 +66,95 @@ const BuddiProfile = () => {
 
     if (user) {
       fetchProfile();
+    } else {
+      // If no user, set loading to false and use fallback data
+      console.log("BuddiProfile: No user found, using fallback data");
+      setIsLoading(false);
+      setProfileData({ 
+        user: null, 
+        buddiDetails: buddiDetails || null 
+      });
     }
-  }, [user]);
+  }, [user, buddiDetails]);
 
   // Get profile image or use placeholder
-  const profileImage =
-    profileData?.user?.Buddi?.profilePicture ||
-    buddiDetails?.profilePicture ||
-    "https://randomuser.me/api/portraits/men/32.jpg";
+  const profileImage = (() => {
+    const image = profileData?.user?.Buddi?.profilePicture ||
+      buddiDetails?.profilePicture ||
+      "https://randomuser.me/api/portraits/men/32.jpg";
+    console.log("BuddiProfile: Profile image:", image);
+    return image;
+  })();
 
   // Get full name from user data
-  const fullName = profileData?.user
-    ? `${profileData.user.firstName} ${profileData.user.lastName}`
-    : user
-    ? `${user.firstName} ${user.lastName}`
-    : "John Doe Smith";
+  const fullName = (() => {
+    const firstName = profileData?.user?.firstName || user?.firstName || "";
+    const lastName = profileData?.user?.lastName || user?.lastName || "";
+    const name = `${firstName} ${lastName}`.trim();
+    const result = name || "John Doe Smith";
+    console.log("BuddiProfile: Full name:", result);
+    return result;
+  })();
 
   // Get email from user data
-  const email = profileData?.user?.email || user?.email || "johndoe@gmail.com";
+  const email = (() => {
+    const result = profileData?.user?.email || user?.email || "johndoe@gmail.com";
+    console.log("BuddiProfile: Email:", result);
+    return result;
+  })();
 
   // Get phone from user data
-  const phone =
-    profileData?.user?.phoneNumber || user?.phoneNumber || "+250-786-564-922";
+  const phone = (() => {
+    const result = profileData?.user?.phoneNumber || user?.phoneNumber || "+250-786-564-922";
+    console.log("BuddiProfile: Phone:", result);
+    return result;
+  })();
 
   // Get school info from buddi details
-  const schoolInfo = profileData?.user?.Buddi
-    ? `${profileData.user.Buddi.currentSchool} – ${profileData.user.Buddi.AreaOfStudy}`
-    : buddiDetails
-    ? `${buddiDetails.currentSchool} – ${buddiDetails.AreaOfStudy}`
-    : "NYU – Year 2, Child Psychology";
+  const schoolInfo = (() => {
+    const currentSchool = profileData?.user?.Buddi?.currentSchool || buddiDetails?.currentSchool || "";
+    const areaOfStudy = profileData?.user?.Buddi?.AreaOfStudy || buddiDetails?.AreaOfStudy || "";
+    
+    let result;
+    if (currentSchool && areaOfStudy) {
+      result = `${currentSchool} – ${areaOfStudy}`;
+    } else if (currentSchool) {
+      result = currentSchool;
+    } else if (areaOfStudy) {
+      result = areaOfStudy;
+    } else {
+      result = "NYU – Year 2, Child Psychology";
+    }
+    console.log("BuddiProfile: School info:", result);
+    return result;
+  })();
 
   // Get rating from buddi details
-  const rating = profileData?.user?.Buddi?.rating || buddiDetails?.rating || 5;
+  const rating = (() => {
+    const rawRating = profileData?.user?.Buddi?.rating || buddiDetails?.rating || 5;
+    console.log("BuddiProfile: Raw rating:", rawRating, typeof rawRating);
+    // Ensure rating is a valid number and within reasonable bounds
+    if (typeof rawRating === 'number' && !isNaN(rawRating) && isFinite(rawRating) && rawRating >= 0 && rawRating <= 5) {
+      const result = Math.floor(rawRating);
+      console.log("BuddiProfile: Valid rating:", result);
+      return result;
+    }
+    console.log("BuddiProfile: Using default rating: 5");
+    return 5; // Default fallback
+  })();
 
   // Get resume status
-  const hasResume = profileData?.user?.Buddi?.resume || buddiDetails?.resume;
+  const hasResume = (() => {
+    const result = profileData?.user?.Buddi?.resume || buddiDetails?.resume;
+    console.log("BuddiProfile: Has resume:", result);
+    return result;
+  })();
 
   if (isLoading) {
     return (
       <View className="flex-1 bg-white justify-center items-center">
         <ActivityIndicator size="large" color="#FF932E" />
-        <Text className="mt-4 text-gray font-comfortaa">
+        <Text className="mt-4 text-[#71727A] font-comfortaa">
           Loading profile...
         </Text>
       </View>
@@ -140,7 +193,7 @@ const BuddiProfile = () => {
           >
             <Text
               className={`font-comfortaa-bold ${
-                activeTab === "General" ? "text-[#FF932E]" : "text-gray"
+                activeTab === "General" ? "text-[#FF932E]" : "text-[#71727A]"
               }`}
             >
               General
@@ -154,7 +207,7 @@ const BuddiProfile = () => {
           >
             <Text
               className={`font-comfortaa-bold ${
-                activeTab === "Documents" ? "text-[#FF932E]" : "text-gray"
+                activeTab === "Documents" ? "text-[#FF932E]" : "text-[#71727A]"
               }`}
             >
               Documents
@@ -299,7 +352,7 @@ const BuddiProfile = () => {
                   <Text className="font-comfortaa-bold text-base">
                     {fullName}
                   </Text>
-                  <Text className="text-gray text-xs mt-1">
+                  <Text className="text-[#71727A] text-xs mt-1">
                     {profileData?.user?.createdAt
                       ? new Date(profileData.user.createdAt).toLocaleDateString(
                           "en-US",
@@ -349,7 +402,7 @@ const BuddiProfile = () => {
                 <Text className="font-comfortaa-bold text-base mt-4">
                   Resume
                 </Text>
-                <Text className="text-gray text-xs mt-1">
+                <Text className="text-[#71727A] text-xs mt-1">
                   {hasResume ? "PDF • Available" : "PDF • Not uploaded"}
                 </Text>
               </View>

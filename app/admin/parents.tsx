@@ -108,7 +108,7 @@ const ParentCard = ({ parent, onViewDetails, onMessage }: ParentCardProps) => {
             <Text className="font-comfortaa-bold text-lg text-black">
               {parent.name}
             </Text>
-            <Text className="font-comfortaa text-gray text-sm">
+            <Text className="font-comfortaa text-[#71727A] text-sm">
               {parent.email}
             </Text>
           </View>
@@ -129,18 +129,20 @@ const ParentCard = ({ parent, onViewDetails, onMessage }: ParentCardProps) => {
       {/* Phone */}
       <View className="flex-row items-center mb-3">
         <Ionicons name="call" size={16} color="#6B7280" />
-        <Text className="font-comfortaa text-gray ml-2">{parent.phone}</Text>
+        <Text className="font-comfortaa text-[#71727A] ml-2">
+          {parent.phone}
+        </Text>
       </View>
 
       {/* Children */}
       <View className="mb-3">
-        <Text className="font-comfortaa-bold text-sm text-gray mb-2">
+        <Text className="font-comfortaa-bold text-sm text-[#71727A] mb-2">
           Children ({parent.children.length})
         </Text>
         {parent.children.map((child, index) => (
           <View key={index} className="flex-row items-center mb-1">
             <View className="w-2 h-2 bg-primary rounded-full mr-2" />
-            <Text className="font-comfortaa text-gray text-sm flex-1">
+            <Text className="font-comfortaa text-[#71727A] text-sm flex-1">
               {child.name}, {child.age} years • {child.school}
             </Text>
           </View>
@@ -150,24 +152,24 @@ const ParentCard = ({ parent, onViewDetails, onMessage }: ParentCardProps) => {
       {/* Stats */}
       <View className="flex-row items-center justify-between mb-3 bg-gray-50 rounded-lg p-3">
         <View className="flex-1">
-          <Text className="font-comfortaa text-xs text-gray">Joined</Text>
-          <Text className="font-comfortaa-bold text-sm text-gray">
+          <Text className="font-comfortaa text-xs text-[#71727A]">Joined</Text>
+          <Text className="font-comfortaa-bold text-sm text-[#71727A]">
             {parent.joinDate}
           </Text>
         </View>
         <View className="flex-1">
-          <Text className="font-comfortaa text-xs text-gray">
+          <Text className="font-comfortaa text-xs text-[#71727A]">
             Total Pickups
           </Text>
-          <Text className="font-comfortaa-bold text-sm text-gray">
+          <Text className="font-comfortaa-bold text-sm text-[#71727A]">
             {parent.totalPickups}
           </Text>
         </View>
         <View className="flex-1">
-          <Text className="font-comfortaa text-xs text-gray">
+          <Text className="font-comfortaa text-xs text-[#71727A]">
             Current Buddi
           </Text>
-          <Text className="font-comfortaa-bold text-sm text-gray">
+          <Text className="font-comfortaa-bold text-sm text-[#71727A]">
             {parent.currentBuddi || "Not Assigned"}
           </Text>
         </View>
@@ -180,7 +182,7 @@ const ParentCard = ({ parent, onViewDetails, onMessage }: ParentCardProps) => {
           className="flex-1 bg-gray-100 rounded-lg py-2 px-3 flex-row items-center justify-center"
         >
           <Ionicons name="eye-outline" size={16} color="#4B5563" />
-          <Text className="font-comfortaa text-gray ml-2 text-sm">
+          <Text className="font-comfortaa text-[#71727A] ml-2 text-sm">
             View Details
           </Text>
         </TouchableOpacity>
@@ -451,10 +453,10 @@ export default function AdminParentsPage() {
         {activeTab === "background" && (
           <View className="bg-white rounded-xl p-8 mx-4 items-center">
             <Ionicons name="document-text-outline" size={48} color="#9CA3AF" />
-            <Text className="font-comfortaa-bold text-lg text-gray mt-4">
+            <Text className="font-comfortaa-bold text-lg text-[#71727A] mt-4">
               Background Checks
             </Text>
-            <Text className="font-comfortaa text-gray text-center mt-2">
+            <Text className="font-comfortaa text-[#71727A] text-center mt-2">
               Background check management coming soon
             </Text>
           </View>

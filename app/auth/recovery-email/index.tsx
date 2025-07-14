@@ -36,14 +36,14 @@ const RecoveryEmailScreen = () => {
           <Text className="text-3xl font-comfortaa-bold text-black mb-2">
             Password Recovery
           </Text>
-          <Text className="text-sm font-comfortaa text-center text-gray mb-8">
+          <Text className="text-sm font-comfortaa text-center text-[#71727A] mb-8">
             Enter your email used in signup to get a confirmation code (OTP)
           </Text>
         </View>
 
         {/* Email Input */}
         <View className="mb-8">
-          <Text className="font-comfortaa-bold text-sm text-gray mb-2">
+          <Text className="font-comfortaa-bold text-sm text-[#71727A] mb-2">
             Email Address
           </Text>
           <View className="flex-row items-center bg-white border border-[#CBD5E1] rounded-2xl px-4 py-3.5">
@@ -54,7 +54,7 @@ const RecoveryEmailScreen = () => {
               style={{ marginRight: 8 }}
             />
             <TextInput
-              className="flex-1 font-comfortaa text-gray text-base"
+              className="flex-1 font-comfortaa text-[#71727A] text-base"
               value={email}
               onChangeText={setEmail}
               placeholder="Enter your email address..."

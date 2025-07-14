@@ -51,7 +51,7 @@ const RegistrationStep = ({
           <Text className="text-2xl font-comfortaa-bold text-center text-black mb-2">
             Registration
           </Text>
-          <Text className="text-sm font-comfortaa text-center text-gray mb-6 px-8">
+          <Text className="text-sm font-comfortaa text-center text-[#71727A] mb-6 px-8">
             Join Pickup Buddi to help us verify Buddis and keep students safe.
             Let&apos;s start by gathering a few details.
           </Text>
@@ -60,11 +60,11 @@ const RegistrationStep = ({
         {/* Form fields */}
         <View style={{ flexDirection: "row", gap: 16, marginBottom: 20 }}>
           <View style={{ flex: 1 }}>
-            <Text className="font-comfortaa-bold text-xs text-gray mb-1">
+            <Text className="font-comfortaa-bold text-xs text-[#71727A] mb-1">
               First Name
             </Text>
             <TextInput
-              className="bg-white border border-[#CBD5E1] rounded-2xl px-4 py-3 font-comfortaa text-gray text-base"
+              className="bg-white border border-[#CBD5E1] rounded-2xl px-4 py-3 font-comfortaa text-[#71727A] text-base"
               value={form.firstName}
               onChangeText={(v) =>
                 setForm((f: any) => ({ ...f, firstName: v }))
@@ -74,11 +74,11 @@ const RegistrationStep = ({
             />
           </View>
           <View style={{ flex: 1 }}>
-            <Text className="font-comfortaa-bold text-xs text-gray mb-1">
+            <Text className="font-comfortaa-bold text-xs text-[#71727A] mb-1">
               Last Name
             </Text>
             <TextInput
-              className="bg-white border border-[#CBD5E1] rounded-2xl px-4 py-3 font-comfortaa text-gray text-base"
+              className="bg-white border border-[#CBD5E1] rounded-2xl px-4 py-3 font-comfortaa text-[#71727A] text-base"
               value={form.lastName}
               onChangeText={(v) => setForm((f: any) => ({ ...f, lastName: v }))}
               placeholder="Smith"
@@ -95,11 +95,11 @@ const RegistrationStep = ({
         </View>
 
         <View style={{ marginBottom: 20 }}>
-          <Text className="font-comfortaa-bold text-xs text-gray mb-1">
+          <Text className="font-comfortaa-bold text-xs text-[#71727A] mb-1">
             Home Address
           </Text>
           <TextInput
-            className="bg-white border border-[#CBD5E1] rounded-2xl px-4 py-3 font-comfortaa text-gray text-base"
+            className="bg-white border border-[#CBD5E1] rounded-2xl px-4 py-3 font-comfortaa text-[#71727A] text-base"
             value={form.homeAddress}
             onChangeText={(v) =>
               setForm((f: any) => ({ ...f, homeAddress: v }))
@@ -111,12 +111,12 @@ const RegistrationStep = ({
 
         <View style={{ flexDirection: "row", gap: 16, marginBottom: 20 }}>
           <View style={{ flex: 1 }}>
-            <Text className="font-comfortaa-bold text-xs text-gray mb-1">
+            <Text className="font-comfortaa-bold text-xs text-[#71727A] mb-1">
               Password
             </Text>
             <View className="flex-row items-center bg-white border border-[#CBD5E1] rounded-2xl px-4">
               <TextInput
-                className="flex-1 font-comfortaa text-gray text-base py-3"
+                className="flex-1 font-comfortaa text-[#71727A] text-base py-3"
                 value={form.password}
                 onChangeText={(v) =>
                   setForm((f: any) => ({ ...f, password: v }))
@@ -140,12 +140,12 @@ const RegistrationStep = ({
             </View>
           </View>
           <View style={{ flex: 1 }}>
-            <Text className="font-comfortaa-bold text-xs text-gray mb-1">
+            <Text className="font-comfortaa-bold text-xs text-[#71727A] mb-1">
               Confirm Password
             </Text>
             <View className="flex-row items-center bg-white border border-[#CBD5E1] rounded-2xl px-4">
               <TextInput
-                className="flex-1 font-comfortaa text-gray text-base py-3"
+                className="flex-1 font-comfortaa text-[#71727A] text-base py-3"
                 value={form.confirmPassword}
                 onChangeText={(v) =>
                   setForm((f: any) => ({ ...f, confirmPassword: v }))
@@ -174,7 +174,7 @@ const RegistrationStep = ({
         </View>
 
         <View style={{ marginBottom: 20 }}>
-          <Text className="font-comfortaa-bold text-xs text-gray mb-1">
+          <Text className="font-comfortaa-bold text-xs text-[#71727A] mb-1">
             Email
           </Text>
           <View className="flex-row items-center bg-white border border-[#CBD5E1] rounded-2xl px-4 py-3">
@@ -185,7 +185,7 @@ const RegistrationStep = ({
               style={{ marginRight: 8 }}
             />
             <TextInput
-              className="flex-1 font-comfortaa text-gray text-base"
+              className="flex-1 font-comfortaa text-[#71727A] text-base"
               value={form.email}
               onChangeText={(v) => setForm((f: any) => ({ ...f, email: v }))}
               placeholder="johndoe@example.com"
@@ -202,7 +202,7 @@ const RegistrationStep = ({
               />
             </TouchableOpacity>
           </View>
-          <Text className="font-comfortaa text-xs text-gray mt-1">
+          <Text className="font-comfortaa text-xs text-[#71727A] mt-1">
             Use a valid .edu email please
           </Text>
           {errors.email ? (
@@ -211,7 +211,7 @@ const RegistrationStep = ({
         </View>
 
         <View style={{ marginBottom: 20 }}>
-          <Text className="font-comfortaa-bold text-xs text-gray mb-1">
+          <Text className="font-comfortaa-bold text-xs text-[#71727A] mb-1">
             Phone Number
           </Text>
           <View
@@ -274,7 +274,7 @@ const RegistrationStep = ({
 
         <View className="mt-2 mb-4">
           <TouchableOpacity onPress={onLogin} className="self-center">
-            <Text className="text-center font-comfortaa text-gray">
+            <Text className="text-center font-comfortaa text-[#71727A]">
               Already got any account?{" "}
               <Text className="text-primary font-comfortaa-bold">Login</Text>
             </Text>
@@ -373,18 +373,18 @@ const SchoolDetailsStep = ({ form, setForm, errors }: any) => {
           <Text className="text-2xl font-comfortaa-bold text-center text-black mb-2">
             School Details
           </Text>
-          <Text className="text-sm font-comfortaa text-center text-gray mb-6 px-8">
+          <Text className="text-sm font-comfortaa text-center text-[#71727A] mb-6 px-8">
             Provide your school information to help us verify your role and
             build trust.
           </Text>
         </View>
 
         <View style={{ marginBottom: 20 }}>
-          <Text className="font-comfortaa-bold text-xs text-gray mb-1">
+          <Text className="font-comfortaa-bold text-xs text-[#71727A] mb-1">
             Current School
           </Text>
           <TextInput
-            className="bg-white border border-[#CBD5E1] rounded-2xl px-4 py-3 font-comfortaa text-gray text-base"
+            className="bg-white border border-[#CBD5E1] rounded-2xl px-4 py-3 font-comfortaa text-[#71727A] text-base"
             value={form.schoolName}
             onChangeText={(v) => setForm((f: any) => ({ ...f, schoolName: v }))}
             placeholder="School name here"
@@ -393,7 +393,7 @@ const SchoolDetailsStep = ({ form, setForm, errors }: any) => {
         </View>
 
         <View style={{ marginBottom: 20 }}>
-          <Text className="font-comfortaa-bold text-xs text-gray mb-1">
+          <Text className="font-comfortaa-bold text-xs text-[#71727A] mb-1">
             School Email
           </Text>
           <View className="flex-row items-center bg-white border border-[#CBD5E1] rounded-2xl px-4 py-3">
@@ -404,7 +404,7 @@ const SchoolDetailsStep = ({ form, setForm, errors }: any) => {
               style={{ marginRight: 8 }}
             />
             <TextInput
-              className="flex-1 font-comfortaa text-gray text-base"
+              className="flex-1 font-comfortaa text-[#71727A] text-base"
               value={form.schoolEmail}
               onChangeText={(v) =>
                 setForm((f: any) => ({ ...f, schoolEmail: v }))
@@ -423,7 +423,7 @@ const SchoolDetailsStep = ({ form, setForm, errors }: any) => {
               />
             </TouchableOpacity>
           </View>
-          <Text className="font-comfortaa text-xs text-gray mt-1">
+          <Text className="font-comfortaa text-xs text-[#71727A] mt-1">
             (Optional)
           </Text>
           {errors.schoolEmail ? (
@@ -434,7 +434,7 @@ const SchoolDetailsStep = ({ form, setForm, errors }: any) => {
         </View>
 
         <View style={{ marginBottom: 20 }}>
-          <Text className="font-comfortaa-bold text-xs text-gray mb-1">
+          <Text className="font-comfortaa-bold text-xs text-[#71727A] mb-1">
             Location of the school
           </Text>
           <View className="flex-row items-center bg-white border border-[#CBD5E1] rounded-2xl px-4 py-3">
@@ -445,7 +445,7 @@ const SchoolDetailsStep = ({ form, setForm, errors }: any) => {
               style={{ marginRight: 8 }}
             />
             <TextInput
-              className="flex-1 font-comfortaa text-gray text-base"
+              className="flex-1 font-comfortaa text-[#71727A] text-base"
               value={form.schoolLocation}
               onChangeText={(v) =>
                 setForm((f: any) => ({ ...f, schoolLocation: v }))
@@ -457,7 +457,7 @@ const SchoolDetailsStep = ({ form, setForm, errors }: any) => {
         </View>
 
         <View style={{ marginBottom: 20 }}>
-          <Text className="font-comfortaa-bold text-xs text-gray mb-1">
+          <Text className="font-comfortaa-bold text-xs text-[#71727A] mb-1">
             Position
           </Text>
           <View className="flex-row items-center bg-white border border-[#CBD5E1] rounded-2xl px-4 py-3">
@@ -468,7 +468,7 @@ const SchoolDetailsStep = ({ form, setForm, errors }: any) => {
               style={{ marginRight: 8 }}
             />
             <TextInput
-              className="flex-1 font-comfortaa text-gray text-base"
+              className="flex-1 font-comfortaa text-[#71727A] text-base"
               value={form.position}
               onChangeText={(v) => setForm((f: any) => ({ ...f, position: v }))}
               placeholder="Enter your position"
@@ -496,7 +496,7 @@ const SchoolDetailsStep = ({ form, setForm, errors }: any) => {
               )}
             </View>
           </TouchableOpacity>
-          <Text className="font-comfortaa text-sm text-gray">
+          <Text className="font-comfortaa text-sm text-[#71727A]">
             I agree to the{" "}
             <Text className="text-primary font-comfortaa-bold">Terms</Text> &{" "}
             <Text className="text-primary font-comfortaa-bold">Conditions</Text>

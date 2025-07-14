@@ -113,7 +113,7 @@ export default function BuddiHome() {
         <Text className="text-2xl font-comfortaa-bold m-4">
           Good morning, {user?.firstName || "Buddi"}
         </Text>
-        <Text className="text-gray font-comfortaa mx-5">
+        <Text className="text-[#71727A] font-comfortaa mx-5">
           Happy that you are back 😊
         </Text>
 

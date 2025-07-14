@@ -24,7 +24,7 @@ const RecommendedBuddiesCard: React.FC<RecommendedBuddiesCardProps> = ({
       <View className="bg-white rounded-2xl border border-gray px-4 py-5 my-3 w-full max-w-[420px] self-center">
         {/* Top section */}
         <View className="mb-2">
-          <Text className="text-xs text-grayText font-comfortaa mb-2">
+          <Text className="text-xs text-[#71727A]Text font-comfortaa mb-2">
             Buddi
           </Text>
           <View className="flex-row items-center justify-between bg-[#F8F9FE] rounded-xl px-3 py-2">
@@ -36,14 +36,16 @@ const RecommendedBuddiesCard: React.FC<RecommendedBuddiesCardProps> = ({
             </View>
             <View className="flex-row items-center">
               <View className="w-6 h-6 rounded-full bg-gray items-center justify-center">
-                <Text className="text-xs text-grayText font-comfortaa">1</Text>
+                <Text className="text-xs text-[#71727A]Text font-comfortaa">
+                  1
+                </Text>
               </View>
             </View>
           </View>
         </View>
         {/* No Buddis Received message */}
         <View className="mt-4 bg-[#F8F9FE] rounded-full py-4 items-center flex-row justify-center">
-          <Text className="text-grayText font-comfortaa-bold text-lg mr-2">
+          <Text className="text-[#71727A]Text font-comfortaa-bold text-lg mr-2">
             No Buddis Received Yet!
           </Text>
           <Ionicons name="help-circle-outline" size={20} color="#858C95" />
@@ -55,7 +57,9 @@ const RecommendedBuddiesCard: React.FC<RecommendedBuddiesCardProps> = ({
   // Buddies exist: show recommended list
   return (
     <View className="bg-white rounded-2xl border border-gray px-4 py-5 my-3 w-full">
-      <Text className="text-xs text-grayText font-comfortaa mb-2">Buddi</Text>
+      <Text className="text-xs text-[#71727A]Text font-comfortaa mb-2">
+        Buddi
+      </Text>
       <Text className="text-base font-comfortaa-bold mb-4">
         Here is list of {buddies.length} recommended Buddis
       </Text>
@@ -66,10 +70,7 @@ const RecommendedBuddiesCard: React.FC<RecommendedBuddiesCardProps> = ({
         contentContainerStyle={horizontal ? { paddingHorizontal: 8 } : {}}
       >
         {buddies.map((buddy, idx) => (
-          <View
-            key={buddy.email}
-            className="rounded-xl px-3 py-4 mx-2"
-          >
+          <View key={buddy.email} className="rounded-xl px-3 py-4 mx-2">
             <View className="flex-row items-center justify-between mb-2">
               <View className="flex-row items-center">
                 {buddy.avatar ? (
@@ -86,7 +87,7 @@ const RecommendedBuddiesCard: React.FC<RecommendedBuddiesCardProps> = ({
                   <Text className="font-comfortaa-bold text-base text-black">
                     {buddy.name}
                   </Text>
-                  <Text className="font-comfortaa text-xs text-grayText">
+                  <Text className="font-comfortaa text-xs text-[#71727A]Text">
                     {buddy.email}
                   </Text>
                 </View>
@@ -114,7 +115,7 @@ const RecommendedBuddiesCard: React.FC<RecommendedBuddiesCardProps> = ({
                   color="#858C95"
                   className="mr-2"
                 />
-                <Text className="font-comfortaa text-grayText text-sm">
+                <Text className="font-comfortaa text-[#71727A]Text text-sm">
                   Full Profile
                 </Text>
               </TouchableOpacity>

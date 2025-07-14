@@ -13,7 +13,7 @@ const NoBuddi = () => {
         className="w-32 h-32 mb-6"
         resizeMode="contain"
       />
-      <Text className="text-center text-gray font-comfortaa mb-8 text-base">
+      <Text className="text-center text-[#71727A] font-comfortaa mb-8 text-base">
         You currently have no Buddi!
       </Text>
       <TouchableOpacity

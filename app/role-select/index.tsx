@@ -69,7 +69,7 @@ const RoleSelect = () => {
           <Text className="text-2xl font-comfortaa-bold text-center text-black mb-1">
             Choose Your Role
           </Text>
-          <Text className="text-base font-comfortaa text-center text-gray">
+          <Text className="text-base font-comfortaa text-center text-[#71727A]">
             Select how you&apos;ll use Pickup Buddi to continue.
           </Text>
         </View>
@@ -99,7 +99,7 @@ const RoleSelect = () => {
         {/* Divider */}
         <View className="flex-row items-center px-6 mb-6">
           <View className="flex-1 h-px bg-gray-300" />
-          <Text className="mx-4 text-gray font-comfortaa">or</Text>
+          <Text className="mx-4 text-[#71727A] font-comfortaa">or</Text>
           <View className="flex-1 h-px bg-gray-300" />
         </View>
 
@@ -149,7 +149,7 @@ const RoleSelect = () => {
                   >
                     {role.label}
                   </Text>
-                  <Text className="font-comfortaa text-gray text-sm">
+                  <Text className="font-comfortaa text-[#71727A] text-sm">
                     {role.description}
                   </Text>
                 </View>
@@ -191,7 +191,7 @@ const RoleSelect = () => {
         </View>
         {/* Info Text */}
         <View className="px-8 mt-2 mb-4">
-          <Text className="text-lg font-comfortaa text-center text-gray">
+          <Text className="text-lg font-comfortaa text-center text-[#71727A]">
             Your experience will be tailored based on the role you choose.
           </Text>
         </View>

@@ -33,14 +33,14 @@ const CongratulationsCard: React.FC<CongratulationsCardProps> = ({
         {icon}
         <View>
           <Text className="font-comfortaa-bold text-lg">{title}</Text>
-          <Text className="text-gray font-comfortaa">{subtitle}</Text>
+          <Text className="text-[#71727A] font-comfortaa">{subtitle}</Text>
         </View>
       </View>
       <TouchableOpacity
         className="py-2 px-3 rounded-xl flex-row items-center gap-2"
         onPress={onViewPress}
       >
-        <Text className="text-gray font-comfortaa">{viewText}</Text>
+        <Text className="text-[#71727A] font-comfortaa">{viewText}</Text>
         <Ionicons name="arrow-forward" size={16} color="#666" />
       </TouchableOpacity>
     </View>

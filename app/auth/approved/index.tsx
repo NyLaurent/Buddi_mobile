@@ -93,7 +93,7 @@ const ApprovedPage = () => {
                   <Text className="font-comfortaa-bold text-lg text-black mb-1">
                     Your Account was approved!
                   </Text>
-                  <Text className="font-comfortaa text-xs text-gray">
+                  <Text className="font-comfortaa text-xs text-[#71727A]">
                     2 hrs ago, 20th, May, 2025
                   </Text>
                 </View>
@@ -117,7 +117,7 @@ const ApprovedPage = () => {
                   color="#666"
                   style={{ marginRight: 8 }}
                 />
-                <Text className="font-comfortaa-bold text-gray text-base">
+                <Text className="font-comfortaa-bold text-[#71727A] text-base">
                   Update Info
                 </Text>
               </TouchableOpacity>
@@ -185,7 +185,7 @@ const ApprovedPage = () => {
                 Answer & Record Your Interview
               </Text>
 
-              <Text className="font-comfortaa text-center text-gray mb-6">
+              <Text className="font-comfortaa text-center text-[#71727A] mb-6">
                 Record your responses to a few questions{"\n"}
                 to help us evaluate your fit
               </Text>

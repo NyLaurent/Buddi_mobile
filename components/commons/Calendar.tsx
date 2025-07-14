@@ -106,7 +106,7 @@ const Calendar = ({
       <View className="flex-row justify-between mb-2">
         {weekDays.map((day) => (
           <View key={day} style={{ width: 40 }} className="items-center">
-            <Text className="font-comfortaa text-gray text-sm">{day}</Text>
+            <Text className="font-comfortaa text-[#71727A] text-sm">{day}</Text>
           </View>
         ))}
       </View>
@@ -148,7 +148,7 @@ const Calendar = ({
                       ? "text-white"
                       : isToday(day)
                       ? "text-primary"
-                      : "text-gray"
+                      : "text-[#71727A]"
                   }`}
                   style={{
                     color: isDaySelected(day)

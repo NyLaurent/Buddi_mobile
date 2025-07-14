@@ -159,7 +159,7 @@ export default function ParentDashboard() {
             <Text className="text-2xl font-comfortaa-bold">
               Good morning, {user?.firstName || "Parent"}
             </Text>
-            <Text className="text-gray font-comfortaa mt-1">
+            <Text className="text-[#71727A] font-comfortaa mt-1">
               Glad to see you again,{" "}
               {user?.role === "parent" ? "Parent" : user?.role}!{" "}
               <Text className="text-lg">😊</Text>

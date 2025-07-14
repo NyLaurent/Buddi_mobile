@@ -67,11 +67,11 @@ const RequestBuddiScreen = () => {
           <Text className="text-2xl font-comfortaa-bold text-center mb-1">
             Request a Buddi
           </Text>
-          <Text className="text-grayText font-comfortaa text-center mb-5 text-base">
+          <Text className="text-[#71727A]Text font-comfortaa text-center mb-5 text-base">
             Fill in the details below to invite Buddis to apply.
           </Text>
           {/* Description */}
-          <Text className="text-sm text-gray font-comfortaa mb-1">
+          <Text className="text-sm text-[#71727A] font-comfortaa mb-1">
             Description
           </Text>
           <TextInput
@@ -87,7 +87,7 @@ const RequestBuddiScreen = () => {
           />
 
           {/* Available Time Slots */}
-          <Text className="text-sm text-grayText font-comfortaa mb-1">
+          <Text className="text-sm text-[#71727A]Text font-comfortaa mb-1">
             Available Time Slots
           </Text>
           <View className="flex-row flex-wrap gap-2 mb-3 border border-gray rounded-xl px-2 py-2">
@@ -103,7 +103,9 @@ const RequestBuddiScreen = () => {
               >
                 <Text
                   className={`font-comfortaa text-xs ${
-                    selectedDays.includes(d) ? "text-white" : "text-grayText"
+                    selectedDays.includes(d)
+                      ? "text-white"
+                      : "text-[#71727A]Text"
                   }`}
                 >
                   {d}
@@ -118,7 +120,7 @@ const RequestBuddiScreen = () => {
                 className="bg-gray-100 rounded-full px-3 py-1 flex-row items-center"
                 onPress={() => setShowAllDays(true)}
               >
-                <Text className="font-comfortaa text-gray text-xs">
+                <Text className="font-comfortaa text-[#71727A] text-xs">
                   Add more
                 </Text>
                 <Feather
@@ -131,14 +133,14 @@ const RequestBuddiScreen = () => {
             )}
           </View>
           {/* Pickup Time */}
-          <Text className="text-sm text-grayText font-comfortaa mb-1">
+          <Text className="text-sm text-[#71727A]Text font-comfortaa mb-1">
             Pickup Time
           </Text>
           <View className="flex-row items-center h-16 rounded-2xl border border-gray overflow-hidden mb-3">
             {/* Time Inputs */}
             <View className="flex-1 flex-row items-center justify-center">
               <TextInput
-                className="text-3xl font-comfortaa-bold text-grayText text-center w-16 bg-transparent"
+                className="text-3xl font-comfortaa-bold text-[#71727A]Text text-center w-16 bg-transparent"
                 placeholder="07"
                 keyboardType="number-pad"
                 maxLength={2}
@@ -147,11 +149,11 @@ const RequestBuddiScreen = () => {
                 underlineColorAndroid="transparent"
                 selectionColor="#FF9100"
               />
-              <Text className="text-3xl font-comfortaa-bold text-grayText mx-2">
+              <Text className="text-3xl font-comfortaa-bold text-[#71727A]Text mx-2">
                 :
               </Text>
               <TextInput
-                className="text-3xl font-comfortaa-bold text-grayText text-center w-16 bg-transparent"
+                className="text-3xl font-comfortaa-bold text-[#71727A]Text text-center w-16 bg-transparent"
                 placeholder="00"
                 keyboardType="number-pad"
                 maxLength={2}
@@ -171,7 +173,7 @@ const RequestBuddiScreen = () => {
               >
                 <Text
                   className={`font-comfortaa-bold text-lg ${
-                    amPm === "AM" ? "text-white" : "text-gray"
+                    amPm === "AM" ? "text-white" : "text-[#71727A]"
                   }`}
                 >
                   AM
@@ -185,7 +187,7 @@ const RequestBuddiScreen = () => {
               >
                 <Text
                   className={`font-comfortaa-bold text-lg ${
-                    amPm === "PM" ? "text-white" : "text-gray"
+                    amPm === "PM" ? "text-white" : "text-[#71727A]"
                   }`}
                 >
                   PM
@@ -194,7 +196,7 @@ const RequestBuddiScreen = () => {
             </View>
           </View>
           {/* How many kids */}
-          <Text className="text-sm text-grayText font-comfortaa mb-1">
+          <Text className="text-sm text-[#71727A]Text font-comfortaa mb-1">
             How many of your kids need the service?
           </Text>
           <TextInput
@@ -208,7 +210,7 @@ const RequestBuddiScreen = () => {
           {/* From/To Zones */}
           <View className="flex-row items-center justify-between mb-6">
             <View className="flex-1 mr-2">
-              <Text className="text-sm text-grayText font-comfortaa mb-1">
+              <Text className="text-sm text-[#71727A]Text font-comfortaa mb-1">
                 From
               </Text>
               <TextInput
@@ -220,7 +222,7 @@ const RequestBuddiScreen = () => {
               />
             </View>
             <View className="flex-1 ml-2">
-              <Text className="text-sm text-grayText font-comfortaa mb-1">
+              <Text className="text-sm text-[#71727A]Text font-comfortaa mb-1">
                 To
               </Text>
               <TextInput

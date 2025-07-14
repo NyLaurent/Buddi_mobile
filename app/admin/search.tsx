@@ -125,10 +125,10 @@ const SearchResultCard = ({ item, onPress }) => {
             </Text>
           </View>
         </View>
-        <Text className="font-comfortaa text-gray text-sm mb-1">
+        <Text className="font-comfortaa text-[#71727A] text-sm mb-1">
           ${item.amount.toFixed(2)} • {item.parentName} → {item.buddiName}
         </Text>
-        <Text className="font-comfortaa text-gray text-xs">
+        <Text className="font-comfortaa text-[#71727A] text-xs">
           {new Date(item.date).toLocaleDateString()}
         </Text>
       </TouchableOpacity>
@@ -153,7 +153,7 @@ const SearchResultCard = ({ item, onPress }) => {
                 {item.name}
               </Text>
             </View>
-            <Text className="font-comfortaa text-gray text-xs">
+            <Text className="font-comfortaa text-[#71727A] text-xs">
               {item.email}
             </Text>
           </View>
@@ -171,10 +171,12 @@ const SearchResultCard = ({ item, onPress }) => {
         </View>
       </View>
       {item.type === "buddi" && (
-        <Text className="font-comfortaa text-gray text-sm">{item.school}</Text>
+        <Text className="font-comfortaa text-[#71727A] text-sm">
+          {item.school}
+        </Text>
       )}
       {item.type === "parent" && (
-        <Text className="font-comfortaa text-gray text-sm">
+        <Text className="font-comfortaa text-[#71727A] text-sm">
           {item.children} child{item.children !== 1 ? "ren" : ""}
         </Text>
       )}
@@ -200,7 +202,7 @@ const QuickActionCard = ({
       {icon}
     </View>
     <Text className="font-comfortaa-bold text-sm text-black mb-1">{title}</Text>
-    <Text className="font-comfortaa text-xs text-gray">{description}</Text>
+    <Text className="font-comfortaa text-xs text-[#71727A]">{description}</Text>
   </TouchableOpacity>
 );
 
@@ -262,7 +264,7 @@ export default function AdminSearchPage() {
               placeholder="Search buddis, parents, payments..."
               value={searchQuery}
               onChangeText={setSearchQuery}
-              className="flex-1 ml-3 font-comfortaa text-gray text-base"
+              className="flex-1 ml-3 font-comfortaa text-[#71727A] text-base"
               placeholderTextColor="#9CA3AF"
               autoFocus
             />
@@ -347,7 +349,7 @@ export default function AdminSearchPage() {
                 Recent Activity
               </Text>
               <View className="bg-white rounded-xl p-4 border border-gray-100">
-                <Text className="font-comfortaa text-gray text-center">
+                <Text className="font-comfortaa text-[#71727A] text-center">
                   Start typing to search across all platform data
                 </Text>
               </View>
@@ -374,7 +376,9 @@ export default function AdminSearchPage() {
                 >
                   <Text
                     className={`font-comfortaa ${
-                      activeFilter === filter.value ? "text-white" : "text-gray"
+                      activeFilter === filter.value
+                        ? "text-white"
+                        : "text-[#71727A]"
                     }`}
                   >
                     {filter.label}
@@ -399,10 +403,10 @@ export default function AdminSearchPage() {
               ) : (
                 <View className="bg-white rounded-xl p-8 mx-4 items-center">
                   <MaterialIcons name="search-off" size={48} color="#9CA3AF" />
-                  <Text className="font-comfortaa-bold text-lg text-gray mt-4">
+                  <Text className="font-comfortaa-bold text-lg text-[#71727A] mt-4">
                     No Results Found
                   </Text>
-                  <Text className="font-comfortaa text-gray text-center mt-2">
+                  <Text className="font-comfortaa text-[#71727A] text-center mt-2">
                     Try different keywords or filters
                   </Text>
                 </View>

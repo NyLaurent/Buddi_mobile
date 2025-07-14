@@ -73,7 +73,7 @@ const OTPVerificationScreen = () => {
           <Text className="text-3xl font-comfortaa-bold text-black mb-2">
             OTP Verification
           </Text>
-          <Text className="text-sm font-comfortaa text-center text-gray mb-8">
+          <Text className="text-sm font-comfortaa text-center text-[#71727A] mb-8">
             Enter your email used in signup to get a confirmation code (OTP)
           </Text>
         </View>
@@ -95,14 +95,14 @@ const OTPVerificationScreen = () => {
                 maxLength={1}
                 textAlign="center"
                 selectTextOnFocus
-                className="font-comfortaa-bold text-xl text-gray"
+                className="font-comfortaa-bold text-xl text-[#71727A]"
               />
             ))}
           </View>
 
           {/* Didn't receive code? */}
           <View className="flex-row justify-center items-center mt-4">
-            <Text className="font-comfortaa text-gray mr-2">
+            <Text className="font-comfortaa text-[#71727A] mr-2">
               Didn't receive code?
             </Text>
             <TouchableOpacity onPress={handleResend}>

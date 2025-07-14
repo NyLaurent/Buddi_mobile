@@ -36,16 +36,16 @@ const CallUpReviewCard: React.FC<CallUpReviewCardProps> = ({
       {/* Top: Name, School, Requested */}
       <View className="flex-row items-center justify-between mb-1">
         <View>
-          <Text className="text-base font-comfortaa-bold text-grayText">
+          <Text className="text-base font-comfortaa-bold text-[#71727A]Text">
             {name}
           </Text>
-          <Text className="text-xs text-grayText font-comfortaa mt-0.5">
+          <Text className="text-xs text-[#71727A]Text font-comfortaa mt-0.5">
             {email}
           </Text>
         </View>
         <View className="flex-row items-center gap-1">
           <MaterialIcons name="school" size={16} color="#232B3A" />
-          <Text className="text-xs text-grayText font-comfortaa ml-1">
+          <Text className="text-xs text-[#71727A]Text font-comfortaa ml-1">
             {school}
           </Text>
         </View>
@@ -63,25 +63,27 @@ const CallUpReviewCard: React.FC<CallUpReviewCardProps> = ({
       <Text className="text-base font-comfortaa-bold text-black mb-1">
         Description
       </Text>
-      <Text className="text-xs text-gray font-comfortaa mb-3">
+      <Text className="text-xs text-[#71727A] font-comfortaa mb-3">
         {description}
       </Text>
       {/* School/Home Row */}
       <View className="flex-row items-center justify-between mb-3">
         <View className="flex-row items-center">
           <Ionicons name="school" size={18} color="#22C55E" />
-          <Text className="text-xs text-grayText font-comfortaa ml-1">
+          <Text className="text-xs text-[#71727A]Text font-comfortaa ml-1">
             School
           </Text>
-          <Text className="text-sm font-comfortaa-bold text-grayText ml-1">
+          <Text className="text-sm font-comfortaa-bold text-[#71727A]Text ml-1">
             {schoolName}
           </Text>
         </View>
         <Ionicons name="play" size={20} color="#60A5FA" />
         <View className="flex-row items-center">
           <MaterialIcons name="home" size={18} color="#FF9100" />
-          <Text className="text-xs text-gray font-comfortaa ml-1">Home</Text>
-          <Text className="text-sm font-comfortaa-bold text-grayText ml-1">
+          <Text className="text-xs text-[#71727A] font-comfortaa ml-1">
+            Home
+          </Text>
+          <Text className="text-sm font-comfortaa-bold text-[#71727A]Text ml-1">
             {home}
           </Text>
         </View>
@@ -107,7 +109,7 @@ const CallUpReviewCard: React.FC<CallUpReviewCardProps> = ({
           onPress={onViewDetails}
         >
           <Ionicons name="eye" size={20} color="#6B7280" />
-          <Text className="text-gray font-comfortaa-bold text-base ml-2">
+          <Text className="text-[#71727A] font-comfortaa-bold text-base ml-2">
             View Details
           </Text>
         </TouchableOpacity>

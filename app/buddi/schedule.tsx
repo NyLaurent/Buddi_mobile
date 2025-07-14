@@ -189,7 +189,7 @@ export default function SchedulePage() {
               >
                 <Text
                   className={`font-comfortaa-bold text-base ${
-                    activeTab === "pickups" ? "text-black" : "text-gray"
+                    activeTab === "pickups" ? "text-black" : "text-[#71727A]"
                   }`}
                 >
                   Your Pickups
@@ -203,7 +203,7 @@ export default function SchedulePage() {
               >
                 <Text
                   className={`font-comfortaa-bold text-base ${
-                    activeTab === "coverage" ? "text-black" : "text-gray"
+                    activeTab === "coverage" ? "text-black" : "text-[#71727A]"
                   }`}
                 >
                   Coverage requests

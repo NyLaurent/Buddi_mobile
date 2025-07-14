@@ -108,7 +108,9 @@ const ProfileEditModal: React.FC<ProfileEditModalProps> = ({
         <View className="w-8 h-8 bg-[#FF932E]/10 rounded-full items-center justify-center mr-3">
           <Ionicons name={icon} size={16} color="#FF932E" />
         </View>
-        <Text className="text-gray font-comfortaa-bold text-base">{label}</Text>
+        <Text className="text-[#71727A] font-comfortaa-bold text-base">
+          {label}
+        </Text>
       </View>
       <View className="relative">
         <TextInput
@@ -189,7 +191,7 @@ const ProfileEditModal: React.FC<ProfileEditModalProps> = ({
             <Text className="font-comfortaa-bold text-lg text-black mt-3">
               {user?.firstName} {user?.lastName}
             </Text>
-            <Text className="text-gray font-comfortaa text-sm">
+            <Text className="text-[#71727A] font-comfortaa text-sm">
               {user?.role
                 ? user.role.charAt(0).toUpperCase() + user.role.slice(1)
                 : "User"}
