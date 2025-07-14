@@ -12,6 +12,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useAuth } from "../../context/AuthContext";
+import BuddiService, { AvailableCall } from "../../services/api/buddi.service";
 
 interface ChatItem {
   id: string;
@@ -28,35 +29,44 @@ export default function BuddiMessagesScreen() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
-  const { user } = useAuth();
+  const { user, buddiDetails } = useAuth();
 
   useEffect(() => {
     fetchMatchedCalls();
-  }, []);
+  }, [buddiDetails?.id]);
 
   const fetchMatchedCalls = async () => {
+    if (!buddiDetails?.id) {
+      setLoading(false);
+      return;
+    }
     try {
       setLoading(true);
       setError(null);
 
-      // For now, we'll show a placeholder since we need to implement
-      // an API endpoint to get buddi's matched calls
-      // This would be similar to parent's getMyPickupRequests but for buddi
+      // Fetch all calls (could be paginated, but for now fetch first page with a high limit)
+      const response = await BuddiService.getAvailableCalls(1, 50);
+      // Filter only matched calls for this Buddi
+      const matchedCalls = response.data.filter(
+        (call: AvailableCall) =>
+          call.status === "matched" &&
+          call.matchedBuddiId &&
+          String(call.matchedBuddiId) === String(buddiDetails.id)
+      );
 
-      // Placeholder data - replace with actual API call
-      const mockChatItems: ChatItem[] = [
-        {
-          id: "1",
-          roomId: "parent123-buddi456",
-          otherUserName: "Parent",
-          otherUserAvatar: "https://randomuser.me/api/portraits/men/32.jpg",
+      const chatItemsData: ChatItem[] = matchedCalls.map(
+        (call: AvailableCall) => ({
+          id: call.id.toString(),
+          roomId: `${call.parentId}-${call.matchedBuddiId}`,
+          otherUserName: "Parent", // Placeholder, can fetch real name if needed
+          otherUserAvatar: "https://randomuser.me/api/portraits/women/32.jpg", // Placeholder
           lastMessage: "Tap to start chatting about pickup details",
-          timestamp: new Date().toLocaleDateString(),
+          timestamp: new Date(call.updatedAt).toLocaleDateString(),
           unreadCount: 0,
-        },
-      ];
+        })
+      );
 
-      setChatItems(mockChatItems);
+      setChatItems(chatItemsData);
     } catch (err: any) {
       setError(err.message || "Failed to fetch messages");
       console.error("Error fetching messages:", err);
@@ -109,7 +119,8 @@ export default function BuddiMessagesScreen() {
       <FontAwesome5 name="comments" size={64} color="#E5E7EB" />
       <Text style={styles.emptyTitle}>No Messages Yet</Text>
       <Text style={styles.emptyText}>
-        You&apos;ll see your chat conversations here once you have matched calls.
+        You&apos;ll see your chat conversations here once you have matched
+        calls.
       </Text>
     </View>
   );
