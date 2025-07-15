@@ -16,44 +16,32 @@ import {
 import AnalyticsCard from "../../components/commons/AnalyticsCard";
 import CoverageRequestCard from "../../components/commons/CoverageRequestCard";
 import PickupCard from "../../components/commons/PickupCard";
+import { useAuth } from "../../context/AuthContext";
+import BuddiService from "../../services/api/buddi.service";
 
 export default function SchedulePage() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const pickupData = [
-    {
-      id: "1",
-      name: "Bryan Smith",
-      time: "2:23:04",
-      days: "$25 per hour",
-      school: "School Nome",
-      home: "Senen",
-    },
-    {
-      id: "2",
-      name: "Emma Johnson",
-      time: "3:15:30",
-      days: "$22 per hour",
-      school: "Lincoln Elementary",
-      home: "Downtown",
-    },
-    {
-      id: "3",
-      name: "Michael Davis",
-      time: "8:45:12",
-      days: "$28 per hour",
-      school: "Oak High School",
-      home: "Westside",
-    },
-    {
-      id: "4",
-      name: "Sarah Wilson",
-      time: "4:30:00",
-      days: "$24 per hour",
-      school: "Pine Middle School",
-      home: "Eastside",
-    },
-  ];
+  const { buddiDetails } = useAuth();
+  const [matchedPickups, setMatchedPickups] = React.useState<any[]>([]);
+  React.useEffect(() => {
+    const fetchMatchedPickups = async () => {
+      try {
+        const res = await BuddiService.getAvailableCalls(1, 50);
+        if (buddiDetails?.id) {
+          const matched = (res.data || []).filter(
+            (call: any) => call.matchedBuddiId === buddiDetails.id
+          );
+          setMatchedPickups(matched);
+        } else {
+          setMatchedPickups([]);
+        }
+      } catch (err) {
+        setMatchedPickups([]);
+      }
+    };
+    fetchMatchedPickups();
+  }, [buddiDetails?.id]);
 
   // Tab state for navigator
   const [activeTab, setActiveTab] = React.useState<"pickups" | "coverage">(
@@ -228,19 +216,62 @@ export default function SchedulePage() {
                   showsHorizontalScrollIndicator={false}
                   contentContainerStyle={{ paddingRight: 16 }}
                 >
-                  {pickupData.map((pickup, index) => (
-                    <View key={index} className="mr-4">
-                      <PickupCard
-                        id={pickup.id}
-                        name={pickup.name}
-                        time={pickup.time}
-                        days={pickup.days}
-                        school={pickup.school}
-                        home={pickup.home}
-                        onButtonPress={() => {}}
-                      />
+                  {matchedPickups.length > 0 ? (
+                    matchedPickups.map((pickup, index) => (
+                      <View key={pickup.id} className="mr-4">
+                        <PickupCard
+                          id={pickup.id.toString()}
+                          name={"Child"}
+                          time={pickup.pickupTime || "-"}
+                          days={pickup.availableDays?.join(", ") || "-"}
+                          school={pickup.fromZone || "School"}
+                          home={pickup.toZone || "Home"}
+                          onButtonPress={() => {
+                            router.push({
+                              pathname: "/buddi/pickup/[id]",
+                              params: { id: pickup.id.toString() },
+                            });
+                          }}
+                          cardWidth={340}
+                        />
+                      </View>
+                    ))
+                  ) : (
+                    <View
+                      style={{
+                        justifyContent: "center",
+                        alignItems: "center",
+                        width: 340,
+                        height: 180,
+                        backgroundColor: "#FFF7ED",
+                        borderRadius: 16,
+                        borderWidth: 1.2,
+                        borderColor: "#FFD9B3",
+                        marginRight: 12,
+                      }}
+                    >
+                      <Text
+                        style={{
+                          fontFamily: "Comfortaa-Bold",
+                          fontSize: 16,
+                          color: "#FF932E",
+                          marginBottom: 6,
+                        }}
+                      >
+                        No pickups assigned yet.
+                      </Text>
+                      <Text
+                        style={{
+                          fontFamily: "Comfortaa-Regular",
+                          fontSize: 13,
+                          color: "#A3A3A3",
+                          textAlign: "center",
+                        }}
+                      >
+                        Once you are matched to a pickup, you will see it here.
+                      </Text>
                     </View>
-                  ))}
+                  )}
                 </ScrollView>
               </>
             ) : (

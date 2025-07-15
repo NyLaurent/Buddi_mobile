@@ -1,7 +1,7 @@
 // app/buddi/index.tsx
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import { useRef, useState } from "react";
+import React, { useRef, useState } from "react";
 import {
   Alert,
   Image,
@@ -21,10 +21,11 @@ import {
 } from "react-native-safe-area-context";
 import AnalyticsCard from "../../components/commons/AnalyticsCard";
 import AvailableCallsCard from "../../components/commons/AvailableCallsCard";
-import Calendar from "../../components/commons/Calendar";
 import CongratulationsCard from "../../components/commons/CongratulationsCard";
 import PickupCard from "../../components/commons/PickupCard";
 import { useAuth } from "../../context/AuthContext";
+import BuddiService from "../../services/api/buddi.service";
+// import ChildrenService from "../../services/api/children.service";
 
 const DOT_SIZE = 8;
 const DOT_SPACING = 12;
@@ -37,7 +38,31 @@ export default function BuddiHome() {
   const scrollViewRef = useRef(null);
   const insets = useSafeAreaInsets();
   const router = useRouter();
-  const { user, logout } = useAuth();
+  const { user, logout, buddiDetails } = useAuth();
+  const [availableCalls, setAvailableCalls] = useState<any[]>([]);
+  const [matchedCall, setMatchedCall] = useState<any>(null);
+  // const [childInfo, setChildInfo] = useState<any>(null);
+
+  React.useEffect(() => {
+    const fetchCalls = async () => {
+      try {
+        const res = await BuddiService.getAvailableCalls(1, 10);
+        setAvailableCalls(res.data || []);
+        if (buddiDetails?.id) {
+          const matched = res.data.find(
+            (call: any) => call.matchedBuddiId === buddiDetails.id
+          );
+          setMatchedCall(matched || null);
+        } else {
+          setMatchedCall(null);
+        }
+      } catch (err) {
+        setAvailableCalls([]);
+        setMatchedCall(null);
+      }
+    };
+    fetchCalls();
+  }, [buddiDetails?.id]);
 
   const handleScroll = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
     const contentOffset = event.nativeEvent.contentOffset.x;
@@ -125,7 +150,14 @@ export default function BuddiHome() {
           onApplyPress={() => {
             router.push("/buddi/available-calls");
           }}
-          availableCalls={12}
+          availableCalls={availableCalls.length}
+          matchedCall={matchedCall}
+          onViewMatchedCall={(callId) => {
+            router.push({
+              pathname: "/buddi/call-details/[id]",
+              params: { id: callId.toString() },
+            });
+          }}
         />
 
         {/* Analytics Cards */}
@@ -162,7 +194,7 @@ export default function BuddiHome() {
         {/* Pickups Header */}
         <View className="flex-row justify-between items-center mx-4 mb-2 pt-5">
           <Text className="font-comfortaa-bold text-xl">Pickups</Text>
-          <TouchableOpacity>
+          <TouchableOpacity onPress={() => router.push("/buddi/schedule" as any)}>
             <Text className="text-primary font-comfortaa">View All</Text>
           </TouchableOpacity>
         </View>
@@ -177,65 +209,66 @@ export default function BuddiHome() {
           scrollEventThrottle={16}
           pagingEnabled
           decelerationRate="fast"
-          snapToInterval={312} // card width (300) + margin (12)
+          snapToInterval={352} // card width (340) + margin (12)
         >
-          <PickupCard
-            id="1"
-            name="Bryan Smith"
-            time="2:23:04"
-            days="5 Days a Week"
-            school="School Name"
-            home="Senen"
-            onButtonPress={() => {}}
-          />
-          <PickupCard
-            id="2"
-            name="Sarah Johnson"
-            time="3:15:00"
-            days="3 Days a Week"
-            school="Lincoln High"
-            home="Downtown"
-            onButtonPress={() => {}}
-          />
-          <PickupCard
-            id="3"
-            name="Mike Wilson"
-            time="1:45:30"
-            days="4 Days a Week"
-            school="St. Mary's"
-            home="Westside"
-            onButtonPress={() => {}}
-          />
-          <PickupCard
-            id="4"
-            name="Emma Davis"
-            time="4:00:00"
-            days="2 Days a Week"
-            school="Oak Elementary"
-            home="Eastside"
-            onButtonPress={() => {}}
-          />
+          {matchedCall ? (
+            <PickupCard
+              id={matchedCall.id.toString()}
+              name={"Child"}
+              time={matchedCall.pickupTime || "-"}
+              days={matchedCall.availableDays?.join(", ") || "-"}
+              school={matchedCall.fromZone || "School"}
+              home={matchedCall.toZone || "Home"}
+              onButtonPress={() => {
+                router.push({
+                  pathname: "/buddi/pickup/[id]",
+                  params: { id: matchedCall.id.toString() },
+                });
+              }}
+              cardWidth={340}
+            />
+          ) : (
+            <View
+              style={{
+                justifyContent: "center",
+                alignItems: "center",
+                width: 340,
+                height: 180,
+                backgroundColor: "#FFF7ED",
+                borderRadius: 16,
+                borderWidth: 1.2,
+                borderColor: "#FFD9B3",
+                marginRight: 12,
+              }}
+            >
+              <Text
+                style={{
+                  fontFamily: "Comfortaa-Bold",
+                  fontSize: 16,
+                  color: "#FF932E",
+                  marginBottom: 6,
+                }}
+              >
+                No pickups assigned yet.
+              </Text>
+              <Text
+                style={{
+                  fontFamily: "Comfortaa-Regular",
+                  fontSize: 13,
+                  color: "#A3A3A3",
+                  textAlign: "center",
+                }}
+              >
+                Once you are matched to a pickup, you will see it here.
+              </Text>
+            </View>
+          )}
         </ScrollView>
 
-        {/* Pagination Dots */}
-        <View className="flex-row justify-center items-center gap-2 mt-4 mb-6">
-          {[0, 1, 2, 3].map((index) => (
-            <View
-              key={index}
-              style={{
-                width: DOT_SIZE,
-                height: DOT_SIZE,
-                borderRadius: DOT_SIZE / 2,
-                marginHorizontal: DOT_SPACING / 2,
-                backgroundColor:
-                  index === activeCard ? DOT_COLOR_ACTIVE : DOT_COLOR_INACTIVE,
-              }}
-            />
-          ))}
-        </View>
+        {/* Pagination Dots removed */}
 
         {/* Calendar Section */}
-        <View className="mx-4 mb-6">
+        {/* <View className="mx-4 mb-6">
           <View className="flex-row justify-between items-center mb-4">
             <Text className="font-comfortaa-bold text-xl">Schedule</Text>
             <TouchableOpacity>
@@ -247,7 +280,7 @@ export default function BuddiHome() {
             onDaySelect={(date) => setSelectedDate(date)}
             primaryColor="#FF932E"
           />
-        </View>
+        </View> */}
       </ScrollView>
     </SafeAreaView>
   );

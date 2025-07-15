@@ -11,6 +11,7 @@ interface PickupCardProps {
   school: string;
   home: string;
   onButtonPress: () => void;
+  cardWidth?: number;
 }
 
 const PickupCard = ({
@@ -21,15 +22,22 @@ const PickupCard = ({
   school,
   home,
   onButtonPress,
+  cardWidth = 450,
 }: PickupCardProps) => {
   const router = useRouter();
 
   const handleViewDetails = () => {
-    router.push(`/pickup/${id}` as any);
+    router.push({
+      pathname: "/buddi/call-details/[id]",
+      params: { id },
+    });
   };
 
   return (
-    <View className="bg-white rounded-2xl p-4 mr-3 border border-[#E8E8E8] w-[300px]">
+    <View
+      className="bg-white rounded-2xl p-4 mr-3 border border-[#E8E8E8]"
+      style={{ width: cardWidth, minWidth: cardWidth, maxWidth: cardWidth }}
+    >
       <View className="flex-row justify-between items-center mb-3">
         <Text className="text-base font-comfortaa-bold text-[#222]">
           {name}
