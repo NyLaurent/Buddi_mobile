@@ -15,6 +15,7 @@ import { useAuth } from "../../context/AuthContext";
 import ParentService, {
   ParentPickupRequest,
 } from "../../services/api/parent.service";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 interface ChatItem {
   id: string;
@@ -36,6 +37,15 @@ export default function ParentMessagesScreen() {
   useEffect(() => {
     fetchMatchedCalls();
   }, [parentDetails?.id]);
+
+  // Store latest message timestamp for each chat room for unread bubble in nav
+  useEffect(() => {
+    if (!parentDetails?.id) return;
+    chatItems.forEach((chat) => {
+      AsyncStorage.setItem(`latestMsg_${chat.roomId}`, chat.timestamp);
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [chatItems, parentDetails?.id]);
 
   const fetchMatchedCalls = async () => {
     if (!parentDetails?.id) return;

@@ -56,6 +56,8 @@ const ChatScreen: React.FC<ChatScreenProps> = ({
   const router = useRouter();
   const { user } = useAuth();
 
+  const BOTTOM_NAV_HEIGHT = 70; // Height of the bottom nav bar
+
   // Initialize socket connection and join room
   useEffect(() => {
     if (!user) {
@@ -65,7 +67,7 @@ const ChatScreen: React.FC<ChatScreenProps> = ({
     }
 
     // Log the chatRoomId for debugging
-    console.log('ChatScreen: chatRoomId =', chatRoomId);
+    console.log("ChatScreen: chatRoomId =", chatRoomId);
 
     const userType = user.role === "parent" ? "Parent" : "Buddi";
     const userId = user.userId || "";
@@ -341,7 +343,9 @@ const ChatScreen: React.FC<ChatScreenProps> = ({
             <View
               style={[
                 styles.inputBarWrap,
-                { paddingBottom: Math.max(insets.bottom, 8) },
+                {
+                  paddingBottom: Math.max(insets.bottom, 8) + BOTTOM_NAV_HEIGHT,
+                },
               ]}
             >
               <View style={styles.inputBarRow}>

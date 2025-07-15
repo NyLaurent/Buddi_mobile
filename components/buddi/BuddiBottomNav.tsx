@@ -1,5 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Link, usePathname } from "expo-router";
+import { useEffect, useState } from "react";
 import { Text, TouchableOpacity, View } from "react-native";
 
 const tabs = [
@@ -16,6 +18,46 @@ const tabs = [
 
 export default function BuddiBottomNav() {
   const pathname = usePathname();
+  const [unreadCount, setUnreadCount] = useState(0);
+
+  // Helper to get all lastSeen keys for this Buddi
+  const getUnreadCount = async () => {
+    // Get all keys
+    const keys = await AsyncStorage.getAllKeys();
+    // Only check keys for this Buddi and chat rooms
+    const buddiId = await AsyncStorage.getItem("buddi_details");
+    let id = null;
+    try {
+      id = buddiId ? JSON.parse(buddiId).id : null;
+    } catch {}
+    if (!id) return 0;
+    // Find all chat room keys for this Buddi
+    const chatRoomKeys = keys.filter(
+      (k) => k.startsWith(`lastSeen_`) && k.endsWith(`_${id}`)
+    );
+    let count = 0;
+    for (const key of chatRoomKeys) {
+      const lastSeen = await AsyncStorage.getItem(key);
+      // Extract roomId from key
+      const roomId = key.replace(`lastSeen_`, "").replace(`_${id}`, "");
+      // Get latest message timestamp for this room from AsyncStorage (set by messages page)
+      const latestMsgKey = `latestMsg_${roomId}`;
+      const latestMsg = await AsyncStorage.getItem(latestMsgKey);
+      if (
+        latestMsg &&
+        (!lastSeen || new Date(latestMsg) > new Date(lastSeen))
+      ) {
+        count++;
+      }
+    }
+    setUnreadCount(count);
+  };
+
+  useEffect(() => {
+    const interval = setInterval(getUnreadCount, 2000); // Poll every 2s
+    getUnreadCount();
+    return () => clearInterval(interval);
+  }, []);
 
   const isActiveTab = (route: string) => {
     if (route === "/buddi") {
@@ -101,11 +143,41 @@ export default function BuddiBottomNav() {
             <TouchableOpacity
               style={{ alignItems: "center", flex: 1, paddingVertical: 8 }}
             >
-              <Ionicons
-                name={tab.icon as any}
-                size={24}
-                color={isActiveTab(tab.route) ? "#FF932E" : "#666"}
-              />
+              <View style={{ position: "relative" }}>
+                <Ionicons
+                  name={tab.icon as any}
+                  size={24}
+                  color={isActiveTab(tab.route) ? "#FF932E" : "#666"}
+                />
+                {/* Show unread bubble only on Messages tab */}
+                {tab.name === "Messages" && unreadCount > 0 && (
+                  <View
+                    style={{
+                      position: "absolute",
+                      top: -6,
+                      right: -12,
+                      backgroundColor: "#FF3B30",
+                      borderRadius: 10,
+                      minWidth: 20,
+                      height: 20,
+                      justifyContent: "center",
+                      alignItems: "center",
+                      paddingHorizontal: 5,
+                      zIndex: 10,
+                    }}
+                  >
+                    <Text
+                      style={{
+                        color: "#fff",
+                        fontSize: 12,
+                        fontFamily: "Comfortaa-Bold",
+                      }}
+                    >
+                      {unreadCount}
+                    </Text>
+                  </View>
+                )}
+              </View>
               <Text
                 style={{
                   color: isActiveTab(tab.route) ? "#FF932E" : "#666",

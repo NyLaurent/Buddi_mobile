@@ -4,32 +4,91 @@ import {
   Ionicons,
   MaterialIcons,
 } from "@expo/vector-icons";
+import { useRouter } from "expo-router";
 import { Image, Text, TouchableOpacity, View } from "react-native";
-import { buddieCardData } from "../../data/data";
+import { useAuth } from "../../context/AuthContext";
 
-const AvailableBuddie = () => {
-  const data = buddieCardData;
+const AvailableBuddie = ({
+  buddi,
+  matched,
+}: {
+  buddi: any;
+  matched?: boolean;
+}) => {
+  const data = buddi;
+  const router = useRouter();
+  const { parentDetails } = useAuth();
+
+  const handleChatPress = () => {
+    if (!parentDetails?.id || !data.id) return;
+    const roomId = `${parentDetails.id}-${data.id}`;
+    router.push({
+      pathname: "/parent/chat/[roomId]",
+      params: {
+        roomId,
+        buddiName: data.User?.firstName || data.name,
+        buddiAvatar:
+          data.profilePicture ||
+          data.profileImage ||
+          "https://randomuser.me/api/portraits/men/9.jpg",
+      },
+    });
+  };
+
+  const handleViewProfile = () => {
+    if (!data.id) return;
+    const encodedData = encodeURIComponent(JSON.stringify(data));
+    router.push({
+      pathname: "/parent/buddi-profile/[buddiId]",
+      params: { buddiId: data.id.toString(), data: encodedData },
+    });
+  };
   return (
-    <View className="bg-white rounded-2xl border border-gray px-4 py-5 my-3  w-full max-w-[420px] self-center">
+    <View
+      className="rounded-2xl px-4 py-5 my-3 w-full max-w-[420px] self-center"
+      style={{
+        backgroundColor: matched ? "#FFF7ED" : "#fff",
+        borderWidth: 2,
+        borderColor: matched ? "#FF932E" : "#E5E7EB",
+        shadowColor: matched ? "#FF932E" : "#000",
+        shadowOffset: { width: 0, height: matched ? 4 : 2 },
+        shadowOpacity: matched ? 0.15 : 0.1,
+        shadowRadius: matched ? 8 : 4,
+        elevation: matched ? 6 : 2,
+      }}
+    >
+    
       {/* Top: Profile and Status/Message */}
       <View className="flex-row w-full mb-2">
         {/* Profile */}
         <View className="w-1/3 items-center justify-start">
           <Image
-            source={{ uri: data.profileImage }}
+            source={{
+              uri:
+                data.profilePicture ||
+                data.profileImage ||
+                "https://randomuser.me/api/portraits/men/9.jpg",
+            }}
             className="w-24 h-24 rounded-full border-2 border-gray"
           />
-          <Text className="text-lg font-comfortaa-bold  mt-2">{data.name}</Text>
+          <Text className="text-lg font-comfortaa-bold  mt-2">
+            {data.User?.firstName || data.name} {data.User?.lastName || ""}
+          </Text>
           <View>
-            <Text className="text-xs text-[#71727A] font-comfortaa mt-1 w-full">
-              {data.email}
+            <Text
+              className="text-xs text-[#71727A] font-comfortaa mt-1 w-full"
+              numberOfLines={1}
+              ellipsizeMode="tail"
+              style={{ maxWidth: 120, flexShrink: 1 }}
+            >
+              {data.User?.email || data.email}
             </Text>
           </View>
 
           <View className="flex-row items-center justify-center space-x-2 mt-2">
             <Feather name="phone" size={16} color="#6B7280" />
             <Text className="text-xs text-[#71727A] font-comfortaa">
-              {data.phone}
+              {data.User?.phoneNumber || data.phone || "N/A"}
             </Text>
           </View>
         </View>
@@ -37,11 +96,9 @@ const AvailableBuddie = () => {
         <View className="w-2/3 pl-4">
           <View className="flex-row justify-end items-center space-x-3 mb-2">
             <View className="bg-green px-4 py-1 rounded-full flex-row items-center">
-              <Text className="text-white text-xs font-comfortaa-bold">
-                {data.status}
-              </Text>
+              <Text className="text-white text-xs font-comfortaa-bold">{data.status}</Text>
             </View>
-            <TouchableOpacity className="ml-2">
+            <TouchableOpacity className="ml-2" onPress={handleChatPress}>
               <Ionicons
                 name="chatbubble-ellipses-outline"
                 size={26}
@@ -49,6 +106,11 @@ const AvailableBuddie = () => {
               />
             </TouchableOpacity>
           </View>
+          {matched && (
+              <View style={{ alignSelf: "flex-end", backgroundColor: "#FF932E", borderRadius: 8, paddingHorizontal: 12, paddingVertical: 4, marginTop: 4 }}>
+              <Text style={{ color: "#fff", fontFamily: "Comfortaa-Bold", fontSize: 12 }}>Matched</Text>
+            </View>
+          )}
         </View>
       </View>
       {/* School Name (full width) */}
@@ -58,7 +120,7 @@ const AvailableBuddie = () => {
           School
         </Text>
         <Text className="text-base font-comfortaa-bold text-black ml-2">
-          {data.school.name}
+          {data.currentSchool || data.school?.name || "N/A"}
         </Text>
       </View>
       {/* Home Section (full width) */}
@@ -68,33 +130,31 @@ const AvailableBuddie = () => {
           Home
         </Text>
         <Text className="text-base font-comfortaa-bold text-black ml-2">
-          {data.home.name}
+          {data.User?.homeAddress || data.home?.name || "N/A"}
         </Text>
       </View>
       {/* School, Name Row (full width) */}
       <View className="flex-row items-center w-full mb-2">
         <MaterialIcons name="school" size={18} color="#232B3A" />
         <Text className="text-xs text-[#71727A] font-comfortaa ml-2">
-          {data.schoolName}
+          {data.AreaOfStudy || data.schoolName || "N/A"}
         </Text>
       </View>
       {/* Rating and Fee Row */}
       <View className="flex-row items-center justify-between w-full mt-2 mb-2">
         <View className="flex-row items-center space-x-1">
           {[...Array(5)].map((_, i) =>
-            i < data.rating ? (
+            i < (data.rating ?? 0) ? (
               <FontAwesome key={i} name="star" size={22} color="#FF932E" />
             ) : (
               <FontAwesome key={i} name="star-o" size={22} color="#FF932E" />
             )
           )}
         </View>
-        <View className="bg-green-100 px-4 py-1 rounded-full flex-row items-center ml-2">
+        {/* <View className="bg-green-100 px-4 py-1 rounded-full flex-row items-center ml-2">
           <Feather name="check-square" size={18} color="#22C55E" />
-          <Text className="text-green text-base font-comfortaa-bold ml-1">
-            Fee Per Hour: ${data.fee}
-          </Text>
-        </View>
+          <Text className="text-green text-base font-comfortaa-bold ml-1">Fee Per Hour: ${data.fee ?? "N/A"}</Text>
+        </View> */}
       </View>
       <View className="border-b border-gray my-3" />
       {/* Assigned Kids */}
@@ -102,7 +162,7 @@ const AvailableBuddie = () => {
         Assigned Kids:
       </Text>
       <View className="flex-row items-center justify-start gap-4 mb-6 w-full">
-        {data.assignedKids.map((kid, idx) => (
+        {(data.assignedKids || []).map((kid: any, idx: number) => (
           <View key={idx} className="flex-row items-center space-x-2">
             <FontAwesome name="child" size={28} color="#232B3A" />
             <Text className="text-base  font-comfortaa">{kid.name}</Text>
@@ -110,7 +170,10 @@ const AvailableBuddie = () => {
         ))}
       </View>
       {/* View Full Profile Button */}
-      <TouchableOpacity className="bg-primary rounded-full py-4 mt-2 items-center flex-row justify-center w-full">
+      <TouchableOpacity
+        className="bg-primary rounded-full py-4 mt-2 items-center flex-row justify-center w-full"
+        onPress={handleViewProfile}
+      >
         <Text className="text-white font-comfortaa-bold text-lg">
           View Full Profile
         </Text>

@@ -1,4 +1,5 @@
 import { FontAwesome5, Ionicons } from "@expo/vector-icons";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useRouter } from "expo-router";
 import { useEffect, useState } from "react";
 import {
@@ -30,6 +31,7 @@ export default function BuddiMessagesScreen() {
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
   const { user, buddiDetails } = useAuth();
+  const [unreadMap, setUnreadMap] = useState<{ [roomId: string]: boolean }>({});
 
   useEffect(() => {
     fetchMatchedCalls();
@@ -75,7 +77,52 @@ export default function BuddiMessagesScreen() {
     }
   };
 
-  const handleChatPress = (chatItem: ChatItem) => {
+  // Helper to get last seen timestamp for a chat room
+  const getLastSeen = async (roomId: string, buddiId: number) => {
+    return AsyncStorage.getItem(`lastSeen_${roomId}_${buddiId}`);
+  };
+
+  // Helper to set last seen timestamp for a chat room
+  const setLastSeen = async (
+    roomId: string,
+    buddiId: number,
+    timestamp: string
+  ) => {
+    await AsyncStorage.setItem(`lastSeen_${roomId}_${buddiId}`, timestamp);
+  };
+
+  // Update unread status for all chats
+  const updateUnreadStatus = async (chatItems: ChatItem[]) => {
+    if (!buddiDetails?.id) return;
+    const map: { [roomId: string]: boolean } = {};
+    for (const chat of chatItems) {
+      const lastSeen = await getLastSeen(chat.roomId, buddiDetails.id);
+      map[chat.roomId] =
+        !lastSeen || new Date(chat.timestamp) > new Date(lastSeen);
+    }
+    setUnreadMap(map);
+  };
+
+  // Update unread status whenever chatItems change
+  useEffect(() => {
+    updateUnreadStatus(chatItems);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [chatItems, buddiDetails?.id]);
+
+  // Store latest message timestamp for each chat room for unread bubble in nav
+  useEffect(() => {
+    if (!buddiDetails?.id) return;
+    chatItems.forEach((chat) => {
+      AsyncStorage.setItem(`latestMsg_${chat.roomId}`, chat.timestamp);
+    });
+  }, [chatItems, buddiDetails?.id]);
+
+  // When user opens a chat, mark as read
+  const handleChatPress = async (chatItem: ChatItem) => {
+    if (buddiDetails?.id) {
+      await setLastSeen(chatItem.roomId, buddiDetails.id, chatItem.timestamp);
+      setUnreadMap((prev) => ({ ...prev, [chatItem.roomId]: false }));
+    }
     router.push({
       pathname: "/buddi/chat/[roomId]",
       params: {
@@ -106,9 +153,9 @@ export default function BuddiMessagesScreen() {
           {item.lastMessage}
         </Text>
       </View>
-      {item.unreadCount > 0 && (
+      {unreadMap[item.roomId] && (
         <View style={styles.unreadBadge}>
-          <Text style={styles.unreadText}>{item.unreadCount}</Text>
+          <Text style={styles.unreadText}>●</Text>
         </View>
       )}
     </TouchableOpacity>
