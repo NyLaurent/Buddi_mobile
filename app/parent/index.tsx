@@ -18,10 +18,10 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import AnalyticsCard from "../../components/commons/AnalyticsCard";
-import Calendar from "../../components/commons/Calendar";
 import KidPickupCard from "../../components/parent/KidPickupCard";
-import PaymentAlert from "../../components/parent/PaymentAlert";
 import { useAuth } from "../../context/AuthContext";
+import BuddiService from "../../services/api/buddi.service";
+import ChildrenService from "../../services/api/children.service";
 import ParentService, {
   ParentPickupRequest,
 } from "../../services/api/parent.service";
@@ -38,8 +38,16 @@ export default function ParentDashboard() {
   const [loadingRequests, setLoadingRequests] = React.useState(true);
   const [errorRequests, setErrorRequests] = React.useState<string | null>(null);
 
+  // New state for child and buddi details per pickup request
+  const [childDetailsMap, setChildDetailsMap] = React.useState<
+    Record<string, any>
+  >({});
+  const [buddiDetailsMap, setBuddiDetailsMap] = React.useState<
+    Record<string, any>
+  >({});
+
   React.useEffect(() => {
-    const fetchPickupRequests = async () => {
+    const fetchDetailsForRequests = async () => {
       if (!parentDetails?.id) return;
       setLoadingRequests(true);
       setErrorRequests(null);
@@ -47,14 +55,43 @@ export default function ParentDashboard() {
         const res = await ParentService.getMyPickupRequests(
           parentDetails.id.toString()
         );
-        setPickupRequests(res.data || []);
+        const requests = res.data || [];
+        setPickupRequests(requests);
+        // Fetch all children for this parent once
+        const childrenRes = await ChildrenService.getChildrenByParent(
+          parentDetails.id.toString()
+        );
+        const childrenArr = Array.isArray(childrenRes) ? childrenRes : [];
+        // Map childId to child details
+        const childMap: Record<string, any> = {};
+        childrenArr.forEach((child: any) => {
+          childMap[child.id] = child;
+        });
+        setChildDetailsMap(childMap);
+        // Fetch buddi details for each matchedBuddiId
+        const buddiIds = Array.from(
+          new Set(requests.map((r: any) => r.matchedBuddiId).filter(Boolean))
+        );
+        const buddiMap: Record<string, any> = {};
+        for (const buddiId of buddiIds) {
+          try {
+            const buddiRes = await BuddiService.getBuddiInfo(
+              buddiId.toString()
+            );
+            buddiMap[buddiId] = buddiRes.data;
+          } catch (e) {
+            // fallback: just store id
+            buddiMap[buddiId] = { id: buddiId };
+          }
+        }
+        setBuddiDetailsMap(buddiMap);
       } catch (err: any) {
         setErrorRequests(err.message || "Failed to fetch pickup requests.");
       } finally {
         setLoadingRequests(false);
       }
     };
-    fetchPickupRequests();
+    fetchDetailsForRequests();
   }, [parentDetails?.id]);
 
   const handleLogout = () => {
@@ -693,7 +730,7 @@ export default function ParentDashboard() {
         </View>
 
         {/* Payment Alert */}
-        <PaymentAlert />
+        {/* <PaymentAlert /> */}
         {/* Callup Review */}
 
         {/* Pickup Schedule */}
@@ -702,29 +739,152 @@ export default function ParentDashboard() {
             <Text className="text-sm font-comfortaa-bold text-[#232B3A]">
               Your Kids Pickup Schedule
             </Text>
-            <TouchableOpacity className="flex-row items-center">
+            <TouchableOpacity
+              onPress={() => router.push("/parent/schedule" as any)}
+              className="flex-row items-center"
+            >
               <Text className="text-sm text-primary font-comfortaa mr-1">
                 Full Schedule
               </Text>
               <Ionicons name="arrow-forward" size={20} color="#FF9100" />
             </TouchableOpacity>
           </View>
-          <KidPickupCard
-            childName="Bryan Smith"
-            remaining="3,234.8 Remaining"
-            schedule="5 Days a Week"
-            buddiName="Brian Ford"
-            buddiEmail="brianford@kdk.com"
-            buddiAvatar="https://randomuser.me/api/portraits/men/2.jpg"
-            buddiStatus="Available"
-            schoolName="School Name"
-            destination="Senen"
-            mainAction="Trip Not Yet Started"
-          />
+          {/* Render KidPickupCard for each pickup request and only for the next relevant day */}
+          {pickupRequests.length > 0 ? (
+            pickupRequests.map((pickup) => {
+              const child = childDetailsMap[pickup.childId];
+              // If not matched with a Buddi, show waiting card
+              if (!pickup.matchedBuddiId) {
+                return (
+                  <View
+                    key={`waiting-${pickup.id}`}
+                    style={{
+                      backgroundColor: "#FFF7ED",
+                      borderRadius: 16,
+                      borderWidth: 1.2,
+                      borderColor: "#FFD9B3",
+                      padding: 18,
+                      marginVertical: 6,
+                      alignItems: "center",
+                      justifyContent: "center",
+                    }}
+                  >
+                    <Text
+                      style={{
+                        fontFamily: "Comfortaa-Bold",
+                        fontSize: 16,
+                        color: "#FF932E",
+                        marginBottom: 6,
+                      }}
+                    >
+                      Waiting for a matched Buddi
+                    </Text>
+                    <Text
+                      style={{
+                        fontFamily: "Comfortaa-Regular",
+                        fontSize: 13,
+                        color: "#A3A3A3",
+                        textAlign: "center",
+                      }}
+                    >
+                      Once a Buddi is matched to your request, you will see your
+                      pickups here.
+                    </Text>
+                  </View>
+                );
+              }
+              let buddiName = undefined;
+              let buddiEmail = undefined;
+              let buddiAvatar = undefined;
+              if (
+                pickup.matchedBuddiId &&
+                buddiDetailsMap[pickup.matchedBuddiId]
+              ) {
+                const buddi = buddiDetailsMap[pickup.matchedBuddiId];
+                buddiName = `Buddi ${pickup.matchedBuddiId}`;
+                buddiEmail =
+                  buddi.User?.email || buddi.email || "buddi@email.com";
+                buddiAvatar =
+                  buddi.profilePicture ||
+                  "https://randomuser.me/api/portraits/men/2.jpg";
+              } else {
+                buddiName = pickup.matchedBuddiId
+                  ? `Buddi ${pickup.matchedBuddiId}`
+                  : "Buddi";
+                buddiEmail = "buddi@email.com";
+                buddiAvatar = "https://randomuser.me/api/portraits/men/2.jpg";
+              }
+              const buddiStatus =
+                pickup.status === "matched" ? "Available" : "Pending";
+
+              // Find the next relevant day (today if included, otherwise next closest)
+              const daysOfWeek = [
+                "Sunday",
+                "Monday",
+                "Tuesday",
+                "Wednesday",
+                "Thursday",
+                "Friday",
+                "Saturday",
+              ];
+              const todayIdx = new Date().getDay();
+              let nextDay = null;
+              if (pickup.availableDays && pickup.availableDays.length > 0) {
+                // Try to find today
+                const todayName = daysOfWeek[todayIdx];
+                if (pickup.availableDays.includes(todayName)) {
+                  nextDay = todayName;
+                } else {
+                  // Find the next closest day
+                  const sortedDays = pickup.availableDays
+                    .map((day) => ({
+                      day,
+                      idx: daysOfWeek.indexOf(day),
+                    }))
+                    .filter((d) => d.idx !== -1)
+                    .sort((a, b) => a.idx - b.idx);
+                  // Find the first day after today
+                  nextDay =
+                    sortedDays.find((d) => d.idx > todayIdx)?.day ||
+                    sortedDays[0]?.day;
+                }
+              }
+              if (!nextDay) return null;
+              return (
+                <KidPickupCard
+                  key={`${pickup.id}-${nextDay}`}
+                  childName={child?.name || "Child"}
+                  remaining={pickup.pickupTime || "-"}
+                  schedule={nextDay}
+                  buddiName={buddiName}
+                  buddiEmail={buddiEmail}
+                  buddiAvatar={buddiAvatar}
+                  buddiStatus={buddiStatus}
+                  schoolName={child?.school || pickup.fromZone || "School"}
+                  destination={pickup.toZone || "Home"}
+                  mainAction={
+                    pickup.status === "matched"
+                      ? "Trip Not Yet Started"
+                      : "Pending"
+                  }
+                />
+              );
+            })
+          ) : (
+            <Text
+              style={{
+                color: "#888",
+                fontFamily: "Comfortaa-Regular",
+                marginTop: 10,
+              }}
+            >
+              No pickups scheduled yet.
+            </Text>
+          )}
         </View>
 
         {/* Extra Activities Calendar */}
-        <View className="mb-6">
+        {/* <View className="mb-6">
           <View className="flex-row justify-between items-center mx-4 mb-2">
             <Text className="font-comfortaa-bold text-xl">Schedule</Text>
             <TouchableOpacity>
@@ -736,7 +896,7 @@ export default function ParentDashboard() {
             onDaySelect={(date) => setSelectedDate(date)}
             primaryColor="#FF932E"
           />
-        </View>
+        </View> */}
       </ScrollView>
     </SafeAreaView>
   );

@@ -1,6 +1,10 @@
 import AnalyticsCard from "@/components/commons/AnalyticsCard";
 import PageHeader from "@/components/commons/PageHeader";
 import KidPickupCard from "@/components/parent/KidPickupCard";
+import { useAuth } from "@/context/AuthContext";
+import BuddiService from "@/services/api/buddi.service";
+import ChildrenService from "@/services/api/children.service";
+import ParentService from "@/services/api/parent.service";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import React from "react";
@@ -72,8 +76,67 @@ const coverageRequestsData = [
 
 const SchedulePage = () => {
   const router = useRouter();
+  const { parentDetails } = useAuth();
   const [activeTab, setActiveTab] = React.useState("pickups");
   const [pickupIndex, setPickupIndex] = React.useState(0);
+
+  // State for real pickup requests and details
+  const [pickupRequests, setPickupRequests] = React.useState<any[]>([]);
+  const [childDetailsMap, setChildDetailsMap] = React.useState<
+    Record<string, any>
+  >({});
+  const [buddiDetailsMap, setBuddiDetailsMap] = React.useState<
+    Record<string, any>
+  >({});
+  const [loading, setLoading] = React.useState(true);
+  const [error, setError] = React.useState<string | null>(null);
+
+  React.useEffect(() => {
+    const fetchDetailsForRequests = async () => {
+      if (!parentDetails?.id) return;
+      setLoading(true);
+      setError(null);
+      try {
+        const res = await ParentService.getMyPickupRequests(
+          parentDetails.id.toString()
+        );
+        const requests = res.data || [];
+        setPickupRequests(requests);
+        // Fetch all children for this parent once
+        const childrenRes = await ChildrenService.getChildrenByParent(
+          parentDetails.id.toString()
+        );
+        const childrenArr = Array.isArray(childrenRes) ? childrenRes : [];
+        // Map childId to child details
+        const childMap: Record<string, any> = {};
+        childrenArr.forEach((child: any) => {
+          childMap[child.id] = child;
+        });
+        setChildDetailsMap(childMap);
+        // Fetch buddi details for each matchedBuddiId
+        const buddiIds = Array.from(
+          new Set(requests.map((r: any) => r.matchedBuddiId).filter(Boolean))
+        );
+        const buddiMap: Record<string, any> = {};
+        for (const buddiId of buddiIds) {
+          try {
+            const buddiRes = await BuddiService.getBuddiInfo(
+              buddiId.toString()
+            );
+            buddiMap[buddiId] = buddiRes.data;
+          } catch (e) {
+            buddiMap[buddiId] = { id: buddiId };
+          }
+        }
+        setBuddiDetailsMap(buddiMap);
+      } catch (err: any) {
+        setError(err.message || "Failed to fetch pickup requests.");
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchDetailsForRequests();
+  }, [parentDetails?.id]);
 
   return (
     <SafeAreaView
@@ -205,36 +268,183 @@ const SchedulePage = () => {
                     <Ionicons name="arrow-forward" size={16} color="#FF932E" />
                   </TouchableOpacity>
                 </View>
-                <ScrollView
-                  horizontal
-                  showsHorizontalScrollIndicator={false}
-                  contentContainerStyle={{ paddingRight: 16 }}
-                  onScroll={(e) => {
-                    const x = e.nativeEvent.contentOffset.x;
-                    setPickupIndex(Math.round(x / 338)); // 338 = card width
-                  }}
-                  scrollEventThrottle={16}
-                >
-                  {pickupData.map((pickup, index) => (
-                    <View key={index} className="mr-4" style={{ width: 338 }}>
-                      <KidPickupCard
-                        childName={pickup.name}
-                        remaining={pickup.time}
-                        schedule={pickup.days}
-                        buddiName={"Brian Foday"}
-                        buddiEmail={"brianfoday@gmail.com"}
-                        buddiAvatar={
-                          "https://randomuser.me/api/portraits/men/2.jpg"
-                        }
-                        buddiStatus={"Available"}
-                        schoolName={pickup.school}
-                        destination={pickup.home}
-                        mainAction={"Trip Not Yet Started"}
-                        variant="default"
-                      />
-                    </View>
-                  ))}
-                </ScrollView>
+                {loading ? (
+                  <Text
+                    style={{
+                      color: "#888",
+                      fontFamily: "Comfortaa-Regular",
+                      marginTop: 10,
+                    }}
+                  >
+                    Loading pickups...
+                  </Text>
+                ) : error ? (
+                  <Text
+                    style={{
+                      color: "red",
+                      fontFamily: "Comfortaa-Regular",
+                      marginTop: 10,
+                    }}
+                  >
+                    {error}
+                  </Text>
+                ) : pickupRequests.length === 0 ? (
+                  <Text
+                    style={{
+                      color: "#888",
+                      fontFamily: "Comfortaa-Regular",
+                      marginTop: 10,
+                    }}
+                  >
+                    No pickups scheduled yet.
+                  </Text>
+                ) : (
+                  pickupRequests.map((pickup) => {
+                    const child = childDetailsMap[pickup.childId];
+                    // If not matched with a Buddi, show waiting card
+                    if (!pickup.matchedBuddiId) {
+                      return (
+                        <View
+                          key={`waiting-${pickup.id}`}
+                          style={{
+                            backgroundColor: "#FFF7ED",
+                            borderRadius: 16,
+                            borderWidth: 1.2,
+                            borderColor: "#FFD9B3",
+                            padding: 18,
+                            marginVertical: 6,
+                            alignItems: "center",
+                            justifyContent: "center",
+                          }}
+                        >
+                          <Text
+                            style={{
+                              fontFamily: "Comfortaa-Bold",
+                              fontSize: 16,
+                              color: "#FF932E",
+                              marginBottom: 6,
+                            }}
+                          >
+                            Waiting for a matched Buddi
+                          </Text>
+                          <Text
+                            style={{
+                              fontFamily: "Comfortaa-Regular",
+                              fontSize: 13,
+                              color: "#A3A3A3",
+                              textAlign: "center",
+                            }}
+                          >
+                            Once a Buddi is matched to your request, you&apos;ll
+                            see your pickups here.
+                          </Text>
+                        </View>
+                      );
+                    }
+                    let buddiName = undefined;
+                    let buddiEmail = undefined;
+                    let buddiAvatar = undefined;
+                    if (
+                      pickup.matchedBuddiId &&
+                      buddiDetailsMap[pickup.matchedBuddiId]
+                    ) {
+                      const buddi = buddiDetailsMap[pickup.matchedBuddiId];
+                      buddiName = `Buddi ${pickup.matchedBuddiId}`;
+                      buddiEmail =
+                        buddi.User?.email || buddi.email || "buddi@email.com";
+                      buddiAvatar =
+                        buddi.profilePicture ||
+                        "https://randomuser.me/api/portraits/men/2.jpg";
+                    } else {
+                      buddiName = pickup.matchedBuddiId
+                        ? `Buddi ${pickup.matchedBuddiId}`
+                        : "Buddi";
+                      buddiEmail = "buddi@email.com";
+                      buddiAvatar =
+                        "https://randomuser.me/api/portraits/men/2.jpg";
+                    }
+                    const buddiStatus =
+                      pickup.status === "matched" ? "Available" : "Pending";
+                    // Show up to 3 cards for the first 3 scheduled days
+                    const days =
+                      pickup.availableDays && pickup.availableDays.length > 0
+                        ? pickup.availableDays.slice(0, 3)
+                        : [];
+                    return (
+                      <View key={pickup.id} style={{ marginBottom: 18 }}>
+                        <ScrollView
+                          horizontal
+                          showsHorizontalScrollIndicator={false}
+                          contentContainerStyle={{ paddingRight: 16 }}
+                        >
+                          {days.map((day: string, idx: number) => (
+                            <View
+                              key={`${pickup.id}-${day}`}
+                              style={{ width: 338, marginRight: 12 }}
+                            >
+                              <KidPickupCard
+                                childName={child?.name || "Child"}
+                                remaining={pickup.pickupTime || "-"}
+                                schedule={day}
+                                buddiName={buddiName}
+                                buddiEmail={buddiEmail}
+                                buddiAvatar={buddiAvatar}
+                                buddiStatus={buddiStatus}
+                                schoolName={
+                                  child?.school || pickup.fromZone || "School"
+                                }
+                                destination={pickup.toZone || "Home"}
+                                mainAction={
+                                  pickup.status === "matched"
+                                    ? "Trip Not Yet Started"
+                                    : "Pending"
+                                }
+                              />
+                            </View>
+                          ))}
+                        </ScrollView>
+                        {/* Show View All if more than 3 days */}
+                        {pickup.availableDays &&
+                          pickup.availableDays.length > 3 && (
+                            <TouchableOpacity
+                              style={{
+                                marginTop: 8,
+                                alignSelf: "flex-end",
+                                backgroundColor: "#FF932E",
+                                borderRadius: 999,
+                                paddingVertical: 8,
+                                paddingHorizontal: 22,
+                                flexDirection: "row",
+                                alignItems: "center",
+                              }}
+                              onPress={() => {
+                                router.push({
+                                  pathname: "/parent/all-pickups/[callId]",
+                                  params: { callId: pickup.id.toString() },
+                                });
+                              }}
+                            >
+                              <Text
+                                style={{
+                                  color: "#fff",
+                                  fontFamily: "Comfortaa-Bold",
+                                  fontSize: 15,
+                                  marginRight: 8,
+                                }}
+                              >
+                                View All
+                              </Text>
+                              <Ionicons
+                                name="arrow-forward"
+                                size={18}
+                                color="#fff"
+                              />
+                            </TouchableOpacity>
+                          )}
+                      </View>
+                    );
+                  })
+                )}
 
                 {/* Pagination Dots */}
                 <View className="flex-row justify-center items-center gap-2 mt-4">
@@ -262,6 +472,48 @@ const SchedulePage = () => {
                   </TouchableOpacity>
                 </View>
                 <View className="gap-4">
+                  <View
+                    style={{
+                      backgroundColor: "#F4F7FE",
+                      borderRadius: 16,
+                      borderWidth: 1,
+                      borderColor: "#E6E6E6",
+                      padding: 24,
+                      alignItems: "center",
+                      justifyContent: "center",
+                      marginTop: 16,
+                    }}
+                  >
+                    <Ionicons
+                      name="shield-outline"
+                      size={40}
+                      color="#FF932E"
+                      style={{ marginBottom: 12 }}
+                    />
+                    <Text
+                      style={{
+                        fontFamily: "Comfortaa-Bold",
+                        fontSize: 18,
+                        color: "#FF932E",
+                        marginBottom: 6,
+                      }}
+                    >
+                      No Coverage Requests So Far
+                    </Text>
+                    <Text
+                      style={{
+                        fontFamily: "Comfortaa-Regular",
+                        fontSize: 14,
+                        color: "#6B7280",
+                        textAlign: "center",
+                      }}
+                    >
+                      You currently have no coverage requests. When a parent
+                      requests coverage, you&apos;ll see it here!
+                    </Text>
+                  </View>
+                  {/*
+                  // Future integration: Uncomment and use when coverage requests are available
                   {coverageRequestsData.map((request, index) => (
                     <KidPickupCard
                       key={index}
@@ -272,9 +524,7 @@ const SchedulePage = () => {
                       buddiEmail={request.requesterEmail}
                       buddiAvatar={
                         request.requesterAvatar ||
-                        `https://randomuser.me/api/portraits/men/${
-                          index + 1
-                        }.jpg`
+                        `https://randomuser.me/api/portraits/men/${index + 1}.jpg`
                       }
                       buddiStatus={"Requesting Coverage"}
                       schoolName={request.school}
@@ -283,6 +533,7 @@ const SchedulePage = () => {
                       variant="coverage"
                     />
                   ))}
+                  */}
                 </View>
               </>
             )}

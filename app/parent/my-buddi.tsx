@@ -112,7 +112,7 @@ const MyBuddyPage = () => {
               <Ionicons name="arrow-forward" size={22} color="white" />
             </TouchableOpacity>
           </View>
-          <View className="px-2 mt-6">
+          <View className="px-4 mt-6">
             <Text className="text-lg font-comfortaa-bold mb-3">
               Proposed Buddies 
             </Text>

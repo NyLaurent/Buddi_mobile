@@ -317,14 +317,14 @@ const WaitlistScreen = () => {
         </View>
 
         {/* Sign Out Button */}
-        <TouchableOpacity
+        {/* <TouchableOpacity
           onPress={handleSignOut}
           className="mx-4 mt-4 p-4 bg-red-500 rounded-2xl"
         >
           <Text className="font-comfortaa text-white text-center">
             Sign Out
           </Text>
-        </TouchableOpacity>
+        </TouchableOpacity> */}
       </ScrollView>
     </SafeAreaView>
   );
