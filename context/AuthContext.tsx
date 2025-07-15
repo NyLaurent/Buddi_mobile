@@ -4,6 +4,7 @@ import React, { createContext, useContext, useEffect, useState } from "react";
 import { FullScreenLoader } from "../components/commons/FullScreenLoader";
 import AuthService from "../services/api/auth.service";
 import { STORAGE_KEYS } from "../services/api/config";
+import SocketService from "../services/socket";
 
 // Types for our authentication context
 export interface User {
@@ -549,6 +550,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         console.log("Login - Setting buddi data:", buddiData);
         setBuddiDetails(buddiData);
         await AsyncStorage.setItem("buddi_details", JSON.stringify(buddiData));
+        // Join buddi personal room
+        if (buddiData.id && cleanUser.userId) {
+          console.log("[Socket] Joining buddi room:", {
+            roomId: `buddi-${buddiData.id}`,
+            userId: cleanUser.userId,
+            userType: "Buddi",
+          });
+          const roomId = `buddi-${buddiData.id}`;
+          SocketService.joinChatRoom(roomId, cleanUser.userId, "Buddi");
+        }
       }
 
       if (cleanUser.role === "parent" && apiUser.Parent) {
@@ -559,6 +570,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
           "parent_details",
           JSON.stringify(parentData)
         );
+        // Join parent personal room
+        if (parentData.id && cleanUser.userId) {
+          console.log("[Socket] Joining parent room:", {
+            roomId: `parent-${parentData.id}`,
+            userId: cleanUser.userId,
+            userType: "Parent",
+          });
+          const roomId = `parent-${parentData.id}`;
+          SocketService.joinChatRoom(roomId, cleanUser.userId, "Parent");
+        }
       }
 
       if (cleanUser.role === "superAdmin" && apiUser.SuperAdmin) {

@@ -6,6 +6,7 @@ const SOCKET_SERVER_URL = 'https://backend-service-hw1rh.kinsta.app';
 class SocketService {
   private socket: Socket | null = null;
   private isConnected = false;
+  private pendingRoomJoins: Array<{ chatRoomId: string; userId: string; userType: 'Parent' | 'Buddi' }> = [];
 
   // Initialize socket connection
   connect(userId: string, userType: 'Parent' | 'Buddi') {
@@ -21,6 +22,11 @@ class SocketService {
       this.socket.on('connect', () => {
         console.log('Socket connected:', this.socket?.id);
         this.isConnected = true;
+        // Process any pending room joins
+        this.pendingRoomJoins.forEach(({ chatRoomId, userId, userType }) => {
+          this.joinChatRoom(chatRoomId, userId, userType);
+        });
+        this.pendingRoomJoins = [];
       });
 
       this.socket.on('disconnect', () => {
@@ -41,12 +47,11 @@ class SocketService {
   // Join a chat room
   joinChatRoom(chatRoomId: string, userId: string, userType: 'Parent' | 'Buddi') {
     if (!this.socket || !this.isConnected) {
-      console.error('Socket not connected');
+      console.warn('[SocketService] Socket not connected, queuing room join:', { chatRoomId, userId, userType });
+      this.pendingRoomJoins.push({ chatRoomId, userId, userType });
       return;
     }
-
     console.log('Joining chat room:', { chatRoomId, userId, userType });
-    
     this.socket.emit('join-chat-room', {
       chatRoomId,
       userId,

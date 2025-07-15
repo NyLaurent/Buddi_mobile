@@ -199,6 +199,23 @@ async function proposeBuddiRecommendations({
   return response.data;
 }
 
+/**
+ * Create a new pickup request (parent initiates a trip)
+ * @param payload - { parentId, buddiId, childId, fromLocation, toLocation }
+ */
+async function createPickupRequest(payload: {
+  parentId: number;
+  buddiId: number;
+  childId: string;
+  fromLocation: string;
+  toLocation: string;
+  buddiRequestId: number; // or string, depending on your backend
+  callId: number;      
+}): Promise<any> {
+  const response = await authorizedApi.post("/parent/request", payload);
+  return response.data;
+}
+
 const ParentService = {
   async getAllParents(page: number, limit: number): Promise<ParentListResponse> {
     const response = await authorizedApi.get(PARENT_ENDPOINTS.LIST + `/all?page=${page}&limit=${limit}`);
@@ -408,6 +425,7 @@ const ParentService = {
   },
 
   proposeBuddiRecommendations,
+  createPickupRequest,
 };
 
 export default ParentService; 

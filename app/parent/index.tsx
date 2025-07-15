@@ -867,6 +867,61 @@ export default function ParentDashboard() {
                       ? "Trip Not Yet Started"
                       : "Pending"
                   }
+                  onMainAction={
+                    pickup.status === "matched"
+                      ? async () => {
+                          Alert.alert(
+                            "Start Pickup Trip",
+                            "Are you ready to start a pickup trip?",
+                            [
+                              { text: "Cancel", style: "cancel" },
+                              {
+                                text: "Yes, Start Trip",
+                                style: "default",
+                                onPress: async () => {
+                                  try {
+                                    // Debug: log payload and types
+                                    console.log("Pickup request payload:", {
+                                      parentId: parentDetails!.id,
+                                      parentIdType: typeof parentDetails!.id,
+                                      buddiId: pickup.matchedBuddiId,
+                                      buddiIdType: typeof pickup.matchedBuddiId,
+                                      childId: pickup.childId,
+                                      childIdType: typeof pickup.childId,
+                                      fromLocation: pickup.fromZone,
+                                      toLocation: pickup.toZone,
+                                    });
+                                    await ParentService.createPickupRequest({
+                                      parentId: parentDetails!.id,
+                                      buddiId: Number(pickup.matchedBuddiId!),
+                                      childId: pickup.childId,
+                                      fromLocation: pickup.fromZone,
+                                      toLocation: pickup.toZone,
+                                      buddiRequestId: pickup.id,
+                                      callId: pickup.id,
+                                    });
+                                    // Update local state to reflect trip started/requested
+                                    setPickupRequests((prev) =>
+                                      prev.map((p) =>
+                                        p.id === pickup.id
+                                          ? { ...p, status: "requested" }
+                                          : p
+                                      )
+                                    );
+                                  } catch (err) {
+                                    Alert.alert(
+                                      "Error",
+                                      (err as any)?.message ||
+                                        "Failed to start trip."
+                                    );
+                                  }
+                                },
+                              },
+                            ]
+                          );
+                        }
+                      : undefined
+                  }
                 />
               );
             })

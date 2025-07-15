@@ -12,6 +12,13 @@ interface PickupCardProps {
   home: string;
   onButtonPress: () => void;
   cardWidth?: number;
+  status?: "notStarted" | "enRoute" | "picked" | "completed";
+  onClockOut?: () => void;
+  onPickUp?: () => void;
+  pickupTime?: string;
+  tripStartTime?: string;
+  dropoffTime?: string;
+  fare?: number | null;
 }
 
 const PickupCard = ({
@@ -22,7 +29,14 @@ const PickupCard = ({
   school,
   home,
   onButtonPress,
-  cardWidth = 450,
+  cardWidth = 370,
+  status = "notStarted",
+  onClockOut,
+  onPickUp,
+  pickupTime,
+  tripStartTime,
+  dropoffTime,
+  fare,
 }: PickupCardProps) => {
   const router = useRouter();
 
@@ -33,46 +47,194 @@ const PickupCard = ({
     });
   };
 
+  // Card color and button logic
+  const isEnRoute = status === "enRoute";
+  const isPicked = status === "picked";
+  const isCompleted = status === "completed";
+  const cardBg = "#fff";
+  const textColor = "#222";
+  const subTextColor = "#71727A";
+  let buttonBg = "#FF932E";
+  let buttonText = "Clock in";
+  let buttonTextColor = "#fff";
+  let statusLabel = "";
+  if (isEnRoute) {
+    buttonBg = "#2563EB";
+    buttonText = "Child Picked Up";
+    buttonTextColor = "#fff";
+    statusLabel = "Trip In Progress";
+  } else if (isPicked) {
+    buttonBg = "#7C3AED";
+    buttonText = "Complete Trip";
+    buttonTextColor = "#fff";
+    statusLabel = "Child Picked Up";
+  } else if (isCompleted) {
+    buttonBg = "#16A34A";
+    buttonText = "Trip Completed";
+    buttonTextColor = "#fff";
+    statusLabel = "Trip Completed";
+  }
+
+  // Helper to format ISO date/time
+  const formatTime = (iso?: string) => {
+    if (!iso) return "-";
+    const d = new Date(iso);
+    return d.toLocaleString();
+  };
+
   return (
     <View
-      className="bg-white rounded-2xl p-4 mr-3 border border-[#E8E8E8]"
-      style={{ width: cardWidth, minWidth: cardWidth, maxWidth: cardWidth }}
+      className="rounded-2xl p-4 mr-3 border"
+      style={{
+        width: cardWidth,
+        minWidth: cardWidth,
+        maxWidth: cardWidth,
+        backgroundColor: cardBg,
+        borderColor: "#E8E8E8",
+      }}
     >
       <View className="flex-row justify-between items-center mb-3">
-        <Text className="text-base font-comfortaa-bold text-[#222]">
+        <Text
+          className="text-base font-comfortaa-bold"
+          style={{ color: textColor }}
+        >
           {name}
         </Text>
         <TouchableOpacity className="flex-row items-center">
-          <Text className="text-primary font-comfortaa-medium text-sm mr-1">
+          <Text
+            className="text-primary font-comfortaa-medium text-sm mr-1"
+            style={{ color: undefined }}
+          >
             Request Coverage
           </Text>
-          <Ionicons name="chevron-forward" size={16} color="#FF932E" />
+          <Ionicons name="chevron-forward" size={16} color={"#FF932E"} />
         </TouchableOpacity>
       </View>
 
       <View className="flex-row items-center mb-3">
-        <Text className="text-primary font-comfortaa-bold text-base mr-3">
+        <Text
+          className="font-comfortaa-bold text-base mr-3"
+          style={{ color: "#2563EB" }}
+        >
           {time}
         </Text>
-        <View className="bg-[#F5F5F5] px-3 py-1 rounded-xl">
-          <Text className="text-[#71727A] font-comfortaa text-sm">{days}</Text>
+        <View
+          className="px-3 py-1 rounded-xl"
+          style={{ backgroundColor: "#F5F5F5" }}
+        >
+          <Text
+            className="font-comfortaa text-sm"
+            style={{ color: subTextColor }}
+          >
+            {days}
+          </Text>
         </View>
       </View>
 
       <View className="mb-4">
         <View className="flex-row items-center mb-2">
-          <Ionicons name="school" size={16} color="#666" />
-          <Text className="ml-2 text-[#71727A] font-comfortaa text-sm">
+          <Ionicons name="school" size={16} color={"#666"} />
+          <Text
+            className="ml-2 font-comfortaa text-sm"
+            style={{ color: subTextColor }}
+          >
             {school}
           </Text>
         </View>
         <View className="flex-row items-center">
-          <Ionicons name="home" size={16} color="#666" />
-          <Text className="ml-2 text-[#71727A] font-comfortaa text-sm">
+          <Ionicons name="home" size={16} color={"#666"} />
+          <Text
+            className="ml-2 font-comfortaa text-sm"
+            style={{ color: subTextColor }}
+          >
             {home}
           </Text>
         </View>
       </View>
+
+      {/* Trip Details Section: only show if trip is started */}
+      {status !== "notStarted" && (
+        <View style={{ marginBottom: 10 }}>
+          <Text
+            style={{
+              fontFamily: "Comfortaa-Bold",
+              fontSize: 13,
+              color: "#232B3A",
+              marginBottom: 2,
+            }}
+          >
+            Trip Details
+          </Text>
+          <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
+            <Text
+              style={{
+                fontFamily: "Comfortaa-Regular",
+                fontSize: 12,
+                color: "#71727A",
+                marginRight: 12,
+              }}
+            >
+              <Text style={{ fontWeight: "bold" }}>Status:</Text> {statusLabel}
+            </Text>
+            <Text
+              style={{
+                fontFamily: "Comfortaa-Regular",
+                fontSize: 12,
+                color: "#71727A",
+                marginRight: 12,
+              }}
+            >
+              <Text style={{ fontWeight: "bold" }}>Pickup Time:</Text>{" "}
+              {formatTime(pickupTime)}
+            </Text>
+            <Text
+              style={{
+                fontFamily: "Comfortaa-Regular",
+                fontSize: 12,
+                color: "#71727A",
+                marginRight: 12,
+              }}
+            >
+              <Text style={{ fontWeight: "bold" }}>Trip Start:</Text>{" "}
+              {formatTime(tripStartTime)}
+            </Text>
+            <Text
+              style={{
+                fontFamily: "Comfortaa-Regular",
+                fontSize: 12,
+                color: "#71727A",
+                marginRight: 12,
+              }}
+            >
+              <Text style={{ fontWeight: "bold" }}>Dropoff Time:</Text>{" "}
+              {formatTime(dropoffTime)}
+            </Text>
+            {typeof fare === "number" && (
+              <Text
+                style={{
+                  fontFamily: "Comfortaa-Regular",
+                  fontSize: 12,
+                  color: "#71727A",
+                  marginRight: 12,
+                }}
+              >
+                <Text style={{ fontWeight: "bold" }}>Fare:</Text> {fare}
+              </Text>
+            )}
+          </View>
+        </View>
+      )}
+
+      {statusLabel ? (
+        <View style={{ marginBottom: 12 }}>
+          <Text
+            className="font-comfortaa-bold text-base"
+            style={{ color: isEnRoute ? "#fff" : "#2563EB" }}
+          >
+            {statusLabel}
+          </Text>
+        </View>
+      ) : null}
 
       <View className="flex-row justify-between items-center">
         <TouchableOpacity
@@ -84,15 +246,71 @@ const PickupCard = ({
           </Text>
           <Ionicons name="chevron-forward" size={16} color="#666" />
         </TouchableOpacity>
-        <TouchableOpacity
-          className="bg-primary py-2.5 px-6 rounded-xl flex-row items-center gap-2"
-          onPress={onButtonPress}
-        >
-          <Ionicons name="time-outline" size={18} color="white" />
-          <Text className="text-white font-comfortaa-medium text-sm">
-            Clock in
-          </Text>
-        </TouchableOpacity>
+        {isEnRoute ? (
+          <TouchableOpacity
+            className="py-2.5 px-6 rounded-xl flex-row items-center gap-2"
+            style={{ backgroundColor: buttonBg }}
+            onPress={onPickUp}
+          >
+            <Ionicons name="walk-outline" size={18} color={buttonTextColor} />
+            <Text
+              className="font-comfortaa-medium text-sm"
+              style={{ color: buttonTextColor }}
+            >
+              {buttonText}
+            </Text>
+          </TouchableOpacity>
+        ) : isPicked ? (
+          <TouchableOpacity
+            className="py-2.5 px-6 rounded-xl flex-row items-center gap-2"
+            style={{ backgroundColor: buttonBg }}
+            onPress={onClockOut}
+          >
+            <Ionicons
+              name="log-out-outline"
+              size={18}
+              color={buttonTextColor}
+            />
+            <Text
+              className="font-comfortaa-medium text-sm"
+              style={{ color: buttonTextColor }}
+            >
+              {buttonText}
+            </Text>
+          </TouchableOpacity>
+        ) : isCompleted ? (
+          <TouchableOpacity
+            className="py-2.5 px-6 rounded-xl flex-row items-center gap-2"
+            style={{ backgroundColor: buttonBg, opacity: 0.7 }}
+            disabled
+          >
+            <Ionicons
+              name="checkmark-done-outline"
+              size={18}
+              color={buttonTextColor}
+            />
+            <Text
+              className="font-comfortaa-medium text-sm"
+              style={{ color: buttonTextColor }}
+            >
+              {buttonText}
+            </Text>
+          </TouchableOpacity>
+        ) : (
+          <TouchableOpacity
+            className="py-2.5 px-6 rounded-xl flex-row items-center gap-2"
+            style={{ backgroundColor: buttonBg }}
+            onPress={onButtonPress}
+          >
+            <Ionicons name="time-outline" size={18} color={buttonTextColor} />
+            <Text
+              className="font-comfortaa-medium text-sm"
+              style={{ color: buttonTextColor }}
+            >
+              {buttonText}
+            </Text>
+          </TouchableOpacity>
+        )}
       </View>
     </View>
   );

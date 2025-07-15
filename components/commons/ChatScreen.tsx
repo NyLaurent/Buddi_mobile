@@ -100,6 +100,11 @@ const ChatScreen: React.FC<ChatScreenProps> = ({
       SocketService.getSocket()?.on("connect_error", handleConnectError);
     }
     // Join chat room
+    console.log("[ChatScreen] Attempting to join chat room:", {
+      chatRoomId,
+      userId,
+      userType,
+    });
     SocketService.joinChatRoom(chatRoomId, userId, userType);
     // Listen for room joined confirmation
     SocketService.onRoomJoined((data) => {

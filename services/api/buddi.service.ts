@@ -93,6 +93,54 @@ export interface ApplyForCallRequest {
   message: string;
 }
 
+/**
+ * Start a trip (clock in) as a Buddi
+ * @param payload - { buddiId, buddiRequestId, ... }
+ */
+async function startTrip(payload: {
+  buddiId: number;
+  buddiRequestId: number;
+  // Add other fields if required by backend
+}): Promise<any> {
+  const response = await authorizedApi.post("/buddi/start-trip", payload);
+  return response.data;
+}
+
+/**
+ * Buddi starts a pickup trip
+ * @param pickupId - the ID of the pickup to start
+ */
+async function startPickupTrip(pickupId: number | string): Promise<any> {
+  const response = await authorizedApi.patch(`/pickups/${pickupId}/start`);
+  return response.data;
+}
+
+/**
+ * Buddi completes a pickup trip
+ * @param pickupId - the ID of the pickup to complete
+ * @param pickupTime - the time the trip started (optional)
+ */
+async function completePickupTrip(
+  pickupId: number | string,
+  pickupTime?: string | null
+): Promise<any> {
+  const now = new Date().toISOString();
+  const response = await authorizedApi.patch(`/pickups/${pickupId}/complete`, {
+    pickupTime: pickupTime || now,
+    dropoffTime: now,
+  });
+  return response.data;
+}
+
+/**
+ * Buddi marks the child as picked up
+ * @param pickupId - the ID of the pickup
+ */
+async function pickUpChild(pickupId: number | string): Promise<any> {
+  const response = await authorizedApi.patch(`/pickups/${pickupId}/pickup`);
+  return response.data;
+}
+
 const BuddiService = {
   async getAvailableCalls(page: number = 1, limit: number = 5): Promise<AvailableCallsResponse> {
     try {
@@ -286,6 +334,10 @@ const BuddiService = {
       throw new Error(message);
     }
   },
+  startTrip,
+  startPickupTrip,
+  completePickupTrip,
+  pickUpChild,
 };
 
 export default BuddiService; 
