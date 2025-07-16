@@ -1,7 +1,8 @@
 // app/buddi/index.tsx
 import { Ionicons } from "@expo/vector-icons";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useRouter } from "expo-router";
-import React, { useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
   Alert,
   Image,
@@ -25,6 +26,7 @@ import CongratulationsCard from "../../components/commons/CongratulationsCard";
 import PickupCard from "../../components/commons/PickupCard";
 import { useAuth } from "../../context/AuthContext";
 import BuddiService from "../../services/api/buddi.service";
+import SocketService from "../../services/socket";
 // import ChildrenService from "../../services/api/children.service";
 
 export default function BuddiHome() {
@@ -36,7 +38,100 @@ export default function BuddiHome() {
   const { user, logout, buddiDetails } = useAuth();
   const [availableCalls, setAvailableCalls] = useState<any[]>([]);
   const [matchedCall, setMatchedCall] = useState<any>(null);
+  const [completedTrips, setCompletedTrips] = useState<any[]>([]);
   // const [childInfo, setChildInfo] = useState<any>(null);
+
+  // Helper to get the socket instance (assume SocketService exposes getSocket())
+  const getSocket = () =>
+    SocketService.getSocket ? SocketService.getSocket() : null;
+
+  // Real-time trip event listeners and local persistence
+  useEffect(() => {
+    // Handler for trip-completed event
+    const handleTripCompleted = async (pickupData: any) => {
+      // If this trip is the current matchedCall, update it
+      if (matchedCall && pickupData.id === matchedCall.id) {
+        setMatchedCall(pickupData);
+      }
+      // Store in AsyncStorage
+      try {
+        const stored = await AsyncStorage.getItem("completedTrips");
+        const completed = stored ? JSON.parse(stored) : [];
+        completed.push(pickupData);
+        await AsyncStorage.setItem("completedTrips", JSON.stringify(completed));
+        setCompletedTrips(completed);
+      } catch (err) {
+        console.error("Error storing completed trip:", err);
+      }
+    };
+
+    // Handler for pickup-assigned event
+    const handlePickupAssigned = (data: any) => {
+      let pickup;
+      try {
+        pickup = typeof data === "string" ? JSON.parse(data) : data;
+      } catch (err) {
+        console.error("Parse error (pickup-assigned):", err);
+        return;
+      }
+      setAvailableCalls((prev) => [...prev, pickup]);
+    };
+
+    // Handler for pickup-started event
+    const handlePickupStarted = (data: any) => {
+      let pickup;
+      try {
+        pickup = typeof data === "string" ? JSON.parse(data) : data;
+      } catch (err) {
+        console.error("Parse error (pickup-started):", err);
+        return;
+      }
+      if (matchedCall && pickup.id === matchedCall.id) {
+        setMatchedCall(pickup);
+      }
+    };
+
+    // Handler for child-picked-up event
+    const handleChildPickedUp = (data: any) => {
+      let pickup;
+      try {
+        pickup = typeof data === "string" ? JSON.parse(data) : data;
+      } catch (err) {
+        console.error("Parse error (child-picked-up):", err);
+        return;
+      }
+      if (matchedCall && pickup.id === matchedCall.id) {
+        setMatchedCall(pickup);
+      }
+    };
+
+    // Add socket event listeners
+    const socket = getSocket();
+    if (socket) {
+      socket.on("trip-completed", handleTripCompleted);
+      socket.on("pickup-assigned", handlePickupAssigned);
+      socket.on("pickup-started", handlePickupStarted);
+      socket.on("child-picked-up", handleChildPickedUp);
+      // Add other event listeners here as needed
+    }
+
+    // On mount, load completed trips from AsyncStorage
+    AsyncStorage.getItem("completedTrips").then((stored) => {
+      setCompletedTrips(stored ? JSON.parse(stored) : []);
+    });
+
+    // Cleanup listeners on unmount
+    return () => {
+      const socket = getSocket();
+      if (socket) {
+        socket.off("trip-completed", handleTripCompleted);
+        socket.off("pickup-assigned", handlePickupAssigned);
+        socket.off("pickup-started", handlePickupStarted);
+        socket.off("child-picked-up", handleChildPickedUp);
+        // Remove other listeners here as needed
+      }
+    };
+  }, [matchedCall]);
 
   React.useEffect(() => {
     const fetchCalls = async () => {
@@ -75,11 +170,13 @@ export default function BuddiHome() {
     ]);
   };
 
+  // On logout, clear completed trips
   const handleLogoutConfirmed = async () => {
     console.log("User confirmed logout"); // Debug log
     try {
       console.log("Calling logout function..."); // Debug log
       await logout();
+      await AsyncStorage.removeItem("completedTrips");
       console.log("Logout successful, navigating to login..."); // Debug log
       router.replace("/auth/login");
     } catch (error) {
@@ -209,7 +306,7 @@ export default function BuddiHome() {
           snapToInterval={352} // card width (340) + margin (12)
         >
           {matchedCall ? (
-            <PickupCard
+          <PickupCard
               id={matchedCall.id.toString()}
               name={"Child"}
               time={matchedCall.pickupTime || "-"}
@@ -363,7 +460,7 @@ export default function BuddiHome() {
               >
                 Once you are matched to a pickup, you will see it here.
               </Text>
-            </View>
+        </View>
           )}
         </ScrollView>
 

@@ -6,7 +6,7 @@ const SOCKET_SERVER_URL = 'https://backend-service-hw1rh.kinsta.app';
 class SocketService {
   private socket: Socket | null = null;
   private isConnected = false;
-  private pendingRoomJoins: Array<{ chatRoomId: string; userId: string; userType: 'Parent' | 'Buddi' }> = [];
+  private pendingRoomJoins: { chatRoomId: string; userId: string; userType: 'Parent' | 'Buddi' }[] = [];
 
   // Initialize socket connection
   connect(userId: string, userType: 'Parent' | 'Buddi') {

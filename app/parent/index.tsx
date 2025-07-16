@@ -4,6 +4,7 @@ import {
   Ionicons,
   MaterialIcons,
 } from "@expo/vector-icons";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
 import React from "react";
@@ -25,6 +26,7 @@ import ChildrenService from "../../services/api/children.service";
 import ParentService, {
   ParentPickupRequest,
 } from "../../services/api/parent.service";
+import SocketService from "../../services/socket";
 
 export default function ParentDashboard() {
   const [selectedDate, setSelectedDate] = React.useState(new Date());
@@ -92,6 +94,99 @@ export default function ParentDashboard() {
       }
     };
     fetchDetailsForRequests();
+
+    // Real-time trip event listeners and local persistence
+    const getSocket = () =>
+      SocketService.getSocket ? SocketService.getSocket() : null;
+
+    // Helper to update or add a pickup in state
+    const upsertPickup = (pickup: any) => {
+      setPickupRequests((prev) => {
+        const idx = prev.findIndex((p) => p.id === pickup.id);
+        let updated;
+        if (idx !== -1) {
+          updated = [...prev];
+          updated[idx] = { ...updated[idx], ...pickup };
+        } else {
+          updated = [...prev, pickup];
+        }
+        // Persist to AsyncStorage
+        AsyncStorage.setItem("parentPickups", JSON.stringify(updated));
+        return updated;
+      });
+    };
+
+    // pickup-requested
+    const handlePickupRequested = (data: any) => {
+      let pickup;
+      try {
+        pickup = typeof data === "string" ? JSON.parse(data) : data;
+      } catch (err) {
+        console.error("Parse error (pickup-requested):", err);
+        return;
+      }
+      upsertPickup(pickup);
+    };
+    // pickup-started
+    const handlePickupStarted = (data: any) => {
+      let pickup;
+      try {
+        pickup = typeof data === "string" ? JSON.parse(data) : data;
+      } catch (err) {
+        console.error("Parse error (pickup-started):", err);
+        return;
+      }
+      upsertPickup(pickup);
+    };
+    // child-picked-up
+    const handleChildPickedUp = (data: any) => {
+      let pickup;
+      try {
+        pickup = typeof data === "string" ? JSON.parse(data) : data;
+      } catch (err) {
+        console.error("Parse error (child-picked-up):", err);
+        return;
+      }
+      upsertPickup(pickup);
+    };
+    // trip-completed
+    const handleTripCompleted = (data: any) => {
+      let pickup;
+      try {
+        pickup = typeof data === "string" ? JSON.parse(data) : data;
+      } catch (err) {
+        console.error("Parse error (trip-completed):", err);
+        return;
+      }
+      upsertPickup(pickup);
+    };
+
+    // Add listeners
+    const socket = getSocket();
+    if (socket) {
+      socket.on("pickup-requested", handlePickupRequested);
+      socket.on("pickup-started", handlePickupStarted);
+      socket.on("child-picked-up", handleChildPickedUp);
+      socket.on("trip-completed", handleTripCompleted);
+    }
+
+    // On mount, load pickups from AsyncStorage
+    AsyncStorage.getItem("parentPickups").then((stored) => {
+      if (stored) {
+        setPickupRequests(JSON.parse(stored));
+      }
+    });
+
+    // Cleanup listeners on unmount
+    return () => {
+      const socket = getSocket();
+      if (socket) {
+        socket.off("pickup-requested", handlePickupRequested);
+        socket.off("pickup-started", handlePickupStarted);
+        socket.off("child-picked-up", handleChildPickedUp);
+        socket.off("trip-completed", handleTripCompleted);
+      }
+    };
   }, [parentDetails?.id]);
 
   const handleLogout = () => {
@@ -103,15 +198,17 @@ export default function ParentDashboard() {
     ]);
   };
 
+  // On logout, clear stored pickups
   const handleLogoutConfirmed = async () => {
-    console.log("User confirmed logout"); // Debug log
+    console.log("User confirmed logout");
     try {
-      console.log("Calling logout function..."); // Debug log
+      console.log("Calling logout function...");
       await logout();
-      console.log("Logout successful, navigating to login..."); // Debug log
+      await AsyncStorage.removeItem("parentPickups");
+      console.log("Logout successful, navigating to login...");
       router.replace("/auth/login");
     } catch (error) {
-      console.error("Logout error:", error); // Debug log
+      console.error("Logout error:", error);
       if (typeof window !== "undefined") {
         window.alert("Failed to logout. Please try again.");
       }
