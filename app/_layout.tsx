@@ -1,10 +1,17 @@
 import { Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import { useEffect, useState } from "react";
-import { ActivityIndicator, View } from "react-native";
+import { ActivityIndicator, Text, View } from "react-native";
 import { AuthProvider, useAuth } from "../context/AuthContext";
 import "../global.css";
 import { loadFonts } from "../utils/fonts";
+
+// Set default text color to black
+
+// @ts-ignore
+Text.defaultProps = Text.defaultProps || {};
+// @ts-ignore
+Text.defaultProps.style = [{ color: "#23272F" }, Text.defaultProps.style];
 
 // Keep the splash screen visible while we fetch resources
 SplashScreen.preventAutoHideAsync();

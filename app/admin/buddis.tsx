@@ -10,7 +10,7 @@ import BuddiService, {
 } from "@/services/api/buddi.service";
 import { Ionicons, MaterialIcons } from "@expo/vector-icons";
 import { router } from "expo-router";
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -27,7 +27,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 
 const tabs = [
   { id: "all", label: "All Buddis" },
-  { id: "approvals", label: "Registration Approvals" },
+  { id: "approvals", label: "Reference Approvals" },
   { id: "feedback", label: "Feedback" },
   { id: "videos", label: "Profile Videos & Interviews" },
 ];
@@ -103,13 +103,13 @@ export default function AdminBuddisPage() {
     }
   };
 
-  // Fetch RegisterApprovalPending Buddis for cards
+  // Fetch submissionApproved Buddis for cards
   const fetchPendingBuddies = async () => {
     setPendingLoading(true);
     setPendingError(null);
     try {
       const res = await BuddiService.getBuddiesByStatus(
-        "RegisterApprovalPending",
+        "submissionApproved",
         pendingPage,
         pendingLimit
       );
@@ -438,7 +438,7 @@ export default function AdminBuddisPage() {
             </View>
 
             {/* Coverage Alert Section */}
-            <View>
+            {/* <View>
               <CoverageAlertCard
                 title="Customize Buddi Screening Questions"
                 subtitle="Create and manage the questions Buddis must answer during onboarding. Tailor your vetting process to fit your program's standards and ensure quality matches."
@@ -454,7 +454,7 @@ export default function AdminBuddisPage() {
                   },
                 }}
               />
-            </View>
+            </View> */}
 
             {/* Pending Buddi Applications as Cards */}
             <View style={{ marginTop: 24 }}>
@@ -490,54 +490,80 @@ export default function AdminBuddisPage() {
                 </View>
               ) : (
                 <>
-                  {pendingBuddies.map((b) => (
-                    <AdminBuddiApplicationCard
-                      key={b.id}
-                      application={{
-                        id: b.id,
-                        name: b.User
-                          ? `${b.User.firstName ?? ""} ${
-                              b.User.lastName ?? ""
-                            }`.trim()
-                          : "N/A",
-                        gender: b.gender ?? "-",
-                        email: b.User?.email ?? "N/A",
-                        age: b.dob
-                          ? `${
-                              new Date().getFullYear() -
-                              new Date(b.dob).getFullYear()
-                            }`
-                          : "-",
-                        school: b.currentSchool ?? "-",
-                        schoolName: b.currentSchool ?? "-",
-                        phone: b.User?.phoneNumber ?? "-",
-                        reference: {
-                          name: b.customReferral ?? "-",
-                          email: b.teacherEmail ?? "-",
-                          phone: b.teacherPhoneNumber ?? "-",
-                          role: b.referralOccupation ?? "-",
-                        },
-                        status: b.status || "Not yet reviewed",
-                        avatar:
-                          b.profilePicture ||
-                          "https://ui-avatars.com/api/?name=" +
-                            encodeURIComponent(
-                              b.User
-                                ? `${b.User.firstName ?? ""} ${
-                                    b.User.lastName ?? ""
-                                  }`.trim()
-                                : "Buddi"
-                            ),
+                  {pendingBuddies
+                    .filter((b) => b.User)
+                    .slice(0, 3)
+                    .map((b) => (
+                      <AdminBuddiApplicationCard
+                        key={b.id}
+                        application={{
+                          id: b.id,
+                          name: `${b.User.firstName ?? ""} ${
+                            b.User.lastName ?? ""
+                          }`.trim(),
+                          gender: b.gender ?? "-",
+                          email: b.User.email ?? "-",
+                          age: b.dob
+                            ? `${
+                                new Date().getFullYear() -
+                                new Date(b.dob).getFullYear()
+                              }`
+                            : "-",
+                          school: b.currentSchool ?? "-",
+                          schoolName: b.currentSchool ?? "-",
+                          phone: b.User.phoneNumber ?? "-",
+                          reference: {
+                            name: b.customReferral ?? "-",
+                            email: b.teacherEmail ?? "-",
+                            phone: b.teacherPhoneNumber ?? "-",
+                            role: b.referralOccupation ?? "-",
+                          },
+                          status: b.status || "Not yet reviewed",
+                          avatar:
+                            b.profilePicture ||
+                            "https://ui-avatars.com/api/?name=" +
+                              encodeURIComponent(
+                                `${b.User.firstName ?? ""} ${
+                                  b.User.lastName ?? ""
+                                }`.trim()
+                              ),
+                        }}
+                        onViewDetails={() =>
+                          router.push({
+                            pathname: "/admin/buddi-details",
+                            params: { id: b.id },
+                          })
+                        }
+                        onApprove={() => openCardActionModal(b)}
+                      />
+                    ))}
+                  {pendingBuddies.filter((b) => b.User).length > 3 && (
+                    <TouchableOpacity
+                      style={{
+                        marginTop: 12,
+                        alignSelf: "center",
+                        backgroundColor: "#FF932E",
+                        borderRadius: 8,
+                        paddingVertical: 10,
+                        paddingHorizontal: 28,
+                        flexDirection: "row",
+                        alignItems: "center",
+                        gap: 6,
                       }}
-                      onViewDetails={() =>
-                        router.push({
-                          pathname: "/admin/buddi-details",
-                          params: { id: b.id },
-                        })
-                      }
-                      onApprove={() => openCardActionModal(b)}
-                    />
-                  ))}
+                      onPress={() => router.push("/admin/buddis")}
+                    >
+                      <Text
+                        style={{
+                          color: "#fff",
+                          fontFamily: "Comfortaa-Bold",
+                          fontSize: 16,
+                        }}
+                      >
+                        View All
+                      </Text>
+                      <Ionicons name="arrow-forward" size={18} color="#fff" />
+                    </TouchableOpacity>
+                  )}
                   {/* Pagination for cards */}
                   {pendingTotal > pendingLimit && (
                     <View
@@ -638,7 +664,7 @@ export default function AdminBuddisPage() {
 
             {/* Coverage Alert Section */}
             <View>
-              <CoverageAlertCard
+              {/* <CoverageAlertCard
                 title="21 Buddis Need Coverage For Today"
                 subtitle="Review this before effects!"
                 description="Please review Buddis requesting coverage to ensure availability and reliability."
@@ -649,7 +675,7 @@ export default function AdminBuddisPage() {
                     router.push("/admin/backup-requests");
                   },
                 }}
-              />
+              /> */}
             </View>
 
             {/* Feedback Reports Container */}

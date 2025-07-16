@@ -18,7 +18,7 @@ interface BuddiApplicationData {
     phone: string;
     role: string;
   };
-  status: "Not yet reviewed" | "Approved" | "Rejected";
+  status: "Not yet reviewed" | "Approved" | "Rejected" | "submissionApproved";
   avatar: string;
 }
 
@@ -307,8 +307,22 @@ const AdminBuddiApplicationsContainer: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const itemsPerPage = 3;
 
+  // Only show applications with status 'submissionApproved' and real data
+  const reliableSubmissionApprovedApplications = dummyApplications.filter(
+    (app) =>
+      app.status === "submissionApproved" &&
+      app.name &&
+      app.email &&
+      app.phone &&
+      app.gender &&
+      app.age &&
+      app.school &&
+      app.schoolName &&
+      app.avatar
+  );
+
   // Filter applications based on search query
-  const filteredApplications = dummyApplications.filter(
+  const filteredApplications = reliableSubmissionApprovedApplications.filter(
     (app) =>
       app.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       app.email.toLowerCase().includes(searchQuery.toLowerCase()) ||

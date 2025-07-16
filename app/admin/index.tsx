@@ -1,10 +1,9 @@
 import AdminProfileReviewCard from "@/components/admin/AdminProfileReviewCard";
-import AdminVideoReviewCard from "@/components/admin/AdminVideoReviewCard";
 import ParentRequestCard from "@/components/admin/ParentRequestCard";
 import AnalyticsCard from "@/components/commons/AnalyticsCard";
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -103,10 +102,11 @@ export default function AdminDashboard() {
   const fetchPendingParents = async () => {
     try {
       const response = await ParentService.getAllParents(1, 100);
+      // Only include parents with a valid User object
       const pending = response.data.filter(
-        (parent) => parent.approvalStage === "pending"
+        (parent) => parent.approvalStage === "pending" && parent.User
       );
-      setPendingParents(pending.slice(0, 3)); // Get first 3 pending parents
+      setPendingParents(pending.slice(0, 3)); // Get first 3 pending parents with User
       console.log("Fetched pending parents:", pending);
     } catch (err: any) {
       console.error("Error fetching pending parents:", err);
@@ -347,13 +347,10 @@ export default function AdminDashboard() {
                   name={
                     parent.User
                       ? `${parent.User.firstName} ${parent.User.lastName}`
-                      : `Parent ${parent.id.slice(0, 8)}`
+                      : ""
                   }
-                  email={
-                    parent.User?.email ||
-                    `parent${parent.id.slice(0, 8)}@example.com`
-                  }
-                  phone={parent.User?.phoneNumber || "N/A"}
+                  email={parent.User?.email || ""}
+                  phone={parent.User?.phoneNumber || ""}
                   date={formatDate(parent.createdAt)}
                   time={formatTime(
                     new Date(parent.createdAt).toLocaleTimeString()
@@ -366,19 +363,17 @@ export default function AdminDashboard() {
               ))
             ) : (
               // Fallback cards if no pending parents
-              <>
-                <AdminProfileReviewCard
-                  name="No Pending Parents"
-                  email="No pending approvals"
-                  phone="N/A"
-                  date="N/A"
-                  time="N/A"
-                  status="Inactive"
-                  onReview={() => {
-                    router.push("/admin/parents" as any);
-                  }}
-                />
-              </>
+              <AdminProfileReviewCard
+                name="No Pending Parents"
+                email="No pending approvals"
+                phone="N/A"
+                date="N/A"
+                time="N/A"
+                status="Inactive"
+                onReview={() => {
+                  router.push("/admin/parents" as any);
+                }}
+              />
             )}
           </ScrollView>
         </View>

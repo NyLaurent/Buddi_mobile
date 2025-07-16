@@ -293,7 +293,7 @@ export default function ParentDashboard() {
         {/* Greeting Row with Avatar */}
         <View className="flex-row items-center justify-between mt-6 mb-2 px-1">
           <View>
-            <Text className="text-2xl font-comfortaa-bold">
+            <Text className="text-2xl  font-comfortaa-bold">
               Good morning, {user?.firstName || "Parent"}
             </Text>
             <Text className="text-[#71727A] font-comfortaa mt-1">

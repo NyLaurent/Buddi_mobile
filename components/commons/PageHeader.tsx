@@ -35,7 +35,7 @@ const PageHeader: React.FC<PageHeaderProps> = ({
         <View className="w-10" />
       )}
 
-      <Text className="text-xl font-comfortaa-bold">{title}</Text>
+      <Text className="text-xl font-comfortaa-bold text-black">{title}</Text>
 
       {showMenuButton ? (
         <TouchableOpacity

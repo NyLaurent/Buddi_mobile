@@ -1,5 +1,5 @@
 import { Ionicons } from "@expo/vector-icons";
-import React, { useState } from "react";
+import React from "react";
 import { Image, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 
 interface FeedbackReport {
@@ -17,75 +17,75 @@ interface FeedbackReport {
 }
 
 // Dummy data for feedback reports
-const dummyReports: FeedbackReport[] = [
-  {
-    id: "1",
-    reporterName: "Latoya Langosh",
-    reporterAvatar: "https://randomuser.me/api/portraits/women/1.jpg",
-    reportedDate: "12 May 2025",
-    issueDescription:
-      "Description of the issue by the parent reporting the issue",
-    reportedBuddi: {
-      name: "Brian Ford",
-      email: "brianford@ok.com",
-      avatar: "https://randomuser.me/api/portraits/men/1.jpg",
-    },
-    status: "Report",
-  },
-  {
-    id: "2",
-    reporterName: "Sarah Johnson",
-    reporterAvatar: "https://randomuser.me/api/portraits/women/2.jpg",
-    reportedDate: "11 May 2025",
-    issueDescription:
-      "Buddi was late for pickup and didn't communicate properly",
-    reportedBuddi: {
-      name: "Mike Wilson",
-      email: "mike.wilson@email.com",
-      avatar: "https://randomuser.me/api/portraits/men/2.jpg",
-    },
-    status: "Pending",
-  },
-  {
-    id: "3",
-    reporterName: "Maria Garcia",
-    reporterAvatar: "https://randomuser.me/api/portraits/women/3.jpg",
-    reportedDate: "10 May 2025",
-    issueDescription: "Excellent service and very professional behavior",
-    reportedBuddi: {
-      name: "Alex Thompson",
-      email: "alex.thompson@email.com",
-      avatar: "https://randomuser.me/api/portraits/men/3.jpg",
-    },
-    status: "Resolved",
-  },
-  {
-    id: "4",
-    reporterName: "David Chen",
-    reporterAvatar: "https://randomuser.me/api/portraits/men/4.jpg",
-    reportedDate: "09 May 2025",
-    issueDescription: "Communication issues during the pickup process",
-    reportedBuddi: {
-      name: "Emma Davis",
-      email: "emma.davis@email.com",
-      avatar: "https://randomuser.me/api/portraits/women/4.jpg",
-    },
-    status: "Report",
-  },
-  {
-    id: "5",
-    reporterName: "Lisa Taylor",
-    reporterAvatar: "https://randomuser.me/api/portraits/women/5.jpg",
-    reportedDate: "08 May 2025",
-    issueDescription: "Very satisfied with the service provided",
-    reportedBuddi: {
-      name: "Ryan Martinez",
-      email: "ryan.martinez@email.com",
-      avatar: "https://randomuser.me/api/portraits/men/5.jpg",
-    },
-    status: "Resolved",
-  },
-];
+// const dummyReports: FeedbackReport[] = [
+//   {
+//     id: "1",
+//     reporterName: "Latoya Langosh",
+//     reporterAvatar: "https://randomuser.me/api/portraits/women/1.jpg",
+//     reportedDate: "12 May 2025",
+//     issueDescription:
+//       "Description of the issue by the parent reporting the issue",
+//     reportedBuddi: {
+//       name: "Brian Ford",
+//       email: "brianford@ok.com",
+//       avatar: "https://randomuser.me/api/portraits/men/1.jpg",
+//     },
+//     status: "Report",
+//   },
+//   {
+//     id: "2",
+//     reporterName: "Sarah Johnson",
+//     reporterAvatar: "https://randomuser.me/api/portraits/women/2.jpg",
+//     reportedDate: "11 May 2025",
+//     issueDescription:
+//       "Buddi was late for pickup and didn't communicate properly",
+//     reportedBuddi: {
+//       name: "Mike Wilson",
+//       email: "mike.wilson@email.com",
+//       avatar: "https://randomuser.me/api/portraits/men/2.jpg",
+//     },
+//     status: "Pending",
+//   },
+//   {
+//     id: "3",
+//     reporterName: "Maria Garcia",
+//     reporterAvatar: "https://randomuser.me/api/portraits/women/3.jpg",
+//     reportedDate: "10 May 2025",
+//     issueDescription: "Excellent service and very professional behavior",
+//     reportedBuddi: {
+//       name: "Alex Thompson",
+//       email: "alex.thompson@email.com",
+//       avatar: "https://randomuser.me/api/portraits/men/3.jpg",
+//     },
+//     status: "Resolved",
+//   },
+//   {
+//     id: "4",
+//     reporterName: "David Chen",
+//     reporterAvatar: "https://randomuser.me/api/portraits/men/4.jpg",
+//     reportedDate: "09 May 2025",
+//     issueDescription: "Communication issues during the pickup process",
+//     reportedBuddi: {
+//       name: "Emma Davis",
+//       email: "emma.davis@email.com",
+//       avatar: "https://randomuser.me/api/portraits/women/4.jpg",
+//     },
+//     status: "Report",
+//   },
+//   {
+//     id: "5",
+//     reporterName: "Lisa Taylor",
+//     reporterAvatar: "https://randomuser.me/api/portraits/women/5.jpg",
+//     reportedDate: "08 May 2025",
+//     issueDescription: "Very satisfied with the service provided",
+//     reportedBuddi: {
+//       name: "Ryan Martinez",
+//       email: "ryan.martinez@email.com",
+//       avatar: "https://randomuser.me/api/portraits/men/5.jpg",
+//     },
+//     status: "Resolved",
+//   },
+// ];
 
 interface FeedbackReportCardProps {
   report: FeedbackReport;
@@ -181,82 +181,82 @@ const FeedbackReportCard: React.FC<FeedbackReportCardProps> = ({
 
 // Main container component with pagination
 const FeedbackReportsContainer: React.FC = () => {
-  const [currentPage, setCurrentPage] = useState(1);
-  const [searchQuery, setSearchQuery] = useState("");
-  const itemsPerPage = 3;
+  // const [currentPage, setCurrentPage] = useState(1);
+  // const [searchQuery, setSearchQuery] = useState("");
+  // const itemsPerPage = 3;
 
-  // Filter reports based on search query
-  const filteredReports = dummyReports.filter(
-    (report) =>
-      report.reporterName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      report.reportedBuddi.name
-        .toLowerCase()
-        .includes(searchQuery.toLowerCase()) ||
-      report.issueDescription.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  // // Filter reports based on search query
+  // const filteredReports = dummyReports.filter(
+  //   (report) =>
+  //     report.reporterName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+  //     report.reportedBuddi.name
+  //       .toLowerCase()
+  //       .includes(searchQuery.toLowerCase()) ||
+  //     report.issueDescription.toLowerCase().includes(searchQuery.toLowerCase())
+  // );
 
-  // Calculate pagination
-  const totalPages = Math.ceil(filteredReports.length / itemsPerPage);
-  const startIndex = (currentPage - 1) * itemsPerPage;
-  const endIndex = startIndex + itemsPerPage;
-  const currentReports = filteredReports.slice(startIndex, endIndex);
+  // // Calculate pagination
+  // const totalPages = Math.ceil(filteredReports.length / itemsPerPage);
+  // const startIndex = (currentPage - 1) * itemsPerPage;
+  // const endIndex = startIndex + itemsPerPage;
+  // const currentReports = filteredReports.slice(startIndex, endIndex);
 
-  const handlePrevPage = () => {
-    if (currentPage > 1) {
-      setCurrentPage(currentPage - 1);
-    }
-  };
+  // const handlePrevPage = () => {
+  //   if (currentPage > 1) {
+  //     setCurrentPage(currentPage - 1);
+  //   }
+  // };
 
-  const handleNextPage = () => {
-    if (currentPage < totalPages) {
-      setCurrentPage(currentPage + 1);
-    }
-  };
+  // const handleNextPage = () => {
+  //   if (currentPage < totalPages) {
+  //     setCurrentPage(currentPage + 1);
+  //   }
+  // };
 
-  const handlePageClick = (page: number) => {
-    setCurrentPage(page);
-  };
+  // const handlePageClick = (page: number) => {
+  //   setCurrentPage(page);
+  // };
 
-  const handleViewProfile = (report: FeedbackReport) => {
-    console.log("View profile for:", report.reportedBuddi.name);
-  };
+  // const handleViewProfile = (report: FeedbackReport) => {
+  //   console.log("View profile for:", report.reportedBuddi.name);
+  // };
 
-  const handleViewFeedback = (report: FeedbackReport) => {
-    console.log("View feedback for:", report.id);
-  };
+  // const handleViewFeedback = (report: FeedbackReport) => {
+  //   console.log("View feedback for:", report.id);
+  // };
 
-  const renderPageNumbers = () => {
-    const pageNumbers = [];
-    const maxVisiblePages = 5;
+  // const renderPageNumbers = () => {
+  //   const pageNumbers = [];
+  //   const maxVisiblePages = 5;
 
-    let startPage = Math.max(1, currentPage - 2);
-    let endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
+  //   let startPage = Math.max(1, currentPage - 2);
+  //   let endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
 
-    if (endPage - startPage < maxVisiblePages - 1) {
-      startPage = Math.max(1, endPage - maxVisiblePages + 1);
-    }
+  //   if (endPage - startPage < maxVisiblePages - 1) {
+  //     startPage = Math.max(1, endPage - maxVisiblePages + 1);
+  //   }
 
-    for (let i = startPage; i <= endPage; i++) {
-      pageNumbers.push(
-        <TouchableOpacity
-          key={i}
-          style={[styles.pageNumber, currentPage === i && styles.activePage]}
-          onPress={() => handlePageClick(i)}
-        >
-          <Text
-            style={[
-              styles.pageNumberText,
-              currentPage === i && styles.activePageText,
-            ]}
-          >
-            {i}
-          </Text>
-        </TouchableOpacity>
-      );
-    }
+  //   for (let i = startPage; i <= endPage; i++) {
+  //     pageNumbers.push(
+  //       <TouchableOpacity
+  //         key={i}
+  //         style={[styles.pageNumber, currentPage === i && styles.activePage]}
+  //         onPress={() => handlePageClick(i)}
+  //       >
+  //         <Text
+  //           style={[
+  //             styles.pageNumberText,
+  //             currentPage === i && styles.activePageText,
+  //           ]}
+  //         >
+  //           {i}
+  //         </Text>
+  //       </TouchableOpacity>
+  //     );
+  //   }
 
-    return pageNumbers;
-  };
+  //   return pageNumbers;
+  // };
 
   return (
     <View style={styles.container}>
@@ -290,6 +290,7 @@ const FeedbackReportsContainer: React.FC = () => {
       </View>
 
       {/* Feedback Report Cards */}
+      {/*
       {currentReports.map((report) => (
         <FeedbackReportCard
           key={report.id}
@@ -298,8 +299,66 @@ const FeedbackReportsContainer: React.FC = () => {
           onViewFeedback={() => handleViewFeedback(report)}
         />
       ))}
+      */}
+
+      <View
+        style={{
+          alignItems: "center",
+          marginVertical: 48,
+          padding: 32,
+          backgroundColor: "#F8F9FA",
+          borderRadius: 16,
+          borderWidth: 1,
+          borderColor: "#F0F0F0",
+          shadowColor: "#000",
+          shadowOffset: { width: 0, height: 2 },
+          shadowOpacity: 0.04,
+          shadowRadius: 8,
+          elevation: 1,
+        }}
+      >
+        <Ionicons
+          name="chatbubble-ellipses-outline"
+          size={48}
+          color="#FF9500"
+          style={{ marginBottom: 16 }}
+        />
+        <Text
+          style={{
+            color: "#23272F",
+            fontFamily: "Comfortaa-Bold",
+            fontSize: 22,
+            marginBottom: 8,
+          }}
+        >
+          No Feedbacks Yet
+        </Text>
+        <Text
+          style={{
+            color: "#666",
+            fontFamily: "Comfortaa-Regular",
+            fontSize: 16,
+            textAlign: "center",
+            maxWidth: 320,
+          }}
+        >
+          There are currently no feedback reports from parents. Once feedback is
+          submitted, you&apos;ll see it here.
+        </Text>
+        <Text
+          style={{
+            color: "#B0B0B0",
+            fontFamily: "Comfortaa-Regular",
+            fontSize: 13,
+            marginTop: 18,
+          }}
+        >
+          (Actual implementation coming soon)
+        </Text>
+      </View>
 
       {/* Pagination */}
+      {/*
       {totalPages > 1 && (
         <View style={styles.pagination}>
           <TouchableOpacity
@@ -351,14 +410,17 @@ const FeedbackReportsContainer: React.FC = () => {
           </TouchableOpacity>
         </View>
       )}
+      */}
 
       {/* Page Info */}
+      {/*
       <View style={styles.pageInfo}>
         <Text style={styles.pageInfoText}>
           Showing {startIndex + 1}-{Math.min(endIndex, filteredReports.length)}{" "}
           of {filteredReports.length} reports
         </Text>
       </View>
+      */}
     </View>
   );
 };
