@@ -66,6 +66,7 @@ export interface ParentDetails {
   cardDetails: any;
   checkrCandidateId: any;
   checkrReportId: any;
+  profilePicture?: string;
 }
 
 export interface SuperAdminDetails {

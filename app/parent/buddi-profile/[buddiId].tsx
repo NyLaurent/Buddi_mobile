@@ -1,8 +1,8 @@
-import { Ionicons } from "@expo/vector-icons";
+import { FontAwesome5, Ionicons } from "@expo/vector-icons";
 import { useEvent } from "expo";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useVideoPlayer, VideoView } from "expo-video";
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Dimensions,
@@ -15,7 +15,7 @@ import {
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { FontAwesome5 } from "@expo/vector-icons";
+import BuddiService from "../../../services/api/buddi.service";
 
 interface BuddiProfileData {
   id: number;
@@ -58,6 +58,7 @@ export default function ParentBuddiProfilePage() {
   const [activeTab, setActiveTab] = useState("General");
   const [buddiData, setBuddiData] = useState<BuddiProfileData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   // Mock video source - in real app, this would come from the buddi's interview video
   const videoSource = require("../../../assets/videos/intro.mp4");
@@ -84,13 +85,30 @@ export default function ParentBuddiProfilePage() {
           const parsedBuddiData: BuddiProfileData = JSON.parse(data);
           console.log("loadBuddiData - parsed data:", parsedBuddiData);
           setBuddiData(parsedBuddiData);
-        } else {
+        } else if (buddiId) {
           // Fallback: if no data passed, show error
-          console.error("No buddi data provided in navigation params");
-          console.error("Available params:", { buddiId, data });
+          console.log(
+            "loadBuddiData - fetching Buddi data for buddiId:",
+            buddiId
+          );
+          await BuddiService.getBuddiInfo(buddiId)
+            .then((res) => {
+              setBuddiData(res.data);
+              console.log("loadBuddiData - fetched data:", res.data);
+            })
+            .catch((err) => {
+              setError(err.message || "Failed to load Buddi info");
+              console.error("Error fetching Buddi data:", err);
+            });
+        } else {
+          console.error(
+            "No buddi data provided in navigation params and no buddiId available."
+          );
+          setError("No buddi data provided.");
         }
       } catch (error) {
         console.error("Error parsing buddi data:", error);
+        setError("Error loading profile data.");
       } finally {
         setIsLoading(false);
       }
@@ -121,6 +139,77 @@ export default function ParentBuddiProfilePage() {
         >
           Loading profile...
         </Text>
+      </View>
+    );
+  }
+
+  if (error) {
+    return (
+      <View
+        style={{
+          flex: 1,
+          backgroundColor: "#fff",
+          justifyContent: "center",
+          alignItems: "center",
+          paddingHorizontal: 32,
+        }}
+      >
+        <View style={{ alignItems: "center", marginBottom: 24 }}>
+          <View
+            style={{
+              width: 120,
+              height: 120,
+              borderRadius: 60,
+              backgroundColor: "#F4F7FE",
+              justifyContent: "center",
+              alignItems: "center",
+              marginBottom: 16,
+            }}
+          >
+            <FontAwesome5 name="user-circle" size={48} color="#9CA3AF" />
+          </View>
+          <Text
+            style={{
+              fontFamily: "Comfortaa-Bold",
+              fontSize: 20,
+              color: "#1F2937",
+              textAlign: "center",
+              marginBottom: 8,
+            }}
+          >
+            Profile Not Found
+          </Text>
+          <Text
+            style={{
+              fontFamily: "Comfortaa-Regular",
+              fontSize: 16,
+              color: "#6B7280",
+              textAlign: "center",
+              lineHeight: 24,
+            }}
+          >
+            {error}
+          </Text>
+        </View>
+        <TouchableOpacity
+          style={{
+            backgroundColor: "#FF932E",
+            paddingHorizontal: 24,
+            paddingVertical: 12,
+            borderRadius: 8,
+          }}
+          onPress={() => router.back()}
+        >
+          <Text
+            style={{
+              fontFamily: "Comfortaa-Bold",
+              fontSize: 16,
+              color: "#fff",
+            }}
+          >
+            Go Back
+          </Text>
+        </TouchableOpacity>
       </View>
     );
   }

@@ -363,17 +363,17 @@ export default function AdminDashboard() {
               ))
             ) : (
               // Fallback cards if no pending parents
-              <AdminProfileReviewCard
-                name="No Pending Parents"
-                email="No pending approvals"
-                phone="N/A"
-                date="N/A"
-                time="N/A"
-                status="Inactive"
-                onReview={() => {
-                  router.push("/admin/parents" as any);
-                }}
-              />
+                <AdminProfileReviewCard
+                  name="No Pending Parents"
+                  email="No pending approvals"
+                  phone="N/A"
+                  date="N/A"
+                  time="N/A"
+                  status="Inactive"
+                  onReview={() => {
+                    router.push("/admin/parents" as any);
+                  }}
+                />
             )}
           </ScrollView>
         </View>

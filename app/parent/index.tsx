@@ -10,6 +10,7 @@ import { useRouter } from "expo-router";
 import React from "react";
 import {
   Alert,
+  ActivityIndicator,
   Image,
   ScrollView,
   StatusBar,
@@ -19,6 +20,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import AnalyticsCard from "../../components/commons/AnalyticsCard";
+import BuyTokensCTA from "../../components/parent/BuyTokensCTA";
 import KidPickupCard from "../../components/parent/KidPickupCard";
 import { useAuth } from "../../context/AuthContext";
 import BuddiService from "../../services/api/buddi.service";
@@ -302,16 +304,75 @@ export default function ParentDashboard() {
               <Text className="text-lg">😊</Text>
             </Text>
           </View>
-          <Image
-            source={{ uri: "https://randomuser.me/api/portraits/men/32.jpg" }}
-            className="w-14 h-14 rounded-full bg-gray-100"
-            resizeMode="cover"
-          />
+          {parentDetails?.profilePicture ? (
+            <Image
+              source={{ uri: parentDetails.profilePicture }}
+              className="w-14 h-14 rounded-full bg-gray-100"
+              resizeMode="cover"
+            />
+          ) : user?.firstName && user?.lastName ? (
+            <View
+              style={{
+                width: 56,
+                height: 56,
+                borderRadius: 28,
+                backgroundColor: "#FFD9B3",
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
+              <Text
+                style={{
+                  fontSize: 22,
+                  color: "#FF932E",
+                  fontWeight: "bold",
+                  fontFamily: "Comfortaa-Bold",
+                }}
+              >
+                {user.firstName[0]?.toUpperCase()}
+                {user.lastName[0]?.toUpperCase()}
+              </Text>
+            </View>
+          ) : (
+            <View
+              style={{
+                width: 56,
+                height: 56,
+                borderRadius: 28,
+                backgroundColor: "#FFD9B3",
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
+              <Text
+                style={{
+                  fontSize: 22,
+                  color: "#FF932E",
+                  fontWeight: "bold",
+                  fontFamily: "Comfortaa-Bold",
+                }}
+              >
+                P
+              </Text>
+            </View>
+          )}
         </View>
+
+        {/* Token Buy CTA Card */}
+        <BuyTokensCTA onPress={() => router.push("/parent/payments")} />
         {/* Call to Action Rectangle or Pickup Request Card */}
         {loadingRequests ? (
-          <View style={{ marginTop: 18, marginBottom: 10 }}>
-            <Text>Loading your calls...</Text>
+          <View
+            style={{
+              marginTop: 28,
+              marginBottom: 18,
+              alignItems: "center",
+              justifyContent: "center",
+              paddingHorizontal: 16,
+              paddingVertical: 10,
+            }}
+          >
+            <ActivityIndicator size="large" color="#FF932E" />
           </View>
         ) : errorRequests ? (
           <View style={{ marginTop: 18, marginBottom: 10 }}>
@@ -409,8 +470,76 @@ export default function ParentDashboard() {
               </TouchableOpacity>
             </LinearGradient>
           </View>
+        ) : // Show first call card and See More if needed
+        pickupRequests[0].status === "matched" ? (
+          <View
+            style={{
+              backgroundColor: "#fff",
+              borderRadius: 12,
+              padding: 14,
+              marginTop: 18,
+              marginBottom: 10,
+              flexDirection: "row",
+              alignItems: "center",
+              shadowColor: "#FF932E",
+              shadowOffset: { width: 0, height: 2 },
+              shadowOpacity: 0.08,
+              shadowRadius: 4,
+              elevation: 1,
+              borderWidth: 1,
+              borderColor: "#FFE0B2",
+            }}
+          >
+            <FontAwesome5
+              name="user-friends"
+              size={22}
+              color="#FF932E"
+              style={{ marginRight: 12 }}
+            />
+            <Text
+              style={{
+                color: "#232B3A",
+                fontFamily: "Comfortaa-Bold",
+                fontSize: 15,
+                flex: 1,
+              }}
+            >
+              Matched Buddi!
+            </Text>
+            <TouchableOpacity
+              style={{
+                backgroundColor: "#FF932E",
+                borderRadius: 999,
+                paddingVertical: 6,
+                paddingHorizontal: 16,
+                flexDirection: "row",
+                alignItems: "center",
+              }}
+              onPress={() =>
+                router.push({
+                  pathname: "/parent/buddi-profile/[buddiId]",
+                  params: {
+                    buddiId: String(pickupRequests[0].matchedBuddiId ?? ""),
+                  },
+                })
+              }
+              activeOpacity={0.85}
+            >
+              <Text
+                style={{
+                  color: "#fff",
+                  fontFamily: "Comfortaa-Bold",
+                  fontSize: 13,
+                  marginRight: 6,
+                }}
+              >
+                View
+              </Text>
+              <Ionicons name="arrow-forward" size={16} color="#fff" />
+            </TouchableOpacity>
+          </View>
         ) : (
-          // Show first call card and See More if needed
+          // Show first call card and See More if needed (original block for non-matched)
           <>
             <LinearGradient
               colors={["#FF932E", "#FFB86C"]}
@@ -496,48 +625,69 @@ export default function ParentDashboard() {
               <View style={{ flex: 1 }}>
                 {/* Status-specific message */}
                 {pickupRequests[0].status === "matched" ? (
-                  <>
-                    {/* Matched Status - Special Layout */}
-                    <View
+                  <View
+                    style={{
+                      backgroundColor: "#fff",
+                      borderRadius: 12,
+                      padding: 14,
+                      marginBottom: 8,
+                      flexDirection: "row",
+                      alignItems: "center",
+                      shadowColor: "#FF932E",
+                      shadowOffset: { width: 0, height: 2 },
+                      shadowOpacity: 0.08,
+                      shadowRadius: 4,
+                      elevation: 1,
+                      borderWidth: 1,
+                      borderColor: "#FFE0B2",
+                    }}
+                  >
+                    <FontAwesome5
+                      name="user-friends"
+                      size={22}
+                      color="#FF932E"
+                      style={{ marginRight: 12 }}
+                    />
+                    <Text
                       style={{
-                        backgroundColor: "rgba(255,255,255,0.15)",
-                        borderRadius: 12,
-                        padding: 12,
-                        marginBottom: 12,
-                        borderWidth: 1,
-                        borderColor: "rgba(255,255,255,0.2)",
+                        color: "#232B3A",
+                        fontFamily: "Comfortaa-Bold",
+                        fontSize: 15,
+                        flex: 1,
                       }}
                     >
-                      <View
-                        style={{
-                          flexDirection: "row",
-                          alignItems: "center",
-                          marginBottom: 6,
-                        }}
-                      >
-                        <Text
-                          style={{
-                            color: "#fff",
-                            fontFamily: "Comfortaa-Bold",
-                            fontSize: 16,
-                          }}
-                        >
-                          🎉 Successfully Matched!
-                        </Text>
-                      </View>
+                      Matched Buddi!
+                    </Text>
+                    <TouchableOpacity
+                      style={{
+                        backgroundColor: "#FF932E",
+                        borderRadius: 999,
+                        paddingVertical: 6,
+                        paddingHorizontal: 16,
+                        flexDirection: "row",
+                        alignItems: "center",
+                      }}
+                      onPress={() =>
+                        router.push({
+                          pathname: "/parent/buddi-recommendations/[callId]",
+                          params: { callId: pickupRequests[0].id.toString() },
+                        })
+                      }
+                      activeOpacity={0.85}
+                    >
                       <Text
                         style={{
                           color: "#fff",
-                          fontFamily: "Comfortaa-Regular",
-                          fontSize: 14,
-                          lineHeight: 20,
+                          fontFamily: "Comfortaa-Bold",
+                          fontSize: 13,
+                          marginRight: 6,
                         }}
                       >
-                        A Buddi has been assigned to your request. Review their
-                        profile and get ready for pickup!
+                        View
                       </Text>
-                    </View>
-                  </>
+                      <Ionicons name="arrow-forward" size={16} color="#fff" />
+                    </TouchableOpacity>
+                  </View>
                 ) : (
                   <>
                     {/* Other Statuses - Original Layout */}
