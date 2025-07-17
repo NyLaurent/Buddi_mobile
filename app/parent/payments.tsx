@@ -1,4 +1,5 @@
 import { FontAwesome5, Ionicons } from "@expo/vector-icons";
+import { useRouter } from "expo-router";
 import { useState } from "react";
 import {
   ScrollView,
@@ -24,6 +25,7 @@ const Payments = () => {
 
   const [activeTab, setActiveTab] = useState("pending");
   const [search, setSearch] = useState("");
+  const router = useRouter();
 
   return (
     <SafeAreaView
@@ -45,7 +47,7 @@ const Payments = () => {
           <PageHeader title="Payments" />
           <View className="px-3">
             <BuyTokensCTA
-              onPress={handleBuyTokens}
+              onPress={() => router.push("/parent/buy-tokens")}
               title="Top Up Your Tokens"
               message="Unlock more rides and features for your family by topping up your Buddi tokens. Enjoy seamless, secure payments!"
               showButtonBelow={true}
@@ -342,10 +344,6 @@ const Payments = () => {
               )}
             </View>
           </View>
-          <View className="px-3">
-            <Text>Test</Text>
-          </View>
-          {/* Add your payment content here */}
         </View>
       </ScrollView>
     </SafeAreaView>
