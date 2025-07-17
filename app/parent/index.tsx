@@ -359,7 +359,9 @@ export default function ParentDashboard() {
         </View>
 
         {/* Token Buy CTA Card */}
-        <BuyTokensCTA onPress={() => router.push("/parent/payments")} />
+        <BuyTokensCTA
+        showButtonBelow={true}
+         onPress={() => router.push("/parent/payments")} />
         {/* Call to Action Rectangle or Pickup Request Card */}
         {loadingRequests ? (
           <View
