@@ -5,7 +5,6 @@ import { useCallback, useRef, useState } from "react";
 import {
   Alert,
   AppState,
-  Image,
   ScrollView,
   Text,
   TouchableOpacity,
@@ -159,7 +158,7 @@ const WaitlistScreen = () => {
   const handleRefreshStatus = async () => {
     try {
       setIsRefreshing(true);
-      await checkApprovalAndNavigate();
+      await refreshUserData();
       Alert.alert(
         "Status Updated",
         "Your application status has been refreshed."
@@ -231,21 +230,8 @@ const WaitlistScreen = () => {
           }}
         >
           <View className="items-center mb-2">
-            <View className="w-24 h-24 rounded-full overflow-hidden border-2 border-white mb-2">
-              <Image
-                source={
-                  buddiDetails?.profilePicture || parentDetails?.children?.[0]
-                    ? {
-                        uri:
-                          buddiDetails?.profilePicture ||
-                          "https://via.placeholder.com/150",
-                      }
-                    : require("../../../assets/images/icon.png")
-                }
-                className="w-full h-full"
-                resizeMode="cover"
-                defaultSource={require("../../../assets/images/icon.png")}
-              />
+            <View className="w-24 h-24 rounded-full bg-white/20 border-2 border-white mb-2 items-center justify-center">
+              <Ionicons name="person" size={48} color="white" />
             </View>
             <Text className="text-xl font-comfortaa-bold text-white mb-1">
               {userInfo.name}
@@ -333,7 +319,7 @@ const WaitlistScreen = () => {
           className="mx-4 mt-4 p-4 bg-red-500 rounded-2xl"
         >
           <Text className="font-comfortaa-bold text-white text-center">
-            Sign Out
+            Return to Login
           </Text>
         </TouchableOpacity>
       </ScrollView>

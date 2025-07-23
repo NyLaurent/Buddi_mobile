@@ -147,29 +147,29 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     }
   }, [user, buddiDetails, parentDetails, isLoading, isLoggingIn, segments]);
 
-  // Start/stop status polling based on user authentication and location
-  useEffect(() => {
-    if (user && !isLoading && !isLoggingIn) {
-      // Start polling for users who need status updates
-      const needsPolling =
-        (user.role === "buddi" &&
-          buddiDetails?.status === "RegisterApprovalPending") ||
-        (user.role === "parent" && parentDetails?.approvalStage === "pending");
+  // COMMENTED OUT: Status polling functionality - users will be emailed when approved
+  // useEffect(() => {
+  //   if (user && !isLoading && !isLoggingIn) {
+  //     // Start polling for users who need status updates
+  //     const needsPolling =
+  //       (user.role === "buddi" &&
+  //         buddiDetails?.status === "RegisterApprovalPending") ||
+  //       (user.role === "parent" && parentDetails?.approvalStage === "pending");
 
-      if (needsPolling) {
-        startStatusPolling();
-      } else {
-        stopStatusPolling();
-      }
-    } else {
-      stopStatusPolling();
-    }
+  //     if (needsPolling) {
+  //       startStatusPolling();
+  //     } else {
+  //       stopStatusPolling();
+  //     }
+  //   } else {
+  //     stopStatusPolling();
+  //   }
 
-    // Cleanup on unmount
-    return () => {
-      stopStatusPolling();
-    };
-  }, [user, buddiDetails, parentDetails, isLoading, isLoggingIn]);
+  //   // Cleanup on unmount
+  //   return () => {
+  //     stopStatusPolling();
+  //   };
+  // }, [user, buddiDetails, parentDetails, isLoading, isLoggingIn]);
 
   const initializeAuth = async () => {
     try {
@@ -841,148 +841,154 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     }
   };
 
-  // Status polling functions for real-time status updates
+  // COMMENTED OUT: Status polling functions - users will receive email notifications
+  // const startStatusPolling = () => {
+  //   // Only start polling if user is authenticated and not already polling
+  //   if (user && !statusPollInterval) {
+  //     console.log("Starting status polling...");
+  //     const interval = setInterval(async () => {
+  //       try {
+  //         console.log("Polling status...");
+  //         const profileResponse = await authService.getProfile();
+  //         const apiUser = profileResponse.user;
+
+  //         // Check for status changes
+  //         if (user.role === "buddi" && apiUser.Buddi) {
+  //           const currentStatus = buddiDetails?.status;
+  //           const newStatus = apiUser.Buddi.status;
+
+  //           console.log("Status polling - Current status:", {
+  //             currentStatus,
+  //             newStatus,
+  //             userId: user.userId,
+  //             role: user.role,
+  //           });
+
+  //           if (currentStatus !== newStatus) {
+  //             console.log(
+  //               `Buddi status changed: ${currentStatus} → ${newStatus}`
+  //             );
+
+  //             // Stop polling before navigation
+  //             stopStatusPolling();
+
+  //             // Show loader
+  //             setShowLoader(true);
+
+  //             // Update buddi details
+  //             const updatedBuddiDetails = apiUser.Buddi;
+  //             console.log(
+  //               "Status polling - Updating buddi details:",
+  //               updatedBuddiDetails
+  //             );
+  //             setBuddiDetails(updatedBuddiDetails);
+  //             await AsyncStorage.setItem(
+  //               "buddi_details",
+  //               JSON.stringify(updatedBuddiDetails)
+  //             );
+
+  //             // Small delay to ensure state is updated
+  //             await new Promise((resolve) => setTimeout(resolve, 100));
+
+  //             // Determine the target URL based on new status
+  //             let targetUrl = "";
+  //             console.log(
+  //               "Status polling - Processing status change:",
+  //               newStatus
+  //             );
+
+  //             switch (newStatus) {
+  //               case "submissionApproved":
+  //                 console.log(
+  //                   "Status polling - Status changed to submissionApproved"
+  //                 );
+  //                 targetUrl = "/auth/submission-approved";
+  //                 break;
+  //               case "Registered":
+  //                 console.log(
+  //                   "Status polling - Redirecting to interview-guidelines"
+  //                 );
+  //                 targetUrl = "/auth/interview-guidelines";
+  //                 break;
+  //               case "referenceApproved":
+  //               case "approved":
+  //               case "verified":
+  //                 console.log(
+  //                   "Status polling - Status approved, redirecting to buddi portal"
+  //                 );
+  //                 targetUrl = "/buddi";
+  //                 break;
+  //               default:
+  //                 console.log("Status polling - Redirecting to waitlist");
+  //                 targetUrl = "/auth/waitlist";
+  //             }
+
+  //             console.log("Status polling - Final target URL:", targetUrl);
+
+  //             // Update URL using router for proper navigation
+  //             router.replace(targetUrl as any);
+
+  //             // Small delay to ensure navigation completes
+  //             await new Promise((resolve) => setTimeout(resolve, 500));
+
+  //             // Refresh the page to ensure clean state
+  //             window.location.reload();
+  //           }
+  //         }
+
+  //         if (user.role === "parent" && apiUser.Parent) {
+  //           const currentStage = parentDetails?.approvalStage;
+  //           const newStage = apiUser.Parent.approvalStage;
+
+  //           if (currentStage !== newStage) {
+  //             console.log(
+  //               `Parent approval stage changed: ${currentStage} → ${newStage}`
+  //             );
+
+  //             // Stop polling before navigation
+  //             stopStatusPolling();
+
+  //             // Show loader
+  //             setShowLoader(true);
+
+  //             // Update parent details
+  //             const updatedParentDetails = apiUser.Parent;
+  //             setParentDetails(updatedParentDetails);
+  //             await AsyncStorage.setItem(
+  //               "parent_details",
+  //               JSON.stringify(updatedParentDetails)
+  //             );
+
+  //             // Small delay to ensure state is updated
+  //             await new Promise((resolve) => setTimeout(resolve, 100));
+
+  //             // Determine target URL and force reload
+  //             const targetUrl = !["approved", "active"].includes(newStage)
+  //               ? "/auth/waitlist"
+  //               : "/parent";
+
+  //             // Change URL and force reload
+  //             router.replace(targetUrl as any);
+  //           }
+  //         }
+  //       } catch (error) {
+  //         console.error("Status polling error:", error);
+  //       }
+  //     }, 5000); // Poll every 5 seconds
+
+  //     setStatusPollInterval(interval);
+  //   }
+  // };
+
+  // Simple placeholder functions to maintain interface compatibility
   const startStatusPolling = () => {
-    // Only start polling if user is authenticated and not already polling
-    if (user && !statusPollInterval) {
-      console.log("Starting status polling...");
-      const interval = setInterval(async () => {
-        try {
-          console.log("Polling status...");
-          const profileResponse = await authService.getProfile();
-          const apiUser = profileResponse.user;
-
-          // Check for status changes
-          if (user.role === "buddi" && apiUser.Buddi) {
-            const currentStatus = buddiDetails?.status;
-            const newStatus = apiUser.Buddi.status;
-
-            console.log("Status polling - Current status:", {
-              currentStatus,
-              newStatus,
-              userId: user.userId,
-              role: user.role,
-            });
-
-            if (currentStatus !== newStatus) {
-              console.log(
-                `Buddi status changed: ${currentStatus} → ${newStatus}`
-              );
-
-              // Stop polling before navigation
-              stopStatusPolling();
-
-              // Show loader
-              setShowLoader(true);
-
-              // Update buddi details
-              const updatedBuddiDetails = apiUser.Buddi;
-              console.log(
-                "Status polling - Updating buddi details:",
-                updatedBuddiDetails
-              );
-              setBuddiDetails(updatedBuddiDetails);
-              await AsyncStorage.setItem(
-                "buddi_details",
-                JSON.stringify(updatedBuddiDetails)
-              );
-
-              // Small delay to ensure state is updated
-              await new Promise((resolve) => setTimeout(resolve, 100));
-
-              // Determine the target URL based on new status
-              let targetUrl = "";
-              console.log(
-                "Status polling - Processing status change:",
-                newStatus
-              );
-
-              switch (newStatus) {
-                case "submissionApproved":
-                  console.log(
-                    "Status polling - Status changed to submissionApproved"
-                  );
-                  targetUrl = "/auth/submission-approved";
-                  break;
-                case "Registered":
-                  console.log(
-                    "Status polling - Redirecting to interview-guidelines"
-                  );
-                  targetUrl = "/auth/interview-guidelines";
-                  break;
-                case "referenceApproved":
-                case "approved":
-                case "verified":
-                  console.log(
-                    "Status polling - Status approved, redirecting to buddi portal"
-                  );
-                  targetUrl = "/buddi";
-                  break;
-                default:
-                  console.log("Status polling - Redirecting to waitlist");
-                  targetUrl = "/auth/waitlist";
-              }
-
-              console.log("Status polling - Final target URL:", targetUrl);
-
-              // Update URL using router for proper navigation
-              router.replace(targetUrl as any);
-
-              // Small delay to ensure navigation completes
-              await new Promise((resolve) => setTimeout(resolve, 500));
-
-              // Refresh the page to ensure clean state
-              window.location.reload();
-            }
-          }
-
-          if (user.role === "parent" && apiUser.Parent) {
-            const currentStage = parentDetails?.approvalStage;
-            const newStage = apiUser.Parent.approvalStage;
-
-            if (currentStage !== newStage) {
-              console.log(
-                `Parent approval stage changed: ${currentStage} → ${newStage}`
-              );
-
-              // Stop polling before navigation
-              stopStatusPolling();
-
-              // Show loader
-              setShowLoader(true);
-
-              // Update parent details
-              const updatedParentDetails = apiUser.Parent;
-              setParentDetails(updatedParentDetails);
-              await AsyncStorage.setItem(
-                "parent_details",
-                JSON.stringify(updatedParentDetails)
-              );
-
-              // Small delay to ensure state is updated
-              await new Promise((resolve) => setTimeout(resolve, 100));
-
-              // Determine target URL and force reload
-              const targetUrl = !["approved", "active"].includes(newStage)
-                ? "/auth/waitlist"
-                : "/parent";
-
-              // Change URL and force reload
-              router.replace(targetUrl as any);
-            }
-          }
-        } catch (error) {
-          console.error("Status polling error:", error);
-        }
-      }, 5000); // Poll every 5 seconds
-
-      setStatusPollInterval(interval);
-    }
+    console.log(
+      "Status polling disabled - users will receive email notifications"
+    );
   };
 
   const stopStatusPolling = () => {
     if (statusPollInterval) {
-      console.log("Stopping status polling...");
       clearInterval(statusPollInterval);
       setStatusPollInterval(null);
     }
