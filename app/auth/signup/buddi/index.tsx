@@ -142,7 +142,7 @@ function validateForm(formData: FormData, step: number) {
       )
     ) {
       errors.password =
-        "Password must include uppercase, lowercase, number, and special character";
+        "Your password isn't strong enough. It must be at least 8 characters and include:\n- An uppercase letter\n- A lowercase letter\n- A number\n- A special character (e.g. !@#$%^&*)";
     }
 
     if (formData.password !== formData.confirmPassword) {

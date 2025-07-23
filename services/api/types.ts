@@ -103,13 +103,13 @@ export interface ParentRegistrationRequest {
   firstName: string;
   lastName: string;
   homeAddress: string;
-  childrenCount: number;
-  children: {
+  childrenCount?: number;
+  children?: {
     name: string;
     age: number;
     school: string;
   }[];
-  paymentMethod: 'card' | 'paypal' | 'apple_pay';
+  paymentMethod: "credit_card" | "debit_card" | "paypal";
   cardDetails?: {
     cardNumber: string;
     expiry: string;
