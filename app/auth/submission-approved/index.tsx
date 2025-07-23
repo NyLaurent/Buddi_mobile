@@ -1,44 +1,43 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import React, { useEffect } from "react";
-import { StyleSheet, Text, View } from "react-native";
+import { Alert, StyleSheet, Text, View } from "react-native";
 import { TouchableOpacity } from "react-native-gesture-handler";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useAuth } from "../../../context/AuthContext";
 
 const SubmissionApproved = () => {
   const router = useRouter();
-  const { user, buddiDetails, startStatusPolling } = useAuth();
+  const { user, buddiDetails, logout } = useAuth();
 
-  // Add access control and start polling
-  useEffect(() => {
-    // Check if user should be on this screen
-    if (!user || user.role !== "buddi") {
-      router.replace("/auth/login" as any);
-      return;
-    }
+  // COMMENTED OUT: Status polling - users stay on page and get emailed when approved
+  // useEffect(() => {
+  //   // Check if user should be on this screen
+  //   if (!user || user.role !== "buddi") {
+  //     router.replace("/auth/login" as any);
+  //     return;
+  //   }
 
-    if (!buddiDetails) return; // Wait for buddiDetails to load
+  //   if (!buddiDetails) return; // Wait for buddiDetails to load
 
-    // Allow only submissionApproved status for this page
-    if (buddiDetails.status !== "submissionApproved") {
-      if (
-        buddiDetails.status === "referenceApproved" ||
-        ["Approved", "Active"].includes(buddiDetails.status)
-      ) {
-        // If already approved, go to buddi portal
-        router.replace("/buddi" as any);
-        return;
-      }
-      // For any other status, go to appropriate page
-      router.replace(getInitialRoute() as any);
-      return;
-    }
+  //   // Allow only submissionApproved status for this page
+  //   if (buddiDetails.status !== "submissionApproved") {
+  //     if (
+  //       buddiDetails.status === "referenceApproved" ||
+  //       ["Approved", "Active"].includes(buddiDetails.status)
+  //     ) {
+  //       // If already approved, go to buddi portal
+  //       router.replace("/buddi" as any);
+  //       return;
+  //     }
+  //     // For any other status, go to appropriate page
+  //     router.replace(getInitialRoute() as any);
+  //     return;
+  //   }
 
-    // Start polling for status changes - this will automatically redirect
-    // when status changes to referenceApproved
-    startStatusPolling();
-  }, [user, buddiDetails]);
+  //   // Start polling for status changes - this will automatically redirect
+  //   // when status changes to referenceApproved
+  //   startStatusPolling();
+  // }, [user, buddiDetails]);
 
   // Helper function to get initial route based on status
   const getInitialRoute = () => {
@@ -71,9 +70,14 @@ const SubmissionApproved = () => {
 
         <Text style={styles.description}>
           Thank you for completing your interview. We&apos;re currently
-          reviewing your references and background information. This process
-          typically takes 2-3 business days.
+          reviewing your references and background information. You will receive an email notification once your application has been fully approved.
         </Text>
+
+        <View style={styles.emailNotification}>
+          <Text style={styles.emailText}>
+            📧 Check your email for approval notification, then log in again to access your Buddi portal.
+          </Text>
+        </View>
 
         <View style={styles.infoContainer}>
           <Text style={styles.infoTitle}>What&apos;s Next?</Text>
@@ -95,11 +99,30 @@ const SubmissionApproved = () => {
 
         <TouchableOpacity
           style={styles.button}
-          onPress={() => router.replace("/auth/login")}
+          onPress={() => {
+            Alert.alert(
+              "Sign Out",
+              "Are you sure you want to sign out? You'll need to log in again once you receive approval via email.",
+              [
+                {
+                  text: "Cancel",
+                  style: "cancel"
+                },
+                {
+                  text: "Sign Out",
+                  style: "destructive",
+                  onPress: async () => {
+                    await logout();
+                    router.replace("/auth/login");
+                  }
+                }
+              ]
+            );
+          }}
         >
-          <Text style={styles.buttonText}>Return to Login</Text>
+          <Text style={styles.buttonText}>Sign Out</Text>
           <Ionicons
-            name="arrow-forward"
+            name="log-out"
             size={20}
             color="#fff"
             style={styles.buttonIcon}
@@ -140,6 +163,19 @@ const styles = StyleSheet.create({
     color: "#666",
     lineHeight: 24,
     fontFamily: "Comfortaa-Regular",
+  },
+  emailNotification: {
+    backgroundColor: "#E0F2F7",
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 32,
+    alignItems: "center",
+  },
+  emailText: {
+    fontSize: 16,
+    color: "#007BFF",
+    fontFamily: "Comfortaa-Regular",
+    textAlign: "center",
   },
   infoContainer: {
     width: "100%",

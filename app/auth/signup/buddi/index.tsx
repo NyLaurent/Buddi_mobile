@@ -1,6 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
+import DateTimePicker from "@react-native-community/datetimepicker";
 import * as DocumentPicker from "expo-document-picker";
-import * as ImagePicker from "expo-image-picker";
 import { useRouter } from "expo-router";
 import React, { useState } from "react";
 import {
@@ -52,13 +52,6 @@ interface FormData {
   resume: { uri: string; name: string; type: string; size: number } | null;
   gender: string;
   dob: string;
-  profilePicture: {
-    uri: string;
-    name: string;
-    type: string;
-    size: number;
-  } | null;
-  profilePictureUri: string | null;
   showPassword: boolean;
   showConfirmPassword: boolean;
 }
@@ -85,8 +78,6 @@ const initialFormData: FormData = {
   resume: null,
   gender: GENDERS[0],
   dob: "",
-  profilePicture: null,
-  profilePictureUri: null,
   showPassword: false,
   showConfirmPassword: false,
 };
@@ -100,6 +91,21 @@ interface StepProps {
   setCountryCode: React.Dispatch<React.SetStateAction<string>>;
   country: Country | null;
   setCountry: React.Dispatch<React.SetStateAction<Country | null>>;
+}
+
+// Date format validation helper function
+function validateDateFormat(dateString: string) {
+  const regex = /^\d{4}-\d{2}-\d{2}$/;
+  if (!regex.test(dateString)) return false;
+
+  const date = new Date(dateString);
+  const [year, month, day] = dateString.split("-").map(Number);
+
+  return (
+    date.getFullYear() === year &&
+    date.getMonth() === month - 1 &&
+    date.getDate() === day
+  );
 }
 
 // Enhanced validation function with better error messages
@@ -162,11 +168,36 @@ function validateForm(formData: FormData, step: number) {
     if (!formData.dob) {
       errors.dob = "Date of birth is required";
     } else {
-      const dobDate = new Date(formData.dob);
-      const today = new Date();
-      const age = today.getFullYear() - dobDate.getFullYear();
-      if (age < 16 || age > 100) {
-        errors.dob = "You must be between 16 and 100 years old";
+      // Validate date format for manual entry
+      if (!validateDateFormat(formData.dob)) {
+        errors.dob =
+          "Please enter date in YYYY-MM-DD format (e.g., 2000-01-15)";
+      } else {
+        const dobDate = new Date(formData.dob);
+        const today = new Date();
+
+        // Check if date is valid
+        if (isNaN(dobDate.getTime())) {
+          errors.dob = "Please enter a valid date";
+        } else {
+          // Calculate age more accurately
+          let age = today.getFullYear() - dobDate.getFullYear();
+          const monthDiff = today.getMonth() - dobDate.getMonth();
+          if (
+            monthDiff < 0 ||
+            (monthDiff === 0 && today.getDate() < dobDate.getDate())
+          ) {
+            age--;
+          }
+
+          if (dobDate > today) {
+            errors.dob = "Date of birth cannot be in the future";
+          } else if (age < 16) {
+            errors.dob = "You must be at least 16 years old";
+          } else if (age > 100) {
+            errors.dob = "Please enter a valid date of birth";
+          }
+        }
       }
     }
 
@@ -244,30 +275,21 @@ const RegistrationStep: React.FC<StepProps> = ({
   setCountry,
 }) => {
   const [showCountryPicker, setShowCountryPicker] = useState(false);
+  const [showDatePicker, setShowDatePicker] = useState(false);
+  const [manualDateEntry, setManualDateEntry] = useState(false);
 
-  const pickImage = async () => {
-    let result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      allowsEditing: true,
-      aspect: [1, 1],
-      quality: 0.7,
+  const formatDate = (date: Date) => {
+    return date.toISOString().split("T")[0]; // Returns YYYY-MM-DD format
+  };
+
+  const getDisplayDate = (dateString: string) => {
+    if (!dateString) return "";
+    const date = new Date(dateString);
+    return date.toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
     });
-    if (!result.canceled && result.assets && result.assets[0].uri) {
-      const uri = result.assets[0].uri;
-      const response = await fetch(uri);
-      const blob = await response.blob();
-      const file = new File([blob], "profile.jpg", { type: "image/jpeg" });
-      setFormData((prev) => ({
-        ...prev,
-        profilePicture: {
-          uri: uri,
-          name: "profile.jpg",
-          type: "image/jpeg",
-          size: blob.size,
-        },
-        profilePictureUri: uri,
-      }));
-    }
   };
 
   return (
@@ -294,33 +316,6 @@ const RegistrationStep: React.FC<StepProps> = ({
           <Text className="font-comfortaa text-center text-[#71727A] mb-6 px-6">
             Become a trusted Buddi and help parents with their children&apos;s
             pickup needs.
-          </Text>
-        </View>
-
-        {/* Profile photo uploader */}
-        <View className="items-center mb-6">
-          <TouchableOpacity
-            onPress={pickImage}
-            activeOpacity={0.8}
-            className="w-28 h-28 rounded-full border-2 border-dashed border-gray-300 items-center justify-center mb-2 overflow-hidden relative"
-            style={{ borderStyle: "dashed" }}
-          >
-            {formData.profilePictureUri ? (
-              <Image
-                source={{ uri: formData.profilePictureUri }}
-                className="w-full h-full rounded-full"
-              />
-            ) : (
-              <View className="w-full h-full rounded-full bg-[#E5F2FF] items-center justify-center">
-                <Ionicons name="person" size={64} color="#A0CBFF" />
-              </View>
-            )}
-            <View className="absolute bottom-2 right-2 bg-primary rounded-full p-2 border-2 border-white">
-              <Ionicons name="camera" size={20} color="#fff" />
-            </View>
-          </TouchableOpacity>
-          <Text className="font-comfortaa text-xs text-[#71727A] mb-2">
-            Add a Profile Photo
           </Text>
         </View>
 
@@ -576,6 +571,122 @@ const RegistrationStep: React.FC<StepProps> = ({
           ) : null}
         </View>
 
+        {/* Date of Birth Field */}
+        <View style={{ marginBottom: 20 }}>
+          <View className="flex-row items-center justify-between mb-2">
+            <Text className="font-comfortaa-bold text-xs text-[#71727A]">
+              Date of Birth
+            </Text>
+            <TouchableOpacity
+              onPress={() => setManualDateEntry(!manualDateEntry)}
+              className="flex-row items-center px-3 py-1 rounded-full bg-gray-100"
+            >
+              <Ionicons
+                name={manualDateEntry ? "calendar" : "pencil"}
+                size={12}
+                color="#666"
+                style={{ marginRight: 4 }}
+              />
+              <Text className="font-comfortaa text-xs text-[#666]">
+                {manualDateEntry ? "Use Picker" : "Type Date"}
+              </Text>
+            </TouchableOpacity>
+          </View>
+
+          {manualDateEntry ? (
+            <View className="flex-row items-center bg-white border border-[#CBD5E1] rounded-2xl px-4 py-3">
+              <Ionicons
+                name="calendar"
+                size={20}
+                color="#A0A0A0"
+                style={{ marginRight: 8 }}
+              />
+              <TextInput
+                className="flex-1 font-comfortaa text-[#71727A] text-base"
+                value={formData.dob}
+                onChangeText={(text) => {
+                  setFormData((prev) => ({ ...prev, dob: text }));
+                }}
+                placeholder="YYYY-MM-DD (e.g., 2000-01-15)"
+                placeholderTextColor="#A0A0A0"
+                maxLength={10}
+              />
+            </View>
+          ) : (
+            <TouchableOpacity
+              onPress={() => setShowDatePicker(true)}
+              className="flex-row items-center bg-white border border-[#CBD5E1] rounded-2xl px-4 py-3"
+            >
+              <Ionicons
+                name="calendar"
+                size={20}
+                color="#A0A0A0"
+                style={{ marginRight: 8 }}
+              />
+              <Text className="flex-1 font-comfortaa text-[#71727A] text-base">
+                {formData.dob ? getDisplayDate(formData.dob) : "Select Date"}
+              </Text>
+              <Ionicons name="chevron-down" size={16} color="#A0A0A0" />
+            </TouchableOpacity>
+          )}
+
+          {errors.dob ? (
+            <Text style={{ color: "red", fontSize: 12, marginTop: 4 }}>
+              {errors.dob}
+            </Text>
+          ) : null}
+
+          {manualDateEntry && (
+            <Text className="font-comfortaa text-xs text-[#71727A] mt-1 opacity-70">
+              Format: YYYY-MM-DD (Year-Month-Day) • Must be 16+ years old
+            </Text>
+          )}
+        </View>
+
+        {/* Gender Selection */}
+        <View style={{ marginBottom: 20 }}>
+          <Text className="font-comfortaa-bold text-xs text-[#71727A] mb-1">
+            Gender
+          </Text>
+          <View className="flex-row items-center bg-white border border-[#CBD5E1] rounded-2xl px-4 py-3">
+            <Ionicons
+              name="person"
+              size={20}
+              color="#A0A0A0"
+              style={{ marginRight: 8 }}
+            />
+            <View className="flex-1 flex-row">
+              {GENDERS.slice(1).map((gender, index) => (
+                <TouchableOpacity
+                  key={gender}
+                  onPress={() => setFormData((prev) => ({ ...prev, gender }))}
+                  className="flex-row items-center mr-4"
+                >
+                  <View
+                    className={`w-4 h-4 rounded-full border-2 mr-2 ${
+                      formData.gender === gender
+                        ? "border-primary bg-primary"
+                        : "border-gray-300"
+                    }`}
+                  >
+                    {formData.gender === gender && (
+                      <View className="w-2 h-2 rounded-full bg-white m-auto" />
+                    )}
+                  </View>
+                  <Text className="font-comfortaa text-[#71727A] text-sm">
+                    {gender}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          </View>
+          {errors.gender ? (
+            <Text style={{ color: "red", fontSize: 12, marginTop: 4 }}>
+              {errors.gender}
+            </Text>
+          ) : null}
+        </View>
+
         {/* Login link */}
         <View className="items-center mt-2 mb-6">
           <Text className="font-comfortaa text-[#71727A] text-base">
@@ -659,6 +770,25 @@ const RegistrationStep: React.FC<StepProps> = ({
           },
         }}
       />
+
+      {/* Date Picker Modal */}
+      {showDatePicker && (
+        <DateTimePicker
+          mode="date"
+          display="default"
+          value={formData.dob ? new Date(formData.dob) : new Date()}
+          onChange={(event, date) => {
+            setShowDatePicker(false);
+            if (event.type === "set" && date) {
+              setFormData((prev) => ({ ...prev, dob: formatDate(date) }));
+            }
+          }}
+          minimumDate={
+            new Date(new Date().setFullYear(new Date().getFullYear() - 100))
+          }
+          maximumDate={new Date()}
+        />
+      )}
     </View>
   );
 };
@@ -1399,14 +1529,26 @@ export default function BuddiSignup() {
           customReferral: formData.customReferral.trim() || undefined,
           referralOccupation: formData.referralOccupation.trim() || undefined,
           resume: formData.resume || undefined,
-          profilePicture: formData.profilePicture || undefined,
           gender: mappedGender,
           dob: formData.dob
             ? new Date(formData.dob).toISOString().split("T")[0]
             : "",
         };
 
-        console.log("Submitting registration data:", registrationData);
+        console.log("=== REGISTRATION DEBUG INFO ===");
+        console.log("DOB Raw:", formData.dob);
+        console.log("DOB Processed:", registrationData.dob);
+        console.log(
+          "Age Check:",
+          formData.dob
+            ? new Date().getFullYear() - new Date(formData.dob).getFullYear()
+            : "No DOB"
+        );
+        console.log(
+          "Full Registration Data:",
+          JSON.stringify(registrationData, null, 2)
+        );
+        console.log("===============================");
 
         const response = await authService.registerBuddi(registrationData);
 
@@ -1418,7 +1560,13 @@ export default function BuddiSignup() {
           router.push("/auth/login");
         }, 3000);
       } catch (error: any) {
-        console.error("Registration error:", error);
+        console.error("=== REGISTRATION ERROR DEBUG ===");
+        console.error("Full error object:", error);
+        console.error("Error message:", error.message);
+        console.error("Error response:", error.response?.data);
+        console.error("Error status:", error.response?.status);
+        console.error("================================");
+
         Alert.alert(
           "Registration Failed",
           error.message ||

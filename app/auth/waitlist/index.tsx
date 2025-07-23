@@ -1,11 +1,10 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import {
   Alert,
   AppState,
-  AppStateStatus,
   Image,
   ScrollView,
   Text,
@@ -43,77 +42,78 @@ const WaitlistScreen = () => {
     }
   }, []);
 
-  // Function to check approval status and navigate if approved
-  const checkApprovalAndNavigate = useCallback(async () => {
-    try {
-      await refreshUserData();
+  // COMMENTED OUT: Status polling functionality - users will be emailed when approved
+  // and need to login again manually
+  // const checkApprovalAndNavigate = useCallback(async () => {
+  //   try {
+  //     await refreshUserData();
 
-      if (!user) {
-        console.log("No user found, redirecting to login");
-        router.replace("/auth/login");
-        return;
-      }
+  //     if (!user) {
+  //       console.log("No user found, redirecting to login");
+  //       router.replace("/auth/login");
+  //       return;
+  //     }
 
-      if (
-        user.role === "parent" &&
-        parentDetails?.approvalStage === "approved"
-      ) {
-        console.log("Parent approved, navigating to parent portal");
-        await navigateToParentPortal();
-        return;
-      }
+  //     if (
+  //       user.role === "parent" &&
+  //       parentDetails?.approvalStage === "approved"
+  //     ) {
+  //       console.log("Parent approved, navigating to parent portal");
+  //       await navigateToParentPortal();
+  //       return;
+  //     }
 
-      if (user.role === "buddi" && buddiDetails?.status === "Registered") {
-        console.log("Buddi registered, navigating to interview guidelines");
-        clearPollingInterval();
-        router.replace("/auth/interview-guidelines");
-        return;
-      }
-    } catch (error) {
-      console.error("Error checking approval status:", error);
-    }
-  }, [
-    user,
-    parentDetails,
-    buddiDetails,
-    router,
-    refreshUserData,
-    clearPollingInterval,
-    navigateToParentPortal,
-  ]);
+  //     if (user.role === "buddi" && buddiDetails?.status === "Registered") {
+  //       console.log("Buddi registered, navigating to interview guidelines");
+  //       clearPollingInterval();
+  //       router.replace("/auth/interview-guidelines");
+  //       return;
+  //     }
+  //   } catch (error) {
+  //     console.error("Error checking approval status:", error);
+  //   }
+  // }, [
+  //   user,
+  //   parentDetails,
+  //   buddiDetails,
+  //   router,
+  //   refreshUserData,
+  //   clearPollingInterval,
+  //   navigateToParentPortal,
+  // ]);
 
-  // Set up polling interval
-  useEffect(() => {
-    // Initial check
-    checkApprovalAndNavigate();
+  // COMMENTED OUT: Polling setup - now users stay on page until manual login
+  // useEffect(() => {
+  //   // Initial check
+  //   checkApprovalAndNavigate();
 
-    // Set up interval for subsequent checks
-    intervalRef.current = setInterval(
-      checkApprovalAndNavigate,
-      POLLING_INTERVAL
-    );
+  //   // Set up interval for subsequent checks
+  //   intervalRef.current = setInterval(
+  //     checkApprovalAndNavigate,
+  //     POLLING_INTERVAL
+  //   );
 
-    // Handle app state changes
-    const subscription = AppState.addEventListener(
-      "change",
-      (nextAppState: AppStateStatus) => {
-        if (
-          appState.match(/inactive|background/) &&
-          nextAppState === "active"
-        ) {
-          // App has come to foreground
-          checkApprovalAndNavigate();
-        }
-        setAppState(nextAppState);
-      }
-    );
+  //   // Handle app state changes
+  //   const subscription = AppState.addEventListener(
+  //     "change",
+  //     (nextAppState: AppStateStatus) => {
+  //       if (
+  //         appState.match(/inactive|background/) &&
+  //         nextAppState === "active"
+  //       ) {
+  //         // App has come to foreground
+  //         checkApprovalAndNavigate();
+  //       }
+  //       setAppState(nextAppState);
+  //     }
+  //   );
 
-    // Cleanup
-    return () => {
-      clearPollingInterval();
-      subscription.remove();
-    };
-  }, [checkApprovalAndNavigate, appState, clearPollingInterval]);
+  //   // Cleanup
+  //   return () => {
+  //     clearPollingInterval();
+  //     subscription.remove();
+  //   };
+  // }, [checkApprovalAndNavigate, appState, clearPollingInterval]);
 
   const getUserDisplayInfo = () => {
     if (!user) return { name: "", email: "", statusText: "", progressWidth: 0 };
@@ -181,17 +181,24 @@ const WaitlistScreen = () => {
   };
 
   const handleSignOut = () => {
-    Alert.alert("Sign Out", "Are you sure you want to sign out?", [
-      { text: "Cancel", style: "cancel" },
-      {
-        text: "Sign Out",
-        style: "destructive",
-        onPress: async () => {
-          await logout();
-          router.replace("/auth/login");
+    Alert.alert(
+      "Sign Out",
+      "Are you sure you want to sign out? You'll need to log in again once you receive approval via email.",
+      [
+        {
+          text: "Cancel",
+          style: "cancel",
         },
-      },
-    ]);
+        {
+          text: "Sign Out",
+          style: "destructive",
+          onPress: async () => {
+            await logout();
+            router.replace("/auth/login");
+          },
+        },
+      ]
+    );
   };
 
   const userInfo = getUserDisplayInfo();
@@ -273,6 +280,10 @@ const WaitlistScreen = () => {
             <Text className="font-comfortaa text-[#71727A] mb-4">
               {userInfo.statusText}
             </Text>
+            <Text className="font-comfortaa text-sm text-[#71727A] mb-4 bg-blue-50 p-3 rounded-lg">
+              📧 You will receive an email notification once your application is
+              approved. Please log in again after receiving the approval email.
+            </Text>
 
             {/* Progress Bar */}
             <View className="h-2 bg-gray-200 rounded-full overflow-hidden mb-4">
@@ -317,14 +328,14 @@ const WaitlistScreen = () => {
         </View>
 
         {/* Sign Out Button */}
-        {/* <TouchableOpacity
+        <TouchableOpacity
           onPress={handleSignOut}
           className="mx-4 mt-4 p-4 bg-red-500 rounded-2xl"
         >
-          <Text className="font-comfortaa text-white text-center">
+          <Text className="font-comfortaa-bold text-white text-center">
             Sign Out
           </Text>
-        </TouchableOpacity> */}
+        </TouchableOpacity>
       </ScrollView>
     </SafeAreaView>
   );
