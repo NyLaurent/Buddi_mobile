@@ -1,6 +1,6 @@
 import { FontAwesome5, Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import {
   ActivityIndicator,
   RefreshControl,
@@ -41,7 +41,10 @@ export default function AvailableCallsScreen() {
 
       const response = await BuddiService.getAvailableCalls(page, 4);
 
-      setCalls(response.data);
+      // Only show calls that are not matched
+      setCalls(
+        response.data.filter((call: AvailableCall) => call.status !== "matched")
+      );
       setCurrentPage(response.currentPage);
       setTotalPages(response.totalPages);
       setTotalRecords(response.totalRecords);
