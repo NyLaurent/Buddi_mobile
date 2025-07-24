@@ -1,3 +1,4 @@
+import axios from "axios";
 import { authorizedApi } from './config';
 import { BUDDI_ENDPOINTS } from './endpoints';
 
@@ -33,7 +34,8 @@ export interface BuddiDetails {
   resume: string;
   profilePicture: string | null;
   rating: number | null;
-  isInterviewVideoSubmitted: boolean;
+  isInterviewVideoSubmitted?: boolean;
+  isProfileVideoSubmitted?: boolean,
   totalEarnings: number;
   createdAt: string;
   updatedAt: string;
@@ -139,6 +141,30 @@ async function completePickupTrip(
 async function pickUpChild(pickupId: number | string): Promise<any> {
   const response = await authorizedApi.patch(`/pickups/${pickupId}/pickup`);
   return response.data;
+}
+
+export async function getRandomInterviewQuestions() {
+  const res = await axios.get("https://backend-service-hw1rh.kinsta.app/api/v1/admin/interview-questions");
+  const allQuestions = res.data.data;
+  // Shuffle and pick 3 random questions
+  const shuffled = allQuestions.sort(() => 0.5 - Math.random());
+  return shuffled.slice(0, 3).map((q: any) => ({ id: q.id, questionDescription: q.questionDescription }));
+}
+
+export async function uploadBuddiProfileVideo(buddiId: number, videoUri: string) {
+  const formData = new FormData();
+  formData.append("file", {
+    uri: videoUri,
+    name: "profile-video.mp4",
+    type: "video/mp4"
+  } as any);
+
+  const res = await authorizedApi.post(
+    `https://backend-service-hw1rh.kinsta.app/api/v1/buddi/profile/${buddiId}/uploadBuddiProfileVideo/video`,
+    formData
+    // Do NOT set Content-Type here!
+  );
+  return res.data;
 }
 
 const BuddiService = {

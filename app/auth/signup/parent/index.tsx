@@ -680,7 +680,7 @@ export default function ParentSignup() {
       Alert.alert(
         "Validation Error",
         firstErrorMsg ||
-          "Please complete all required fields before proceeding."
+        "Please complete all required fields before proceeding."
       );
       return;
     }
@@ -716,10 +716,10 @@ export default function ParentSignup() {
         if (backendMsg) {
           Alert.alert("Registration Failed", backendMsg);
         } else {
-          Alert.alert(
-            "Registration Failed",
+        Alert.alert(
+          "Registration Failed",
             "An error occurred during registration. Please try again."
-          );
+        );
         }
       } finally {
         setIsLoading(false);

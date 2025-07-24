@@ -49,6 +49,8 @@ export interface BuddiDetails {
   profilePicture?: string;
   rating?: number;
   recordingCompleted?: boolean; // Track if recording is completed
+  isInterviewVideoSubmitted?: boolean;
+  isProfileVideoSubmitted?: boolean;
 }
 
 export interface ParentDetails {
