@@ -314,7 +314,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       (!inAuthGroup || segments[1] !== "submission-approved")
     ) {
       console.log("handleNavigation - Redirecting to submission-approved");
-      router.replace("/auth/submission-approved/index" as any);
+      router.push("/auth/submission-approved");
       return;
     }
 
@@ -360,6 +360,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         "verified",
       ].includes(buddiDetails.status);
       if (isApprovedBuddi && segments[0] === "buddi") {
+        // NEW: Check profile video submission
+        if (buddiDetails.isProfileVideoSubmitted === false) {
+          router.replace("/auth/profile-video");
+          return;
+        }
         console.log(
           "handleNavigation - Approved buddi navigating freely within buddi portal"
         );
@@ -432,6 +437,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
             buddiDetails.status
           )
         ) {
+          // NEW: Check profile video submission
+          if (buddiDetails.isProfileVideoSubmitted === false) {
+            return "/auth/profile-video";
+          }
           console.log(
             "getInitialRoute - Approved buddi, returning to buddi portal"
           );
@@ -502,8 +511,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       return true;
 
     if (user.role === "buddi" && buddiDetails) {
-      return ["referenceApproved", "approved", "verified"].includes(
-        buddiDetails.status
+      const isApprovedBuddi = [
+        "referenceApproved",
+        "approved",
+        "verified",
+      ].includes(buddiDetails.status);
+      // NEW: Check profile video submission
+      return (
+        isApprovedBuddi && buddiDetails.isProfileVideoSubmitted === true
       );
     }
 

@@ -60,8 +60,14 @@ export const RouteGuard: React.FC<RouteGuardProps> = ({
             ].includes(buddiDetails.status);
             const isInBuddiPortal = segments[0] === "buddi";
 
+            // NEW: Check profile video submission
             if (isApprovedBuddi && isInBuddiPortal) {
-              // Allow free navigation within buddi portal for approved users
+              if (buddiDetails.isProfileVideoSubmitted === false) {
+                hasRedirected.current = true;
+                router.replace("/auth/profile-video");
+                return;
+              }
+              // Allow free navigation within buddi portal for approved users with profile video
               return;
             }
 

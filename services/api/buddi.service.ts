@@ -153,18 +153,49 @@ export async function getRandomInterviewQuestions() {
 
 export async function uploadBuddiProfileVideo(buddiId: number, videoUri: string) {
   const formData = new FormData();
-  formData.append("file", {
+  const fileObj = {
     uri: videoUri,
     name: "profile-video.mp4",
     type: "video/mp4"
-  } as any);
+  } as any;
+  formData.append("file", fileObj);
+  console.log("[UPLOAD] Buddi interview video: fileObj:", fileObj);
+  const url = `https://backend-service-hw1rh.kinsta.app/api/v1/buddi/interview/${buddiId}/uploadBuddiInterviewVideo/video`;
+  console.log("[UPLOAD] POST URL:", url);
+  try {
+    const res = await authorizedApi.post(url, formData);
+    console.log("[UPLOAD] Success response:", res.data);
+    return res.data;
+  } catch (err: any) {
+    if (err?.response) {
+      console.log("[UPLOAD] Error response:", err.response.data);
+    } else {
+      console.log("[UPLOAD] Error:", err);
+    }
+    throw err;
+  }
+}
 
-  const res = await authorizedApi.post(
-    `https://backend-service-hw1rh.kinsta.app/api/v1/buddi/profile/${buddiId}/uploadBuddiProfileVideo/video`,
-    formData
-    // Do NOT set Content-Type here!
-  );
-  return res.data;
+export async function uploadBuddiProfileIntroVideo(buddiId: number, videoUri: string) {
+  const formData = new FormData();
+  const fileObj = {
+    uri: videoUri,
+    name: "profile-video.mp4",
+    type: "video/mp4"
+  } as any;
+  formData.append("file", fileObj);
+  const url = `https://backend-service-hw1rh.kinsta.app/api/v1/buddi/profile/${buddiId}/uploadBuddiProfileVideo/video`;
+  try {
+    const res = await authorizedApi.post(url, formData);
+    return res.data;
+  } catch (err: any) {
+    if (err?.response) {
+      console.log("[UPLOAD PROFILE VIDEO] Error response:", err.response.data);
+    } else {
+      console.log("[UPLOAD PROFILE VIDEO] Error:", err);
+    }
+    throw err;
+  }
 }
 
 const BuddiService = {

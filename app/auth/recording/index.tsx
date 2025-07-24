@@ -176,7 +176,7 @@ export default function BuddiRecordingScreen() {
               }}
             >
               Record Your Buddi
-            </Text>
+        </Text>
             <Text
               style={{
                 color: "#fff",
@@ -186,7 +186,7 @@ export default function BuddiRecordingScreen() {
               }}
             >
               Interview
-            </Text>
+        </Text>
           </View>
           <TouchableOpacity
             style={{ backgroundColor: "#fff", borderRadius: 999, padding: 8 }}
@@ -460,8 +460,8 @@ export default function BuddiRecordingScreen() {
                   width: `${progress * 100}%`,
                 }}
               />
-            </View>
-          </View>
+      </View>
+    </View>
         </ScrollView>
       </SafeAreaView>
     </ImageBackground>
