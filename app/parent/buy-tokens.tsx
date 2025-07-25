@@ -1,14 +1,22 @@
 import { FontAwesome5, Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
+import * as Linking from "expo-linking";
+import { useEffect, useState } from "react";
 import {
+  KeyboardAvoidingView,
+  Modal,
+  Platform,
   ScrollView,
   StatusBar,
   Text,
+  TextInput,
   TouchableOpacity,
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import PageHeader from "../../components/commons/PageHeader";
+import { useAuth } from "../../context/AuthContext";
+import { buyTokens, getTokenBalance } from "../../services/payments";
 
 const tokenPackages = [
   {
@@ -41,6 +49,137 @@ const tokenPackages = [
 ];
 
 const BuyTokens = () => {
+  const { parentDetails } = useAuth();
+  const parentId = parentDetails?.id;
+  const [balance, setBalance] = useState<number | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [buying, setBuying] = useState(false);
+  const [successMsg, setSuccessMsg] = useState<string | null>(null);
+  const [modalVisible, setModalVisible] = useState(false);
+  const [selectedPkg, setSelectedPkg] = useState<
+    (typeof tokenPackages)[0] | null
+  >(null);
+  const [quantity, setQuantity] = useState<string>("");
+  const [inputError, setInputError] = useState<string | null>(null);
+
+  // Helper to get max quantity for selected package
+  const getMaxQuantity = (pkg: (typeof tokenPackages)[0] | null) => {
+    if (!pkg) return undefined;
+    if (pkg.range === "1 - 5 Tokens") return 5;
+    if (pkg.range === "6 - 10 Tokens") return 10;
+    return undefined; // 11+ Tokens: no max
+  };
+
+  const fetchBalance = async () => {
+    if (!parentId) return;
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await getTokenBalance(parentId);
+      setBalance(res.tokens);
+    } catch (err: any) {
+      setError(err.message || "Failed to fetch token balance");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchBalance();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [parentId]);
+
+  const openModal = (pkg: (typeof tokenPackages)[0]) => {
+    setSelectedPkg(pkg);
+    setInputError(null);
+    // Default quantity based on package
+    if (pkg.range === "1 - 5 Tokens") setQuantity("5");
+    else if (pkg.range === "6 - 10 Tokens") setQuantity("10");
+    else if (pkg.range === "11+ Tokens") setQuantity("11");
+    else setQuantity("1");
+    setModalVisible(true);
+  };
+
+  const closeModal = () => {
+    setModalVisible(false);
+    setSelectedPkg(null);
+    setQuantity("");
+    setInputError(null);
+  };
+
+  const handleQuantityChange = (val: string) => {
+    // Only allow numbers
+    const num = val.replace(/[^0-9]/g, "");
+    const max = getMaxQuantity(selectedPkg);
+    if (max !== undefined && num) {
+      if (parseInt(num, 10) > max) {
+        setInputError(`Maximum allowed is ${max}`);
+        setQuantity(String(max));
+        return;
+      } else {
+        setInputError(null);
+      }
+    } else {
+      setInputError(null);
+    }
+    setQuantity(num);
+  };
+
+  const handleModalBuy = async () => {
+    if (!selectedPkg || !parentId) return;
+    const qty = parseInt(quantity, 10);
+    const max = getMaxQuantity(selectedPkg);
+    if (!qty || qty < 1) {
+      setInputError("Please enter a valid quantity.");
+      return;
+    }
+    if (max !== undefined && qty > max) {
+      setInputError(`Maximum allowed is ${max}`);
+      return;
+    }
+    setModalVisible(false);
+    setInputError(null);
+    await handleBuy(selectedPkg, qty);
+  };
+
+  // Modified handleBuy to accept quantity
+  const handleBuy = async (
+    pkg: (typeof tokenPackages)[0],
+    qtyOverride?: number
+  ) => {
+    if (!parentId) return;
+    setBuying(true);
+    setError(null);
+    setSuccessMsg(null);
+    const quantity =
+      qtyOverride ??
+      (pkg.range === "1 - 5 Tokens"
+        ? 5
+        : pkg.range === "6 - 10 Tokens"
+        ? 10
+        : 11);
+    const amount = quantity * pkg.price;
+    try {
+      const result = await buyTokens({ parentId, quantity, amount });
+      if (result.checkoutUrl) {
+        Linking.openURL(result.checkoutUrl);
+        setSuccessMsg(
+          "Complete your payment in the opened page. Your balance will update after payment."
+        );
+      } else if (result.success) {
+        setSuccessMsg(result.message || "Tokens purchased successfully!");
+        fetchBalance();
+      } else {
+        setError(result.message || "Failed to buy tokens");
+      }
+    } catch (err: any) {
+      setError(err.message || "Failed to buy tokens");
+    } finally {
+      setBuying(false);
+    }
+  };
+
   return (
     <SafeAreaView
       style={{ flex: 1, backgroundColor: "#fff" }}
@@ -81,10 +220,66 @@ const BuyTokens = () => {
             Get more rides and features for your family. The more you buy, the
             more you save!
           </Text>
+          {/* Token Balance */}
+          <View style={{ paddingHorizontal: 18, marginBottom: 18 }}>
+            <Text
+              style={{
+                fontFamily: "Comfortaa-Bold",
+                fontSize: 16,
+                color: "#232B3A",
+              }}
+            >
+              Your Token Balance:
+            </Text>
+            {loading ? (
+              <Text
+                style={{
+                  fontFamily: "Comfortaa-Regular",
+                  fontSize: 16,
+                  color: "#71727A",
+                  marginTop: 4,
+                }}
+              >
+                Loading...
+              </Text>
+            ) : error ? (
+              <Text
+                style={{
+                  color: "#FF3B30",
+                  fontFamily: "Comfortaa-Regular",
+                  marginTop: 4,
+                }}
+              >
+                {error}
+              </Text>
+            ) : (
+              <Text
+                style={{
+                  fontFamily: "Comfortaa-Bold",
+                  fontSize: 28,
+                  color: "#FF932E",
+                  marginTop: 4,
+                }}
+              >
+                {balance ?? 0}
+              </Text>
+            )}
+            {successMsg && (
+              <Text
+                style={{
+                  color: "#34C759",
+                  fontFamily: "Comfortaa-Regular",
+                  marginTop: 4,
+                }}
+              >
+                {successMsg}
+              </Text>
+            )}
+          </View>
           {tokenPackages.map((pkg, idx) => (
             <LinearGradient
               key={pkg.range}
-              colors={pkg.gradient}
+              colors={pkg.gradient as any}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 1 }}
               style={{
@@ -207,9 +402,11 @@ const BuyTokens = () => {
                   shadowRadius: 6,
                   elevation: 2,
                   marginTop: 10,
+                  opacity: buying ? 0.7 : 1,
                 }}
                 activeOpacity={0.85}
-                onPress={() => {}}
+                onPress={() => openModal(pkg)}
+                disabled={buying}
               >
                 <FontAwesome5
                   name="wallet"
@@ -224,11 +421,192 @@ const BuyTokens = () => {
                     fontSize: 16,
                   }}
                 >
-                  Buy Now
+                  {buying ? "Processing..." : "Buy Now"}
                 </Text>
               </TouchableOpacity>
             </LinearGradient>
           ))}
+
+          {/* Buy Modal */}
+          <Modal
+            visible={modalVisible}
+            animationType="slide"
+            transparent
+            onRequestClose={closeModal}
+          >
+            <KeyboardAvoidingView
+              behavior={Platform.OS === "ios" ? "padding" : undefined}
+              style={{
+                flex: 1,
+                justifyContent: "center",
+                alignItems: "center",
+                backgroundColor: "rgba(0,0,0,0.4)",
+              }}
+            >
+              <View
+                style={{
+                  backgroundColor: "#fff",
+                  borderRadius: 18,
+                  padding: 28,
+                  width: 320,
+                  alignItems: "center",
+                }}
+              >
+                <Text
+                  style={{
+                    fontFamily: "Comfortaa-Bold",
+                    fontSize: 20,
+                    color: "#232B3A",
+                    marginBottom: 8,
+                  }}
+                >
+                  Buy Tokens
+                </Text>
+                {selectedPkg && (
+                  <>
+                    <Text
+                      style={{
+                        fontFamily: "Comfortaa-Bold",
+                        fontSize: 16,
+                        color: selectedPkg.gradient[0],
+                        marginBottom: 8,
+                      }}
+                    >
+                      {selectedPkg.range}
+                    </Text>
+                    <Text
+                      style={{
+                        fontFamily: "Comfortaa-Regular",
+                        fontSize: 15,
+                        color: "#71727A",
+                        marginBottom: 12,
+                      }}
+                    >
+                      {selectedPkg.description}
+                    </Text>
+                    <Text
+                      style={{
+                        fontFamily: "Comfortaa-Regular",
+                        fontSize: 15,
+                        color: "#232B3A",
+                        marginBottom: 4,
+                      }}
+                    >
+                      Enter Quantity:
+                    </Text>
+                    <TextInput
+                      value={quantity}
+                      onChangeText={handleQuantityChange}
+                      keyboardType="number-pad"
+                      style={{
+                        borderWidth: 1,
+                        borderColor: inputError ? "#FF3B30" : "#e9ecef",
+                        borderRadius: 8,
+                        padding: 10,
+                        width: 120,
+                        fontFamily: "Comfortaa-Bold",
+                        fontSize: 18,
+                        textAlign: "center",
+                        marginBottom: 6,
+                      }}
+                      placeholder="Quantity"
+                      editable={!buying}
+                    />
+                    {selectedPkg &&
+                      getMaxQuantity(selectedPkg) !== undefined && (
+                        <Text
+                          style={{
+                            fontFamily: "Comfortaa-Regular",
+                            fontSize: 13,
+                            color: "#71727A",
+                            marginBottom: 4,
+                          }}
+                        >
+                          Max: {getMaxQuantity(selectedPkg)}
+                        </Text>
+                      )}
+                    {inputError && (
+                      <Text
+                        style={{
+                          color: "#FF3B30",
+                          fontFamily: "Comfortaa-Regular",
+                          fontSize: 13,
+                          marginBottom: 4,
+                        }}
+                      >
+                        {inputError}
+                      </Text>
+                    )}
+                    <Text
+                      style={{
+                        fontFamily: "Comfortaa-Regular",
+                        fontSize: 15,
+                        color: "#232B3A",
+                        marginBottom: 16,
+                      }}
+                    >
+                      Total:{" "}
+                      <Text
+                        style={{
+                          fontFamily: "Comfortaa-Bold",
+                          color: selectedPkg.gradient[0],
+                          fontSize: 18,
+                        }}
+                      >
+                        $
+                        {quantity && !isNaN(Number(quantity))
+                          ? Number(quantity) * selectedPkg.price
+                          : 0}
+                      </Text>
+                    </Text>
+                    <View style={{ flexDirection: "row", gap: 12 }}>
+                      <TouchableOpacity
+                        style={{
+                          backgroundColor: "#e9ecef",
+                          borderRadius: 8,
+                          paddingVertical: 10,
+                          paddingHorizontal: 22,
+                          marginRight: 8,
+                        }}
+                        onPress={closeModal}
+                        disabled={buying}
+                      >
+                        <Text
+                          style={{
+                            fontFamily: "Comfortaa-Bold",
+                            color: "#232B3A",
+                            fontSize: 15,
+                          }}
+                        >
+                          Cancel
+                        </Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        style={{
+                          backgroundColor: selectedPkg.gradient[0],
+                          borderRadius: 8,
+                          paddingVertical: 10,
+                          paddingHorizontal: 22,
+                        }}
+                        onPress={handleModalBuy}
+                        disabled={buying}
+                      >
+                        <Text
+                          style={{
+                            fontFamily: "Comfortaa-Bold",
+                            color: "#fff",
+                            fontSize: 15,
+                          }}
+                        >
+                          {buying ? "Processing..." : "Confirm Purchase"}
+                        </Text>
+                      </TouchableOpacity>
+                    </View>
+                  </>
+                )}
+              </View>
+            </KeyboardAvoidingView>
+          </Modal>
         </View>
       </ScrollView>
     </SafeAreaView>

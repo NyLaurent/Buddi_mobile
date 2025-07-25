@@ -4,10 +4,19 @@
  * Payment processing, financial transactions, and billing
  */
 
-// Payment service exports (to be implemented)
-// export { StripeService } from './StripeService';
-// export { PaymentValidation } from './PaymentValidation';
-// export { WalletService } from './WalletService';
+import { authorizedApi } from '../api/config';
+
+export async function getTokenBalance(parentId: number | string) {
+  const res = await authorizedApi.get(`/payments/tokenBalance/${parentId}`);
+  // API returns: { parentId, tokens }
+  return res.data;
+}
+
+export async function buyTokens({ parentId, quantity, amount }: { parentId: number | string, quantity: number, amount: number }) {
+  const res = await authorizedApi.post('/payments/buyTokens', { parentId, quantity, amount });
+  // API returns: { success, message, checkoutUrl? }
+  return res.data;
+}
 
 // Payment types and configurations
 export interface PaymentConfig {

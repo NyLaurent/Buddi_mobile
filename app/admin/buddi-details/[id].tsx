@@ -1,6 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -446,14 +446,6 @@ export default function BuddiDetailsScreen() {
           <View style={styles.cardHeader}>
             <Ionicons name="settings" size={20} color="#FF932E" />
             <Text style={styles.cardTitle}>Account Information</Text>
-          </View>
-          <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>Buddi ID:</Text>
-            <Text style={styles.infoValue}>{buddiDetails.id}</Text>
-          </View>
-          <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>User ID:</Text>
-            <Text style={styles.infoValue}>{buddiDetails.userId}</Text>
           </View>
           <View style={styles.infoRow}>
             <Text style={styles.infoLabel}>Created:</Text>
