@@ -12,7 +12,7 @@ interface PickupCardProps {
   home: string;
   onButtonPress: () => void;
   cardWidth?: number;
-  status?: "notStarted" | "enRoute" | "picked" | "completed";
+  status?: "notStarted" | "enRoute" | "pickedUp" | "completed";
   onClockOut?: () => void;
   onPickUp?: () => void;
   pickupTime?: string;
@@ -49,7 +49,7 @@ const PickupCard = ({
 
   // Card color and button logic
   const isEnRoute = status === "enRoute";
-  const isPicked = status === "picked";
+  const isPicked = status === "pickedUp";
   const isCompleted = status === "completed";
   const cardBg = "#fff";
   const textColor = "#222";

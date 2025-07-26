@@ -327,8 +327,8 @@ export default function BuddiHome() {
               }
               home={matchedCall.toLocation || matchedCall.toZone || "Home"}
               status={
-                matchedCall.status === "pickedUp"
-                  ? "picked"
+                        matchedCall.status === "pickedUp"
+        ? "pickedUp"
                   : matchedCall.status === "enRoute"
                   ? "enRoute"
                   : matchedCall.status === "completed"
@@ -469,8 +469,8 @@ export default function BuddiHome() {
                   textAlign: "center",
                 }}
               >
-                Once you are matched to a pickup for today, you will see it
-                here.
+                This day is not available for pickups.
+                your available days are {matchedCall.availableDays?.join(", ")}
               </Text>
             </View>
           )}
