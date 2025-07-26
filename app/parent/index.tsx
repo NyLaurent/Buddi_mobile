@@ -9,8 +9,8 @@ import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
 import React from "react";
 import {
-  Alert,
   ActivityIndicator,
+  Alert,
   Image,
   ScrollView,
   StatusBar,
@@ -360,8 +360,9 @@ export default function ParentDashboard() {
 
         {/* Token Buy CTA Card */}
         <BuyTokensCTA
-        showButtonBelow={true}
-         onPress={() => router.push("/parent/payments")} />
+          showButtonBelow={true}
+          onPress={() => router.push("/parent/payments")}
+        />
         {/* Call to Action Rectangle or Pickup Request Card */}
         {loadingRequests ? (
           <View
@@ -1140,23 +1141,26 @@ export default function ParentDashboard() {
                                       fromLocation: pickup.fromZone,
                                       toLocation: pickup.toZone,
                                     });
-                                    await ParentService.createPickupRequest({
-                                      parentId: parentDetails!.id,
-                                      buddiId: Number(pickup.matchedBuddiId!),
-                                      childId: pickup.childId,
-                                      fromLocation: pickup.fromZone,
-                                      toLocation: pickup.toZone,
-                                      buddiRequestId: pickup.id,
-                                      callId: pickup.id,
-                                    });
-                                    // Update local state to reflect trip started/requested
-                                    setPickupRequests((prev) =>
-                                      prev.map((p) =>
-                                        p.id === pickup.id
-                                          ? { ...p, status: "requested" }
-                                          : p
-                                      )
-                                    );
+                                    const res =
+                                      await ParentService.createPickupRequest({
+                                        parentId: parentDetails!.id,
+                                        buddiId: Number(pickup.matchedBuddiId!),
+                                        childId: pickup.childId,
+                                        fromLocation: pickup.fromZone,
+                                        toLocation: pickup.toZone,
+                                        buddiRequestId: pickup.id,
+                                        callId: pickup.id,
+                                      });
+                                    // Use the status and pickup object from the response
+                                    if (res && res.pickup) {
+                                      setPickupRequests((prev) =>
+                                        prev.map((p) =>
+                                          p.id === pickup.id
+                                            ? { ...p, ...res.pickup }
+                                            : p
+                                        )
+                                      );
+                                    }
                                   } catch (err) {
                                     Alert.alert(
                                       "Error",

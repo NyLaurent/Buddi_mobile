@@ -72,6 +72,19 @@ export default function SchedulePage() {
     },
   ];
 
+  const [showAll, setShowAll] = React.useState(false);
+  // Helper to get today's day as a string (e.g., 'Monday')
+  const today = new Date().toLocaleDateString("en-US", { weekday: "long" });
+  // Filter pickups for today
+  const todaysPickups = matchedPickups.filter(
+    (pickup) =>
+      Array.isArray(pickup.availableDays) &&
+      pickup.availableDays
+        .map((d: string) => d.trim().toLowerCase())
+        .includes(today.toLowerCase())
+  );
+  const pickupsToShow = showAll ? matchedPickups : todaysPickups;
+
   return (
     <SafeAreaView
       style={{ flex: 1, backgroundColor: "#fff" }}
@@ -204,7 +217,10 @@ export default function SchedulePage() {
                   <Text className="font-comfortaa-bold text-xl">
                     Your Pickups
                   </Text>
-                  <TouchableOpacity className="flex-row items-center gap-1">
+                  <TouchableOpacity
+                    className="flex-row items-center gap-1"
+                    onPress={() => router.push("/buddi/all-pickups")}
+                  >
                     <Text className="text-primary font-comfortaa">
                       View All
                     </Text>
@@ -216,8 +232,8 @@ export default function SchedulePage() {
                   showsHorizontalScrollIndicator={false}
                   contentContainerStyle={{ paddingRight: 16 }}
                 >
-                  {matchedPickups.length > 0 ? (
-                    matchedPickups.map((pickup, index) => (
+                  {pickupsToShow.length > 0 ? (
+                    pickupsToShow.map((pickup, index) => (
                       <View key={pickup.id} className="mr-4">
                         <PickupCard
                           id={pickup.id.toString()}
@@ -258,7 +274,9 @@ export default function SchedulePage() {
                           marginBottom: 6,
                         }}
                       >
-                        No pickups assigned yet.
+                        {showAll
+                          ? "No pickups assigned yet."
+                          : "No pickups for this day."}
                       </Text>
                       <Text
                         style={{
@@ -268,7 +286,9 @@ export default function SchedulePage() {
                           textAlign: "center",
                         }}
                       >
-                        Once you are matched to a pickup, you will see it here.
+                        {showAll
+                          ? "Once you are matched to a pickup, you will see it here."
+                          : "Once you are matched to a pickup for today, you will see it here."}
                       </Text>
                     </View>
                   )}

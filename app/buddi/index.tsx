@@ -45,6 +45,17 @@ export default function BuddiHome() {
   const getSocket = () =>
     SocketService.getSocket ? SocketService.getSocket() : null;
 
+  // Helper to get today's day as a string (e.g., 'Monday')
+  const today = new Date().toLocaleDateString("en-US", { weekday: "long" });
+
+  // Helper to check if matchedCall is for today
+  const isPickupToday =
+    matchedCall && Array.isArray(matchedCall.availableDays)
+      ? matchedCall.availableDays
+          .map((d: string) => d.trim().toLowerCase())
+          .includes(today.toLowerCase())
+      : false;
+
   // Real-time trip event listeners and local persistence
   useEffect(() => {
     // Handler for trip-completed event
@@ -305,8 +316,8 @@ export default function BuddiHome() {
           decelerationRate="fast"
           snapToInterval={352} // card width (340) + margin (12)
         >
-          {matchedCall ? (
-          <PickupCard
+          {matchedCall && isPickupToday ? (
+            <PickupCard
               id={matchedCall.id.toString()}
               name={"Child"}
               time={matchedCall.pickupTime || "-"}
@@ -448,7 +459,7 @@ export default function BuddiHome() {
                   marginBottom: 6,
                 }}
               >
-                No pickups assigned yet.
+                No pickups for this day.
               </Text>
               <Text
                 style={{
@@ -458,9 +469,10 @@ export default function BuddiHome() {
                   textAlign: "center",
                 }}
               >
-                Once you are matched to a pickup, you will see it here.
+                Once you are matched to a pickup for today, you will see it
+                here.
               </Text>
-        </View>
+            </View>
           )}
         </ScrollView>
 
