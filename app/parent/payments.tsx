@@ -1,6 +1,6 @@
 import { FontAwesome5, Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   ScrollView,
   StatusBar,
@@ -14,6 +14,8 @@ import AnalyticsCard from "../../components/commons/AnalyticsCard";
 import PageHeader from "../../components/commons/PageHeader";
 import BuyTokensCTA from "../../components/parent/BuyTokensCTA";
 import PendingTimesheetCard from "../../components/parent/PendingTimesheetCard";
+import { useAuth } from "../../context/AuthContext";
+import ParentService, { Timesheet } from "../../services/api/parent.service";
 
 const Payments = () => {
   // Handler for BuyTokensCTA (could be a navigation or modal trigger)
@@ -25,7 +27,81 @@ const Payments = () => {
 
   const [activeTab, setActiveTab] = useState("pending");
   const [search, setSearch] = useState("");
+  const [timesheets, setTimesheets] = useState<Timesheet[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
   const router = useRouter();
+  const { parentDetails } = useAuth();
+
+  const fetchTimesheets = async () => {
+    if (!parentDetails?.id) return;
+
+    try {
+      setLoading(true);
+      setError(null);
+
+      const response = await ParentService.getTimesheets(
+        parentDetails.id.toString(),
+        undefined,
+        1,
+        100
+      );
+      setTimesheets(response.data);
+    } catch (err: any) {
+      setError(err.message || "Failed to fetch timesheets");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchTimesheets();
+  }, [parentDetails?.id]);
+
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString("en-US", {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+    });
+  };
+
+  const formatWeekRange = (weekStart: string, weekEnd: string) => {
+    const start = new Date(weekStart);
+    const end = new Date(weekEnd);
+    return `${formatDate(weekStart)} - ${formatDate(weekEnd)}`;
+  };
+
+  const getWeekLabel = (weekStart: string) => {
+    const date = new Date(weekStart);
+    return `Week of ${date.toLocaleDateString("en-US", {
+      month: "long",
+      day: "numeric",
+    })}`;
+  };
+
+  const getVariant = (isPaid: boolean, isApproved: boolean) => {
+    if (isPaid) return "paid";
+    if (isApproved) return "approved";
+    return "pending";
+  };
+
+  const filteredTimesheets = timesheets.filter((timesheet) => {
+    if (activeTab === "pending") {
+      return !timesheet.isPaid;
+    } else {
+      return timesheet.isPaid;
+    }
+  });
+
+  const pendingCount = timesheets.filter((ts) => !ts.isPaid).length;
+  const paidCount = timesheets.filter((ts) => ts.isPaid).length;
+  const totalEarnings = timesheets.reduce(
+    (sum, ts) => sum + ts.totalEarnings,
+    0
+  );
 
   return (
     <SafeAreaView
@@ -65,7 +141,7 @@ const Payments = () => {
               <View style={{ width: "48%", marginBottom: 16 }}>
                 <AnalyticsCard
                   icon={<Ionicons name="flash" size={32} color="#2196F3" />}
-                  value="12"
+                  value={timesheets.length.toString()}
                   title="Timesheets"
                 />
               </View>
@@ -74,7 +150,7 @@ const Payments = () => {
                   icon={
                     <Ionicons name="timer-outline" size={32} color="#03A9F4" />
                   }
-                  value="12"
+                  value={pendingCount.toString()}
                   title="Pending"
                 />
               </View>
@@ -87,15 +163,15 @@ const Payments = () => {
                       color="#A259FF"
                     />
                   }
-                  value="12"
+                  value={paidCount.toString()}
                   title="Paid"
                 />
               </View>
               <View style={{ width: "48%", marginBottom: 8 }}>
                 <AnalyticsCard
                   icon={<Ionicons name="people" size={32} color="#FF9100" />}
-                  value="12"
-                  title="Buddis"
+                  value={`$${totalEarnings.toFixed(2)}`}
+                  title="Total Earnings"
                 />
               </View>
             </View>
@@ -231,20 +307,94 @@ const Payments = () => {
                     </TouchableOpacity>
                   </View>
                   {/* Pending Timesheet Cards */}
-                  <PendingTimesheetCard
-                    week="Week 1"
-                    dateRange="2-8 th, May, 2025"
-                    shifts={23}
-                    pendingAmount="$40"
-                    onGoToPayment={() => {}}
-                  />
-                  <PendingTimesheetCard
-                    week="Week 1"
-                    dateRange="2-8 th, May, 2025"
-                    shifts={23}
-                    pendingAmount="$40"
-                    onGoToPayment={() => {}}
-                  />
+                  {loading ? (
+                    <View style={{ alignItems: "center", paddingVertical: 40 }}>
+                      <Text
+                        style={{
+                          fontFamily: "Comfortaa-Regular",
+                          fontSize: 14,
+                          color: "#6B7280",
+                        }}
+                      >
+                        Loading timesheets...
+                      </Text>
+                    </View>
+                  ) : error ? (
+                    <View style={{ alignItems: "center", paddingVertical: 40 }}>
+                      <Text
+                        style={{
+                          fontFamily: "Comfortaa-Medium",
+                          fontSize: 14,
+                          color: "#EF4444",
+                          textAlign: "center",
+                        }}
+                      >
+                        {error}
+                      </Text>
+                    </View>
+                  ) : filteredTimesheets.length === 0 ? (
+                    <View style={{ alignItems: "center", paddingVertical: 40 }}>
+                      <Ionicons
+                        name="document-text-outline"
+                        size={48}
+                        color="#6B7280"
+                      />
+                      <Text
+                        style={{
+                          fontFamily: "Comfortaa-Bold",
+                          fontSize: 16,
+                          color: "#232B3A",
+                          marginTop: 12,
+                          textAlign: "center",
+                        }}
+                      >
+                        No {activeTab === "pending" ? "Pending" : "Paid"}{" "}
+                        Timesheets
+                      </Text>
+                      <Text
+                        style={{
+                          fontFamily: "Comfortaa-Regular",
+                          fontSize: 14,
+                          color: "#6B7280",
+                          marginTop: 8,
+                          textAlign: "center",
+                        }}
+                      >
+                        {activeTab === "pending"
+                          ? "All timesheets have been paid"
+                          : "No paid timesheets yet"}
+                      </Text>
+                    </View>
+                  ) : (
+                    filteredTimesheets.map((timesheet) => (
+                      <PendingTimesheetCard
+                        key={timesheet.id}
+                        week={getWeekLabel(timesheet.weekStart)}
+                        dateRange={formatWeekRange(
+                          timesheet.weekStart,
+                          timesheet.weekEnd
+                        )}
+                        shifts={timesheet.totalPickups}
+                        pendingAmount={`$${timesheet.totalEarnings.toFixed(2)}`}
+                        variant={getVariant(
+                          timesheet.isPaid,
+                          timesheet.isApproved
+                        )}
+                        onPress={() => {
+                          router.push(
+                            `/parent/timesheet-details/${timesheet.id}` as any
+                          );
+                        }}
+                        onGoToPayment={() => {
+                          // Handle payment action
+                          console.log(
+                            "Process payment for timesheet:",
+                            timesheet.id
+                          );
+                        }}
+                      />
+                    ))
+                  )}
                 </View>
               ) : (
                 <View style={{ paddingVertical: 16 }}>
@@ -319,27 +469,43 @@ const Payments = () => {
                     </TouchableOpacity>
                   </View>
                   {/* Paid Timesheet Cards */}
-                  <PendingTimesheetCard
-                    week="Week 1"
-                    dateRange="2-8 th, May, 2025"
-                    shifts={23}
-                    pendingAmount="$40"
-                    variant="paid"
-                  />
-                  <PendingTimesheetCard
-                    week="Week 1"
-                    dateRange="2-8 th, May, 2025"
-                    shifts={23}
-                    pendingAmount="$40"
-                    variant="paid"
-                  />
-                  <PendingTimesheetCard
-                    week="Week 1"
-                    dateRange="2-8 th, May, 2025"
-                    shifts={23}
-                    pendingAmount="$40"
-                    variant="paid"
-                  />
+                  {loading ? (
+                    <View style={{ alignItems: "center", paddingVertical: 40 }}>
+                      <Text style={{ fontFamily: "Comfortaa-Regular", fontSize: 14, color: "#6B7280" }}>
+                        Loading timesheets...
+                      </Text>
+                    </View>
+                  ) : error ? (
+                    <View style={{ alignItems: "center", paddingVertical: 40 }}>
+                      <Text style={{ fontFamily: "Comfortaa-Medium", fontSize: 14, color: "#EF4444", textAlign: "center" }}>
+                        {error}
+                      </Text>
+                    </View>
+                  ) : filteredTimesheets.length === 0 ? (
+                    <View style={{ alignItems: "center", paddingVertical: 40 }}>
+                      <Ionicons name="document-text-outline" size={48} color="#6B7280" />
+                      <Text style={{ fontFamily: "Comfortaa-Bold", fontSize: 16, color: "#232B3A", marginTop: 12, textAlign: "center" }}>
+                        No Paid Timesheets
+                      </Text>
+                      <Text style={{ fontFamily: "Comfortaa-Regular", fontSize: 14, color: "#6B7280", marginTop: 8, textAlign: "center" }}>
+                        No paid timesheets yet
+                      </Text>
+                    </View>
+                  ) : (
+                    filteredTimesheets.map((timesheet) => (
+                      <PendingTimesheetCard
+                        key={timesheet.id}
+                        week={getWeekLabel(timesheet.weekStart)}
+                        dateRange={formatWeekRange(timesheet.weekStart, timesheet.weekEnd)}
+                        shifts={timesheet.totalPickups}
+                        pendingAmount={`$${timesheet.totalEarnings.toFixed(2)}`}
+                        variant={getVariant(timesheet.isPaid, timesheet.isApproved)}
+                        onPress={() => {
+                          router.push(`/parent/timesheet-details/${timesheet.id}` as any);
+                        }}
+                      />
+                    ))
+                  )}
                 </View>
               )}
             </View>

@@ -60,6 +60,86 @@ export interface ParentPickupRequest {
   updatedAt: string;
 }
 
+export interface Pickup {
+  id: number;
+  parentId: string;
+  buddiId: number;
+  childId: string;
+  fromLocation: string;
+  toLocation: string;
+  status: 'pending' | 'enRoute' | 'pickedUp' | 'completed';
+  pickupTime: string | null;
+  dropoffTime: string | null;
+  tripStartTime: string | null;
+  fare: number | null;
+  distance: number | null;
+  duration: string | null;
+  buddiRequestId: number;
+  createdAt: string;
+  updatedAt: string;
+  Child: {
+    id: string;
+    parentId: string;
+    name: string;
+    age: number;
+    schoolName: string;
+    pickupAddress: string;
+    createdAt: string;
+    updatedAt: string;
+  };
+  BuddiRequest: {
+    id: number;
+    parentId: string;
+    childId: string;
+    description: string;
+    availableDays: string[];
+    pickupTime: string;
+    kidsCount: number;
+    fromZone: string;
+    toZone: string;
+    status: string;
+    matchedBuddiId: number;
+    createdAt: string;
+    updatedAt: string;
+  };
+}
+
+export interface DailyPickup {
+  id: number;
+  timesheetId: number;
+  day: string;
+  pickups: number;
+  fare: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface Timesheet {
+  id: number;
+  buddiId: number;
+  parentId: string;
+  buddiRequestId: number;
+  weekStart: string;
+  weekEnd: string;
+  availableDays: string[];
+  totalHours: number;
+  totalPickups: number;
+  totalEarnings: number;
+  isPaid: boolean;
+  isFull: boolean;
+  isApproved: boolean;
+  createdAt: string;
+  updatedAt: string;
+  dailyPickups: DailyPickup[];
+}
+
+export interface TimesheetResponse {
+  total: number;
+  page: number;
+  limit: number;
+  data: Timesheet[];
+}
+
 export interface ParentPickupRequestsResponse {
   message: string;
   currentPage: number;
@@ -212,8 +292,24 @@ async function createPickupRequest(payload: {
   buddiRequestId: number; // or string, depending on your backend
   callId: number;      
 }): Promise<any> {
-  const response = await authorizedApi.post("/parent/request", payload);
-  return response.data;
+  try {
+    const response = await authorizedApi.post("/parent/request", payload);
+    return response.data;
+  } catch (err: any) {
+    // Re-throw the error with proper structure for handling in the UI
+    if (err?.response?.status === 400) {
+      throw {
+        response: {
+          status: 400,
+          data: {
+            error: err.response.data.error || "Bad request"
+          }
+        },
+        message: err.response.data.error || "Bad request"
+      };
+    }
+    throw err;
+  }
 }
 
 const ParentService = {
@@ -225,6 +321,53 @@ const ParentService = {
   async getMyPickupRequests(parentId: string): Promise<ParentPickupRequestsResponse> {
     const response = await authorizedApi.get(`/parent/buddi-requests/my-requests/${parentId}`);
     return response.data;
+  },
+
+  async getAllPickups(parentId: string): Promise<{ pickups: any[] }> {
+    try {
+      const response = await authorizedApi.get(`/pickups/${parentId}/allPickups`);
+      return response.data;
+    } catch (err: any) {
+      let message = 'Failed to fetch pickups.';
+      if (err?.response?.data?.message) {
+        message = err.response.data.message;
+      } else if (err?.message) {
+        if (err.message.includes('Network')) {
+          message = 'Network error. Please check your connection and try again.';
+        } else if (err.message.includes('timeout')) {
+          message = 'Request timed out. Please try again.';
+        } else {
+          message = err.message;
+        }
+      } else if (typeof err === 'string') {
+        message = err;
+      }
+      throw new Error(message);
+    }
+  },
+
+  async getTimesheets(parentId: string, buddiId?: number, page: number = 1, limit: number = 10): Promise<TimesheetResponse> {
+    try {
+      const buddiParam = buddiId ? `/buddi/${buddiId}` : '';
+      const response = await authorizedApi.get(`/timesheets/parent/${parentId}${buddiParam}?page=${page}&limit=${limit}`);
+      return response.data;
+    } catch (err: any) {
+      let message = 'Failed to fetch timesheets.';
+      if (err?.response?.data?.message) {
+        message = err.response.data.message;
+      } else if (err?.message) {
+        if (err.message.includes('Network')) {
+          message = 'Network error. Please check your connection and try again.';
+        } else if (err.message.includes('timeout')) {
+          message = 'Request timed out. Please try again.';
+        } else {
+          message = err.message;
+        }
+      } else if (typeof err === 'string') {
+        message = err;
+      }
+      throw new Error(message);
+    }
   },
 
   async getAllParentRequests(page: number = 1, limit: number = 10): Promise<ParentPickupRequestsResponse> {

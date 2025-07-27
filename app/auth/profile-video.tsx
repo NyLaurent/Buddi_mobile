@@ -225,7 +225,7 @@ export default function BuddiProfileVideoScreen() {
                   Record Video
                 </Text>
               </TouchableOpacity>
-              <TouchableOpacity
+              {/* <TouchableOpacity
                 style={[styles.recordBtn, { backgroundColor: "#2563EB" }]}
                 onPress={pickVideo}
               >
@@ -239,7 +239,7 @@ export default function BuddiProfileVideoScreen() {
                 >
                   Upload Video
                 </Text>
-              </TouchableOpacity>
+              </TouchableOpacity> */}
             </View>
           )}
           {recording && (

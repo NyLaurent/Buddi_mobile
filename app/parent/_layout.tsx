@@ -18,10 +18,13 @@ export default function ParentLayout() {
             }}
           >
             <Stack.Screen name="index" />
+            <Stack.Screen name="call-page" />
             <Stack.Screen name="callup-review" />
             <Stack.Screen name="rank-buddies" />
             <Stack.Screen name="my-buddi" />
             <Stack.Screen name="schedule" />
+            <Stack.Screen name="timesheets" />
+            <Stack.Screen name="timesheet-details/[id]" />
             <Stack.Screen name="payments" />
             <Stack.Screen name="settings" />
             <Stack.Screen name="buddi-recommendations/[callId]" />
