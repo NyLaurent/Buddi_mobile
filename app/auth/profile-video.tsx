@@ -6,7 +6,6 @@ import { useRouter } from "expo-router";
 import { useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
-  Button,
   StatusBar,
   StyleSheet,
   Text,
@@ -45,30 +44,73 @@ export default function BuddiProfileVideoScreen() {
   if (!permission.granted) {
     return (
       <View style={styles.centeredContainer}>
-        <Text style={{ textAlign: "center", fontFamily: "Comfortaa-Regular" }}>
-          We need your permission to use the camera
+        <Text
+          style={{
+            textAlign: "center",
+            fontFamily: "Comfortaa-Regular",
+            marginBottom: 20,
+          }}
+        >
+          Camera permission is required to record your profile video
         </Text>
-        <Button onPress={requestPermission} title="Grant permission" />
+        <TouchableOpacity
+          style={{
+            backgroundColor: PRIMARY_COLOR,
+            paddingVertical: 12,
+            paddingHorizontal: 24,
+            borderRadius: 8,
+          }}
+          onPress={requestPermission}
+        >
+          <Text
+            style={{
+              color: "#fff",
+              fontFamily: "Comfortaa-Bold",
+              textAlign: "center",
+            }}
+          >
+            Grant Camera Permission
+          </Text>
+        </TouchableOpacity>
       </View>
     );
   }
 
   const startRecording = async () => {
+    if (!cameraRef.current) {
+      setError("Camera not ready");
+      return;
+    }
+
     setVideoUri(null);
+    setError("");
     setRecording(true);
+
     try {
-      const video = await cameraRef.current?.recordAsync();
-      setVideoUri(video?.uri || null);
+      // Use recordAsync with proper error handling for production
+      const video = await cameraRef.current.recordAsync({
+        maxDuration: 300, // 5 minutes max
+      });
+
+      if (video && video.uri) {
+        setVideoUri(video.uri);
+        console.log("Recording successful:", video.uri);
+      } else {
+        throw new Error("No video URI returned");
+      }
     } catch (e) {
-      setError("Failed to record video");
+      console.error("Recording error:", e);
+      setError("Failed to record video. Please try again.");
     } finally {
       setRecording(false);
     }
   };
 
   const stopRecording = () => {
+    if (cameraRef.current) {
+      cameraRef.current.stopRecording();
+    }
     setRecording(false);
-    cameraRef.current?.stopRecording();
   };
 
   const pickVideo = async () => {
