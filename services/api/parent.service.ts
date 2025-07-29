@@ -347,11 +347,26 @@ const ParentService = {
   },
 
   async getTimesheets(parentId: string, buddiId?: number, page: number = 1, limit: number = 10): Promise<TimesheetResponse> {
+    console.log("🎯 getTimesheets method called");
+    console.log("📋 Input parameters:", { parentId, buddiId, page, limit });
+    
     try {
       const buddiParam = buddiId ? `/buddi/${buddiId}` : '';
-      const response = await authorizedApi.get(`/timesheets/parent/${parentId}${buddiParam}?page=${page}&limit=${limit}`);
+      const url = `/timesheets/parent/${parentId}${buddiParam}?page=${page}&limit=${limit}`;
+      
+      console.log("🚀 Making API call to:", url);
+      console.log("📋 Parameters:", { parentId, buddiId, page, limit });
+      
+      const response = await authorizedApi.get(url);
+      
+      console.log("📡 Raw API response:", response);
+      console.log("📊 Response data:", response.data);
+      
       return response.data;
     } catch (err: any) {
+      console.error("💥 API Error:", err);
+      console.error("💥 Error response:", err.response);
+      
       let message = 'Failed to fetch timesheets.';
       if (err?.response?.data?.message) {
         message = err.response.data.message;

@@ -59,6 +59,28 @@ export default function ParentDashboard() {
     null
   );
 
+  // Helper to emit pickup events to buddi's room
+  const emitPickupEvent = (
+    eventName: string,
+    pickupData: any,
+    buddiId: number
+  ) => {
+    const socket = SocketService.getSocket();
+    if (socket) {
+      const buddiRoomId = `buddi-${buddiId}`;
+      console.log(`[PARENT] Emitting ${eventName} to buddi room:`, buddiRoomId);
+      console.log(`[PARENT] Pickup data:`, pickupData);
+      console.log(`[PARENT] Socket connected:`, socket.connected);
+      socket.emit(eventName, {
+        roomId: buddiRoomId,
+        pickupData: pickupData,
+      });
+      console.log(`[PARENT] ${eventName} event emitted successfully`);
+    } else {
+      console.log(`[PARENT] Cannot emit ${eventName}: socket not available`);
+    }
+  };
+
   React.useEffect(() => {
     const fetchDetailsForRequests = async () => {
       if (!parentDetails?.id) return;
@@ -151,9 +173,14 @@ export default function ParentDashboard() {
       try {
         pickup = typeof data === "string" ? JSON.parse(data) : data;
       } catch (err) {
-        console.error("Parse error (pickup-requested):", err);
+        console.error("[PARENT] Parse error (pickup-requested):", err);
         return;
       }
+      console.log("[PARENT] Pickup requested event received:", pickup);
+      console.log(
+        "[PARENT] Current pickup requests count:",
+        pickupRequests.length
+      );
       upsertPickup(pickup);
       // Refresh pickups to get updated status
       refreshPickups();
@@ -164,9 +191,14 @@ export default function ParentDashboard() {
       try {
         pickup = typeof data === "string" ? JSON.parse(data) : data;
       } catch (err) {
-        console.error("Parse error (pickup-started):", err);
+        console.error("[PARENT] Parse error (pickup-started):", err);
         return;
       }
+      console.log("[PARENT] Pickup started event received:", pickup);
+      console.log(
+        "[PARENT] Current pickup requests count:",
+        pickupRequests.length
+      );
       upsertPickup(pickup);
       // Refresh pickups to get updated status
       refreshPickups();
@@ -177,9 +209,14 @@ export default function ParentDashboard() {
       try {
         pickup = typeof data === "string" ? JSON.parse(data) : data;
       } catch (err) {
-        console.error("Parse error (child-picked-up):", err);
+        console.error("[PARENT] Parse error (child-picked-up):", err);
         return;
       }
+      console.log("[PARENT] Child picked up event received:", pickup);
+      console.log(
+        "[PARENT] Current pickup requests count:",
+        pickupRequests.length
+      );
       upsertPickup(pickup);
       // Refresh pickups to get updated status
       refreshPickups();
@@ -190,9 +227,14 @@ export default function ParentDashboard() {
       try {
         pickup = typeof data === "string" ? JSON.parse(data) : data;
       } catch (err) {
-        console.error("Parse error (trip-completed):", err);
+        console.error("[PARENT] Parse error (trip-completed):", err);
         return;
       }
+      console.log("[PARENT] Trip completed event received:", pickup);
+      console.log(
+        "[PARENT] Current pickup requests count:",
+        pickupRequests.length
+      );
       upsertPickup(pickup);
       // Refresh pickups to get updated status
       refreshPickups();
@@ -201,10 +243,14 @@ export default function ParentDashboard() {
     // Add listeners
     const socket = getSocket();
     if (socket) {
+      console.log("[PARENT] Setting up socket event listeners");
       socket.on("pickup-requested", handlePickupRequested);
       socket.on("pickup-started", handlePickupStarted);
       socket.on("child-picked-up", handleChildPickedUp);
       socket.on("trip-completed", handleTripCompleted);
+      console.log("[PARENT] Socket event listeners set up successfully");
+    } else {
+      console.log("[PARENT] Socket not available for event listeners");
     }
 
     // On mount, load pickups from AsyncStorage

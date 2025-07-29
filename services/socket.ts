@@ -20,10 +20,12 @@ class SocketService {
       });
 
       this.socket.on('connect', () => {
-        console.log('Socket connected:', this.socket?.id);
+        console.log('[SocketService] Socket connected:', this.socket?.id);
+        console.log('[SocketService] Socket URL:', SOCKET_SERVER_URL);
         this.isConnected = true;
         // Process any pending room joins
         this.pendingRoomJoins.forEach(({ chatRoomId, userId, userType }) => {
+          console.log('[SocketService] Processing pending room join:', { chatRoomId, userId, userType });
           this.joinChatRoom(chatRoomId, userId, userType);
         });
         this.pendingRoomJoins = [];
@@ -51,22 +53,27 @@ class SocketService {
       this.pendingRoomJoins.push({ chatRoomId, userId, userType });
       return;
     }
-    console.log('Joining chat room:', { chatRoomId, userId, userType });
+    console.log('[SocketService] Joining chat room:', { chatRoomId, userId, userType });
+    console.log('[SocketService] Socket connected:', this.socket.connected);
+    console.log('[SocketService] Socket ID:', this.socket.id);
     this.socket.emit('join-chat-room', {
       chatRoomId,
       userId,
       userType,
     });
+    console.log('[SocketService] join-chat-room event emitted');
   }
 
   // Send a message
   sendMessage(chatRoomId: string, message: string, senderId: string, senderType: 'Parent' | 'Buddi') {
     if (!this.socket || !this.isConnected) {
-      console.error('Socket not connected');
+      console.error('[SocketService] Socket not connected');
       return;
     }
 
-    console.log('Sending message:', { chatRoomId, message, senderId, senderType });
+    console.log('[SocketService] Sending message:', { chatRoomId, message, senderId, senderType });
+    console.log('[SocketService] Socket connected:', this.socket.connected);
+    console.log('[SocketService] Socket ID:', this.socket.id);
     
     this.socket.emit('send-message', {
       chatRoomId,
@@ -74,6 +81,7 @@ class SocketService {
       senderId,
       senderType,
     });
+    console.log('[SocketService] send-message event emitted');
   }
 
   // Listen for incoming messages
