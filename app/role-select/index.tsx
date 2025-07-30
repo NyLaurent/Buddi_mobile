@@ -27,12 +27,12 @@ const ROLES = [
     description: "Pick up and assist younger students.",
     icon: <FontAwesome5 name="users" size={32} color="#fff" />,
   },
-  {
-    key: "teacher",
-    label: "Head Teacher",
-    description: "View references and provide info about Buddis.",
-    icon: <FontAwesome5 name="user-tie" size={28} color="#fff" />,
-  },
+  // {
+  //   key: "teacher",
+  //   label: "Head Teacher",
+  //   description: "View references and provide info about Buddis.",
+  //   icon: <FontAwesome5 name="user-tie" size={28} color="#fff" />,
+  // },
   {
     key: "admin",
     label: "Admin",

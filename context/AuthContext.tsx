@@ -517,9 +517,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         "verified",
       ].includes(buddiDetails.status);
       // NEW: Check profile video submission
-      return (
-        isApprovedBuddi && buddiDetails.isProfileVideoSubmitted === true
-      );
+      return isApprovedBuddi && buddiDetails.isProfileVideoSubmitted === true;
     }
 
     if (user.role === "parent" && parentDetails) {
@@ -821,6 +819,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 
       // Stop status polling
       stopStatusPolling();
+
+      // Clear pickup data from storage
+      console.log("AuthContext: Clearing pickup data...");
+      await SocketService.clearPickupData();
 
       console.log("AuthContext: Calling auth service logout..."); // Debug log
       // Call auth service logout to clear storage

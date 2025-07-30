@@ -80,6 +80,9 @@ const SchedulePage = () => {
   const [activeTab, setActiveTab] = React.useState("pickups");
   const [pickupIndex, setPickupIndex] = React.useState(0);
 
+  // Helper to get today's day as a string (e.g., 'Monday')
+  const today = new Date().toLocaleDateString("en-US", { weekday: "long" });
+
   // State for real pickup requests and details
   const [pickupRequests, setPickupRequests] = React.useState<any[]>([]);
   const [childDetailsMap, setChildDetailsMap] = React.useState<
@@ -208,7 +211,7 @@ const SchedulePage = () => {
         <View className="px-4 mb-6">
           <TouchableOpacity
             className="bg-primary rounded-full py-4 items-center"
-            onPress={() => router.push("/parent")}
+            onPress={() => router.push("/parent/timesheets")}
           >
             <View className="flex-row items-center gap-2">
               <Text className="text-white font-comfortaa-bold text-lg">
@@ -298,9 +301,73 @@ const SchedulePage = () => {
                   >
                     No pickups scheduled yet.
                   </Text>
+                ) : pickupRequests.filter((pickup) => {
+                    // Check if any pickup has today in available days
+                    return (
+                      pickup.availableDays &&
+                      Array.isArray(pickup.availableDays) &&
+                      pickup.availableDays
+                        .map((d: string) => d.trim().toLowerCase())
+                        .includes(today.toLowerCase())
+                    );
+                  }).length === 0 ? (
+                  <View
+                    style={{
+                      backgroundColor: "#FFF7ED",
+                      borderRadius: 16,
+                      borderWidth: 1.2,
+                      borderColor: "#FFD9B3",
+                      padding: 18,
+                      marginVertical: 6,
+                      alignItems: "center",
+                      justifyContent: "center",
+                    }}
+                  >
+                    <Text
+                      style={{
+                        fontFamily: "Comfortaa-Bold",
+                        fontSize: 16,
+                        color: "#FF932E",
+                        marginBottom: 6,
+                      }}
+                    >
+                      No pickups for {today}
+                    </Text>
+                    <Text
+                      style={{
+                        fontFamily: "Comfortaa-Regular",
+                        fontSize: 13,
+                        color: "#A3A3A3",
+                        textAlign: "center",
+                      }}
+                    >
+                      You have {pickupRequests.length} pickup(s) scheduled for
+                      other days.
+                    </Text>
+                  </View>
                 ) : (
                   pickupRequests.map((pickup) => {
                     const child = childDetailsMap[pickup.childId];
+
+                    // Check if pickup has available days and if today is one of them
+                    const hasTodayPickup =
+                      pickup.availableDays &&
+                      Array.isArray(pickup.availableDays) &&
+                      pickup.availableDays
+                        .map((d: string) => d.trim().toLowerCase())
+                        .includes(today.toLowerCase());
+
+                    console.log("🚀 [PARENT] Pickup ID:", pickup.id);
+                    console.log(
+                      "🚀 [PARENT] Available days:",
+                      pickup.availableDays
+                    );
+                    console.log("🚀 [PARENT] Today:", today);
+                    console.log(
+                      "🚀 [PARENT] Has today pickup?",
+                      hasTodayPickup
+                    );
+
                     // If not matched with a Buddi, show waiting card
                     if (!pickup.matchedBuddiId) {
                       return (
@@ -365,82 +432,37 @@ const SchedulePage = () => {
                     }
                     const buddiStatus =
                       pickup.status === "matched" ? "Available" : "Pending";
-                    // Show up to 3 cards for the first 3 scheduled days
-                    const days =
-                      pickup.availableDays && pickup.availableDays.length > 0
-                        ? pickup.availableDays.slice(0, 3)
-                        : [];
+
+                    // Only show pickup if it's for today
+                    if (!hasTodayPickup) {
+                      console.log("🚀 [PARENT] No pickup for today, skipping");
+                      return null; // Don't render anything for this pickup
+                    }
+
+                    console.log("🚀 [PARENT] Showing pickup for today");
+
                     return (
                       <View key={pickup.id} style={{ marginBottom: 18 }}>
-                        <ScrollView
-                          horizontal
-                          showsHorizontalScrollIndicator={false}
-                          contentContainerStyle={{ paddingRight: 16 }}
-                        >
-                          {days.map((day: string, idx: number) => (
-                            <View
-                              key={`${pickup.id}-${day}`}
-                              style={{ width: 338, marginRight: 12 }}
-                            >
-                              <KidPickupCard
-                                childName={child?.name || "Child"}
-                                remaining={pickup.pickupTime || "-"}
-                                schedule={day}
-                                buddiName={buddiName}
-                                buddiEmail={buddiEmail}
-                                buddiAvatar={buddiAvatar}
-                                buddiStatus={buddiStatus}
-                                schoolName={
-                                  child?.school || pickup.fromZone || "School"
-                                }
-                                destination={pickup.toZone || "Home"}
-                                mainAction={
-                                  pickup.status === "matched"
-                                    ? "Trip Not Yet Started"
-                                    : "Pending"
-                                }
-                              />
-                            </View>
-                          ))}
-                        </ScrollView>
-                        {/* Show View All if more than 3 days */}
-                        {pickup.availableDays &&
-                          pickup.availableDays.length > 3 && (
-                            <TouchableOpacity
-                              style={{
-                                marginTop: 8,
-                                alignSelf: "flex-end",
-                                backgroundColor: "#FF932E",
-                                borderRadius: 999,
-                                paddingVertical: 8,
-                                paddingHorizontal: 22,
-                                flexDirection: "row",
-                                alignItems: "center",
-                              }}
-                              onPress={() => {
-                                router.push({
-                                  pathname: "/parent/all-pickups/[callId]",
-                                  params: { callId: pickup.id.toString() },
-                                });
-                              }}
-                            >
-                              <Text
-                                style={{
-                                  color: "#fff",
-                                  fontFamily: "Comfortaa-Bold",
-                                  fontSize: 15,
-                                  marginRight: 8,
-                                }}
-                              >
-                                View All
-                              </Text>
-                              <Ionicons
-                                name="arrow-forward"
-                                size={18}
-                                color="#fff"
-                              />
-                            </TouchableOpacity>
-                          )}
+                        <View style={{ width: 338 }}>
+                          <KidPickupCard
+                            childName={child?.name || "Child"}
+                            remaining={pickup.pickupTime || "-"}
+                            schedule={today} // Show current day only
+                            buddiName={buddiName}
+                            buddiEmail={buddiEmail}
+                            buddiAvatar={buddiAvatar}
+                            buddiStatus={buddiStatus}
+                            schoolName={
+                              child?.school || pickup.fromZone || "School"
+                            }
+                            destination={pickup.toZone || "Home"}
+                            mainAction={
+                              pickup.status === "matched"
+                                ? "Trip Not Yet Started"
+                                : "Pending"
+                            }
+                          />
+                        </View>
                       </View>
                     );
                   })

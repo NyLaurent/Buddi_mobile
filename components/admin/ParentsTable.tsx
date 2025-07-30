@@ -140,7 +140,7 @@ const ParentsTable: React.FC<ParentsTableProps> = ({
               : "-";
             const email = item.User ? item.User.email : "-";
             const phone = item.User ? item.User.phoneNumber : "-";
-            const status = item.approvalStage;
+            const status = item.approvalStage || "pending";
             const statusColor = getStatusColor(status);
             const statusBg = getStatusBg(status);
 
@@ -164,7 +164,7 @@ const ParentsTable: React.FC<ParentsTableProps> = ({
                   <View style={styles.childrenBadge}>
                     <Ionicons name="people" size={14} color="#FF932E" />
                     <Text style={styles.childrenText}>
-                      {item.childrenCount}
+                      {item.childrenCount || 0}
                     </Text>
                   </View>
                 </View>
@@ -179,7 +179,9 @@ const ParentsTable: React.FC<ParentsTableProps> = ({
                       ]}
                     />
                     <Text style={[styles.statusText, { color: statusColor }]}>
-                      {status.charAt(0).toUpperCase() + status.slice(1)}
+                      {status
+                        ? status.charAt(0).toUpperCase() + status.slice(1)
+                        : "Pending"}
                     </Text>
                   </View>
                 </View>
