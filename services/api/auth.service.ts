@@ -84,17 +84,39 @@ class AuthService {
 
       console.log("AuthService: Clearing local storage..."); // Debug log
       // Clear all stored authentication data
-      await AsyncStorage.multiRemove([
-        STORAGE_KEYS.ACCESS_TOKEN,
-        STORAGE_KEYS.REFRESH_TOKEN,
-        STORAGE_KEYS.USER_DATA,
-        'buddi_details',
-        'parent_details',
-      ]);
-      console.log("AuthService: Local storage cleared successfully"); // Debug log
+      try {
+        await AsyncStorage.multiRemove([
+          STORAGE_KEYS.ACCESS_TOKEN,
+          STORAGE_KEYS.REFRESH_TOKEN,
+          STORAGE_KEYS.USER_DATA,
+          'buddi_details',
+          'parent_details',
+          'super_admin_details',
+        ]);
+        console.log("AuthService: Local storage cleared successfully"); // Debug log
+      } catch (storageError) {
+        console.warn('AuthService: Error clearing storage, trying individual removal:', storageError);
+        
+        // Fallback: try to clear each item individually
+        try {
+          await AsyncStorage.removeItem(STORAGE_KEYS.ACCESS_TOKEN);
+          await AsyncStorage.removeItem(STORAGE_KEYS.REFRESH_TOKEN);
+          await AsyncStorage.removeItem(STORAGE_KEYS.USER_DATA);
+          await AsyncStorage.removeItem('buddi_details');
+          await AsyncStorage.removeItem('parent_details');
+          await AsyncStorage.removeItem('super_admin_details');
+          console.log("AuthService: Individual storage clearing successful"); // Debug log
+        } catch (individualError) {
+          console.error('AuthService: Failed to clear storage individually:', individualError);
+          // Don't throw here - we want logout to succeed even if storage clearing fails
+        }
+      }
+      
+      console.log("AuthService: Logout process completed"); // Debug log
     } catch (error) {
       console.error('AuthService: Error during logout:', error);
-      throw new Error('Failed to logout');
+      // Don't throw here - we want logout to succeed even if there are errors
+      // The AuthContext will handle clearing the state
     }
   }
 

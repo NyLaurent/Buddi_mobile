@@ -115,15 +115,26 @@ const WaitlistScreen = () => {
   // }, [checkApprovalAndNavigate, appState, clearPollingInterval]);
 
   const getUserDisplayInfo = () => {
-    if (!user) return { name: "", email: "", statusText: "", progressWidth: 0 };
+    if (!user)
+      return {
+        name: "",
+        email: "",
+        statusText: "",
+        progressWidth: 0,
+        initials: "",
+      };
 
     const name = `${user.firstName} ${user.lastName}`;
     const email = user.email;
+    const initials = `${user.firstName.charAt(0)}${user.lastName.charAt(
+      0
+    )}`.toUpperCase();
 
     if (user.role === "buddi" && buddiDetails) {
       return {
         name,
         email,
+        initials,
         statusText:
           buddiDetails.status === "RegisterApprovalPending"
             ? "Under Review - Application Pending"
@@ -137,6 +148,7 @@ const WaitlistScreen = () => {
       return {
         name,
         email,
+        initials,
         statusText:
           parentDetails.approvalStage === "pending"
             ? "Under Review - Parent Verification Pending"
@@ -149,6 +161,7 @@ const WaitlistScreen = () => {
     return {
       name,
       email,
+      initials,
       statusText: "Application In Review",
       progressWidth: 30,
       roleDisplayName: user.role === "buddi" ? "Buddi" : "Parent",
@@ -231,7 +244,9 @@ const WaitlistScreen = () => {
         >
           <View className="items-center mb-2">
             <View className="w-24 h-24 rounded-full bg-white/20 border-2 border-white mb-2 items-center justify-center">
-              <Ionicons name="person" size={48} color="white" />
+              <Text className="text-3xl font-comfortaa-bold text-white">
+                {userInfo.initials}
+              </Text>
             </View>
             <Text className="text-xl font-comfortaa-bold text-white mb-1">
               {userInfo.name}

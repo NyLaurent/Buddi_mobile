@@ -149,6 +149,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     }
   }, [user, buddiDetails, parentDetails, isLoading, isLoggingIn, segments]);
 
+  // Force navigation to login when user is null (after logout)
+  useEffect(() => {
+    if (!isLoading && !user && segments[0] !== "auth") {
+      console.log("AuthContext: User is null, forcing navigation to login");
+      router.replace("/auth/login" as any);
+    }
+  }, [user, isLoading, segments]);
+
   // COMMENTED OUT: Status polling functionality - users will be emailed when approved
   // useEffect(() => {
   //   if (user && !isLoading && !isLoggingIn) {
@@ -233,24 +241,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       "super-admin",
     ].includes(segments[0]);
 
-    // TEMPORARY: Allow unrestricted access to these routes for development
-    // TODO: REMOVE THIS BEFORE PRODUCTION
-    const isTemporaryUnprotectedRoute =
-      segments[0] === "onboarding" ||
-      segments[0] === "role-select" ||
-      (inAuthGroup && segments[1] === "signup");
-
-    if (isTemporaryUnprotectedRoute) {
-      console.log(
-        "handleNavigation - Temporarily allowing access to development routes"
-      );
-      return;
-    }
-
-    const isPublicRoute =
-      ["role-select", "onboarding", ""].includes(segments[0]) ||
-      segments[0] === undefined;
-
     // Make login route always accessible
     const isLoginRoute = segments[0] === "auth" && segments[1] === "login";
 
@@ -272,9 +262,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       segments,
       inAuthGroup,
       inProtectedRoute,
-      isPublicRoute,
-      isRecordingFlow,
       isLoginRoute,
+      isRecordingFlow,
       isSubmissionApprovedRoute,
       userRole: user?.role,
       buddiStatus: buddiDetails?.status,
@@ -300,10 +289,25 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       return;
     }
 
+    // If no user and not on login route, redirect to login
     if (!user) {
-      if (inProtectedRoute) {
+      if (inProtectedRoute || segments[0] === "role-select") {
         router.replace("/auth/login");
       }
+      return;
+    }
+
+    // TEMPORARY: Allow unrestricted access to these routes for development
+    // TODO: REMOVE THIS BEFORE PRODUCTION
+    const isTemporaryUnprotectedRoute =
+      segments[0] === "onboarding" ||
+      segments[0] === "role-select" ||
+      (inAuthGroup && segments[1] === "signup");
+
+    if (isTemporaryUnprotectedRoute) {
+      console.log(
+        "handleNavigation - Temporarily allowing access to development routes"
+      );
       return;
     }
 
@@ -517,9 +521,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         "verified",
       ].includes(buddiDetails.status);
       // NEW: Check profile video submission
-      return (
-        isApprovedBuddi && buddiDetails.isProfileVideoSubmitted === true
-      );
+      return isApprovedBuddi && buddiDetails.isProfileVideoSubmitted === true;
     }
 
     if (user.role === "parent" && parentDetails) {
@@ -677,6 +679,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       console.log("Login - Final target route:", targetRoute);
       router.replace(targetRoute as any);
     } catch (error) {
+      // Clear any partial state that might have been set
+      setUser(null);
+      setBuddiDetails(null);
+      setParentDetails(null);
+      setSuperAdminDetails(null);
+
       setIsLoading(false); // Ensure loader is hidden on error
       setIsLoggingIn(false); // Also reset logging in state
       console.error("Login error:", error);
@@ -834,8 +842,26 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       setSuperAdminDetails(null);
 
       console.log("AuthContext: Logout completed successfully"); // Debug log
+      
+      // Force navigation to login immediately after logout
+      console.log("AuthContext: Navigating to login after logout");
+      router.replace("/auth/login" as any);
+      
     } catch (error) {
       console.error("AuthContext: Logout error:", error);
+      
+      // Even if logout fails, clear local state to ensure user is logged out
+      console.log("AuthContext: Clearing state despite logout error...");
+      setUser(null);
+      setBuddiDetails(null);
+      setParentDetails(null);
+      setSuperAdminDetails(null);
+      
+      // Force navigation to login even on error
+      console.log("AuthContext: Navigating to login despite logout error");
+      router.replace("/auth/login" as any);
+      
+      // Re-throw the error so the calling component can handle it
       throw error;
     } finally {
       setIsLoading(false);

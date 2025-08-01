@@ -56,10 +56,6 @@ const LoginScreen = () => {
     router.push("/auth/recovery-email" as any);
   };
 
-  const handleGoogleSignIn = () => {
-    Alert.alert("Coming Soon", "Google Sign In will be available soon!");
-  };
-
   return (
     <SafeAreaView className="flex-1 bg-white">
       <View className="flex-1 px-6 pt-6">
@@ -164,8 +160,8 @@ const LoginScreen = () => {
               Keep me signed in
             </Text>
           </TouchableOpacity>
-          <TouchableOpacity onPress={handleForgotPassword} disabled={isLoading}>
-            <Text className="font-comfortaa" style={{ color: PRIMARY_COLOR }}>
+          <TouchableOpacity disabled={true}>
+            <Text className="font-comfortaa" style={{ color: "#A0A0A0" }}>
               Forgot Password
             </Text>
           </TouchableOpacity>
@@ -201,33 +197,6 @@ const LoginScreen = () => {
                 Logging in...
               </Text>
             )}
-          </View>
-        </TouchableOpacity>
-
-        {/* OR Divider */}
-        <View className="flex-row items-center mb-6">
-          <View className="flex-1 h-[1px] bg-gray-200" />
-          <Text className="mx-4 font-comfortaa text-[#71727A]">OR</Text>
-          <View className="flex-1 h-[1px] bg-gray-200" />
-        </View>
-
-        {/* Google Sign In */}
-        <TouchableOpacity
-          className="border border-gray-200 rounded-full py-3.5 items-center mb-8"
-          onPress={handleGoogleSignIn}
-          disabled={isLoading}
-          style={{ opacity: isLoading ? 0.7 : 1 }}
-        >
-          <View className="flex-row items-center">
-            <Image
-              source={{
-                uri: "https://upload.wikimedia.org/wikipedia/commons/5/53/Google_%22G%22_Logo.svg",
-              }}
-              style={{ width: 20, height: 20, marginRight: 10 }}
-            />
-            <Text className="font-comfortaa-bold text-[#71727A] text-base">
-              Sign In With Google
-            </Text>
           </View>
         </TouchableOpacity>
 

@@ -1,3 +1,4 @@
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import axios from "axios";
 import { authorizedApi } from './config';
 import { BUDDI_ENDPOINTS } from './endpoints';
@@ -151,41 +152,183 @@ export async function getRandomInterviewQuestions() {
   return shuffled.slice(0, 3).map((q: any) => ({ id: q.id, questionDescription: q.questionDescription }));
 }
 
-export async function uploadBuddiProfileVideo(buddiId: number, videoUri: string) {
-  const formData = new FormData();
-  const fileObj = {
-    uri: videoUri,
-    name: "profile-video.mp4",
-    type: "video/mp4"
-  } as any;
-  formData.append("file", fileObj);
-  console.log("[UPLOAD] Buddi interview video: fileObj:", fileObj);
-  const url = `https://backend-service-hw1rh.kinsta.app/api/v1/buddi/interview/${buddiId}/uploadBuddiInterviewVideo/video`;
-  console.log("[UPLOAD] POST URL:", url);
+/**
+ * Get video file info for debugging
+ * @param videoUri - Path to the video file
+ * @returns Promise<object> - Video file information
+ */
+export async function getVideoInfo(videoUri: string): Promise<any> {
   try {
-    const res = await authorizedApi.post(url, formData);
-    console.log("[UPLOAD] Success response:", res.data);
-    return res.data;
-  } catch (err: any) {
-    if (err?.response) {
-      console.log("[UPLOAD] Error response:", err.response.data);
-    } else {
-      console.log("[UPLOAD] Error:", err);
+    console.log("=== VIDEO INFO START ===");
+    console.log("[VIDEO INFO] Video URI:", videoUri);
+    console.log("[VIDEO INFO] Video URI type:", typeof videoUri);
+    console.log("[VIDEO INFO] Video URI length:", videoUri.length);
+    
+    // Check if video URI is valid
+    if (!videoUri || videoUri.trim() === '') {
+      console.error("[VIDEO INFO] Invalid video URI provided");
+      throw new Error("Invalid video URI");
     }
-    throw err;
+    
+    // For Expo Go, we can't get detailed file info, but we can log what we have
+    console.log("[VIDEO INFO] Video URI appears valid");
+    console.log("=== VIDEO INFO END ===");
+    
+    return {
+      uri: videoUri,
+      size: 'unknown',
+      duration: 'unknown',
+      format: 'mp4'
+    };
+  } catch (error) {
+    console.error("=== VIDEO INFO ERROR ===");
+    console.error("[VIDEO INFO] Error getting video info:", error);
+    console.error("=== VIDEO INFO ERROR END ===");
+    return { uri: videoUri, error: 'Failed to get video info' };
+  }
+}
+
+export async function uploadBuddiProfileVideo(buddiId: number, videoUri: string) {
+  try {
+    console.log("=== VIDEO UPLOAD START ===");
+    console.log("[UPLOAD] Buddi ID:", buddiId);
+    console.log("[UPLOAD] Original Video URI:", videoUri);
+    console.log("[UPLOAD] Original URI type:", typeof videoUri);
+    console.log("[UPLOAD] Original URI length:", videoUri.length);
+
+    // Get video info for debugging (no compression in Expo Go)
+    console.log("[UPLOAD] Getting video info...");
+    const videoInfo = await getVideoInfo(videoUri);
+    console.log("[UPLOAD] Video info:", videoInfo);
+
+    // Create FormData with proper file object
+    console.log("[UPLOAD] Creating FormData...");
+    const formData = new FormData();
+    
+    // Extract filename from URI or use default
+    const fileName = videoUri.split('/').pop() || 'interview-video.mp4';
+    console.log("[UPLOAD] Extracted filename:", fileName);
+    
+    const fileObj = {
+      uri: videoUri,
+      name: fileName,
+      type: 'video/mp4',
+    } as any;
+
+    console.log("[UPLOAD] File object created:", fileObj);
+    formData.append('file', fileObj);
+    console.log("[UPLOAD] FormData created with file key (matching Postman)");
+    console.log("[UPLOAD] FormData created successfully");
+    console.log("[UPLOAD] FormData key: 'file' (matches Postman implementation)");
+
+    // Create a custom axios instance for this upload with longer timeout
+    console.log("[UPLOAD] Creating axios instance...");
+    const uploadApi = axios.create({
+      baseURL: 'https://backend-service-hw1rh.kinsta.app/api/v1',
+      timeout: 120000, // 2 minutes timeout for video upload
+      headers: {
+        'Accept': 'application/json',
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+    console.log("[UPLOAD] Axios instance created with timeout:", 120000, "ms");
+
+    // Add auth token
+    console.log("[UPLOAD] Getting auth token...");
+    const token = await AsyncStorage.getItem('access_token');
+    if (token) {
+      uploadApi.defaults.headers.Authorization = `Bearer ${token}`;
+      console.log("[UPLOAD] Auth token added to headers (length:", token.length, ")");
+    } else {
+      console.warn("[UPLOAD] No auth token found in AsyncStorage");
+    }
+
+    const url = `/buddi/interview/${buddiId}/uploadBuddiInterviewVideo/video`;
+    console.log("[UPLOAD] Full upload URL:", `https://backend-service-hw1rh.kinsta.app/api/v1${url}`);
+    console.log("[UPLOAD] Making POST request...");
+
+    const uploadStartTime = Date.now();
+    const response = await uploadApi.post(url, formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+      onUploadProgress: (progressEvent) => {
+        if (progressEvent.total) {
+          const percentCompleted = Math.round(
+            (progressEvent.loaded * 100) / progressEvent.total
+          );
+          const uploadedMB = (progressEvent.loaded / (1024 * 1024)).toFixed(2);
+          const totalMB = (progressEvent.total / (1024 * 1024)).toFixed(2);
+          console.log(`[UPLOAD] Progress: ${percentCompleted}% (${uploadedMB}MB / ${totalMB}MB)`);
+        } else {
+          console.log(`[UPLOAD] Progress: ${progressEvent.loaded} bytes uploaded`);
+        }
+      },
+    });
+    const uploadEndTime = Date.now();
+
+    console.log("[UPLOAD] Upload completed in:", uploadEndTime - uploadStartTime, "ms");
+    console.log("[UPLOAD] Response status:", response.status);
+    console.log("[UPLOAD] Response headers:", response.headers);
+    console.log("[UPLOAD] Success response data:", response.data);
+    console.log("=== VIDEO UPLOAD END ===");
+    return response.data;
+
+  } catch (error: any) {
+    console.error("=== VIDEO UPLOAD ERROR ===");
+    console.error("[UPLOAD] Upload failed with error:", error);
+    console.error("[UPLOAD] Error type:", typeof error);
+    console.error("[UPLOAD] Error message:", error?.message);
+    console.error("[UPLOAD] Error stack:", error?.stack);
+    
+    // Handle different types of errors
+    if (error.response) {
+      // Server responded with error status
+      console.error("[UPLOAD] Server error details:");
+      console.error("[UPLOAD] - Status:", error.response.status);
+      console.error("[UPLOAD] - Status text:", error.response.statusText);
+      console.error("[UPLOAD] - Headers:", error.response.headers);
+      console.error("[UPLOAD] - Data:", error.response.data);
+      console.error("[UPLOAD] - Config:", error.response.config);
+      throw new Error(`Upload failed: ${error.response.data?.message || 'Server error'}`);
+    } else if (error.request) {
+      // Network error
+      console.error("[UPLOAD] Network error details:");
+      console.error("[UPLOAD] - Request:", error.request);
+      console.error("[UPLOAD] - Request readyState:", error.request?.readyState);
+      console.error("[UPLOAD] - Request status:", error.request?.status);
+      console.error("[UPLOAD] - Request response:", error.request?.response);
+      throw new Error('Network error. Please check your connection and try again.');
+    } else {
+      // Other error
+      console.error("[UPLOAD] Other error details:");
+      console.error("[UPLOAD] - Message:", error.message);
+      console.error("[UPLOAD] - Code:", error.code);
+      console.error("[UPLOAD] - Name:", error.name);
+      throw new Error(`Upload failed: ${error.message}`);
+    }
   }
 }
 
 export async function uploadBuddiProfileIntroVideo(buddiId: number, videoUri: string) {
-  const formData = new FormData();
-  const fileObj = {
-    uri: videoUri,
-    name: "profile-video.mp4",
-    type: "video/mp4"
-  } as any;
-  formData.append("file", fileObj);
-  const url = `https://backend-service-hw1rh.kinsta.app/api/v1/buddi/profile/${buddiId}/uploadBuddiProfileVideo/video`;
   try {
+    console.log("[UPLOAD PROFILE] Starting profile video upload for buddi:", buddiId);
+    console.log("[UPLOAD PROFILE] Original Video URI:", videoUri);
+
+    // Get video info for debugging (no compression in Expo Go)
+    console.log("[UPLOAD PROFILE] Getting video info...");
+    const videoInfo = await getVideoInfo(videoUri);
+    console.log("[UPLOAD PROFILE] Video info:", videoInfo);
+
+    const formData = new FormData();
+    const fileObj = {
+      uri: videoUri,
+      name: "profile-video.mp4",
+      type: "video/mp4"
+    } as any;
+    formData.append("file", fileObj);
+    
+    const url = `https://backend-service-hw1rh.kinsta.app/api/v1/buddi/profile/${buddiId}/uploadBuddiProfileVideo/video`;
     const res = await authorizedApi.post(url, formData);
     return res.data;
   } catch (err: any) {

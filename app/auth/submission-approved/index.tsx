@@ -1,6 +1,8 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
+import { useState } from "react";
 import {
+  ActivityIndicator,
   Alert,
   ScrollView,
   StatusBar,
@@ -15,6 +17,7 @@ import { useAuth } from "../../../context/AuthContext";
 const SubmissionApproved = () => {
   const router = useRouter();
   const { user, buddiDetails, logout } = useAuth();
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
 
   // COMMENTED OUT: Status polling - users stay on page and get emailed when approved
   // useEffect(() => {
@@ -117,7 +120,8 @@ const SubmissionApproved = () => {
           </View>
 
           <TouchableOpacity
-            style={styles.button}
+            style={[styles.button, isLoggingOut && styles.buttonDisabled]}
+            disabled={isLoggingOut}
             onPress={() => {
               Alert.alert(
                 "Sign Out",
@@ -131,21 +135,68 @@ const SubmissionApproved = () => {
                     text: "Sign Out",
                     style: "destructive",
                     onPress: async () => {
-                      await logout();
-                      router.replace("/auth/login");
+                      try {
+                        console.log(
+                          "SubmissionApproved: Starting logout process..."
+                        );
+                        setIsLoggingOut(true);
+
+                        // Call logout from AuthContext (it will handle navigation)
+                        await logout();
+                        console.log(
+                          "SubmissionApproved: Logout completed successfully"
+                        );
+                      } catch (error) {
+                        console.error(
+                          "SubmissionApproved: Logout error:",
+                          error
+                        );
+
+                        // Show error alert
+                        Alert.alert(
+                          "Logout Error",
+                          "There was an issue signing you out. Please try again.",
+                          [
+                            {
+                              text: "OK",
+                              onPress: () => {
+                                // AuthContext will handle navigation
+                                console.log(
+                                  "SubmissionApproved: User acknowledged logout error"
+                                );
+                              },
+                            },
+                          ]
+                        );
+                      } finally {
+                        setIsLoggingOut(false);
+                      }
                     },
                   },
                 ]
               );
             }}
           >
-            <Text style={styles.buttonText}>Return to Login</Text>
-            <Ionicons
-              name="log-out"
-              size={20}
-              color="#fff"
-              style={styles.buttonIcon}
-            />
+            {isLoggingOut ? (
+              <>
+                <ActivityIndicator
+                  size="small"
+                  color="#fff"
+                  style={{ marginRight: 8 }}
+                />
+                <Text style={styles.buttonText}>Signing Out...</Text>
+              </>
+            ) : (
+              <>
+                <Text style={styles.buttonText}>Return to Login</Text>
+                <Ionicons
+                  name="log-out"
+                  size={20}
+                  color="#fff"
+                  style={styles.buttonIcon}
+                />
+              </>
+            )}
           </TouchableOpacity>
         </View>
       </ScrollView>
@@ -245,6 +296,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 32,
     borderRadius: 12,
     width: "100%",
+  },
+  buttonDisabled: {
+    backgroundColor: "#ccc",
+    opacity: 0.7,
   },
   buttonText: {
     color: "#fff",

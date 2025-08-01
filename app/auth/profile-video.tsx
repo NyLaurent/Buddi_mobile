@@ -1,9 +1,8 @@
 import { Ionicons } from "@expo/vector-icons";
 import { ResizeMode, Video } from "expo-av";
-import { CameraType, CameraView, useCameraPermissions } from "expo-camera";
 import * as DocumentPicker from "expo-document-picker";
 import { useRouter } from "expo-router";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import {
   ActivityIndicator,
   StatusBar,
@@ -23,12 +22,8 @@ export default function BuddiProfileVideoScreen() {
   const router = useRouter();
   const { buddiDetails, refreshUserData } = useAuth();
 
-  // Camera state
-  const [permission, requestPermission] = useCameraPermissions();
-  const cameraRef = useRef<CameraView>(null);
-  const [recording, setRecording] = useState(false);
+  // Video state
   const [videoUri, setVideoUri] = useState<string | null>(null);
-  const [facing, setFacing] = useState<CameraType>("front");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
@@ -39,79 +34,6 @@ export default function BuddiProfileVideoScreen() {
       router.replace("/buddi");
     }
   }, [buddiDetails]);
-
-  if (!permission) return null;
-  if (!permission.granted) {
-    return (
-      <View style={styles.centeredContainer}>
-        <Text
-          style={{
-            textAlign: "center",
-            fontFamily: "Comfortaa-Regular",
-            marginBottom: 20,
-          }}
-        >
-          Camera permission is required to record your profile video
-        </Text>
-        <TouchableOpacity
-          style={{
-            backgroundColor: PRIMARY_COLOR,
-            paddingVertical: 12,
-            paddingHorizontal: 24,
-            borderRadius: 8,
-          }}
-          onPress={requestPermission}
-        >
-          <Text
-            style={{
-              color: "#fff",
-              fontFamily: "Comfortaa-Bold",
-              textAlign: "center",
-            }}
-          >
-            Grant Camera Permission
-          </Text>
-        </TouchableOpacity>
-      </View>
-    );
-  }
-
-  const startRecording = async () => {
-    if (!cameraRef.current) {
-      setError("Camera not ready");
-      return;
-    }
-
-    setVideoUri(null);
-    setError("");
-    setRecording(true);
-
-    try {
-      // Use recordAsync with proper error handling for production
-      const video = await cameraRef.current.recordAsync({
-        maxDuration: 300, // 5 minutes max
-      });
-
-      if (video && video.uri) {
-        setVideoUri(video.uri);
-        console.log("Recording successful:", video.uri);
-      } else {
-        throw new Error("No video URI returned");
-      }
-    } catch (e) {
-      console.error("Recording error:", e);
-      setError("Failed to record video. Please try again.");
-    } finally {
-      setRecording(false);
-    }
-  };
-
-  const stopRecording = () => {
-    if (cameraRef.current) {
-      cameraRef.current.stopRecording();
-    }
-    setRecording(false);
-  };
 
   const pickVideo = async () => {
     setError("");
@@ -179,8 +101,9 @@ export default function BuddiProfileVideoScreen() {
             marginBottom: 24,
           }}
         >
-          Please record a short introduction video about yourself. This helps
-          parents and admins get to know you better before assigning pickups.
+          Please upload a short introduction video about yourself (maximum 2
+          minutes). This helps parents and admins get to know you better before
+          assigning pickups.
         </Text>
         {/* Video Preview/Camera */}
         <View style={{ alignItems: "center", marginBottom: 24 }}>
@@ -220,54 +143,24 @@ export default function BuddiProfileVideoScreen() {
                 position: "relative",
               }}
             >
-              <CameraView
-                ref={cameraRef}
-                style={{ width: "100%", height: "100%" }}
-                facing={facing}
-                mode="video"
-                mute={false}
+              <Ionicons name="videocam-outline" size={64} color="#999" />
+              <Text
+                style={{
+                  color: "#999",
+                  fontFamily: "Comfortaa-Regular",
+                  fontSize: 16,
+                  marginTop: 12,
+                  textAlign: "center",
+                }}
               >
-                {/* Camera controls overlay */}
-                <View style={styles.cameraOverlay}>
-                  <TouchableOpacity
-                    onPress={() =>
-                      setFacing(facing === "front" ? "back" : "front")
-                    }
-                    style={{
-                      backgroundColor: "#fff",
-                      borderRadius: 999,
-                      padding: 6,
-                    }}
-                  >
-                    <Ionicons
-                      name="camera-reverse"
-                      size={20}
-                      color={PRIMARY_COLOR}
-                    />
-                  </TouchableOpacity>
-                </View>
-              </CameraView>
+                Upload your profile video
+              </Text>
             </View>
           )}
-          {/* Recording controls */}
-          {!recording && !videoUri && (
+          {/* Upload controls */}
+          {!videoUri && (
             <View style={{ flexDirection: "row", gap: 12, marginTop: 8 }}>
               <TouchableOpacity
-                style={styles.recordBtn}
-                onPress={startRecording}
-              >
-                <Ionicons name="videocam" size={24} color="#fff" />
-                <Text
-                  style={{
-                    color: "#fff",
-                    fontFamily: "Comfortaa-Bold",
-                    marginLeft: 8,
-                  }}
-                >
-                  Record Video
-                </Text>
-              </TouchableOpacity>
-              {/* <TouchableOpacity
                 style={[styles.recordBtn, { backgroundColor: "#2563EB" }]}
                 onPress={pickVideo}
               >
@@ -281,25 +174,8 @@ export default function BuddiProfileVideoScreen() {
                 >
                   Upload Video
                 </Text>
-              </TouchableOpacity> */}
+              </TouchableOpacity>
             </View>
-          )}
-          {recording && (
-            <TouchableOpacity
-              style={[styles.recordBtn, { backgroundColor: "#d32f2f" }]}
-              onPress={stopRecording}
-            >
-              <Ionicons name="stop" size={24} color="#fff" />
-              <Text
-                style={{
-                  color: "#fff",
-                  fontFamily: "Comfortaa-Bold",
-                  marginLeft: 8,
-                }}
-              >
-                Stop Recording
-              </Text>
-            </TouchableOpacity>
           )}
           {videoUri && (
             <TouchableOpacity
@@ -336,16 +212,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  cameraOverlay: {
-    position: "absolute",
-    bottom: 16,
-    left: 0,
-    width: "100%",
-    flexDirection: "row",
-    justifyContent: "center",
-    alignItems: "center",
-    zIndex: 2,
-  },
+
   recordBtn: {
     flexDirection: "row",
     alignItems: "center",
