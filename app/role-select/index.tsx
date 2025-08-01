@@ -27,18 +27,6 @@ const ROLES = [
     description: "Pick up and assist younger students.",
     icon: <FontAwesome5 name="users" size={32} color="#fff" />,
   },
-  // {
-  //   key: "teacher",
-  //   label: "Head Teacher",
-  //   description: "View references and provide info about Buddis.",
-  //   icon: <FontAwesome5 name="user-tie" size={28} color="#fff" />,
-  // },
-  {
-    key: "admin",
-    label: "Admin",
-    description: "Manage platform, users, and operations.",
-    icon: <Ionicons name="shield-checkmark" size={32} color="#fff" />,
-  },
 ];
 
 const RoleSelect = () => {
@@ -226,12 +214,6 @@ const RoleSelect = () => {
               } else if (selected === "parent") {
                 console.log("Navigating to parent signup");
                 router.push("/auth/signup/parent" as any);
-              } else if (selected === "teacher") {
-                console.log("Navigating to teacher signup");
-                router.push("/auth/signup/head-teacher" as any);
-              } else if (selected === "admin") {
-                console.log("Navigating to admin login");
-                router.push("/auth/login" as any);
               }
             }}
           >

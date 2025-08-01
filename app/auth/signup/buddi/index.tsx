@@ -491,6 +491,10 @@ const RegistrationStep: React.FC<StepProps> = ({
                 flexDirection: "row",
                 alignItems: "center",
                 marginRight: 8,
+                paddingHorizontal: 8,
+                paddingVertical: 4,
+                borderRadius: 8,
+                backgroundColor: "#F8FAFC",
               }}
             >
               <Text
@@ -501,7 +505,7 @@ const RegistrationStep: React.FC<StepProps> = ({
                 }}
               >
                 {formData.countryCallingCode
-                  ? `+${formData.countryCallingCode}`
+                  ? formData.countryCallingCode
                   : "+1"}
               </Text>
               <Ionicons
@@ -520,6 +524,7 @@ const RegistrationStep: React.FC<StepProps> = ({
                 }))
               }
               placeholder="Enter your phone number"
+              placeholderTextColor="#A0A0A0"
               keyboardType="phone-pad"
               style={{
                 flex: 1,
@@ -890,8 +895,8 @@ const ResumeStep: React.FC<StepProps> = ({ formData, setFormData }) => {
   const pickDocument = async () => {
     try {
       const result = await DocumentPicker.getDocumentAsync({
-        // Allow all file types
-        type: "*/*",
+        // Only allow PDF files
+        type: "application/pdf",
         copyToCacheDirectory: true,
       });
 
@@ -901,14 +906,34 @@ const ResumeStep: React.FC<StepProps> = ({ formData, setFormData }) => {
         result.assets &&
         result.assets.length > 0
       ) {
-        const uri = result.assets[0].uri;
-        // For React Native, we need to create a file object with URI and metadata
+        const asset = result.assets[0];
+
+        // Additional validation to ensure it's a PDF
+        if (asset.mimeType && asset.mimeType !== "application/pdf") {
+          Alert.alert(
+            "Invalid File Type",
+            "Please select a PDF file only. Your resume must be in PDF format."
+          );
+          return;
+        }
+
+        // Check file size (limit to 10MB)
+        const maxSize = 10 * 1024 * 1024; // 10MB in bytes
+        if (asset.size && asset.size > maxSize) {
+          Alert.alert(
+            "File Too Large",
+            "Please select a PDF file smaller than 10MB."
+          );
+          return;
+        }
+
         const file = {
-          uri: uri,
-          name: result.assets[0].name || "resume.pdf",
-          type: result.assets[0].mimeType || "application/pdf",
-          size: result.assets[0].size || 0,
+          uri: asset.uri,
+          name: asset.name || "resume.pdf",
+          type: asset.mimeType || "application/pdf",
+          size: asset.size || 0,
         };
+
         console.log("Resume file created:", file);
         console.log("File name:", file.name);
         console.log("File type:", file.type);
@@ -989,13 +1014,13 @@ const ResumeStep: React.FC<StepProps> = ({ formData, setFormData }) => {
           Upload Your Resume here
         </Text>
         <Text className="font-comfortaa text-xs text-[#71727A]">
-          All file types are supported
+          PDF files only (max 10MB)
         </Text>
       </TouchableOpacity>
 
       <Text className="font-comfortaa text-center text-[#71727A] px-8 mt-4">
-        Your resume helps us understand your background and experience. Make
-        sure it reflects your strengths clearly.
+        Your resume helps us understand your background and experience. Please
+        upload your resume in PDF format (max 10MB) to ensure compatibility.
       </Text>
     </ScrollView>
   );
@@ -1079,6 +1104,10 @@ const ReferencesStep: React.FC<StepProps> = ({
               flexDirection: "row",
               alignItems: "center",
               marginRight: 8,
+              paddingHorizontal: 8,
+              paddingVertical: 4,
+              borderRadius: 8,
+              backgroundColor: "#F8FAFC",
             }}
           >
             <Text
@@ -1088,9 +1117,7 @@ const ReferencesStep: React.FC<StepProps> = ({
                 fontFamily: "Comfortaa-Medium",
               }}
             >
-              {formData.teacherCountryCode
-                ? `+${formData.teacherCountryCode}`
-                : "+1"}
+              {formData.teacherCountryCode ? formData.teacherCountryCode : "+1"}
             </Text>
             <Ionicons
               name="chevron-down"
@@ -1105,10 +1132,11 @@ const ReferencesStep: React.FC<StepProps> = ({
               setFormData((prev) => ({ ...prev, teacherPhoneNumber: text }))
             }
             placeholder="Enter phone number"
+            placeholderTextColor="#A0A0A0"
             keyboardType="phone-pad"
             style={{
               flex: 1,
-              fontFamily: "comfortaa-medium",
+              fontFamily: "Comfortaa-Medium",
               color: "#374151",
               fontSize: 14,
             }}
@@ -1174,6 +1202,10 @@ const ReferencesStep: React.FC<StepProps> = ({
               flexDirection: "row",
               alignItems: "center",
               marginRight: 8,
+              paddingHorizontal: 8,
+              paddingVertical: 4,
+              borderRadius: 8,
+              backgroundColor: "#F8FAFC",
             }}
           >
             <Text
@@ -1184,7 +1216,7 @@ const ReferencesStep: React.FC<StepProps> = ({
               }}
             >
               {formData.customReferralCountryCode
-                ? `+${formData.customReferralCountryCode}`
+                ? formData.customReferralCountryCode
                 : "+1"}
             </Text>
             <Ionicons
@@ -1203,6 +1235,7 @@ const ReferencesStep: React.FC<StepProps> = ({
               }))
             }
             placeholder="Enter phone number"
+            placeholderTextColor="#A0A0A0"
             keyboardType="phone-pad"
             style={{
               flex: 1,
