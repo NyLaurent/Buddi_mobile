@@ -2,7 +2,7 @@ import { Ionicons, MaterialIcons } from "@expo/vector-icons";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import {
   Alert,
   Image,
@@ -130,7 +130,7 @@ export default function CallPage() {
     }
     setPickupLoading(true);
     try {
-      await CoverageService.createPickupRequest({
+      const pickupResponse = await CoverageService.createPickupRequest({
         parentId: parentDetails.id.toString(),
         childId: selectedChildId,
         description,
@@ -140,6 +140,23 @@ export default function CallPage() {
         fromZone,
         toZone,
       });
+
+      // Emit pickup-requested event to all buddi rooms
+      const socket = SocketService.getSocket();
+      if (socket) {
+        console.log(
+          "[PARENT] Emitting pickup-requested event to all buddi rooms"
+        );
+        console.log("[PARENT] Pickup response data:", pickupResponse);
+        console.log("[PARENT] Socket connected:", socket.connected);
+        socket.emit("pickup-requested", pickupResponse);
+        console.log("[PARENT] pickup-requested event emitted successfully");
+      } else {
+        console.log(
+          "[PARENT] Socket not available for pickup-requested emission"
+        );
+      }
+
       setPickupSuccess("Pickup request created successfully!");
       setDescription("");
       setAvailableDays([]);
@@ -944,8 +961,8 @@ export default function CallPage() {
             >
               <Text
                 style={{
-                fontFamily: "Comfortaa-Regular",
-                fontSize: 15,
+                  fontFamily: "Comfortaa-Regular",
+                  fontSize: 15,
                   color: pickupTime ? "#232B3A" : "#BDBDBD",
                 }}
               >
@@ -974,7 +991,7 @@ export default function CallPage() {
                 is24Hour={true}
                 display="default"
                 onChange={handleTimeChange}
-            />
+              />
             )}
           </View>
           {/* Kids Count */}

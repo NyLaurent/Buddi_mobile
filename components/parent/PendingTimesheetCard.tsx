@@ -9,7 +9,7 @@ interface PendingTimesheetCardProps {
   pendingAmount: string;
   onPress?: () => void;
   onGoToPayment?: () => void;
-  variant?: "pending" | "paid";
+  variant?: "pending" | "approved" | "paid";
 }
 
 const PendingTimesheetCard: React.FC<PendingTimesheetCardProps> = ({
@@ -41,7 +41,12 @@ const PendingTimesheetCard: React.FC<PendingTimesheetCardProps> = ({
     >
       <View
         style={{
-          backgroundColor: variant === "paid" ? "#22C55E" : "#2563EB",
+          backgroundColor:
+            variant === "paid"
+              ? "#22C55E"
+              : variant === "approved"
+              ? "#3B82F6"
+              : "#2563EB",
           borderRadius: 8,
           padding: 8,
           marginRight: 14,
@@ -72,7 +77,12 @@ const PendingTimesheetCard: React.FC<PendingTimesheetCardProps> = ({
         <View style={{ flexDirection: "row", marginTop: 8, gap: 8 }}>
           <View
             style={{
-              backgroundColor: variant === "paid" ? "#D1FADF" : "#E0EDFF",
+              backgroundColor:
+                variant === "paid"
+                  ? "#D1FADF"
+                  : variant === "approved"
+                  ? "#DBEAFE"
+                  : "#E0EDFF",
               borderRadius: 999,
               paddingVertical: 4,
               paddingHorizontal: 12,
@@ -83,7 +93,12 @@ const PendingTimesheetCard: React.FC<PendingTimesheetCardProps> = ({
           >
             <Text
               style={{
-                color: variant === "paid" ? "#22C55E" : "#2563EB",
+                color:
+                  variant === "paid"
+                    ? "#22C55E"
+                    : variant === "approved"
+                    ? "#3B82F6"
+                    : "#2563EB",
                 fontFamily: "Comfortaa-Bold",
                 fontSize: 13,
               }}
@@ -93,7 +108,12 @@ const PendingTimesheetCard: React.FC<PendingTimesheetCardProps> = ({
           </View>
           <View
             style={{
-              backgroundColor: variant === "paid" ? "#D1FADF" : "#E0EDFF",
+              backgroundColor:
+                variant === "paid"
+                  ? "#D1FADF"
+                  : variant === "approved"
+                  ? "#DBEAFE"
+                  : "#E0EDFF",
               borderRadius: 999,
               paddingVertical: 4,
               paddingHorizontal: 12,
@@ -109,14 +129,32 @@ const PendingTimesheetCard: React.FC<PendingTimesheetCardProps> = ({
                 style={{ marginRight: 4 }}
               />
             )}
+            {variant === "approved" && (
+              <Ionicons
+                name="time"
+                size={14}
+                color="#3B82F6"
+                style={{ marginRight: 4 }}
+              />
+            )}
             <Text
               style={{
-                color: variant === "paid" ? "#22C55E" : "#2563EB",
+                color:
+                  variant === "paid"
+                    ? "#22C55E"
+                    : variant === "approved"
+                    ? "#3B82F6"
+                    : "#2563EB",
                 fontFamily: "Comfortaa-Bold",
                 fontSize: 13,
               }}
             >
-              {variant === "paid" ? "Paid" : "Pending"}: {pendingAmount}
+              {variant === "paid"
+                ? "Paid"
+                : variant === "approved"
+                ? "Approved"
+                : "Pending"}
+              : {pendingAmount}
             </Text>
           </View>
         </View>
@@ -148,7 +186,7 @@ const PendingTimesheetCard: React.FC<PendingTimesheetCardProps> = ({
         activeOpacity={0.85}
         onPress={onGoToPayment}
       >
-        <Ionicons name="person-outline" size={20} color="#232B3A" />
+        <Ionicons name="card-outline" size={20} color="#232B3A" />
         <Text
           style={{
             fontFamily: "Comfortaa-Bold",
@@ -157,7 +195,7 @@ const PendingTimesheetCard: React.FC<PendingTimesheetCardProps> = ({
             marginRight: 6,
           }}
         >
-          Go to Payment
+          Pay Now
         </Text>
         <Ionicons name="arrow-forward" size={20} color="#232B3A" />
       </TouchableOpacity>

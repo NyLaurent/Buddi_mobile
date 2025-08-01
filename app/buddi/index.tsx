@@ -45,6 +45,30 @@ export default function BuddiHome() {
   const getSocket = () =>
     SocketService.getSocket ? SocketService.getSocket() : null;
 
+  // Helper to emit pickup events to parent's room
+  const emitPickupEvent = (eventName: string, pickupData: any) => {
+    const socket = getSocket();
+    if (socket && matchedCall) {
+      const parentRoomId = `parent-${matchedCall.parentId}`;
+      console.log(
+        `[BUDDI] Emitting ${eventName} to parent room:`,
+        parentRoomId
+      );
+      console.log(`[BUDDI] Pickup data:`, pickupData);
+      console.log(`[BUDDI] Matched call:`, matchedCall);
+      socket.emit(eventName, {
+        roomId: parentRoomId,
+        pickupData: pickupData,
+      });
+    } else {
+      console.log(`[BUDDI] Cannot emit ${eventName}:`, {
+        socket: !!socket,
+        matchedCall: !!matchedCall,
+        matchedCallParentId: matchedCall?.parentId,
+      });
+    }
+  };
+
   // Helper to get today's day as a string (e.g., 'Monday')
   const today = new Date().toLocaleDateString("en-US", { weekday: "long" });
 
@@ -78,16 +102,33 @@ export default function BuddiHome() {
       }
     };
 
-    // Handler for pickup-assigned event
-    const handlePickupAssigned = (data: any) => {
+    // Handler for pickup-requested event (when parent requests pickup)
+    const handlePickupRequested = (data: any) => {
       let pickup;
       try {
         pickup = typeof data === "string" ? JSON.parse(data) : data;
       } catch (err) {
-        console.error("Parse error (pickup-assigned):", err);
+        console.error("[BUDDI] Parse error (pickup-requested):", err);
         return;
       }
-      setAvailableCalls((prev) => [...prev, pickup]);
+      console.log("[BUDDI] Pickup requested event received:", pickup);
+      console.log(
+        "[BUDDI] Current available calls count:",
+        availableCalls.length
+      );
+      console.log("[BUDDI] Current matched call:", matchedCall);
+
+      // Add to available calls if not already there
+      setAvailableCalls((prev) => {
+        const exists = prev.find((call: any) => call.id === pickup.id);
+        if (!exists) {
+          console.log("[BUDDI] Adding new pickup to available calls");
+          return [...prev, pickup];
+        } else {
+          console.log("[BUDDI] Pickup already exists in available calls");
+        }
+        return prev;
+      });
     };
 
     // Handler for pickup-started event
@@ -96,11 +137,16 @@ export default function BuddiHome() {
       try {
         pickup = typeof data === "string" ? JSON.parse(data) : data;
       } catch (err) {
-        console.error("Parse error (pickup-started):", err);
+        console.error("[BUDDI] Parse error (pickup-started):", err);
         return;
       }
+      console.log("[BUDDI] Pickup started event received:", pickup);
+      console.log("[BUDDI] Current matched call:", matchedCall);
       if (matchedCall && pickup.id === matchedCall.id) {
+        console.log("[BUDDI] Updating matched call with pickup started data");
         setMatchedCall(pickup);
+      } else {
+        console.log("[BUDDI] No match found or different pickup ID");
       }
     };
 
@@ -110,22 +156,31 @@ export default function BuddiHome() {
       try {
         pickup = typeof data === "string" ? JSON.parse(data) : data;
       } catch (err) {
-        console.error("Parse error (child-picked-up):", err);
+        console.error("[BUDDI] Parse error (child-picked-up):", err);
         return;
       }
+      console.log("[BUDDI] Child picked up event received:", pickup);
+      console.log("[BUDDI] Current matched call:", matchedCall);
       if (matchedCall && pickup.id === matchedCall.id) {
+        console.log("[BUDDI] Updating matched call with child picked up data");
         setMatchedCall(pickup);
+      } else {
+        console.log("[BUDDI] No match found or different pickup ID");
       }
     };
 
     // Add socket event listeners
     const socket = getSocket();
     if (socket) {
+      console.log("[BUDDI] Setting up socket event listeners");
       socket.on("trip-completed", handleTripCompleted);
-      socket.on("pickup-assigned", handlePickupAssigned);
+      socket.on("pickup-requested", handlePickupRequested);
       socket.on("pickup-started", handlePickupStarted);
       socket.on("child-picked-up", handleChildPickedUp);
+      console.log("[BUDDI] Socket event listeners set up successfully");
       // Add other event listeners here as needed
+    } else {
+      console.log("[BUDDI] Socket not available for event listeners");
     }
 
     // On mount, load completed trips from AsyncStorage
@@ -138,7 +193,7 @@ export default function BuddiHome() {
       const socket = getSocket();
       if (socket) {
         socket.off("trip-completed", handleTripCompleted);
-        socket.off("pickup-assigned", handlePickupAssigned);
+        socket.off("pickup-requested", handlePickupRequested);
         socket.off("pickup-started", handlePickupStarted);
         socket.off("child-picked-up", handleChildPickedUp);
         // Remove other listeners here as needed
@@ -331,6 +386,8 @@ export default function BuddiHome() {
               status={
                 matchedCall.status === "pickedUp"
                   ? "pickedUp"
+                matchedCall.status === "pickedUp"
+                  ? "pickedUp"
                   : matchedCall.status === "enRoute"
                   ? "enRoute"
                   : matchedCall.status === "completed"
@@ -361,6 +418,8 @@ export default function BuddiHome() {
                                   matchedCall.id
                                 );
                                 setMatchedCall(res.pickup);
+                                // Emit pickup-started event to parent
+                                emitPickupEvent("pickup-started", res.pickup);
                               } catch (err) {
                                 Alert.alert(
                                   "Error",
@@ -391,6 +450,8 @@ export default function BuddiHome() {
                                   matchedCall.id
                                 );
                                 setMatchedCall(res.pickup);
+                                // Emit child-picked-up event to parent
+                                emitPickupEvent("child-picked-up", res.pickup);
                               } catch (err) {
                                 Alert.alert(
                                   "Error",
@@ -424,6 +485,8 @@ export default function BuddiHome() {
                                     matchedCall.pickupTime
                                   );
                                 setMatchedCall(res.pickup);
+                                // Emit trip-completed event to parent
+                                emitPickupEvent("trip-completed", res.pickup);
                               } catch (err) {
                                 Alert.alert(
                                   "Error",

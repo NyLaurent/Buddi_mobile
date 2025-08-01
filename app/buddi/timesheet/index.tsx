@@ -55,16 +55,30 @@ export default function TimesheetPage() {
 
   useEffect(() => {
     const fetchTimesheets = async () => {
-      if (!buddiDetails?.id) return;
+      if (!buddiDetails?.id) {
+        console.log("No buddiDetails.id found:", buddiDetails);
+        return;
+      }
+      console.log("Fetching timesheets for buddi ID:", buddiDetails.id);
       setLoading(true);
       setError(null);
       try {
-        const res = await fetch(
-          `https://backend-service-hw1rh.kinsta.app/api/v1/timesheets/buddi/${buddiDetails.id}?page=1&limit=10`
-        );
+        const url = `https://backend-service-hw1rh.kinsta.app/api/v1/timesheets/buddi/${buddiDetails.id}?page=1&limit=10`;
+        console.log("API URL:", url);
+
+        const res = await fetch(url);
+        console.log("Response status:", res.status);
+        console.log("Response headers:", res.headers);
+
         const data = await res.json();
+        console.log("Full API response:", JSON.stringify(data, null, 2));
+        console.log("Timesheets data:", data.data);
+        console.log("Number of timesheets:", data.data?.length || 0);
+
         setTimesheets(data.data || []);
       } catch (err: any) {
+        console.error("Error fetching timesheets:", err);
+        console.error("Error message:", err.message);
         setError("Failed to fetch timesheets.");
       } finally {
         setLoading(false);
@@ -144,6 +158,17 @@ export default function TimesheetPage() {
           </View>
         ) : (
           timesheets.map((sheet, idx) => {
+            console.log(`Rendering timesheet ${idx + 1}:`, {
+              id: sheet.id,
+              weekStart: sheet.weekStart,
+              weekEnd: sheet.weekEnd,
+              totalPickups: sheet.totalPickups,
+              totalEarnings: sheet.totalEarnings,
+              isFull: sheet.isFull,
+              isPaid: sheet.isPaid,
+              dailyPickups: sheet.dailyPickups,
+            });
+
             // Calculate week label and range
             const weekLabel = `Week ${idx + 1}`;
             const weekRange = `${new Date(
@@ -153,14 +178,32 @@ export default function TimesheetPage() {
             ).toLocaleString("default", { month: "long" })}, ${new Date(
               sheet.weekEnd
             ).getFullYear()}`;
+
+            console.log("Calculated weekLabel:", weekLabel);
+            console.log("Calculated weekRange:", weekRange);
+
             // Shifts = totalPickups, Pending = totalEarnings (or use another field if needed)
+            // Round the pending amount to 2 decimal places
+            const roundedPending = sheet.totalEarnings
+              ? Math.round(sheet.totalEarnings * 100) / 100
+              : 0;
+
+            console.log("Original totalEarnings:", sheet.totalEarnings);
+            console.log("Rounded pending amount:", roundedPending);
+            console.log("Type of roundedPending:", typeof roundedPending);
+            console.log(
+              "Is roundedPending undefined?",
+              roundedPending === undefined
+            );
+            console.log("Is roundedPending null?", roundedPending === null);
+
             return (
               <TimesheetSummaryCard
                 key={sheet.id}
                 weekLabel={weekLabel}
                 weekRange={weekRange}
                 shifts={sheet.totalPickups}
-                pending={sheet.totalEarnings}
+                pending={roundedPending}
                 isFull={sheet.isFull}
                 isPaid={sheet.isPaid}
                 onPress={() =>
