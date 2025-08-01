@@ -386,8 +386,6 @@ export default function BuddiHome() {
               status={
                 matchedCall.status === "pickedUp"
                   ? "pickedUp"
-                matchedCall.status === "pickedUp"
-                  ? "pickedUp"
                   : matchedCall.status === "enRoute"
                   ? "enRoute"
                   : matchedCall.status === "completed"
