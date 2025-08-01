@@ -2,7 +2,7 @@ import { Ionicons, MaterialIcons } from "@expo/vector-icons";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   Alert,
   Image,
@@ -19,7 +19,6 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import PageHeader from "../../components/commons/PageHeader";
 import { useAuth } from "../../context/AuthContext";
 import { ChildrenService, CoverageService } from "../../services/api";
-import SocketService from "../../services/socket";
 
 export default function CallPage() {
   const [description, setDescription] = useState("");
@@ -131,8 +130,7 @@ export default function CallPage() {
     }
     setPickupLoading(true);
     try {
-      console.log("🚀 [PARENT] Creating pickup request...");
-      console.log("🚀 [PARENT] Request data:", {
+      await CoverageService.createPickupRequest({
         parentId: parentDetails.id.toString(),
         childId: selectedChildId,
         description,
@@ -142,42 +140,6 @@ export default function CallPage() {
         fromZone,
         toZone,
       });
-
-      const response = await CoverageService.createPickupRequest({
-        parentId: parentDetails.id.toString(),
-        childId: selectedChildId,
-        description,
-        availableDays,
-        pickupTime,
-        kidsCount: Number(kidsCount),
-        fromZone,
-        toZone,
-      });
-
-      console.log("🚀 [PARENT] API response:", response);
-
-      // Emit pickup-requested event to notify matched buddis
-      const socket = SocketService.getSocket();
-      if (socket && response?.request) {
-        const eventData = {
-          pickupId: response.request.id,
-          parentId: parentDetails.id,
-          childId: selectedChildId,
-          description,
-          availableDays,
-          pickupTime,
-          kidsCount: Number(kidsCount),
-          fromZone,
-          toZone,
-          status: "pending",
-          timestamp: new Date().toISOString(),
-        };
-        console.log("🚀 [PARENT] Emitting pickup-requested event:", eventData);
-        SocketService.emitPickupRequested(eventData);
-      } else {
-        console.log("❌ [PARENT] Socket not available or response data missing");
-      }
-
       setPickupSuccess("Pickup request created successfully!");
       setDescription("");
       setAvailableDays([]);
@@ -982,8 +944,8 @@ export default function CallPage() {
             >
               <Text
                 style={{
-                  fontFamily: "Comfortaa-Regular",
-                  fontSize: 15,
+                fontFamily: "Comfortaa-Regular",
+                fontSize: 15,
                   color: pickupTime ? "#232B3A" : "#BDBDBD",
                 }}
               >
@@ -1012,7 +974,7 @@ export default function CallPage() {
                 is24Hour={true}
                 display="default"
                 onChange={handleTimeChange}
-              />
+            />
             )}
           </View>
           {/* Kids Count */}

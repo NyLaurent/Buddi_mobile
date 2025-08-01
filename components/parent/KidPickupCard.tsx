@@ -4,6 +4,7 @@ import {
   Ionicons,
   MaterialIcons,
 } from "@expo/vector-icons";
+import React from "react";
 import { Image, Text, TouchableOpacity, View } from "react-native";
 
 interface BuddiInfo {
@@ -36,7 +37,6 @@ interface KidPickupCardProps {
   mainActionColor?: string;
   defaultBuddi?: BuddiInfo;
   coverageBuddi?: BuddiInfo;
-  disabled?: boolean;
 }
 
 const KidPickupCard = ({
@@ -59,7 +59,6 @@ const KidPickupCard = ({
   mainActionColor,
   defaultBuddi,
   coverageBuddi,
-  disabled = false,
 }: KidPickupCardProps) => {
   const badgeBg =
     badgeColor || (variant === "coverage" ? "#3B82F6" : "#FF9100");
@@ -454,22 +453,17 @@ const KidPickupCard = ({
         </View>
         {/* Main Action Button */}
         <TouchableOpacity
-          onPress={disabled ? undefined : onMainAction}
+          onPress={onMainAction}
           style={{
-            backgroundColor: disabled
-              ? "#A0A0A0"
-              : mainAction === "Trip Not Yet Started"
-              ? "#FF932E"
-              : "#0A77FF",
+            backgroundColor:
+              mainAction === "Trip Not Yet Started" ? "#FF932E" : "#0A77FF",
             borderRadius: 24,
             paddingVertical: 13,
             alignItems: "center",
             flexDirection: "row",
             justifyContent: "center",
-            opacity: disabled ? 0.6 : 1,
           }}
-          activeOpacity={disabled ? 1 : 0.85}
-          disabled={disabled}
+          activeOpacity={0.85}
         >
           <Text
             style={{
@@ -751,22 +745,17 @@ const KidPickupCard = ({
       </View>
       {/* Main Action Button */}
       <TouchableOpacity
-        onPress={disabled ? undefined : onMainAction}
+        onPress={onMainAction}
         style={{
-          backgroundColor: disabled
-            ? "#A0A0A0"
-            : mainAction === "Trip Not Yet Started"
-            ? "#FF932E"
-            : "#0A77FF",
+          backgroundColor:
+            mainAction === "Trip Not Yet Started" ? "#FF932E" : "#0A77FF",
           borderRadius: 20,
           paddingVertical: 10,
           alignItems: "center",
           flexDirection: "row",
           justifyContent: "center",
-          opacity: disabled ? 0.6 : 1,
         }}
-        activeOpacity={disabled ? 1 : 0.85}
-        disabled={disabled}
+        activeOpacity={0.85}
       >
         <Text
           style={{

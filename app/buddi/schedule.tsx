@@ -113,7 +113,7 @@ export default function SchedulePage() {
           >
             <Ionicons name="arrow-back" size={20} color="white" />
           </TouchableOpacity>
-          <Text className="text-xl text-black font-comfortaa-bold">My Schedule</Text>
+          <Text className="text-xl font-comfortaa-bold">My Schedule</Text>
           <TouchableOpacity className="w-10 h-10 bg-primary rounded-xl items-center justify-center">
             <Ionicons name="ellipsis-horizontal" size={20} color="white" />
           </TouchableOpacity>

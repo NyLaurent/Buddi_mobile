@@ -1,6 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -308,22 +308,17 @@ export default function ParentDetailsScreen() {
                 styles.statusBadge,
                 {
                   backgroundColor:
-                    getStatusColor(parentDetails.approvalStage || "pending") +
-                    "20",
+                    getStatusColor(parentDetails.approvalStage) + "20",
                 },
               ]}
             >
               <Text
                 style={[
                   styles.statusText,
-                  {
-                    color: getStatusColor(
-                      parentDetails.approvalStage || "pending"
-                    ),
-                  },
+                  { color: getStatusColor(parentDetails.approvalStage) },
                 ]}
               >
-                {getStatusText(parentDetails.approvalStage || "pending")}
+                {getStatusText(parentDetails.approvalStage)}
               </Text>
             </View>
           </View>
@@ -334,39 +329,31 @@ export default function ParentDetailsScreen() {
                 styles.statusBadge,
                 {
                   backgroundColor:
-                    getBgcStatusColor(
-                      parentDetails.bgcStatus || "not_started"
-                    ) + "20",
+                    getBgcStatusColor(parentDetails.bgcStatus) + "20",
                 },
               ]}
             >
               <Text
                 style={[
                   styles.statusText,
-                  {
-                    color: getBgcStatusColor(
-                      parentDetails.bgcStatus || "not_started"
-                    ),
-                  },
+                  { color: getBgcStatusColor(parentDetails.bgcStatus) },
                 ]}
               >
-                {getBgcStatusText(parentDetails.bgcStatus || "not_started")}
+                {getBgcStatusText(parentDetails.bgcStatus)}
               </Text>
             </View>
           </View>
           <View style={styles.infoRow}>
             <Text style={styles.infoLabel}>Payment Method:</Text>
             <Text style={styles.infoValue}>
-              {parentDetails.paymentMethod
-                ? parentDetails.paymentMethod.charAt(0).toUpperCase() +
-                  parentDetails.paymentMethod.slice(1).replace("_", " ")
-                : "N/A"}
+              {parentDetails.paymentMethod.charAt(0).toUpperCase() +
+                parentDetails.paymentMethod.slice(1).replace("_", " ")}
             </Text>
           </View>
         </View>
 
         {/* Action Buttons Card - Only show if pending */}
-        {(parentDetails.approvalStage || "pending") === "pending" && (
+        {parentDetails.approvalStage === "pending" && (
           <View style={styles.actionCard}>
             <View style={styles.cardHeader}>
               <Ionicons name="shield-checkmark" size={20} color="#FF932E" />
@@ -436,27 +423,17 @@ export default function ParentDetailsScreen() {
           </View>
           <View style={styles.infoRow}>
             <Text style={styles.infoLabel}>Total Children:</Text>
-            <Text style={styles.infoValue}>
-              {parentDetails.childrenCount || 0}
-            </Text>
+            <Text style={styles.infoValue}>{parentDetails.childrenCount}</Text>
           </View>
-          {parentDetails.children && parentDetails.children.length > 0 ? (
-            parentDetails.children.map((child, index) => (
-              <View key={index} style={styles.childCard}>
-                <Text style={styles.childName}>{child.name}</Text>
-                <View style={styles.childInfo}>
-                  <Text style={styles.childDetail}>Age: {child.age}</Text>
-                  <Text style={styles.childDetail}>School: {child.school}</Text>
-                </View>
+          {parentDetails.children.map((child, index) => (
+            <View key={index} style={styles.childCard}>
+              <Text style={styles.childName}>{child.name}</Text>
+              <View style={styles.childInfo}>
+                <Text style={styles.childDetail}>Age: {child.age}</Text>
+                <Text style={styles.childDetail}>School: {child.school}</Text>
               </View>
-            ))
-          ) : (
-            <View style={styles.childCard}>
-              <Text style={styles.childName}>
-                No children information available
-              </Text>
             </View>
-          )}
+          ))}
         </View>
 
         {/* Account Information Card */}

@@ -4,6 +4,7 @@ import { CameraType, CameraView, useCameraPermissions } from "expo-camera";
 import { useRouter } from "expo-router";
 import { useEffect, useRef, useState } from "react";
 import {
+  Button,
   Image,
   ImageBackground,
   ScrollView,
@@ -47,7 +48,6 @@ export default function BuddiRecordingScreen() {
   const [videoUri, setVideoUri] = useState<string | null>(null);
   const [facing, setFacing] = useState<CameraType>("front");
   const [submitting, setSubmitting] = useState(false);
-  const [cameraReady, setCameraReady] = useState(false);
 
   useEffect(() => {
     let mounted = true;
@@ -85,134 +85,30 @@ export default function BuddiRecordingScreen() {
   if (!permission.granted) {
     return (
       <View style={styles.centeredContainer}>
-        <Text
-          style={{
-            textAlign: "center",
-            fontFamily: "Comfortaa-Regular",
-            marginBottom: 20,
-            color: "#000",
-          }}
-        >
-          Camera permission is required to record your interview video
+        <Text style={{ textAlign: "center", fontFamily: "Comfortaa-Regular" }}>
+          We need your permission to use the camera
         </Text>
-        <TouchableOpacity
-          style={{
-            backgroundColor: PRIMARY_COLOR,
-            paddingVertical: 12,
-            paddingHorizontal: 24,
-            borderRadius: 8,
-          }}
-          onPress={requestPermission}
-        >
-          <Text
-            style={{
-              color: "#fff",
-              fontFamily: "Comfortaa-Bold",
-              textAlign: "center",
-            }}
-          >
-            Grant Camera Permission
-          </Text>
-        </TouchableOpacity>
+        <Button onPress={requestPermission} title="Grant permission" />
       </View>
     );
   }
 
   const startRecording = async () => {
-    console.log("startRecording called");
-
-    if (!cameraRef.current) {
-      console.error("Camera ref is null");
-      setError("Camera not ready");
-      return;
-    }
-
-    if (!permission?.granted) {
-      console.error("Camera permission not granted");
-      setError("Camera permission required");
-      return;
-    }
-
     setVideoUri(null);
-    setError("");
     setRecording(true);
-
     try {
-      console.log("Starting recording...");
-
-      // Try different recording approaches for production compatibility
-      let video: any;
-
-      try {
-        // First attempt: recordAsync with options and timeout
-        const recordingPromise = cameraRef.current.recordAsync({
-          maxDuration: 300, // 5 minutes max
-        });
-
-        // Add a timeout to prevent hanging
-        const timeoutPromise = new Promise((_, reject) => {
-          setTimeout(() => reject(new Error("Recording timeout")), 10000); // 10 second timeout
-        });
-
-        video = await Promise.race([recordingPromise, timeoutPromise]);
-        console.log("Method 1 (recordAsync with options) succeeded");
-      } catch (method1Error) {
-        console.log("Method 1 failed, trying method 2:", method1Error);
-
-        try {
-          // Second attempt: recordAsync without options
-          video = await cameraRef.current.recordAsync();
-          console.log("Method 2 (recordAsync without options) succeeded");
-        } catch (method2Error) {
-          console.log("Method 2 failed:", method2Error);
-          throw method2Error; // Re-throw the last error
-        }
-      }
-
-      console.log("Recording completed, video object:", video);
-
-      if (video && video.uri) {
-        setVideoUri(video.uri);
-        console.log("Recording successful:", video.uri);
-      } else {
-        console.error("No video URI in response:", video);
-        throw new Error("No video URI returned");
-      }
-    } catch (e: any) {
-      console.error("Recording error details:", e);
-      console.error("Error message:", e?.message);
-      console.error("Error stack:", e?.stack);
-      setError(`Failed to record video: ${e?.message || "Unknown error"}`);
+      const video = await cameraRef.current?.recordAsync();
+      setVideoUri(video?.uri || null);
+    } catch (e) {
+      setError("Failed to record video");
     } finally {
       setRecording(false);
     }
   };
 
   const stopRecording = () => {
-    if (cameraRef.current) {
-      cameraRef.current.stopRecording();
-    }
     setRecording(false);
-  };
-
-  const testCamera = async () => {
-    console.log("Testing camera functionality...");
-    console.log("Camera ref exists:", !!cameraRef.current);
-    console.log("Permission granted:", permission?.granted);
-    console.log("Camera ready:", cameraReady);
-
-    if (cameraRef.current) {
-      try {
-        // Test if camera methods are available
-        console.log("Camera methods available:", {
-          hasRecordAsync: typeof cameraRef.current.recordAsync === "function",
-          hasStopRecording:
-            typeof cameraRef.current.stopRecording === "function",
-        });
-      } catch (e) {
-        console.error("Camera test error:", e);
-      }
-    }
+    cameraRef.current?.stopRecording();
   };
 
   const handleSubmit = async () => {
@@ -280,7 +176,7 @@ export default function BuddiRecordingScreen() {
               }}
             >
               Record Your Buddi
-            </Text>
+        </Text>
             <Text
               style={{
                 color: "#fff",
@@ -290,7 +186,7 @@ export default function BuddiRecordingScreen() {
               }}
             >
               Interview
-            </Text>
+        </Text>
           </View>
           <TouchableOpacity
             style={{ backgroundColor: "#fff", borderRadius: 999, padding: 8 }}
@@ -352,7 +248,6 @@ export default function BuddiRecordingScreen() {
                   facing={facing}
                   mode="video"
                   mute={false}
-                  onCameraReady={() => setCameraReady(true)}
                 >
                   {/* Camera controls overlay */}
                   <View style={styles.cameraOverlay}>
@@ -377,56 +272,22 @@ export default function BuddiRecordingScreen() {
               </View>
             )}
             {/* Recording controls */}
-            {!recording && !videoUri && !cameraReady && (
-              <View style={[styles.recordBtn, { backgroundColor: "#ccc" }]}>
-                <Ionicons name="camera" size={24} color="#666" />
+            {!recording && !videoUri && (
+              <TouchableOpacity
+                style={styles.recordBtn}
+                onPress={startRecording}
+              >
+                <Ionicons name="videocam" size={24} color="#fff" />
                 <Text
                   style={{
-                    color: "#666",
+                    color: "#fff",
                     fontFamily: "Comfortaa-Bold",
                     marginLeft: 8,
                   }}
                 >
-                  Camera Loading...
+                  Start Recording
                 </Text>
-              </View>
-            )}
-            {!recording && !videoUri && cameraReady && (
-              <View style={{ gap: 8 }}>
-                <TouchableOpacity
-                  style={styles.recordBtn}
-                  onPress={startRecording}
-                >
-                  <Ionicons name="videocam" size={24} color="#fff" />
-                  <Text
-                    style={{
-                      color: "#fff",
-                      fontFamily: "Comfortaa-Bold",
-                      marginLeft: 8,
-                    }}
-                  >
-                    Start Recording
-                  </Text>
-                </TouchableOpacity>
-
-                {/* Debug button for testing */}
-                <TouchableOpacity
-                  style={[styles.recordBtn, { backgroundColor: "#666" }]}
-                  onPress={testCamera}
-                >
-                  <Ionicons name="bug" size={20} color="#fff" />
-                  <Text
-                    style={{
-                      color: "#fff",
-                      fontFamily: "Comfortaa-Regular",
-                      marginLeft: 8,
-                      fontSize: 12,
-                    }}
-                  >
-                    Debug Camera
-                  </Text>
-                </TouchableOpacity>
-              </View>
+              </TouchableOpacity>
             )}
             {recording && (
               <TouchableOpacity
@@ -466,19 +327,6 @@ export default function BuddiRecordingScreen() {
                   {submitting ? "Submitting..." : "Submit Video"}
                 </Text>
               </TouchableOpacity>
-            )}
-            {error && (
-              <Text
-                style={{
-                  color: "#d32f2f",
-                  textAlign: "center",
-                  marginTop: 12,
-                  fontFamily: "Comfortaa-Regular",
-                  fontSize: 14,
-                }}
-              >
-                {error}
-              </Text>
             )}
           </View>
 
@@ -612,8 +460,8 @@ export default function BuddiRecordingScreen() {
                   width: `${progress * 100}%`,
                 }}
               />
-            </View>
-          </View>
+      </View>
+    </View>
         </ScrollView>
       </SafeAreaView>
     </ImageBackground>

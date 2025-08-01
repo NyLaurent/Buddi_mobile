@@ -330,19 +330,6 @@ const VideoGuidelinesScreen = () => {
                 <Ionicons name="videocam" size={18} color="white" />
               </TouchableOpacity>
             </View>
-            {/* Return to Login Button */}
-            <View className="px-2 mb-8">
-              <TouchableOpacity
-                className="py-3 rounded-full w-full flex-row justify-center items-center bg-white border border-[#FF932E]"
-                onPress={() => router.replace("/auth/login")}
-                style={{ marginTop: 8 }}
-              >
-                <Text className="font-comfortaa-bold text-[#FF932E] text-base mr-2">
-                  Return to Login
-                </Text>
-                <Ionicons name="log-in-outline" size={18} color="#FF932E" />
-              </TouchableOpacity>
-            </View>
           </ScrollView>
         </SafeAreaView>
       </ImageBackground>

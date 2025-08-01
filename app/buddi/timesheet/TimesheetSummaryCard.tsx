@@ -123,7 +123,7 @@ const TimesheetSummaryCard: React.FC<TimesheetSummaryCardProps> = ({
                 fontSize: 15,
               }}
             >
-              Pending: ${(pending || 0).toFixed(2)}
+              Pending: ${Math.round(pending)}
             </Text>
           </View>
         </View>

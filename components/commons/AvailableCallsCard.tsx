@@ -264,7 +264,7 @@ export default function AvailableCallsCard({
                   flex: 1,
                 }}
               >
-                New Calls Available!
+                New Pickups Requests Available!
               </Text>
             </View>
             <View

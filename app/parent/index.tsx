@@ -27,7 +27,6 @@ import BuddiService from "../../services/api/buddi.service";
 import ChildrenService from "../../services/api/children.service";
 import ParentService, {
   ParentPickupRequest,
-  Pickup,
 } from "../../services/api/parent.service";
 import SocketService from "../../services/socket";
 
@@ -43,11 +42,6 @@ export default function ParentDashboard() {
   const [loadingRequests, setLoadingRequests] = React.useState(true);
   const [errorRequests, setErrorRequests] = React.useState<string | null>(null);
 
-  // New state for actual pickups tracking
-  const [pickups, setPickups] = React.useState<Pickup[]>([]);
-  const [loadingPickups, setLoadingPickups] = React.useState(true);
-  const [errorPickups, setErrorPickups] = React.useState<string | null>(null);
-
   // New state for child and buddi details per pickup request
   const [childDetailsMap, setChildDetailsMap] = React.useState<
     Record<string, any>
@@ -55,9 +49,6 @@ export default function ParentDashboard() {
   const [buddiDetailsMap, setBuddiDetailsMap] = React.useState<
     Record<string, any>
   >({});
-  const [startingTripId, setStartingTripId] = React.useState<number | null>(
-    null
-  );
 
   React.useEffect(() => {
     const fetchDetailsForRequests = async () => {
@@ -104,25 +95,7 @@ export default function ParentDashboard() {
         setLoadingRequests(false);
       }
     };
-
-    const fetchPickups = async () => {
-      if (!parentDetails?.id) return;
-      setLoadingPickups(true);
-      setErrorPickups(null);
-      try {
-        const res = await ParentService.getAllPickups(
-          parentDetails.id.toString()
-        );
-        setPickups(res.pickups || []);
-      } catch (err: any) {
-        setErrorPickups(err.message || "Failed to fetch pickups.");
-      } finally {
-        setLoadingPickups(false);
-      }
-    };
-
     fetchDetailsForRequests();
-    fetchPickups();
 
     // Real-time trip event listeners and local persistence
     const getSocket = () =>
@@ -130,119 +103,81 @@ export default function ParentDashboard() {
 
     // Helper to update or add a pickup in state
     const upsertPickup = (pickup: any) => {
-      console.log("🚀 [PARENT] Upserting pickup:", pickup);
       setPickupRequests((prev) => {
-        const idx = prev.findIndex(
-          (p) => p.id === pickup.pickupId || p.id === pickup.id
-        );
+        const idx = prev.findIndex((p) => p.id === pickup.id);
         let updated;
         if (idx !== -1) {
           updated = [...prev];
           updated[idx] = { ...updated[idx], ...pickup };
-          console.log("🚀 [PARENT] Updated existing pickup at index:", idx);
         } else {
           updated = [...prev, pickup];
-          console.log("🚀 [PARENT] Added new pickup to list");
         }
-        // Persist to storage using SocketService
-        SocketService.saveParentPickups(updated);
+        // Persist to AsyncStorage
+        AsyncStorage.setItem("parentPickups", JSON.stringify(updated));
         return updated;
       });
     };
 
     // pickup-requested
     const handlePickupRequested = (data: any) => {
-      console.log("🚀 [PARENT] Pickup requested event received:", data);
-      console.log("🚀 [PARENT] Current parent ID:", parentDetails?.id);
-
       let pickup;
       try {
         pickup = typeof data === "string" ? JSON.parse(data) : data;
-        console.log("🚀 [PARENT] Parsed pickup requested data:", pickup);
       } catch (err) {
-        console.error("❌ [PARENT] Parse error (pickup-requested):", err);
+        console.error("Parse error (pickup-requested):", err);
         return;
       }
-
-      console.log("🚀 [PARENT] Upserting pickup in state");
       upsertPickup(pickup);
-      console.log("🚀 [PARENT] Refreshing pickups to get updated status");
-      refreshPickups();
     };
     // pickup-started
     const handlePickupStarted = (data: any) => {
-      console.log("🚀 [PARENT] Pickup started event received:", data);
-
       let pickup;
       try {
         pickup = typeof data === "string" ? JSON.parse(data) : data;
-        console.log("🚀 [PARENT] Parsed pickup started data:", pickup);
       } catch (err) {
-        console.error("❌ [PARENT] Parse error (pickup-started):", err);
+        console.error("Parse error (pickup-started):", err);
         return;
       }
-
-      console.log("🚀 [PARENT] Upserting pickup in state");
       upsertPickup(pickup);
-      console.log("🚀 [PARENT] Refreshing pickups to get updated status");
-      refreshPickups();
     };
     // child-picked-up
     const handleChildPickedUp = (data: any) => {
-      console.log("🚀 [PARENT] Child picked up event received:", data);
-
       let pickup;
       try {
         pickup = typeof data === "string" ? JSON.parse(data) : data;
-        console.log("🚀 [PARENT] Parsed child picked up data:", pickup);
       } catch (err) {
-        console.error("❌ [PARENT] Parse error (child-picked-up):", err);
+        console.error("Parse error (child-picked-up):", err);
         return;
       }
-
-      console.log("🚀 [PARENT] Upserting pickup in state");
       upsertPickup(pickup);
-      console.log("🚀 [PARENT] Refreshing pickups to get updated status");
-      refreshPickups();
     };
     // trip-completed
     const handleTripCompleted = (data: any) => {
-      console.log("🚀 [PARENT] Trip completed event received:", data);
-      
       let pickup;
       try {
         pickup = typeof data === "string" ? JSON.parse(data) : data;
-        console.log("🚀 [PARENT] Parsed trip completed data:", pickup);
       } catch (err) {
-        console.error("❌ [PARENT] Parse error (trip-completed):", err);
+        console.error("Parse error (trip-completed):", err);
         return;
       }
-      
-      console.log("🚀 [PARENT] Upserting pickup in state");
       upsertPickup(pickup);
-      console.log("🚀 [PARENT] Refreshing pickups to get updated status");
-      refreshPickups();
     };
 
-    // Load persisted data on component mount
-    const loadPersistedData = async () => {
-      try {
-        console.log("🚀 [PARENT] Loading persisted data...");
-        const savedPickups = await SocketService.getParentPickups();
-        console.log("🚀 [PARENT] Loaded pickups from storage:", savedPickups.length);
-        setPickupRequests(savedPickups);
-      } catch (error) {
-        console.error("🚀 [PARENT] Error loading persisted data:", error);
+    // Add listeners
+    const socket = getSocket();
+    if (socket) {
+      socket.on("pickup-requested", handlePickupRequested);
+      socket.on("pickup-started", handlePickupStarted);
+      socket.on("child-picked-up", handleChildPickedUp);
+      socket.on("trip-completed", handleTripCompleted);
+    }
+
+    // On mount, load pickups from AsyncStorage
+    AsyncStorage.getItem("parentPickups").then((stored) => {
+      if (stored) {
+        setPickupRequests(JSON.parse(stored));
       }
-    };
-    
-    loadPersistedData();
-
-    // Add socket event listeners using SocketService
-    SocketService.onPickupRequested(handlePickupRequested);
-    SocketService.onPickupStarted(handlePickupStarted);
-    SocketService.onChildPickedUp(handleChildPickedUp);
-    SocketService.onTripCompleted(handleTripCompleted);
+    });
 
     // Cleanup listeners on unmount
     return () => {
@@ -280,29 +215,6 @@ export default function ParentDashboard() {
         window.alert("Failed to logout. Please try again.");
       }
     }
-  };
-
-  const refreshPickups = async () => {
-    if (!parentDetails?.id) return;
-    try {
-      const res = await ParentService.getAllPickups(
-        parentDetails.id.toString()
-      );
-      setPickups(res.pickups || []);
-    } catch (err: any) {
-      console.error("Failed to refresh pickups:", err);
-    }
-  };
-
-  // Helper function to get pickup status for a specific request
-  const getPickupStatus = (buddiRequestId: number) => {
-    const pickup = pickups.find((p) => p.buddiRequestId === buddiRequestId);
-    return pickup?.status || null;
-  };
-
-  // Helper function to get pickup data for a specific request
-  const getPickupData = (buddiRequestId: number) => {
-    return pickups.find((p) => p.buddiRequestId === buddiRequestId);
   };
   return (
     <SafeAreaView
@@ -1067,20 +979,6 @@ export default function ParentDashboard() {
           </View>
         </View>
 
-        <View className="px-4 mb-6">
-          <TouchableOpacity
-            className="bg-primary rounded-full py-4 items-center"
-            onPress={() => router.push("/parent/timesheets")}
-          >
-            <View className="flex-row items-center gap-2">
-              <Text className="text-white font-comfortaa-bold text-lg">
-                View Buddis&apos;s Timesheets
-              </Text>
-              <Ionicons name="arrow-forward" size={18} color="white" />
-            </View>
-          </TouchableOpacity>
-        </View>
-
         {/* Payment Alert */}
         {/* <PaymentAlert /> */}
         {/* Callup Review */}
@@ -1101,74 +999,10 @@ export default function ParentDashboard() {
               <Ionicons name="arrow-forward" size={20} color="#FF9100" />
             </TouchableOpacity>
           </View>
-
-          {/* Refresh Button Inside Box */}
-          <View
-            style={{
-              backgroundColor: "#fff",
-              borderRadius: 16,
-              borderWidth: 1,
-              borderColor: "#E5E7EB",
-              padding: 16,
-              marginBottom: 12,
-              shadowColor: "#000",
-              shadowOffset: { width: 0, height: 2 },
-              shadowOpacity: 0.05,
-              shadowRadius: 4,
-              elevation: 2,
-            }}
-          >
-            <View className="flex-row items-center justify-between">
-              <View className="flex-row items-center">
-                <Ionicons
-                  name="time-outline"
-                  size={20}
-                  color="#FF932E"
-                  style={{ marginRight: 8 }}
-                />
-                <Text className="text-sm font-comfortaa-bold text-[#232B3A]">
-                  Trip Status Updates
-                </Text>
-              </View>
-              <TouchableOpacity
-                onPress={refreshPickups}
-                className="flex-row items-center"
-                style={{
-                  opacity: loadingPickups ? 0.5 : 1,
-                  backgroundColor: "#FF932E",
-                  paddingHorizontal: 12,
-                  paddingVertical: 6,
-                  borderRadius: 12,
-                  shadowColor: "#FF932E",
-                  shadowOffset: { width: 0, height: 1 },
-                  shadowOpacity: 0.2,
-                  shadowRadius: 2,
-                  elevation: 2,
-                }}
-                disabled={loadingPickups}
-              >
-                <Ionicons
-                  name="refresh"
-                  size={14}
-                  color="#fff"
-                  style={{ marginRight: 4 }}
-                />
-                <Text className="text-xs text-white font-comfortaa-bold">
-                  {loadingPickups ? "Refreshing..." : "Refresh Status"}
-                </Text>
-              </TouchableOpacity>
-            </View>
-            <Text className="text-xs text-gray-500 mt-2 font-comfortaa">
-              Tap refresh to get the latest status of your pickup trips
-            </Text>
-          </View>
           {/* Render KidPickupCard for each pickup request and only for the next relevant day */}
           {pickupRequests.length > 0 ? (
             pickupRequests.map((pickup) => {
               const child = childDetailsMap[pickup.childId];
-              const pickupData = getPickupData(pickup.id);
-              const currentPickupStatus = pickupData?.status || null;
-
               // If not matched with a Buddi, show waiting card
               if (!pickup.matchedBuddiId) {
                 return (
@@ -1230,18 +1064,8 @@ export default function ParentDashboard() {
                 buddiEmail = "buddi@email.com";
                 buddiAvatar = "https://randomuser.me/api/portraits/men/2.jpg";
               }
-
-              // Determine status based on actual pickup data
-              let buddiStatus = "Available";
-              if (currentPickupStatus === "pending") {
-                buddiStatus = "Trip Started";
-              } else if (currentPickupStatus === "enRoute") {
-                buddiStatus = "En Route";
-              } else if (currentPickupStatus === "pickedUp") {
-                buddiStatus = "Child Picked Up";
-              } else if (currentPickupStatus === "completed") {
-                buddiStatus = "Trip Completed";
-              }
+              const buddiStatus =
+                pickup.status === "matched" ? "Available" : "Pending";
 
               // Find the next relevant day (today if included, otherwise next closest)
               const daysOfWeek = [
@@ -1289,40 +1113,12 @@ export default function ParentDashboard() {
                   schoolName={child?.school || pickup.fromZone || "School"}
                   destination={pickup.toZone || "Home"}
                   mainAction={
-                    startingTripId === pickup.id
-                      ? "Starting Trip..."
-                      : currentPickupStatus === "pending"
-                      ? "Trip Started"
-                      : currentPickupStatus === "enRoute"
-                      ? "En Route"
-                      : currentPickupStatus === "pickedUp"
-                      ? "Child Picked Up"
-                      : currentPickupStatus === "completed"
-                      ? "Trip Completed"
-                      : pickup.status === "matched"
+                    pickup.status === "matched"
                       ? "Trip Not Yet Started"
                       : "Pending"
                   }
-                  mainActionColor={
-                    currentPickupStatus === "pending"
-                      ? "#FF932E"
-                      : currentPickupStatus === "enRoute"
-                      ? "#3B82F6"
-                      : currentPickupStatus === "pickedUp"
-                      ? "#7C3AED"
-                      : currentPickupStatus === "completed"
-                      ? "#16A34A"
-                      : undefined
-                  }
-                  disabled={
-                    currentPickupStatus === "pending" ||
-                    currentPickupStatus === "enRoute" ||
-                    currentPickupStatus === "pickedUp" ||
-                    currentPickupStatus === "completed" ||
-                    startingTripId === pickup.id
-                  }
                   onMainAction={
-                    pickup.status === "matched" && !currentPickupStatus
+                    pickup.status === "matched"
                       ? async () => {
                           Alert.alert(
                             "Start Pickup Trip",
@@ -1334,7 +1130,6 @@ export default function ParentDashboard() {
                                 style: "default",
                                 onPress: async () => {
                                   try {
-                                    setStartingTripId(pickup.id);
                                     // Debug: log payload and types
                                     console.log("Pickup request payload:", {
                                       parentId: parentDetails!.id,
@@ -1356,72 +1151,26 @@ export default function ParentDashboard() {
                                         buddiRequestId: pickup.id,
                                         callId: pickup.id,
                                       });
-                                    // Refresh pickups to get updated status
-                                    await refreshPickups();
-                                    Alert.alert(
-                                      "Trip Started",
-                                      "Your pickup trip has been started successfully! The Buddi is now on their way.",
-                                      [{ text: "OK", style: "default" }]
-                                    );
-                                  } catch (err: any) {
-                                    let errorMessage = "Failed to start trip.";
-
-                                    // Handle specific 400 error for duplicate pickup
-                                    if (err?.response?.status === 400) {
-                                      if (
-                                        err?.response?.data?.error?.includes(
-                                          "already requested"
+                                    // Use the status and pickup object from the response
+                                    if (res && res.pickup) {
+                                      setPickupRequests((prev) =>
+                                        prev.map((p) =>
+                                          p.id === pickup.id
+                                            ? { ...p, ...res.pickup }
+                                            : p
                                         )
-                                      ) {
-                                        errorMessage =
-                                          "This pickup trip has already been started today. You can only start one trip per day.";
-                                      } else if (
-                                        err?.response?.data?.error?.includes(
-                                          "already started"
-                                        )
-                                      ) {
-                                        errorMessage =
-                                          "This pickup trip has already been started. Please check your trip status.";
-                                      } else if (err?.response?.data?.error) {
-                                        errorMessage = err.response.data.error;
-                                      }
-                                    } else if (err?.response?.data?.message) {
-                                      errorMessage = err.response.data.message;
-                                    } else if (err?.message) {
-                                      if (err.message.includes("Network")) {
-                                        errorMessage =
-                                          "Network error. Please check your connection and try again.";
-                                      } else if (
-                                        err.message.includes("timeout")
-                                      ) {
-                                        errorMessage =
-                                          "Request timed out. Please try again.";
-                                      } else {
-                                        errorMessage = err.message;
-                                      }
+                                      );
                                     }
-
+                                  } catch (err) {
                                     Alert.alert(
-                                      "Cannot Start Trip",
-                                      errorMessage,
-                                      [{ text: "OK", style: "default" }]
+                                      "Error",
+                                      (err as any)?.message ||
+                                        "Failed to start trip."
                                     );
-                                  } finally {
-                                    setStartingTripId(null);
                                   }
                                 },
                               },
                             ]
-                          );
-                        }
-                      : currentPickupStatus === "completed"
-                      ? () => {
-                          Alert.alert(
-                            "Trip Completed",
-                            `Your trip has been completed successfully!\n\nFare: $${
-                              pickupData?.fare?.toFixed(2) || "0.00"
-                            }\nDuration: ${pickupData?.duration || "N/A"}`,
-                            [{ text: "OK", style: "default" }]
                           );
                         }
                       : undefined
