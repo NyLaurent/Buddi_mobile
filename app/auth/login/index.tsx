@@ -49,7 +49,17 @@ const LoginScreen = () => {
   };
 
   const handleSignUp = () => {
-    router.push("/role-select");
+    console.log("Sign Up button pressed - navigating to role-select");
+    try {
+      router.push("/role-select" as any);
+      console.log("Navigation command sent successfully");
+    } catch (error) {
+      console.error("Navigation error:", error);
+      Alert.alert(
+        "Navigation Error",
+        "Unable to navigate to signup page. Please try again."
+      );
+    }
   };
 
   const handleForgotPassword = () => {

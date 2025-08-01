@@ -92,25 +92,11 @@ export const RouteGuard: React.FC<RouteGuardProps> = ({
           break;
         case "parent":
           if (parentDetails) {
-            // Allow approved parents to navigate freely within their portal
-            const isApprovedParent = ["approved", "active"].includes(
-              parentDetails.approvalStage
-            );
+            // Allow parents to navigate freely within their portal regardless of approval stage
             const isInParentPortal = segments[0] === "parent";
 
-            if (isApprovedParent && isInParentPortal) {
-              // Allow free navigation within parent portal for approved users
-              return;
-            }
-
-            if (parentDetails.approvalStage === "pending") {
-              hasRedirected.current = true;
-              router.replace("/auth/waitlist");
-              return;
-            }
-            if (!["approved", "active"].includes(parentDetails.approvalStage)) {
-              hasRedirected.current = true;
-              router.replace("/auth/waitlist");
+            if (isInParentPortal) {
+              // Allow free navigation within parent portal for all parents
               return;
             }
           }

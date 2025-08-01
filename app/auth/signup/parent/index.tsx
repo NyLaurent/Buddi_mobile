@@ -87,6 +87,8 @@ function validateForm(formData: FormData, step: number) {
     if (!formData.countryCallingCode)
       errors.phoneNumber = "Select country code";
     if (!formData.homeAddress) errors.homeAddress = "Home address is required";
+  }
+  if (step === 1) {
     if (!formData.termsAccepted)
       errors.termsAccepted = "You must accept the terms";
   }
@@ -315,7 +317,7 @@ const RegistrationStep: React.FC<
                 }}
               >
                 {formData.countryCallingCode
-                  ? `+${formData.countryCallingCode}`
+                  ? formData.countryCallingCode
                   : "+1"}
               </Text>
               <Ionicons
@@ -374,40 +376,6 @@ const RegistrationStep: React.FC<
             </Text>
           )}
         </View>
-
-        <View className="flex-row items-center mb-8 mt-4">
-          <TouchableOpacity
-            onPress={() =>
-              setFormData((prev) => ({
-                ...prev,
-                termsAccepted: !prev.termsAccepted,
-              }))
-            }
-            className="mr-2"
-          >
-            <View
-              className={`w-5 h-5 border rounded ${
-                formData.termsAccepted
-                  ? "border-primary bg-primary"
-                  : "border-gray-300 bg-white"
-              } justify-center items-center`}
-            >
-              {formData.termsAccepted && (
-                <Ionicons name="checkmark" size={14} color="#fff" />
-              )}
-            </View>
-          </TouchableOpacity>
-          <Text className="font-comfortaa text-sm text-[#71727A]">
-            I agree to the{" "}
-            <Text className="text-primary font-comfortaa-bold">Terms</Text> &{" "}
-            <Text className="text-primary font-comfortaa-bold">Conditions</Text>
-          </Text>
-        </View>
-        {errors.termsAccepted && (
-          <Text style={{ color: "red", fontSize: 12, marginBottom: 16 }}>
-            {errors.termsAccepted}
-          </Text>
-        )}
 
         <View className="mt-2 mb-4">
           <TouchableOpacity onPress={onLogin} className="self-center">
@@ -491,7 +459,11 @@ const RegistrationStep: React.FC<
   );
 };
 
-const PaymentStep: React.FC<StepProps> = ({ formData, setFormData }) => {
+const PaymentStep: React.FC<StepProps & { errors: any }> = ({
+  formData,
+  setFormData,
+  errors,
+}) => {
   return (
     <View className="flex-1 bg-white">
       <ScrollView
@@ -510,15 +482,12 @@ const PaymentStep: React.FC<StepProps> = ({ formData, setFormData }) => {
             className="w-40 h-12 mb-4"
             resizeMode="contain"
           />
-          <Text className="text-2xl font-comfortaa-bold text-center text-black">
-            Complete Background
-          </Text>
           <Text className="text-2xl font-comfortaa-bold text-center text-black mb-2">
-            Check Payment
+            Payment Section
           </Text>
           <Text className="text-sm font-comfortaa text-center text-[#71727A] mb-6 px-6">
-            Secure your child&apos;s safety and peace of mind. A small fee
-            covers a thorough Buddi background screening.
+            Please select your preferred payment method to continue your
+            registration.
           </Text>
         </View>
 
@@ -535,7 +504,12 @@ const PaymentStep: React.FC<StepProps> = ({ formData, setFormData }) => {
 
           <View className="flex-row mb-4">
             <TouchableOpacity
-              onPress={() => setFormData((prev) => ({ ...prev, paymentMethod: "credit_card" }))}
+              onPress={() =>
+                setFormData((prev) => ({
+                  ...prev,
+                  paymentMethod: "credit_card",
+                }))
+              }
               className={`flex-row items-center border rounded-xl py-3 px-4 ${
                 formData.paymentMethod === "credit_card"
                   ? "border-primary bg-[#FFF5E6]"
@@ -568,7 +542,12 @@ const PaymentStep: React.FC<StepProps> = ({ formData, setFormData }) => {
 
           <View className="flex-row mb-4">
             <TouchableOpacity
-              onPress={() => setFormData((prev) => ({ ...prev, paymentMethod: "debit_card" }))}
+              onPress={() =>
+                setFormData((prev) => ({
+                  ...prev,
+                  paymentMethod: "debit_card",
+                }))
+              }
               className={`flex-row items-center border rounded-xl py-3 px-4 ${
                 formData.paymentMethod === "debit_card"
                   ? "border-primary bg-[#FFF5E6]"
@@ -598,7 +577,9 @@ const PaymentStep: React.FC<StepProps> = ({ formData, setFormData }) => {
 
           <View className="flex-row mb-6">
             <TouchableOpacity
-              onPress={() => setFormData((prev) => ({ ...prev, paymentMethod: "paypal" }))}
+              onPress={() =>
+                setFormData((prev) => ({ ...prev, paymentMethod: "paypal" }))
+              }
               className={`flex-row items-center border rounded-xl py-3 px-4 ${
                 formData.paymentMethod === "paypal"
                   ? "border-primary bg-[#FFF5E6]"
@@ -639,17 +620,42 @@ const PaymentStep: React.FC<StepProps> = ({ formData, setFormData }) => {
             </Text>
           </View>
 
-          <View className="mt-4 bg-[#F3FCF7] p-3 rounded-xl flex-row items-center">
-            <Ionicons
-              name="shield-checkmark"
-              size={24}
-              color="#4ADE80"
+          {/* Terms and Conditions */}
+          <View className="flex-row items-center mt-6 mb-4">
+            <TouchableOpacity
+              onPress={() =>
+                setFormData((prev) => ({
+                  ...prev,
+                  termsAccepted: !prev.termsAccepted,
+                }))
+              }
               className="mr-2"
-            />
-            <Text className="text-[#4ADE80] font-comfortaa text-sm ml-2">
-              Payment is secure and encrypted
+            >
+              <View
+                className={`w-5 h-5 border rounded ${
+                  formData.termsAccepted
+                    ? "border-primary bg-primary"
+                    : "border-gray-300 bg-white"
+                } justify-center items-center`}
+              >
+                {formData.termsAccepted && (
+                  <Ionicons name="checkmark" size={14} color="#fff" />
+                )}
+              </View>
+            </TouchableOpacity>
+            <Text className="font-comfortaa text-sm text-[#71727A]">
+              I agree to the{" "}
+              <Text className="text-primary font-comfortaa-bold">Terms</Text> &{" "}
+              <Text className="text-primary font-comfortaa-bold">
+                Conditions
+              </Text>
             </Text>
           </View>
+          {errors.termsAccepted && (
+            <Text style={{ color: "red", fontSize: 12, marginBottom: 16 }}>
+              {errors.termsAccepted}
+            </Text>
+          )}
         </View>
       </ScrollView>
     </View>
@@ -771,7 +777,11 @@ export default function ParentSignup() {
         />
       )}
       {step === 1 && (
-        <PaymentStep formData={formData} setFormData={setFormData} />
+        <PaymentStep
+          formData={formData}
+          setFormData={setFormData}
+          errors={errors}
+        />
       )}
 
       {/* Progress Stepper */}

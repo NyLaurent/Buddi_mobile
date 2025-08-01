@@ -69,6 +69,7 @@ export interface ParentDetails {
   checkrCandidateId: any;
   checkrReportId: any;
   profilePicture?: string;
+  isBgCheckPaid?: boolean;
 }
 
 export interface SuperAdminDetails {
@@ -151,7 +152,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 
   // Force navigation to login when user is null (after logout)
   useEffect(() => {
-    if (!isLoading && !user && segments[0] !== "auth") {
+    if (
+      !isLoading &&
+      !user &&
+      segments[0] !== "auth" &&
+      segments[0] !== "role-select"
+    ) {
       console.log("AuthContext: User is null, forcing navigation to login");
       router.replace("/auth/login" as any);
     }
@@ -289,14 +295,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       return;
     }
 
-    // If no user and not on login route, redirect to login
-    if (!user) {
-      if (inProtectedRoute || segments[0] === "role-select") {
-        router.replace("/auth/login");
-      }
-      return;
-    }
-
     // TEMPORARY: Allow unrestricted access to these routes for development
     // TODO: REMOVE THIS BEFORE PRODUCTION
     const isTemporaryUnprotectedRoute =
@@ -308,6 +306,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       console.log(
         "handleNavigation - Temporarily allowing access to development routes"
       );
+      return;
+    }
+
+    // If no user and not on login route, redirect to login
+    if (!user) {
+      if (inProtectedRoute) {
+        router.replace("/auth/login");
+      }
       return;
     }
 
@@ -376,17 +382,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       }
     }
 
-    // Allow approved parents to navigate freely within parent routes
-    if (user.role === "parent" && parentDetails) {
-      const isApprovedParent = ["approved", "active"].includes(
-        parentDetails.approvalStage
+    // Allow parents to navigate freely within parent routes regardless of approval stage
+    if (user.role === "parent" && parentDetails && segments[0] === "parent") {
+      console.log(
+        "handleNavigation - Parent navigating freely within parent portal"
       );
-      if (isApprovedParent && segments[0] === "parent") {
-        console.log(
-          "handleNavigation - Approved parent navigating freely within parent portal"
-        );
-        return; // Allow free navigation within parent routes
-      }
+      return; // Allow free navigation within parent routes
     }
 
     // Handle other roles navigation
@@ -466,21 +467,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
           parentDetails.approvalStage
         );
 
-        if (parentDetails.approvalStage === "pending") {
-          console.log(
-            "getInitialRoute - Parent pending, redirecting to waitlist"
-          );
-          return "/auth/waitlist";
-        }
-
-        if (["approved", "active"].includes(parentDetails.approvalStage)) {
-          console.log(
-            "getInitialRoute - Approved parent, returning to parent portal"
-          );
-          return "/parent";
-        }
-
-        return "/auth/waitlist";
+        // Allow parents to access their portal regardless of approval stage
+        console.log(
+          "getInitialRoute - Parent can access portal, returning to parent portal"
+        );
+        return "/parent";
 
       case "referralTeacher":
         return "/head-teacher";
@@ -525,7 +516,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     }
 
     if (user.role === "parent" && parentDetails) {
-      return ["approved", "active"].includes(parentDetails.approvalStage);
+      return true; // Allow parents to access portal regardless of approval stage
     }
 
     return false;
@@ -842,25 +833,24 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       setSuperAdminDetails(null);
 
       console.log("AuthContext: Logout completed successfully"); // Debug log
-      
+
       // Force navigation to login immediately after logout
       console.log("AuthContext: Navigating to login after logout");
       router.replace("/auth/login" as any);
-      
     } catch (error) {
       console.error("AuthContext: Logout error:", error);
-      
+
       // Even if logout fails, clear local state to ensure user is logged out
       console.log("AuthContext: Clearing state despite logout error...");
       setUser(null);
       setBuddiDetails(null);
       setParentDetails(null);
       setSuperAdminDetails(null);
-      
+
       // Force navigation to login even on error
       console.log("AuthContext: Navigating to login despite logout error");
       router.replace("/auth/login" as any);
-      
+
       // Re-throw the error so the calling component can handle it
       throw error;
     } finally {

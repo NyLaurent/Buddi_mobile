@@ -142,7 +142,7 @@ const SubmissionApproved = () => {
                         setIsLoggingOut(true);
 
                         // Call logout from AuthContext (it will handle navigation)
-                        await logout();
+                      await logout();
                         console.log(
                           "SubmissionApproved: Logout completed successfully"
                         );
@@ -188,13 +188,13 @@ const SubmissionApproved = () => {
               </>
             ) : (
               <>
-                <Text style={styles.buttonText}>Return to Login</Text>
-                <Ionicons
-                  name="log-out"
-                  size={20}
-                  color="#fff"
-                  style={styles.buttonIcon}
-                />
+            <Text style={styles.buttonText}>Return to Login</Text>
+            <Ionicons
+              name="log-out"
+              size={20}
+              color="#fff"
+              style={styles.buttonIcon}
+            />
               </>
             )}
           </TouchableOpacity>

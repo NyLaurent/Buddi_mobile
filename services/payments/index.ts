@@ -4,6 +4,7 @@
  * Payment processing, financial transactions, and billing
  */
 
+import { getPlatform } from '../../utils/platform';
 import { authorizedApi } from '../api/config';
 
 export async function getTokenBalance(parentId: number | string) {
@@ -13,7 +14,14 @@ export async function getTokenBalance(parentId: number | string) {
 }
 
 export async function buyTokens({ parentId, quantity, amount }: { parentId: number | string, quantity: number, amount: number }) {
-  const res = await authorizedApi.post('/payments/buyTokens', { parentId, quantity, amount });
+  const requestData = {
+    parentId,
+    quantity,
+    amount,
+    platform: getPlatform(),
+  };
+  
+  const res = await authorizedApi.post('/payments/buyTokens', requestData);
   // API returns: { success, message, checkoutUrl? }
   return res.data;
 }

@@ -26,6 +26,13 @@ export default function ParentLayout() {
             <Stack.Screen name="timesheets" />
             <Stack.Screen name="timesheet-details/[id]" />
             <Stack.Screen name="payments" />
+            <Stack.Screen name="payment-success" />
+            <Stack.Screen name="payment-cancel" />
+            <Stack.Screen name="background-check" />
+            <Stack.Screen name="background-check-cancel" />
+            <Stack.Screen name="buy-tokens" />
+            <Stack.Screen name="buy-tokens-success" />
+            <Stack.Screen name="buy-tokens-cancel" />
             <Stack.Screen name="settings" />
             <Stack.Screen name="buddi-recommendations/[callId]" />
             <Stack.Screen name="buddi-profile/[buddiId]" />

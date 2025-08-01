@@ -397,12 +397,20 @@ export default function ParentDashboard() {
         </View>
 
         {/* Greeting Row with Avatar */}
-        <View className="flex-row items-center justify-between mt-6 mb-2 px-1">
-          <View>
-            <Text className="text-2xl text-black font-comfortaa-bold">
+        <View className="flex-row items-center mt-6 mb-2 px-1">
+          <View className="flex-1 mr-3">
+            <Text
+              className="text-2xl text-black font-comfortaa-bold"
+              numberOfLines={1}
+              ellipsizeMode="tail"
+            >
               Good morning, {user?.firstName || "Parent"}
             </Text>
-            <Text className="text-[#71727A] font-comfortaa mt-1">
+            <Text
+              className="text-[#71727A] font-comfortaa mt-1"
+              numberOfLines={2}
+              ellipsizeMode="tail"
+            >
               Glad to see you again,{" "}
               {user?.role === "parent" ? "Parent" : user?.role}!{" "}
               <Text className="text-lg">😊</Text>
@@ -461,6 +469,18 @@ export default function ParentDashboard() {
             </View>
           )}
         </View>
+
+        {/* Approval Status Indicator */}
+        {parentDetails?.approvalStage === "pending" && (
+          <View className="mt-4 mx-1 bg-orange-50 px-4 py-3 rounded-xl border border-orange-200">
+            <View className="flex-row items-center">
+              <Ionicons name="warning" size={20} color="#F97316" />
+              <Text className="text-orange-700 font-comfortaa text-sm ml-2 flex-1">
+                Background check required to create pickup requests
+              </Text>
+            </View>
+          </View>
+        )}
 
         {/* Token Buy CTA Card */}
         <BuyTokensCTA
@@ -556,7 +576,27 @@ export default function ParentDashboard() {
                   shadowRadius: 6,
                   elevation: 2,
                 }}
-                onPress={() => router.push("/parent/call-page")}
+                onPress={() => {
+                  if (parentDetails?.approvalStage === "pending") {
+                    Alert.alert(
+                      "Background Check Required",
+                      "To ensure the safety of all children, we require a background check before you can create pickup requests. Please complete your background check first.",
+                      [
+                        {
+                          text: "Perform Background Check",
+                          onPress: () =>
+                            router.push("/parent/background-check"),
+                        },
+                        {
+                          text: "Cancel",
+                          style: "cancel",
+                        },
+                      ]
+                    );
+                  } else {
+                    router.push("/parent/call-page");
+                  }
+                }}
                 activeOpacity={0.85}
               >
                 <FontAwesome5
@@ -1051,8 +1091,8 @@ export default function ParentDashboard() {
             <AnalyticsCard
               icon={<FontAwesome5 name="car" size={28} color="#8B5CF6" />}
               title={"Today's Pickups"}
-              value="12"
-              subtitle="2 Schools"
+              value="0"
+              subtitle="0 Schools"
             />
           </View>
           <View className="w-[48%] mb-3">
@@ -1061,7 +1101,7 @@ export default function ParentDashboard() {
                 <MaterialIcons name="access-time" size={28} color="#3B82F6" />
               }
               title="Timesheets"
-              value="3"
+              value="0"
               subtitle="All time"
             />
           </View>
@@ -1069,7 +1109,7 @@ export default function ParentDashboard() {
             <AnalyticsCard
               icon={<Feather name="users" size={28} color="#22C55E" />}
               title="Buddis"
-              value="3"
+              value="0"
               subtitle="Connected"
             />
           </View>
@@ -1077,8 +1117,8 @@ export default function ParentDashboard() {
             <AnalyticsCard
               icon={<FontAwesome5 name="child" size={28} color="#FF9100" />}
               title="Registered Kids"
-              value="2"
-              subtitle="2 Schools"
+              value="0"
+              subtitle="0 Schools"
             />
           </View>
         </View>
@@ -1096,10 +1136,6 @@ export default function ParentDashboard() {
             </View>
           </TouchableOpacity>
         </View>
-
-        {/* Payment Alert */}
-        {/* <PaymentAlert /> */}
-        {/* Callup Review */}
 
         {/* Pickup Schedule */}
         <View className="mb-4">
@@ -1316,7 +1352,9 @@ export default function ParentDashboard() {
                       : currentPickupStatus === "completed"
                       ? "Trip Completed"
                       : pickup.status === "matched"
-                      ? "Trip Not Yet Started"
+                      ? parentDetails?.approvalStage === "pending"
+                        ? "Background Check Required"
+                        : "Trip Not Yet Started"
                       : "Pending"
                   }
                   mainActionColor={
@@ -1328,6 +1366,9 @@ export default function ParentDashboard() {
                       ? "#7C3AED"
                       : currentPickupStatus === "completed"
                       ? "#16A34A"
+                      : pickup.status === "matched" &&
+                        parentDetails?.approvalStage === "pending"
+                      ? "#EF4444"
                       : undefined
                   }
                   disabled={
@@ -1335,11 +1376,32 @@ export default function ParentDashboard() {
                     currentPickupStatus === "enRoute" ||
                     currentPickupStatus === "pickedUp" ||
                     currentPickupStatus === "completed" ||
-                    startingTripId === pickup.id
+                    startingTripId === pickup.id ||
+                    (pickup.status === "matched" &&
+                      parentDetails?.approvalStage === "pending")
                   }
                   onMainAction={
                     pickup.status === "matched" && !currentPickupStatus
                       ? async () => {
+                          // Check if parent has pending approval status
+                          if (parentDetails?.approvalStage === "pending") {
+                            Alert.alert(
+                              "Background Check Required",
+                              "To ensure the safety of all children, we require a background check before you can create pickup requests. Please complete your background check first.",
+                              [
+                                { text: "Cancel", style: "cancel" },
+                                {
+                                  text: "Perform Background Check",
+                                  style: "default",
+                                  onPress: () => {
+                                    router.push("/parent/background-check");
+                                  },
+                                },
+                              ]
+                            );
+                            return;
+                          }
+
                           Alert.alert(
                             "Start Pickup Trip",
                             "Are you ready to start a pickup trip?",
