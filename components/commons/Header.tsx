@@ -1,8 +1,89 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import React from "react";
-import { Image, Text, TouchableOpacity, View } from "react-native";
+import { Text, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+
+// Helper function to generate initials from name
+const getInitials = (name?: string): string => {
+  if (!name) return "U";
+
+  const nameParts = name.trim().split(" ");
+  if (nameParts.length === 1) {
+    return nameParts[0].charAt(0).toUpperCase();
+  }
+
+  return (
+    nameParts[0].charAt(0) + nameParts[nameParts.length - 1].charAt(0)
+  ).toUpperCase();
+};
+
+// Helper function to generate a consistent color based on name
+const getAvatarColor = (name?: string): string => {
+  if (!name) return "#3B82F6";
+
+  const colors = [
+    "#3B82F6",
+    "#8B5CF6",
+    "#EF4444",
+    "#F59E0B",
+    "#10B981",
+    "#F97316",
+    "#EC4899",
+    "#06B6D4",
+    "#84CC16",
+    "#6366F1",
+  ];
+
+  let hash = 0;
+  for (let i = 0; i < name.length; i++) {
+    hash = name.charCodeAt(i) + ((hash << 5) - hash);
+  }
+
+  return colors[Math.abs(hash) % colors.length];
+};
+
+// Avatar component that displays initials
+const AvatarWithInitials = ({
+  name,
+  size = 80,
+  style = {},
+}: {
+  name?: string;
+  size?: number;
+  style?: any;
+}) => {
+  const initials = getInitials(name);
+  const backgroundColor = getAvatarColor(name);
+
+  return (
+    <View
+      style={[
+        {
+          width: size,
+          height: size,
+          borderRadius: size / 2,
+          backgroundColor,
+          alignItems: "center",
+          justifyContent: "center",
+          borderWidth: 4,
+          borderColor: "#FFFFFF",
+        },
+        style,
+      ]}
+    >
+      <Text
+        style={{
+          color: "#FFFFFF",
+          fontFamily: "Comfortaa-Bold",
+          fontSize: size * 0.35,
+        }}
+      >
+        {initials}
+      </Text>
+    </View>
+  );
+};
 
 interface HeaderProps {
   profileImage?: string;
@@ -17,7 +98,7 @@ interface HeaderProps {
 }
 
 const Header: React.FC<HeaderProps> = ({
-  profileImage = "https://randomuser.me/api/portraits/men/32.jpg",
+  profileImage,
   name,
   email,
   rating = 5,
@@ -65,10 +146,10 @@ const Header: React.FC<HeaderProps> = ({
           </View>
         )}
         <View className="items-center mt-1 mb-2">
-          <Image
-            source={{ uri: profileImage }}
-            className="w-20 h-20 rounded-full border-4 border-white"
-            resizeMode="cover"
+          <AvatarWithInitials
+            name={name}
+            size={80}
+            style={{ marginBottom: 4 }}
           />
           <Text
             className="text-lg font-comfortaa-bold mt-1"

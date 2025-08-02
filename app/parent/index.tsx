@@ -33,7 +33,7 @@ import SocketService from "../../services/socket";
 
 export default function ParentDashboard() {
   const [selectedDate, setSelectedDate] = React.useState(new Date());
-  const { user, logout, parentDetails } = useAuth();
+  const { user, logout, parentDetails, refreshUserData } = useAuth();
   const router = useRouter();
 
   // New state for pickup requests
@@ -78,6 +78,22 @@ export default function ParentDashboard() {
       console.log(`[PARENT] ${eventName} event emitted successfully`);
     } else {
       console.log(`[PARENT] Cannot emit ${eventName}: socket not available`);
+    }
+  };
+
+  // Profile polling state
+  const [profilePollingInterval, setProfilePollingInterval] =
+    React.useState<ReturnType<typeof setInterval> | null>(null);
+
+  // Function to refresh profile data
+  const refreshProfileData = async () => {
+    try {
+      console.log("[PARENT] Refreshing profile data...");
+      // Use the AuthContext refresh method to update user and parent details
+      await refreshUserData();
+      console.log("[PARENT] Profile data refreshed successfully");
+    } catch (error) {
+      console.error("[PARENT] Error refreshing profile:", error);
     }
   };
 
@@ -271,6 +287,78 @@ export default function ParentDashboard() {
       }
     };
   }, [parentDetails?.id]);
+
+  // Profile polling effect - poll every 30 seconds to track status changes
+  React.useEffect(() => {
+    if (!parentDetails?.id) return;
+
+    console.log("[PARENT] Starting profile polling...");
+    console.log(
+      "[PARENT] Current approval stage:",
+      parentDetails.approvalStage
+    );
+    console.log(
+      "[PARENT] Current bg check paid status:",
+      parentDetails.isBgCheckPaid
+    );
+
+    // Initial profile refresh
+    refreshProfileData();
+
+    // Set up polling interval (30 seconds)
+    const interval = setInterval(() => {
+      console.log("[PARENT] Polling profile for status updates...");
+      refreshProfileData();
+    }, 30000); // 30 seconds
+
+    setProfilePollingInterval(interval);
+
+    // Cleanup on unmount or when parentDetails changes
+    return () => {
+      if (interval) {
+        console.log("[PARENT] Clearing profile polling interval");
+        clearInterval(interval);
+        setProfilePollingInterval(null);
+      }
+    };
+  }, [parentDetails?.id]);
+
+  // Debug effect to log status changes
+  React.useEffect(() => {
+    if (parentDetails) {
+      console.log("[PARENT] Profile status update detected:");
+      console.log("  - Approval Stage:", parentDetails.approvalStage);
+      console.log("  - Background Check Paid:", parentDetails.isBgCheckPaid);
+      console.log("  - Background Check Status:", parentDetails.bgcStatus);
+    }
+  }, [
+    parentDetails?.approvalStage,
+    parentDetails?.isBgCheckPaid,
+    parentDetails?.bgcStatus,
+  ]);
+
+  // Enhanced refresh function that also refreshes profile
+  const enhancedRefreshPickups = async () => {
+    if (!parentDetails?.id) return;
+    try {
+      console.log(
+        "[PARENT] Enhanced refresh - updating pickups and profile..."
+      );
+
+      // Refresh pickups
+      const res = await ParentService.getAllPickups(
+        parentDetails.id.toString()
+      );
+      setPickups(res.pickups || []);
+
+      // Also refresh profile data
+      await refreshProfileData();
+
+      console.log("[PARENT] Enhanced refresh completed");
+    } catch (err: any) {
+      console.error("Failed to refresh pickups and profile:", err);
+    }
+  };
 
   const handleLogout = () => {
     console.log("Logout button clicked!"); // Debug log
@@ -474,9 +562,23 @@ export default function ParentDashboard() {
         {parentDetails?.approvalStage === "pending" && (
           <View className="mt-4 mx-1 bg-orange-50 px-4 py-3 rounded-xl border border-orange-200">
             <View className="flex-row items-center">
-              <Ionicons name="warning" size={20} color="#F97316" />
-              <Text className="text-orange-700 font-comfortaa text-sm ml-2 flex-1">
-                Background check required to create pickup requests
+              <Ionicons
+                name={
+                  parentDetails?.isBgCheckPaid ? "checkmark-circle" : "warning"
+                }
+                size={20}
+                color={parentDetails?.isBgCheckPaid ? "#16A34A" : "#F97316"}
+              />
+              <Text
+                className={`font-comfortaa text-sm ml-2 flex-1 ${
+                  parentDetails?.isBgCheckPaid
+                    ? "text-green-700"
+                    : "text-orange-700"
+                }`}
+              >
+                {parentDetails?.isBgCheckPaid
+                  ? "You have already completed your background check. Waiting for approval."
+                  : "Background check required to create pickup requests"}
               </Text>
             </View>
           </View>
@@ -1070,7 +1172,7 @@ export default function ParentDashboard() {
                           marginRight: 8,
                         }}
                       >
-                        Create Another Call
+                        Request another
                       </Text>
                       <Ionicons
                         name="add-circle-outline"
@@ -1183,7 +1285,7 @@ export default function ParentDashboard() {
                 </Text>
               </View>
               <TouchableOpacity
-                onPress={refreshPickups}
+                onPress={enhancedRefreshPickups}
                 className="flex-row items-center"
                 style={{
                   opacity: loadingPickups ? 0.5 : 1,

@@ -602,10 +602,10 @@ export default function RequestDetailsScreen() {
               <Text style={styles.detailLabel}>Email:</Text>
               <Text style={styles.detailValue}>{getParentEmail()}</Text>
             </View>
-            <View style={styles.parentDetail}>
+            {/* <View style={styles.parentDetail}>
               <Text style={styles.detailLabel}>Parent ID:</Text>
               <Text style={styles.detailValue}>{requestDetails.parentId}</Text>
-            </View>
+            </View> */}
           </View>
         </View>
 

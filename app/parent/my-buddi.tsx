@@ -9,12 +9,12 @@ import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useEffect, useState } from "react";
 import {
+  ActivityIndicator,
   ScrollView,
   StatusBar,
   Text,
   TouchableOpacity,
   View,
-  ActivityIndicator,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -91,14 +91,14 @@ const MyBuddyPage = () => {
             <AnalyticsCard
               icon={<Ionicons name="flash" size={20} color="#8B5CF6" />}
               title="Today's Pickups"
-              value="12"
-              subtitle="2 Schools"
+              value="0"
+              subtitle="0 Schools"
             />
             <AnalyticsCard
               icon={<Ionicons name="send" size={20} color="#FF932E" />}
               title="This Week's Trips"
-              value="12"
-              subtitle="2 Schools"
+              value="0"
+              subtitle="0 Schools"
             />
           </View>
           <View className="px-4 mt-6">
@@ -114,14 +114,30 @@ const MyBuddyPage = () => {
           </View>
           <View className="px-4 mt-6">
             <Text className="text-lg font-comfortaa-bold mb-3">
-              Proposed Buddies 
+              Proposed Buddies
             </Text>
             <ScrollView horizontal showsHorizontalScrollIndicator={false}>
               <View className="flex-row gap-4">
                 {loading ? (
-                  <View style={{ justifyContent: 'center', alignItems: 'center', width: 340, height: 220 }}>
+                  <View
+                    style={{
+                      justifyContent: "center",
+                      alignItems: "center",
+                      width: 340,
+                      height: 220,
+                    }}
+                  >
                     <ActivityIndicator size="large" color="#FF932E" />
-                    <Text style={{ marginTop: 12, color: '#666', fontFamily: 'Comfortaa-Regular', fontSize: 16 }}>Loading buddies...</Text>
+                    <Text
+                      style={{
+                        marginTop: 12,
+                        color: "#666",
+                        fontFamily: "Comfortaa-Regular",
+                        fontSize: 16,
+                      }}
+                    >
+                      Loading buddies...
+                    </Text>
                   </View>
                 ) : error ? (
                   <Text style={{ color: "red" }}>{error}</Text>
@@ -136,6 +152,7 @@ const MyBuddyPage = () => {
                       <AvailableBuddie
                         buddi={buddi}
                         matched={matchedBuddiId === buddi.id}
+                        ranking={idx + 1}
                       />
                     </View>
                   ))

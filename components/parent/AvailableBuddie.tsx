@@ -5,15 +5,114 @@ import {
   MaterialIcons,
 } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import { Image, Text, TouchableOpacity, View } from "react-native";
+import { Text, TouchableOpacity, View } from "react-native";
 import { useAuth } from "../../context/AuthContext";
+
+// Helper function to generate initials from name
+const getInitials = (name?: string): string => {
+  if (!name) return "B";
+
+  const nameParts = name.trim().split(" ");
+  if (nameParts.length === 1) {
+    return nameParts[0].charAt(0).toUpperCase();
+  }
+
+  return (
+    nameParts[0].charAt(0) + nameParts[nameParts.length - 1].charAt(0)
+  ).toUpperCase();
+};
+
+// Helper function to generate a consistent color based on name
+const getAvatarColor = (name?: string): string => {
+  if (!name) return "#3B82F6";
+
+  const colors = [
+    "#3B82F6",
+    "#8B5CF6",
+    "#EF4444",
+    "#F59E0B",
+    "#10B981",
+    "#F97316",
+    "#EC4899",
+    "#06B6D4",
+    "#84CC16",
+    "#6366F1",
+  ];
+
+  let hash = 0;
+  for (let i = 0; i < name.length; i++) {
+    hash = name.charCodeAt(i) + ((hash << 5) - hash);
+  }
+
+  return colors[Math.abs(hash) % colors.length];
+};
+
+// Helper function to get ordinal suffix (1st, 2nd, 3rd, etc.)
+const getOrdinalSuffix = (num: number): string => {
+  if (num >= 11 && num <= 13) return "th";
+
+  switch (num % 10) {
+    case 1:
+      return "st";
+    case 2:
+      return "nd";
+    case 3:
+      return "rd";
+    default:
+      return "th";
+  }
+};
+
+// Avatar component that displays initials
+const AvatarWithInitials = ({
+  name,
+  size = 96,
+  style = {},
+}: {
+  name?: string;
+  size?: number;
+  style?: any;
+}) => {
+  const initials = getInitials(name);
+  const backgroundColor = getAvatarColor(name);
+
+  return (
+    <View
+      style={[
+        {
+          width: size,
+          height: size,
+          borderRadius: size / 2,
+          backgroundColor,
+          alignItems: "center",
+          justifyContent: "center",
+          borderWidth: 2,
+          borderColor: "#E5E7EB",
+        },
+        style,
+      ]}
+    >
+      <Text
+        style={{
+          color: "#FFFFFF",
+          fontFamily: "Comfortaa-Bold",
+          fontSize: size * 0.35,
+        }}
+      >
+        {initials}
+      </Text>
+    </View>
+  );
+};
 
 const AvailableBuddie = ({
   buddi,
   matched,
+  ranking,
 }: {
   buddi: any;
   matched?: boolean;
+  ranking?: number;
 }) => {
   const data = buddi;
   const router = useRouter();
@@ -27,10 +126,7 @@ const AvailableBuddie = ({
       params: {
         roomId,
         buddiName: data.User?.firstName || data.name,
-        buddiAvatar:
-          data.profilePicture ||
-          data.profileImage ||
-          "https://randomuser.me/api/portraits/men/9.jpg",
+        buddiAvatar: data.profilePicture || data.profileImage,
       },
     });
   };
@@ -43,6 +139,12 @@ const AvailableBuddie = ({
       params: { buddiId: data.id.toString(), data: encodedData },
     });
   };
+
+  const buddiName = data.User?.firstName || data.name;
+  const buddiFullName = `${data.User?.firstName || data.name} ${
+    data.User?.lastName || ""
+  }`;
+
   return (
     <View
       className="rounded-2xl px-4 py-5 my-3 w-full max-w-[420px] self-center"
@@ -57,22 +159,17 @@ const AvailableBuddie = ({
         elevation: matched ? 6 : 2,
       }}
     >
-    
       {/* Top: Profile and Status/Message */}
       <View className="flex-row w-full mb-2">
         {/* Profile */}
         <View className="w-1/3 items-center justify-start">
-          <Image
-            source={{
-              uri:
-                data.profilePicture ||
-                data.profileImage ||
-                "https://randomuser.me/api/portraits/men/9.jpg",
-            }}
-            className="w-24 h-24 rounded-full border-2 border-gray"
+          <AvatarWithInitials
+            name={buddiFullName}
+            size={96}
+            style={{ marginBottom: 8 }}
           />
-          <Text className="text-lg font-comfortaa-bold  mt-2">
-            {data.User?.firstName || data.name} {data.User?.lastName || ""}
+          <Text className="text-lg font-comfortaa-bold mt-2">
+            {buddiFullName}
           </Text>
           <View>
             <Text
@@ -96,7 +193,9 @@ const AvailableBuddie = ({
         <View className="w-2/3 pl-4">
           <View className="flex-row justify-end items-center space-x-3 mb-2">
             <View className="bg-green px-4 py-1 rounded-full flex-row items-center">
-              <Text className="text-white text-xs font-comfortaa-bold">{data.status}</Text>
+              <Text className="text-white text-xs font-comfortaa-bold">
+                {data.status}
+              </Text>
             </View>
             <TouchableOpacity className="ml-2" onPress={handleChatPress}>
               <Ionicons
@@ -107,8 +206,25 @@ const AvailableBuddie = ({
             </TouchableOpacity>
           </View>
           {matched && (
-              <View style={{ alignSelf: "flex-end", backgroundColor: "#FF932E", borderRadius: 8, paddingHorizontal: 12, paddingVertical: 4, marginTop: 4 }}>
-              <Text style={{ color: "#fff", fontFamily: "Comfortaa-Bold", fontSize: 12 }}>Matched</Text>
+            <View
+              style={{
+                alignSelf: "flex-end",
+                backgroundColor: "#FF932E",
+                borderRadius: 8,
+                paddingHorizontal: 12,
+                paddingVertical: 4,
+                marginTop: 4,
+              }}
+            >
+              <Text
+                style={{
+                  color: "#fff",
+                  fontFamily: "Comfortaa-Bold",
+                  fontSize: 12,
+                }}
+              >
+                Matched
+              </Text>
             </View>
           )}
         </View>
@@ -140,21 +256,16 @@ const AvailableBuddie = ({
           {data.AreaOfStudy || data.schoolName || "N/A"}
         </Text>
       </View>
-      {/* Rating and Fee Row */}
-      <View className="flex-row items-center justify-between w-full mt-2 mb-2">
-        <View className="flex-row items-center space-x-1">
-          {[...Array(5)].map((_, i) =>
-            i < (data.rating ?? 0) ? (
-              <FontAwesome key={i} name="star" size={22} color="#FF932E" />
-            ) : (
-              <FontAwesome key={i} name="star-o" size={22} color="#FF932E" />
-            )
-          )}
+      {/* Rating Row */}
+      <View className="flex-row items-center justify-start w-full mt-2 mb-2">
+        <View className="bg-[#FF932E] px-4 py-2 rounded-full flex-row items-center">
+          <Ionicons name="trophy" size={18} color="#FFFFFF" />
+          <Text className="text-white text-sm font-comfortaa-bold ml-2">
+            {ranking
+              ? `Ranked ${ranking}${getOrdinalSuffix(ranking)}`
+              : "Ranked"}
+          </Text>
         </View>
-        {/* <View className="bg-green-100 px-4 py-1 rounded-full flex-row items-center ml-2">
-          <Feather name="check-square" size={18} color="#22C55E" />
-          <Text className="text-green text-base font-comfortaa-bold ml-1">Fee Per Hour: ${data.fee ?? "N/A"}</Text>
-        </View> */}
       </View>
       <View className="border-b border-gray my-3" />
       {/* Assigned Kids */}
@@ -165,7 +276,7 @@ const AvailableBuddie = ({
         {(data.assignedKids || []).map((kid: any, idx: number) => (
           <View key={idx} className="flex-row items-center space-x-2">
             <FontAwesome name="child" size={28} color="#232B3A" />
-            <Text className="text-base  font-comfortaa">{kid.name}</Text>
+            <Text className="text-base font-comfortaa">{kid.name}</Text>
           </View>
         ))}
       </View>

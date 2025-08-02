@@ -1,5 +1,84 @@
 import { Ionicons } from "@expo/vector-icons";
-import { Image, Text, TouchableOpacity, View } from "react-native";
+import { Text, TouchableOpacity, View } from "react-native";
+
+// Helper function to generate initials from name
+const getInitials = (name?: string): string => {
+  if (!name) return "P";
+
+  const nameParts = name.trim().split(" ");
+  if (nameParts.length === 1) {
+    return nameParts[0].charAt(0).toUpperCase();
+  }
+
+  return (
+    nameParts[0].charAt(0) + nameParts[nameParts.length - 1].charAt(0)
+  ).toUpperCase();
+};
+
+// Helper function to generate a consistent color based on name
+const getAvatarColor = (name?: string): string => {
+  if (!name) return "#3B82F6";
+
+  const colors = [
+    "#3B82F6",
+    "#8B5CF6",
+    "#EF4444",
+    "#F59E0B",
+    "#10B981",
+    "#F97316",
+    "#EC4899",
+    "#06B6D4",
+    "#84CC16",
+    "#6366F1",
+  ];
+
+  let hash = 0;
+  for (let i = 0; i < name.length; i++) {
+    hash = name.charCodeAt(i) + ((hash << 5) - hash);
+  }
+
+  return colors[Math.abs(hash) % colors.length];
+};
+
+// Avatar component that displays initials
+const AvatarWithInitials = ({
+  name,
+  size = 40,
+  style = {},
+}: {
+  name?: string;
+  size?: number;
+  style?: any;
+}) => {
+  const initials = getInitials(name);
+  const backgroundColor = getAvatarColor(name);
+
+  return (
+    <View
+      style={[
+        {
+          width: size,
+          height: size,
+          borderRadius: size / 2,
+          backgroundColor,
+          alignItems: "center",
+          justifyContent: "center",
+        },
+        style,
+      ]}
+    >
+      <Text
+        style={{
+          color: "#FFFFFF",
+          fontFamily: "Comfortaa-Bold",
+          fontSize: size * 0.4,
+        }}
+      >
+        {initials}
+      </Text>
+    </View>
+  );
+};
 
 interface CoverageRequestCardProps {
   studentName: string;
@@ -91,17 +170,11 @@ const CoverageRequestCard = ({
 
     {/* Requester Info */}
     <View className="flex-row items-center mb-5">
-      {requesterAvatar ? (
-        <Image
-          source={{ uri: requesterAvatar }}
-          className="w-10 h-10 rounded-full mr-3"
-        />
-      ) : (
-        <Image
-          source={{ uri: "https://randomuser.me/api/portraits/men/32.jpg" }}
-          className="w-10 h-10 rounded-full mr-3"
-        />
-      )}
+      <AvatarWithInitials
+        name={requesterName}
+        size={40}
+        style={{ marginRight: 12 }}
+      />
       <View className="flex-1">
         <Text className="font-comfortaa-bold text-black">{requesterName}</Text>
         <Text className="text-[#71727A] font-comfortaa text-sm">

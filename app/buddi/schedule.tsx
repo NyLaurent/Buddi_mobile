@@ -48,29 +48,8 @@ export default function SchedulePage() {
     "pickups"
   );
 
-  // Sample data for coverage requests
-  const coverageRequestsData = [
-    {
-      studentName: "Liam Brown",
-      time: "1:45:00",
-      hourlyRate: "$27 per hour",
-      school: "Maple Elementary",
-      home: "Greenfield",
-      requesterName: "Olivia Lee",
-      requesterEmail: "olivia.lee@email.com",
-      requesterAvatar: undefined,
-    },
-    {
-      studentName: "Sophia Miller",
-      time: "2:30:00",
-      hourlyRate: "$26 per hour",
-      school: "Cedar Middle School",
-      home: "Northside",
-      requesterName: "Noah Kim",
-      requesterEmail: "noah.kim@email.com",
-      requesterAvatar: undefined,
-    },
-  ];
+  // Empty coverage requests data - waiting for integration
+  const coverageRequestsData: any[] = [];
 
   const [showAll, setShowAll] = React.useState(false);
   // Helper to get today's day as a string (e.g., 'Monday')
@@ -113,7 +92,9 @@ export default function SchedulePage() {
           >
             <Ionicons name="arrow-back" size={20} color="white" />
           </TouchableOpacity>
-          <Text className="text-xl text-black font-comfortaa-bold">My Schedule</Text>
+          <Text className="text-xl text-black font-comfortaa-bold">
+            My Schedule
+          </Text>
           <TouchableOpacity className="w-10 h-10 bg-primary rounded-xl items-center justify-center">
             <Ionicons name="ellipsis-horizontal" size={20} color="white" />
           </TouchableOpacity>
@@ -126,16 +107,16 @@ export default function SchedulePage() {
             <AnalyticsCard
               icon={<Ionicons name="flash" size={20} color="#8B5CF6" />}
               title="Today's Pickups"
-              value="12"
-              subtitle="2 Schools"
+              value="0"
+              subtitle="0 Schools"
             />
 
             {/* This Week's Trips */}
             <AnalyticsCard
               icon={<Ionicons name="flash" size={20} color="#8B5CF6" />}
               title="This Week's Trips"
-              value="12"
-              subtitle="2 Schools"
+              value="0"
+              subtitle="0 Schools"
             />
           </View>
 
@@ -144,8 +125,8 @@ export default function SchedulePage() {
             <AnalyticsCard
               icon={<Ionicons name="flash" size={20} color="#8B5CF6" />}
               title="Coverage Requests"
-              value="12"
-              subtitle="2 Schools"
+              value="0"
+              subtitle="0 Schools"
             />
 
             {/* Total Earnings */}
@@ -156,7 +137,7 @@ export default function SchedulePage() {
                 </View>
               }
               title="Total Earnings"
-              value="$1,234"
+              value="$0"
               subtitle="All time"
             />
           </View>
@@ -233,25 +214,37 @@ export default function SchedulePage() {
                   contentContainerStyle={{ paddingRight: 16 }}
                 >
                   {pickupsToShow.length > 0 ? (
-                    pickupsToShow.map((pickup, index) => (
-                      <View key={pickup.id} className="mr-4">
-                        <PickupCard
-                          id={pickup.id.toString()}
-                          name={"Child"}
-                          time={pickup.pickupTime || "-"}
-                          days={pickup.availableDays?.join(", ") || "-"}
-                          school={pickup.fromZone || "School"}
-                          home={pickup.toZone || "Home"}
-                          onButtonPress={() => {
-                            router.push({
-                              pathname: "/buddi/pickup/[id]",
-                              params: { id: pickup.id.toString() },
-                            });
-                          }}
-                          cardWidth={340}
-                        />
-                      </View>
-                    ))
+                    pickupsToShow.flatMap(
+                      (pickup) =>
+                        // Create separate cards for each available day that matches today
+                        pickup.availableDays
+                          ?.filter(
+                            (day: string) =>
+                              day.trim().toLowerCase() === today.toLowerCase()
+                          )
+                          .map((day: string, dayIndex: number) => (
+                            <View
+                              key={`${pickup.id}-${day}-${dayIndex}`}
+                              className="mr-4"
+                            >
+                              <PickupCard
+                                id={pickup.id.toString()}
+                                name={"Child"}
+                                time={pickup.pickupTime || "-"}
+                                days={day} // Show only the specific day
+                                school={pickup.fromZone || "School"}
+                                home={pickup.toZone || "Home"}
+                                onButtonPress={() => {
+                                  router.push({
+                                    pathname: "/buddi/pickup/[id]",
+                                    params: { id: pickup.id.toString() },
+                                  });
+                                }}
+                                cardWidth={340}
+                              />
+                            </View>
+                          )) || []
+                    )
                   ) : (
                     <View
                       style={{
@@ -308,36 +301,74 @@ export default function SchedulePage() {
                   </TouchableOpacity>
                 </View>
                 <View className="gap-4">
-                  {coverageRequestsData.map((request, index) => (
-                    <CoverageRequestCard
-                      key={index}
-                      studentName={request.studentName}
-                      time={request.time}
-                      hourlyRate={request.hourlyRate}
-                      school={request.school}
-                      home={request.home}
-                      requesterName={request.requesterName}
-                      requesterEmail={request.requesterEmail}
-                      requesterAvatar={
-                        request.requesterAvatar ||
-                        `https://randomuser.me/api/portraits/men/${
-                          index + 1
-                        }.jpg`
-                      }
-                      onViewDetails={() => {
-                        console.log(
-                          "Viewing details for coverage request:",
-                          request.studentName
-                        );
+                  {coverageRequestsData.length > 0 ? (
+                    coverageRequestsData.map((request, index) => (
+                      <CoverageRequestCard
+                        key={index}
+                        studentName={request.studentName}
+                        time={request.time}
+                        hourlyRate={request.hourlyRate}
+                        school={request.school}
+                        home={request.home}
+                        requesterName={request.requesterName}
+                        requesterEmail={request.requesterEmail}
+                        requesterAvatar={request.requesterAvatar}
+                        onViewDetails={() => {
+                          console.log(
+                            "Viewing details for coverage request:",
+                            request.studentName
+                          );
+                        }}
+                        onAccept={() => {
+                          console.log(
+                            "Accepted coverage request for",
+                            request.studentName
+                          );
+                        }}
+                      />
+                    ))
+                  ) : (
+                    <View
+                      style={{
+                        backgroundColor: "#F4F7FE",
+                        borderRadius: 16,
+                        borderWidth: 1,
+                        borderColor: "#E6E6E6",
+                        padding: 24,
+                        alignItems: "center",
+                        justifyContent: "center",
+                        marginTop: 16,
                       }}
-                      onAccept={() => {
-                        console.log(
-                          "Accepted coverage request for",
-                          request.studentName
-                        );
-                      }}
-                    />
-                  ))}
+                    >
+                      <Ionicons
+                        name="shield-outline"
+                        size={40}
+                        color="#FF932E"
+                        style={{ marginBottom: 12 }}
+                      />
+                      <Text
+                        style={{
+                          fontFamily: "Comfortaa-Bold",
+                          fontSize: 18,
+                          color: "#FF932E",
+                          marginBottom: 6,
+                        }}
+                      >
+                        No Coverage Requests Available
+                      </Text>
+                      <Text
+                        style={{
+                          fontFamily: "Comfortaa-Regular",
+                          fontSize: 14,
+                          color: "#6B7280",
+                          textAlign: "center",
+                        }}
+                      >
+                        When parents request coverage for their children,
+                        you&apos;ll see those requests here.
+                      </Text>
+                    </View>
+                  )}
                 </View>
               </>
             )}

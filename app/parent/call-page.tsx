@@ -1,8 +1,8 @@
 import { Ionicons, MaterialIcons } from "@expo/vector-icons";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { LinearGradient } from "expo-linear-gradient";
-import { useRouter } from "expo-router";
-import { useEffect, useState } from "react";
+import { useFocusEffect, useRouter } from "expo-router";
+import { useCallback, useEffect, useState } from "react";
 import {
   Alert,
   Image,
@@ -51,6 +51,7 @@ export default function CallPage() {
 
   const [selectedChildId, setSelectedChildId] = useState("");
   const [showTimePicker, setShowTimePicker] = useState(false);
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
 
   const toggleDay = (day: string) => {
     setAvailableDays((prev) =>
@@ -141,23 +142,8 @@ export default function CallPage() {
         toZone,
       });
 
-      // Emit pickup-requested event to all buddi rooms
-      const socket = SocketService.getSocket();
-      if (socket) {
-        console.log(
-          "[PARENT] Emitting pickup-requested event to all buddi rooms"
-        );
-        console.log("[PARENT] Pickup response data:", pickupResponse);
-        console.log("[PARENT] Socket connected:", socket.connected);
-        socket.emit("pickup-requested", pickupResponse);
-        console.log("[PARENT] pickup-requested event emitted successfully");
-      } else {
-        console.log(
-          "[PARENT] Socket not available for pickup-requested emission"
-        );
-      }
-
       setPickupSuccess("Pickup request created successfully!");
+      setShowSuccessModal(true);
       setDescription("");
       setAvailableDays([]);
       setPickupTime("");
@@ -208,6 +194,15 @@ export default function CallPage() {
     fetchRegisteredKids();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [parentDetails?.id]);
+
+  // Refresh kids list when screen comes into focus (e.g., after deleting a kid)
+  useFocusEffect(
+    useCallback(() => {
+      if (parentDetails?.id) {
+        fetchRegisteredKids();
+      }
+    }, [parentDetails?.id])
+  );
 
   // Call this after successful registration
   const handleKidRegistered = () => {
@@ -432,6 +427,108 @@ export default function CallPage() {
                 }}
               >
                 {kidLoading ? "Registering..." : "Save"}
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+      {/* Success Modal */}
+      <Modal
+        visible={showSuccessModal}
+        animationType="slide"
+        transparent
+        onRequestClose={() => setShowSuccessModal(false)}
+      >
+        <View
+          style={{
+            flex: 1,
+            backgroundColor: "rgba(44, 44, 84, 0.18)",
+            justifyContent: "center",
+            alignItems: "center",
+          }}
+        >
+          <View
+            style={{
+              width: "88%",
+              backgroundColor: "#fff",
+              borderRadius: 22,
+              padding: 24,
+              shadowColor: "#4f46e5",
+              shadowOpacity: 0.1,
+              shadowRadius: 16,
+              shadowOffset: { width: 0, height: 4 },
+              elevation: 6,
+              alignItems: "center",
+            }}
+          >
+            {/* Success Icon */}
+            <View
+              style={{
+                width: 80,
+                height: 80,
+                borderRadius: 40,
+                backgroundColor: "#4f46e5",
+                justifyContent: "center",
+                alignItems: "center",
+                marginBottom: 20,
+              }}
+            >
+              <Ionicons name="checkmark" size={40} color="#fff" />
+            </View>
+
+            <Text
+              style={{
+                fontFamily: "Comfortaa-Bold",
+                fontSize: 24,
+                color: "#232B3A",
+                textAlign: "center",
+                marginBottom: 12,
+              }}
+            >
+              Success!
+            </Text>
+
+            <Text
+              style={{
+                fontFamily: "Comfortaa-Regular",
+                fontSize: 16,
+                color: "#6B7280",
+                textAlign: "center",
+                marginBottom: 24,
+                lineHeight: 22,
+              }}
+            >
+              Your pickup request has been created successfully. We&apos;ll
+              notify available Buddis about your request.
+            </Text>
+
+            <TouchableOpacity
+              style={{
+                backgroundColor: "#4f46e5",
+                paddingVertical: 14,
+                paddingHorizontal: 32,
+                borderRadius: 12,
+                alignItems: "center",
+                shadowColor: "#4f46e5",
+                shadowOpacity: 0.12,
+                shadowRadius: 6,
+                shadowOffset: { width: 0, height: 2 },
+              }}
+              onPress={() => {
+                setShowSuccessModal(false);
+                setPickupSuccess(null);
+                router.push("/parent");
+              }}
+              activeOpacity={0.85}
+            >
+              <Text
+                style={{
+                  color: "#fff",
+                  fontFamily: "Comfortaa-Medium",
+                  fontSize: 16,
+                }}
+              >
+                Continue
               </Text>
             </TouchableOpacity>
           </View>

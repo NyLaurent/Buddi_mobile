@@ -4,7 +4,86 @@ import {
   Ionicons,
   MaterialIcons,
 } from "@expo/vector-icons";
-import { Image, Text, TouchableOpacity, View } from "react-native";
+import { Text, TouchableOpacity, View } from "react-native";
+
+// Helper function to generate initials from name
+const getInitials = (name?: string): string => {
+  if (!name) return "B";
+
+  const nameParts = name.trim().split(" ");
+  if (nameParts.length === 1) {
+    return nameParts[0].charAt(0).toUpperCase();
+  }
+
+  return (
+    nameParts[0].charAt(0) + nameParts[nameParts.length - 1].charAt(0)
+  ).toUpperCase();
+};
+
+// Helper function to generate a consistent color based on name
+const getAvatarColor = (name?: string): string => {
+  if (!name) return "#3B82F6";
+
+  const colors = [
+    "#3B82F6",
+    "#8B5CF6",
+    "#EF4444",
+    "#F59E0B",
+    "#10B981",
+    "#F97316",
+    "#EC4899",
+    "#06B6D4",
+    "#84CC16",
+    "#6366F1",
+  ];
+
+  let hash = 0;
+  for (let i = 0; i < name.length; i++) {
+    hash = name.charCodeAt(i) + ((hash << 5) - hash);
+  }
+
+  return colors[Math.abs(hash) % colors.length];
+};
+
+// Avatar component that displays initials
+const AvatarWithInitials = ({
+  name,
+  size = 28,
+  style = {},
+}: {
+  name?: string;
+  size?: number;
+  style?: any;
+}) => {
+  const initials = getInitials(name);
+  const backgroundColor = getAvatarColor(name);
+
+  return (
+    <View
+      style={[
+        {
+          width: size,
+          height: size,
+          borderRadius: size / 2,
+          backgroundColor,
+          alignItems: "center",
+          justifyContent: "center",
+        },
+        style,
+      ]}
+    >
+      <Text
+        style={{
+          color: "#FFFFFF",
+          fontFamily: "Comfortaa-Bold",
+          fontSize: size * 0.4,
+        }}
+      >
+        {initials}
+      </Text>
+    </View>
+  );
+};
 
 interface BuddiInfo {
   name: string;
@@ -46,7 +125,7 @@ const KidPickupCard = ({
   schedule,
   buddiName,
   buddiEmail,
-  buddiAvatar = "https://randomuser.me/api/portraits/men/2.jpg",
+  buddiAvatar,
   buddiStatus = "Available",
   onMessageBuddi,
   schoolName,
@@ -201,18 +280,10 @@ const KidPickupCard = ({
                 marginBottom: 2,
               }}
             >
-              <Image
-                source={{
-                  uri:
-                    defaultBuddi.avatar ||
-                    "https://randomuser.me/api/portraits/men/2.jpg",
-                }}
-                style={{
-                  width: 32,
-                  height: 32,
-                  borderRadius: 16,
-                  marginRight: 8,
-                }}
+              <AvatarWithInitials
+                name={defaultBuddi.name}
+                size={32}
+                style={{ marginRight: 8 }}
               />
               <View style={{ flex: 1 }}>
                 <Text
@@ -294,18 +365,10 @@ const KidPickupCard = ({
               {coverageBuddi.subLabel ? ` (${coverageBuddi.subLabel})` : ""}
             </Text>
             <View style={{ flexDirection: "row", alignItems: "center" }}>
-              <Image
-                source={{
-                  uri:
-                    coverageBuddi.avatar ||
-                    "https://randomuser.me/api/portraits/men/2.jpg",
-                }}
-                style={{
-                  width: 32,
-                  height: 32,
-                  borderRadius: 16,
-                  marginRight: 8,
-                }}
+              <AvatarWithInitials
+                name={coverageBuddi.name}
+                size={32}
+                style={{ marginRight: 8 }}
               />
               <View style={{ flex: 1 }}>
                 <Text
@@ -606,9 +669,10 @@ const KidPickupCard = ({
       <View
         style={{ flexDirection: "row", alignItems: "center", marginBottom: 8 }}
       >
-        <Image
-          source={{ uri: buddiAvatar }}
-          style={{ width: 28, height: 28, borderRadius: 14, marginRight: 7 }}
+        <AvatarWithInitials
+          name={buddiName}
+          size={28}
+          style={{ marginRight: 7 }}
         />
         <View style={{ flex: 1 }}>
           <Text

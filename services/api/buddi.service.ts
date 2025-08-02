@@ -254,8 +254,10 @@ export async function uploadBuddiProfileVideo(buddiId: number, videoUri: string)
       },
       onUploadProgress: (progressEvent) => {
         if (progressEvent.total) {
-          const percentCompleted = Math.round(
-            (progressEvent.loaded * 100) / progressEvent.total
+          // Ensure progress doesn't exceed 100% due to network overhead
+          const percentCompleted = Math.min(
+            Math.round((progressEvent.loaded * 100) / progressEvent.total),
+            100
           );
           const uploadedMB = (progressEvent.loaded / (1024 * 1024)).toFixed(2);
           const totalMB = (progressEvent.total / (1024 * 1024)).toFixed(2);

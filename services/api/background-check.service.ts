@@ -12,6 +12,7 @@ export interface BackgroundCheckResponse {
   message: string;
   checkId?: string;
   status?: string;
+  invitationUrl?: string;
 }
 
 class BackgroundCheckService {
@@ -34,6 +35,7 @@ class BackgroundCheckService {
         message: response.data.message || "Background check submitted successfully",
         checkId: response.data.checkId,
         status: response.data.status,
+        invitationUrl: response.data.invitationUrl,
       };
     } catch (error: any) {
       console.error("[BG-CHECK] Background check submission failed:", error);

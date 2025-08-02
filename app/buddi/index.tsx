@@ -22,7 +22,6 @@ import {
 } from "react-native-safe-area-context";
 import AnalyticsCard from "../../components/commons/AnalyticsCard";
 import AvailableCallsCard from "../../components/commons/AvailableCallsCard";
-import CongratulationsCard from "../../components/commons/CongratulationsCard";
 import PickupCard from "../../components/commons/PickupCard";
 import { useAuth } from "../../context/AuthContext";
 import BuddiService from "../../services/api/buddi.service";
@@ -71,6 +70,20 @@ export default function BuddiHome() {
 
   // Helper to get today's day as a string (e.g., 'Monday')
   const today = new Date().toLocaleDateString("en-US", { weekday: "long" });
+
+  // Helper to get greeting based on time of day
+  const getGreeting = () => {
+    const hour = new Date().getHours();
+    if (hour >= 5 && hour < 12) {
+      return "Good morning";
+    } else if (hour >= 12 && hour < 17) {
+      return "Good afternoon";
+    } else if (hour >= 17 && hour < 21) {
+      return "Good evening";
+    } else {
+      return "Good night";
+    }
+  };
 
   // Helper to check if matchedCall is for today
   const isPickupToday =
@@ -299,7 +312,7 @@ export default function BuddiHome() {
         </View>
 
         <Text className="text-2xl text-black font-comfortaa-bold m-4">
-          Good morning, {user?.firstName || "Buddi"}
+          {getGreeting()}, {user?.firstName || "Buddi"}
         </Text>
         <Text className="text-[#71727A] font-comfortaa mx-5">
           Happy that you are back 😊
@@ -329,8 +342,8 @@ export default function BuddiHome() {
               </View>
             }
             title="Today's Pickups"
-            value="12"
-            subtitle="2 Schools"
+            value="0"
+            subtitle="0 Schools"
           />
           <AnalyticsCard
             icon={
@@ -339,17 +352,17 @@ export default function BuddiHome() {
               </View>
             }
             title="Total Earnings"
-            value="$1,234"
+            value="$0"
             subtitle="All time"
           />
         </View>
 
         {/* Congratulations */}
-        <CongratulationsCard
+        {/* <CongratulationsCard
           onViewPress={() => {
             // Handle view press
           }}
-        />
+        /> */}
 
         {/* Pickups Header */}
         <View className="flex-row justify-between items-center mx-4 mb-2 pt-5">
@@ -374,132 +387,151 @@ export default function BuddiHome() {
           snapToInterval={352} // card width (340) + margin (12)
         >
           {matchedCall && isPickupToday ? (
-            <PickupCard
-              id={matchedCall.id?.toString() || "0"}
-              name={"Child"}
-              time={matchedCall.pickupTime || "-"}
-              days={matchedCall.availableDays?.join(", ") || "-"}
-              school={
-                matchedCall.fromLocation || matchedCall.fromZone || "School"
-              }
-              home={matchedCall.toLocation || matchedCall.toZone || "Home"}
-              status={
-                matchedCall.status === "pickedUp"
-                  ? "pickedUp"
-                  : matchedCall.status === "enRoute"
-                  ? "enRoute"
-                  : matchedCall.status === "completed"
-                  ? "completed"
-                  : "notStarted"
-              }
-              pickupTime={matchedCall.pickupTime || "-"}
-              tripStartTime={matchedCall.tripStartTime || "-"}
-              dropoffTime={matchedCall.dropoffTime || "-"}
-              fare={matchedCall.fare || 0}
-              onButtonPress={
-                matchedCall.status === "enRoute" ||
-                matchedCall.status === "pickedUp" ||
-                matchedCall.status === "completed"
-                  ? () => {}
-                  : async () => {
-                      Alert.alert(
-                        "Start Trip",
-                        "Are you ready to start this pickup trip?",
-                        [
-                          { text: "Cancel", style: "cancel" },
-                          {
-                            text: "Yes, Start Trip",
-                            style: "default",
-                            onPress: async () => {
-                              try {
-                                const res = await BuddiService.startPickupTrip(
-                                  matchedCall.id
-                                );
-                                setMatchedCall(res.pickup);
-                                // Emit pickup-started event to parent
-                                emitPickupEvent("pickup-started", res.pickup);
-                              } catch (err) {
-                                Alert.alert(
-                                  "Error",
-                                  (err as any)?.message ||
-                                    "Failed to start trip."
-                                );
-                              }
-                            },
-                          },
-                        ]
-                      );
-                    }
-              }
-              onPickUp={
-                matchedCall.status === "enRoute"
-                  ? async () => {
-                      Alert.alert(
-                        "Child Picked Up",
-                        "Confirm you have picked up the child?",
-                        [
-                          { text: "Cancel", style: "cancel" },
-                          {
-                            text: "Yes, Picked Up",
-                            style: "default",
-                            onPress: async () => {
-                              try {
-                                const res = await BuddiService.pickUpChild(
-                                  matchedCall.id
-                                );
-                                setMatchedCall(res.pickup);
-                                // Emit child-picked-up event to parent
-                                emitPickupEvent("child-picked-up", res.pickup);
-                              } catch (err) {
-                                Alert.alert(
-                                  "Error",
-                                  (err as any)?.message ||
-                                    "Failed to mark as picked up."
-                                );
-                              }
-                            },
-                          },
-                        ]
-                      );
-                    }
-                  : undefined
-              }
-              onClockOut={
-                matchedCall.status === "pickedUp"
-                  ? async () => {
-                      Alert.alert(
-                        "Complete Trip",
-                        "Are you sure you want to complete this trip?",
-                        [
-                          { text: "Cancel", style: "cancel" },
-                          {
-                            text: "Yes, Complete Trip",
-                            style: "default",
-                            onPress: async () => {
-                              try {
-                                const res =
-                                  await BuddiService.completePickupTrip(
-                                    matchedCall.id,
-                                    matchedCall.pickupTime
-                                  );
-                                setMatchedCall(res.pickup);
-                                // Emit trip-completed event to parent
-                                emitPickupEvent("trip-completed", res.pickup);
-                              } catch (err) {
-                                Alert.alert(
-                                  "Error",
-                                  (err as any)?.message ||
-                                    "Failed to complete trip."
-                                );
-                              }
-                            },
-                          },
-                        ]
-                      );
-                    }
-                  : undefined
-              }
-            />
+            // Create separate cards for each available day that matches today
+            matchedCall.availableDays
+              ?.filter(
+                (day: string) =>
+                  day.trim().toLowerCase() === today.toLowerCase()
+              )
+              .map((day: string, index: number) => (
+                <PickupCard
+                  key={`${matchedCall.id}-${day}-${index}`}
+                  id={matchedCall.id?.toString() || "0"}
+                  name={"Child"}
+                  time={matchedCall.pickupTime || "-"}
+                  days={day} // Show only the specific day
+                  school={
+                    matchedCall.fromLocation || matchedCall.fromZone || "School"
+                  }
+                  home={matchedCall.toLocation || matchedCall.toZone || "Home"}
+                  status={
+                    matchedCall.status === "pickedUp"
+                      ? "pickedUp"
+                      : matchedCall.status === "enRoute"
+                      ? "enRoute"
+                      : matchedCall.status === "completed"
+                      ? "completed"
+                      : "notStarted"
+                  }
+                  pickupTime={matchedCall.pickupTime || "-"}
+                  tripStartTime={matchedCall.tripStartTime || "-"}
+                  dropoffTime={matchedCall.dropoffTime || "-"}
+                  fare={matchedCall.fare || 0}
+                  onButtonPress={
+                    matchedCall.status === "enRoute" ||
+                    matchedCall.status === "pickedUp" ||
+                    matchedCall.status === "completed"
+                      ? () => {}
+                      : async () => {
+                          Alert.alert(
+                            "Start Trip",
+                            "Are you ready to start this pickup trip?",
+                            [
+                              { text: "Cancel", style: "cancel" },
+                              {
+                                text: "Yes, Start Trip",
+                                style: "default",
+                                onPress: async () => {
+                                  try {
+                                    const res =
+                                      await BuddiService.startPickupTrip(
+                                        matchedCall.id
+                                      );
+                                    setMatchedCall(res.pickup);
+                                    // Emit pickup-started event to parent
+                                    emitPickupEvent(
+                                      "pickup-started",
+                                      res.pickup
+                                    );
+                                  } catch (err) {
+                                    Alert.alert(
+                                      "Error",
+                                      (err as any)?.message ||
+                                        "Failed to start trip."
+                                    );
+                                  }
+                                },
+                              },
+                            ]
+                          );
+                        }
+                  }
+                  onPickUp={
+                    matchedCall.status === "enRoute"
+                      ? async () => {
+                          Alert.alert(
+                            "Child Picked Up",
+                            "Confirm you have picked up the child?",
+                            [
+                              { text: "Cancel", style: "cancel" },
+                              {
+                                text: "Yes, Picked Up",
+                                style: "default",
+                                onPress: async () => {
+                                  try {
+                                    const res = await BuddiService.pickUpChild(
+                                      matchedCall.id
+                                    );
+                                    setMatchedCall(res.pickup);
+                                    // Emit child-picked-up event to parent
+                                    emitPickupEvent(
+                                      "child-picked-up",
+                                      res.pickup
+                                    );
+                                  } catch (err) {
+                                    Alert.alert(
+                                      "Error",
+                                      (err as any)?.message ||
+                                        "Failed to mark as picked up."
+                                    );
+                                  }
+                                },
+                              },
+                            ]
+                          );
+                        }
+                      : undefined
+                  }
+                  onClockOut={
+                    matchedCall.status === "pickedUp"
+                      ? async () => {
+                          Alert.alert(
+                            "Complete Trip",
+                            "Are you sure you want to complete this trip?",
+                            [
+                              { text: "Cancel", style: "cancel" },
+                              {
+                                text: "Yes, Complete Trip",
+                                style: "default",
+                                onPress: async () => {
+                                  try {
+                                    const res =
+                                      await BuddiService.completePickupTrip(
+                                        matchedCall.id,
+                                        matchedCall.pickupTime
+                                      );
+                                    setMatchedCall(res.pickup);
+                                    // Emit trip-completed event to parent
+                                    emitPickupEvent(
+                                      "trip-completed",
+                                      res.pickup
+                                    );
+                                  } catch (err) {
+                                    Alert.alert(
+                                      "Error",
+                                      (err as any)?.message ||
+                                        "Failed to complete trip."
+                                    );
+                                  }
+                                },
+                              },
+                            ]
+                          );
+                        }
+                      : undefined
+                  }
+                />
+              ))
           ) : (
             <View
               style={{

@@ -216,7 +216,7 @@ const BuddiProfile = () => {
         </View>
         {activeTab === "General" && (
           <View>
-            <CongratulationsCard />
+            {/* <CongratulationsCard /> */}
             <View className="px-4 pt-4">
               {/* Personal Details */}
               <View className="flex-row justify-between items-center mb-2">

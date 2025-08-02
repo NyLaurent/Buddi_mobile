@@ -16,7 +16,7 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import PageHeader from "../../components/commons/PageHeader";
 import { useAuth } from "../../context/AuthContext";
-import { buyTokens, getTokenBalance } from "../../services/payments";
+import { getTokenBalance } from "../../services/payments";
 
 const tokenPackages = [
   {
@@ -143,7 +143,7 @@ const BuyTokens = () => {
     await handleBuy(selectedPkg, qty);
   };
 
-  // Modified handleBuy to accept quantity
+  // Modified handleBuy to redirect to web app
   const handleBuy = async (
     pkg: (typeof tokenPackages)[0],
     qtyOverride?: number
@@ -159,22 +159,21 @@ const BuyTokens = () => {
         : pkg.range === "6 - 10 Tokens"
         ? 10
         : 11);
-    const amount = quantity * pkg.price;
+
     try {
-      const result = await buyTokens({ parentId, quantity, amount });
-      if (result.checkoutUrl) {
-        Linking.openURL(result.checkoutUrl);
+      // Redirect to web app for payment
+      const webAppUrl = "https://pickupbuddi-webapp-cl24y.sevalla.app/";
+      const supported = await Linking.canOpenURL(webAppUrl);
+      if (supported) {
+        await Linking.openURL(webAppUrl);
         setSuccessMsg(
-          "Complete your payment in the opened page. Your balance will update after payment."
+          "Redirecting to our web app to complete your token purchase securely."
         );
-      } else if (result.success) {
-        setSuccessMsg(result.message || "Tokens purchased successfully!");
-        fetchBalance();
       } else {
-        setError(result.message || "Failed to buy tokens");
+        setError("Unable to open web app. Please visit the website manually.");
       }
     } catch (err: any) {
-      setError(err.message || "Failed to buy tokens");
+      setError("Failed to redirect to web app. Please try again.");
     } finally {
       setBuying(false);
     }
@@ -218,7 +217,7 @@ const BuyTokens = () => {
             }}
           >
             Get more rides and features for your family. The more you buy, the
-            more you save!
+            more you save! All payments are securely processed on our web app.
           </Text>
           {/* Token Balance */}
           <View style={{ paddingHorizontal: 18, marginBottom: 18 }}>
@@ -449,6 +448,7 @@ const BuyTokens = () => {
                   borderRadius: 18,
                   padding: 28,
                   width: 320,
+                  maxHeight: "80%",
                   alignItems: "center",
                 }}
               >
@@ -461,6 +461,18 @@ const BuyTokens = () => {
                   }}
                 >
                   Buy Tokens
+                </Text>
+                <Text
+                  style={{
+                    fontFamily: "Comfortaa-Regular",
+                    fontSize: 14,
+                    color: "#71727A",
+                    marginBottom: 16,
+                    textAlign: "center",
+                  }}
+                >
+                  You'll be redirected to our web app for secure payment
+                  processing
                 </Text>
                 {selectedPkg && (
                   <>
@@ -559,14 +571,24 @@ const BuyTokens = () => {
                           : 0}
                       </Text>
                     </Text>
-                    <View style={{ flexDirection: "row", gap: 12 }}>
+                    <View
+                      style={{
+                        flexDirection: "row",
+                        gap: 12,
+                        width: "100%",
+                        justifyContent: "space-between",
+                        marginTop: 8,
+                      }}
+                    >
                       <TouchableOpacity
                         style={{
                           backgroundColor: "#e9ecef",
                           borderRadius: 8,
-                          paddingVertical: 10,
-                          paddingHorizontal: 22,
-                          marginRight: 8,
+                          paddingVertical: 12,
+                          paddingHorizontal: 16,
+                          flex: 1,
+                          marginRight: 6,
+                          alignItems: "center",
                         }}
                         onPress={closeModal}
                         disabled={buying}
@@ -575,7 +597,7 @@ const BuyTokens = () => {
                           style={{
                             fontFamily: "Comfortaa-Bold",
                             color: "#232B3A",
-                            fontSize: 15,
+                            fontSize: 14,
                           }}
                         >
                           Cancel
@@ -585,8 +607,11 @@ const BuyTokens = () => {
                         style={{
                           backgroundColor: selectedPkg.gradient[0],
                           borderRadius: 8,
-                          paddingVertical: 10,
-                          paddingHorizontal: 22,
+                          paddingVertical: 12,
+                          paddingHorizontal: 16,
+                          flex: 1,
+                          marginLeft: 6,
+                          alignItems: "center",
                         }}
                         onPress={handleModalBuy}
                         disabled={buying}
@@ -595,10 +620,10 @@ const BuyTokens = () => {
                           style={{
                             fontFamily: "Comfortaa-Bold",
                             color: "#fff",
-                            fontSize: 15,
+                            fontSize: 14,
                           }}
                         >
-                          {buying ? "Processing..." : "Confirm Purchase"}
+                          {buying ? "Redirecting..." : "Continue to Web App"}
                         </Text>
                       </TouchableOpacity>
                     </View>

@@ -1,5 +1,5 @@
 import { Ionicons } from "@expo/vector-icons";
-import { useLocalSearchParams, useRouter } from "expo-router";
+import { useRouter } from "expo-router";
 import React from "react";
 import {
   ActivityIndicator,
@@ -14,14 +14,11 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useAuth } from "../../context/AuthContext";
 import BackgroundCheckService from "../../services/api/background-check.service";
-import PaymentService from "../../services/api/payment.service";
 
 export default function BackgroundCheck() {
   const router = useRouter();
   const { user, parentDetails } = useAuth();
   const [isProcessing, setIsProcessing] = React.useState(false);
-  const [amount, setAmount] = React.useState("35");
-  const [showBgCheckForm, setShowBgCheckForm] = React.useState(false);
   const [isSubmittingBgCheck, setIsSubmittingBgCheck] = React.useState(false);
   const [bgCheckData, setBgCheckData] = React.useState({
     city: "",
@@ -31,11 +28,7 @@ export default function BackgroundCheck() {
   });
 
   // Check if background check is already paid
-  const isBgCheckPaid = parentDetails?.isBgCheckPaid || false;
-
-  // Check if we're coming from payment success
-  const params = useLocalSearchParams();
-  const fromPaymentSuccess = params.fromPaymentSuccess === "true";
+  const isBgCheckPaid = parentDetails?.isBgCheckPaid === true;
 
   const handlePayment = async () => {
     if (!parentDetails?.id) {
@@ -43,60 +36,32 @@ export default function BackgroundCheck() {
       return;
     }
 
-    const paymentAmount = parseFloat(amount);
-    if (isNaN(paymentAmount) || paymentAmount <= 0) {
-      Alert.alert("Invalid Amount", "Please enter a valid amount.");
-      return;
-    }
-
     console.log("[PAYMENT] Starting background check payment...");
     setIsProcessing(true);
 
     try {
-      const response = await PaymentService.payBackgroundCheck({
-        parentId: parentDetails.id.toString(),
-        amount: paymentAmount,
-      });
-
-      if (response.success) {
-        if (response.url) {
-          console.log("[PAYMENT] Redirecting to Stripe:", response.url);
-          // Redirect to Stripe checkout
-          try {
-            const supported = await Linking.canOpenURL(response.url);
-            if (supported) {
-              await Linking.openURL(response.url);
-              console.log("[PAYMENT] Successfully opened Stripe URL");
-              // Show a message that they'll be redirected back after payment
-              Alert.alert(
-                "Payment Redirect",
-                "You're being redirected to complete your payment. After successful payment, you'll be redirected back to the app.",
-                [{ text: "OK" }]
-              );
-            } else {
-              console.log("[PAYMENT] Cannot open URL:", response.url);
-              Alert.alert(
-                "Error",
-                "Cannot open payment link. Please try again."
-              );
-            }
-          } catch (error) {
-            console.error("[PAYMENT] Error opening URL:", error);
-            Alert.alert(
-              "Error",
-              "Failed to open payment link. Please try again."
-            );
-          }
-        } else {
-          console.log("[PAYMENT] No payment URL received");
-          Alert.alert("Payment Failed", "No payment URL received.");
-        }
+      // Redirect to web app for payment
+      const webAppUrl = "https://pickupbuddi-webapp-cl24y.sevalla.app/";
+      const supported = await Linking.canOpenURL(webAppUrl);
+      if (supported) {
+        await Linking.openURL(webAppUrl);
+        console.log("[PAYMENT] Successfully opened web app URL");
+        // Show a message that they'll be redirected back after payment
+        Alert.alert(
+          "Payment Redirect",
+          "You're being redirected to our web app to complete your background check payment securely. After successful payment, you'll be redirected back to the app.",
+          [{ text: "OK" }]
+        );
       } else {
-        console.log("[PAYMENT] Payment failed:", response.message);
-        Alert.alert("Payment Failed", response.message);
+        console.log("[PAYMENT] Cannot open web app URL:", webAppUrl);
+        Alert.alert(
+          "Error",
+          "Cannot open web app. Please visit the website manually."
+        );
       }
     } catch (error) {
-      Alert.alert("Error", "Something went wrong. Please try again.");
+      console.error("[PAYMENT] Error opening web app URL:", error);
+      Alert.alert("Error", "Failed to open web app. Please try again.");
     } finally {
       setIsProcessing(false);
     }
@@ -127,19 +92,59 @@ export default function BackgroundCheck() {
       );
 
       if (response.success) {
-        Alert.alert(
-          "Background Check Submitted",
-          "Your background check information has been submitted successfully. Our team will review and contact you within 2-3 business days.",
-          [
-            {
-              text: "OK",
-              onPress: () => {
-                // Navigate back to dashboard
-                router.back();
+        // Check if there's an invitation URL to redirect to
+        if (response.invitationUrl) {
+          console.log(
+            "[BG-CHECK] Redirecting to Checkr invitation URL:",
+            response.invitationUrl
+          );
+
+          // Redirect immediately to Checkr invitation URL
+          try {
+            const supported = await Linking.canOpenURL(response.invitationUrl);
+            if (supported) {
+              await Linking.openURL(response.invitationUrl);
+              console.log(
+                "[BG-CHECK] Successfully opened Checkr invitation URL"
+              );
+              // Navigate back to dashboard after opening the URL
+              router.back();
+            } else {
+              console.log(
+                "[BG-CHECK] Cannot open Checkr invitation URL:",
+                response.invitationUrl
+              );
+              Alert.alert(
+                "Error",
+                "Cannot open the background check link. Please check your internet connection and try again."
+              );
+            }
+          } catch (error) {
+            console.error(
+              "[BG-CHECK] Error opening Checkr invitation URL:",
+              error
+            );
+            Alert.alert(
+              "Error",
+              "Failed to open the background check link. Please try again."
+            );
+          }
+        } else {
+          // Fallback to original success message if no invitation URL
+          Alert.alert(
+            "Background Check Submitted",
+            "Your background check information has been submitted successfully. Our team will review and contact you within 2-3 business days.",
+            [
+              {
+                text: "OK",
+                onPress: () => {
+                  // Navigate back to dashboard
+                  router.back();
+                },
               },
-            },
-          ]
-        );
+            ]
+          );
+        }
       } else {
         Alert.alert("Submission Failed", response.message);
       }
@@ -150,8 +155,15 @@ export default function BackgroundCheck() {
     }
   };
 
-  // If background check is already paid, show success message
-  if (isBgCheckPaid && !fromPaymentSuccess) {
+  // Debug logging
+  console.log("[BG-CHECK] Debug:", {
+    isBgCheckPaid,
+    approvalStage: parentDetails?.approvalStage,
+  });
+
+  // If background check is already paid, show the form
+  if (isBgCheckPaid) {
+    console.log("[BG-CHECK] Showing background check form");
     return (
       <SafeAreaView className="flex-1 bg-white">
         <ScrollView className="flex-1 px-4">
@@ -159,59 +171,6 @@ export default function BackgroundCheck() {
           <View className="flex-row items-center justify-between mt-4 mb-6">
             <TouchableOpacity
               onPress={() => router.back()}
-              className="p-2 rounded-full bg-gray-100"
-            >
-              <Ionicons name="arrow-back" size={24} color="#333" />
-            </TouchableOpacity>
-            <Text className="text-xl font-comfortaa-bold text-black">
-              Background Check
-            </Text>
-            <View className="w-10" />
-          </View>
-
-          {/* Success Content */}
-          <View className="items-center mt-8">
-            {/* Success Icon */}
-            <View className="w-24 h-24 bg-green-100 rounded-full items-center justify-center mb-6">
-              <Ionicons name="checkmark-circle" size={48} color="#16A34A" />
-            </View>
-
-            {/* Success Title */}
-            <Text className="text-2xl font-comfortaa-bold text-black text-center mb-4">
-              Background Check Paid
-            </Text>
-
-            {/* Success Description */}
-            <Text className="text-base font-comfortaa text-[#71727A] text-center leading-6 mb-8 px-4">
-              Your background check payment has been processed successfully. Our
-              team will review your application and contact you within 2-3
-              business days.
-            </Text>
-
-            {/* Back to Dashboard Button */}
-            <TouchableOpacity
-              onPress={() => router.back()}
-              className="w-full py-4 rounded-xl items-center bg-[#FF932E]"
-            >
-              <Text className="text-white font-comfortaa-bold text-lg">
-                Back to Dashboard
-              </Text>
-            </TouchableOpacity>
-          </View>
-        </ScrollView>
-      </SafeAreaView>
-    );
-  }
-
-  // If background check form should be shown after payment
-  if (showBgCheckForm || fromPaymentSuccess) {
-    return (
-      <SafeAreaView className="flex-1 bg-white">
-        <ScrollView className="flex-1 px-4">
-          {/* Header */}
-          <View className="flex-row items-center justify-between mt-4 mb-6">
-            <TouchableOpacity
-              onPress={() => setShowBgCheckForm(false)}
               className="p-2 rounded-full bg-gray-100"
             >
               <Ionicons name="arrow-back" size={24} color="#333" />
@@ -259,9 +218,9 @@ export default function BackgroundCheck() {
                   onChangeText={(text) =>
                     setBgCheckData({ ...bgCheckData, city: text })
                   }
-                  className="border border-gray-300 rounded-lg px-3 py-2 bg-white font-comfortaa text-lg"
+                  className="border border-gray-300 rounded-lg px-3 py-2 bg-white font-comfortaa text-lg text-black"
                   placeholder="Enter your city"
-                  placeholderTextColor="#9CA3AF"
+                  placeholderTextColor="#000000"
                 />
               </View>
 
@@ -275,9 +234,9 @@ export default function BackgroundCheck() {
                   onChangeText={(text) =>
                     setBgCheckData({ ...bgCheckData, state: text })
                   }
-                  className="border border-gray-300 rounded-lg px-3 py-2 bg-white font-comfortaa text-lg"
+                  className="border border-gray-300 rounded-lg px-3 py-2 bg-white font-comfortaa text-lg text-black"
                   placeholder="Enter your state"
-                  placeholderTextColor="#9CA3AF"
+                  placeholderTextColor="#000000"
                 />
               </View>
 
@@ -290,7 +249,7 @@ export default function BackgroundCheck() {
                   <TextInput
                     value={bgCheckData.country}
                     editable={false}
-                    className="flex-1 font-comfortaa text-lg text-gray-700"
+                    className="flex-1 font-comfortaa text-lg text-black"
                   />
                 </View>
               </View>
@@ -305,9 +264,9 @@ export default function BackgroundCheck() {
                   onChangeText={(text) =>
                     setBgCheckData({ ...bgCheckData, zip: text })
                   }
-                  className="border border-gray-300 rounded-lg px-3 py-2 bg-white font-comfortaa text-lg"
+                  className="border border-gray-300 rounded-lg px-3 py-2 bg-white font-comfortaa text-lg text-black"
                   placeholder="Enter your zip code"
-                  placeholderTextColor="#9CA3AF"
+                  placeholderTextColor="#000000"
                   keyboardType="numeric"
                 />
               </View>
@@ -330,9 +289,9 @@ export default function BackgroundCheck() {
               </TouchableOpacity>
             </View>
 
-            {/* Back to Payment */}
+            {/* Back to Dashboard */}
             <TouchableOpacity
-              onPress={() => setShowBgCheckForm(false)}
+              onPress={() => router.back()}
               className="mt-4 py-3 px-6"
             >
               <Text className="text-[#71727A] font-comfortaa text-center">
@@ -392,21 +351,20 @@ export default function BackgroundCheck() {
 
             <Text className="text-sm font-comfortaa text-orange-700 mb-4">
               Complete your background check payment to proceed with creating
-              pickup requests.
+              pickup requests. All payments are securely processed on our web
+              app.
             </Text>
 
-            {/* Amount Input */}
+            {/* Payment Info */}
             <View className="mb-4">
               <Text className="text-sm font-comfortaa-bold text-gray-700 mb-2">
-                Amount (USD)
+                Background Check Fee
               </Text>
               <View className="flex-row items-center border border-gray-300 rounded-lg px-3 py-2 bg-gray-100">
                 <Text className="text-gray-500 mr-2">$</Text>
-                <TextInput
-                  value={amount}
-                  editable={false}
-                  className="flex-1 font-comfortaa text-lg text-gray-700"
-                />
+                <Text className="flex-1 font-comfortaa text-lg text-gray-700">
+                  35.00
+                </Text>
               </View>
               <Text className="text-xs text-gray-500 mt-1">
                 Standard background check fee: $35.00
@@ -425,7 +383,7 @@ export default function BackgroundCheck() {
                 <ActivityIndicator color="#fff" />
               ) : (
                 <Text className="text-white font-comfortaa-bold text-lg">
-                  Pay ${amount} for Background Check
+                  Continue to Web App
                 </Text>
               )}
             </TouchableOpacity>

@@ -7,6 +7,8 @@ import {
   Alert,
   Image,
   ImageBackground,
+  Linking,
+  Platform,
   ScrollView,
   StyleSheet,
   Text,
@@ -49,6 +51,7 @@ export default function BuddiRecordingScreen() {
   const [facing, setFacing] = useState<CameraType>("front");
   const [submitting, setSubmitting] = useState(false);
   const [cameraReady, setCameraReady] = useState(false);
+  const [permissionChecked, setPermissionChecked] = useState(false);
 
   useEffect(() => {
     let mounted = true;
@@ -68,6 +71,34 @@ export default function BuddiRecordingScreen() {
       mounted = false;
     };
   }, []);
+
+  // Enhanced permission checking
+  useEffect(() => {
+    const checkPermissionStatus = async () => {
+      try {
+        console.log("=== PERMISSION CHECK ===");
+        console.log("Permission object:", permission);
+        console.log("Permission granted:", permission?.granted);
+        console.log("Permission canAskAgain:", permission?.canAskAgain);
+
+        if (permission) {
+          setPermissionChecked(true);
+
+          // If permission is not granted and we can ask again, request it
+          if (!permission.granted && permission.canAskAgain) {
+            console.log("Requesting camera permission...");
+            const result = await requestPermission();
+            console.log("Permission request result:", result);
+          }
+        }
+      } catch (error) {
+        console.error("Error checking permissions:", error);
+        setPermissionChecked(true);
+      }
+    };
+
+    checkPermissionStatus();
+  }, [permission, requestPermission]);
 
   // Cleanup camera when component unmounts
   useEffect(() => {
@@ -95,6 +126,33 @@ export default function BuddiRecordingScreen() {
     }
   }, [cameraReady, permission?.granted]);
 
+  // Force camera re-initialization if needed
+  const reinitializeCamera = () => {
+    console.log("Reinitializing camera...");
+    setCameraReady(false);
+    setError("");
+
+    // Force a re-render of the camera component
+    setTimeout(() => {
+      setCameraReady(true);
+    }, 2000);
+  };
+
+  // Debug function to check camera status
+  const debugCameraStatus = () => {
+    console.log("=== CAMERA DEBUG INFO ===");
+    console.log("Permission object:", permission);
+    console.log("Permission granted:", permission?.granted);
+    console.log("Permission canAskAgain:", permission?.canAskAgain);
+    console.log("Camera ref exists:", !!cameraRef.current);
+    console.log("Camera ready:", cameraReady);
+    console.log("Currently recording:", recording);
+    console.log("Video URI:", videoUri);
+    console.log("Platform:", Platform.OS);
+    console.log("Platform version:", Platform.Version);
+    console.log("=== END DEBUG INFO ===");
+  };
+
   // Progress bar based on question navigation
   const progress = questions.length > 0 ? (current + 1) / questions.length : 0;
   const question: InterviewQuestion = questions[current] || {
@@ -107,9 +165,124 @@ export default function BuddiRecordingScreen() {
   const handleNext = () =>
     setCurrent((c) => Math.min(questions.length - 1, c + 1));
 
+  // Enhanced permission request with settings redirect
+  const handlePermissionRequest = async () => {
+    try {
+      console.log("Handling permission request...");
+
+      if (permission?.canAskAgain) {
+        const result = await requestPermission();
+        console.log("Permission request result:", result);
+
+        if (!result.granted) {
+          // Show settings redirect dialog
+          Alert.alert(
+            "Camera Permission Required",
+            "Camera access is essential for recording your interview video. Please enable camera access in your device settings.",
+            [
+              { text: "Cancel", style: "cancel" },
+              {
+                text: "Open Settings",
+                onPress: () => {
+                  if (Platform.OS === "ios") {
+                    Linking.openURL("app-settings:");
+                  } else {
+                    Linking.openSettings();
+                  }
+                },
+              },
+            ]
+          );
+        }
+      } else {
+        // Permission denied and can't ask again - redirect to settings
+        Alert.alert(
+          "Camera Permission Required",
+          "Camera access is essential for recording your interview video. Please enable camera access in your device settings.",
+          [
+            { text: "Cancel", style: "cancel" },
+            {
+              text: "Open Settings",
+              onPress: () => {
+                if (Platform.OS === "ios") {
+                  Linking.openURL("app-settings:");
+                } else {
+                  Linking.openSettings();
+                }
+              },
+            },
+          ]
+        );
+      }
+    } catch (error) {
+      console.error("Error requesting permission:", error);
+      Alert.alert(
+        "Permission Error",
+        "Unable to request camera permission. Please check your device settings.",
+        [{ text: "OK", style: "default" }]
+      );
+    }
+  };
+
   // Camera logic
-  if (!permission) return null;
-  if (!permission.granted) {
+  if (!permissionChecked) {
+    return (
+      <ImageBackground
+        source={require("../../../assets/images/auth/video_bg.jpg")}
+        style={{ flex: 1 }}
+        resizeMode="cover"
+      >
+        <SafeAreaView style={{ flex: 1 }}>
+          <View style={styles.centeredContainer}>
+            <View
+              style={{
+                backgroundColor: "#fff",
+                borderRadius: 24,
+                padding: 32,
+                margin: 20,
+                alignItems: "center",
+                shadowColor: "#000",
+                shadowOpacity: 0.1,
+                shadowRadius: 10,
+                elevation: 5,
+              }}
+            >
+              <Ionicons
+                name="hourglass"
+                size={64}
+                color={PRIMARY_COLOR}
+                style={{ marginBottom: 16 }}
+              />
+              <Text
+                style={{
+                  fontSize: 20,
+                  fontFamily: "Comfortaa-Bold",
+                  color: "#333",
+                  textAlign: "center",
+                  marginBottom: 12,
+                }}
+              >
+                Checking Permissions...
+              </Text>
+              <Text
+                style={{
+                  fontSize: 16,
+                  fontFamily: "Comfortaa-Regular",
+                  color: "#666",
+                  textAlign: "center",
+                  lineHeight: 22,
+                }}
+              >
+                Please wait while we check camera permissions.
+              </Text>
+            </View>
+          </View>
+        </SafeAreaView>
+      </ImageBackground>
+    );
+  }
+
+  if (!permission?.granted) {
     return (
       <ImageBackground
         source={require("../../../assets/images/auth/video_bg.jpg")}
@@ -169,8 +342,9 @@ export default function BuddiRecordingScreen() {
                   borderRadius: 12,
                   width: "100%",
                   alignItems: "center",
+                  marginBottom: 12,
                 }}
-                onPress={requestPermission}
+                onPress={handlePermissionRequest}
               >
                 <Text
                   style={{
@@ -180,14 +354,15 @@ export default function BuddiRecordingScreen() {
                     textAlign: "center",
                   }}
                 >
-                  Grant Camera Permission
+                  {permission?.canAskAgain
+                    ? "Grant Camera Permission"
+                    : "Open Settings"}
                 </Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={{
                   paddingVertical: 12,
                   paddingHorizontal: 24,
-                  marginTop: 12,
                 }}
                 onPress={() => {
                   Alert.alert(
@@ -195,7 +370,10 @@ export default function BuddiRecordingScreen() {
                     "Camera access is essential for recording your interview video. Please grant permission to continue.",
                     [
                       { text: "Cancel", style: "cancel" },
-                      { text: "Grant Permission", onPress: requestPermission },
+                      {
+                        text: "Grant Permission",
+                        onPress: handlePermissionRequest,
+                      },
                     ]
                   );
                 }}
@@ -225,40 +403,50 @@ export default function BuddiRecordingScreen() {
     console.log("Camera ready:", cameraReady);
     console.log("Currently recording:", recording);
 
-    // Validate prerequisites
+    // Enhanced validation with better error messages
     if (!cameraRef.current) {
       console.error("Camera ref is null");
-      Alert.alert(
-        "Camera Not Ready",
-        "Camera is not ready. Please wait for camera to initialize.",
-        [{ text: "OK", style: "default" }]
-      );
-      setError("Camera not ready. Please wait for camera to initialize.");
+      const errorMsg =
+        "Camera is not ready. Please wait for camera to initialize or restart the app.";
+      Alert.alert("Camera Not Ready", errorMsg, [
+        { text: "OK", style: "default" },
+        {
+          text: "Restart App",
+          onPress: () => {
+            // In a real app, you might want to restart the app
+            setError("");
+            setCameraReady(false);
+            // Force re-initialization
+            setTimeout(() => {
+              setCameraReady(true);
+            }, 2000);
+          },
+        },
+      ]);
+      setError(errorMsg);
       return;
     }
 
     if (!permission?.granted) {
       console.error("Camera permission not granted");
-      Alert.alert(
-        "Camera Permission Required",
-        "Camera permission is required to record video. Please grant camera access in settings.",
-        [
-          { text: "Cancel", style: "cancel" },
-          { text: "Grant Permission", onPress: requestPermission },
-        ]
-      );
-      setError("Camera permission required. Please grant camera access.");
+      const errorMsg =
+        "Camera permission is required. Please grant camera access in settings.";
+      Alert.alert("Camera Permission Required", errorMsg, [
+        { text: "Cancel", style: "cancel" },
+        { text: "Open Settings", onPress: handlePermissionRequest },
+      ]);
+      setError(errorMsg);
       return;
     }
 
     if (!cameraReady) {
       console.error("Camera not ready");
-      Alert.alert(
-        "Camera Initializing",
-        "Camera is still initializing. Please wait a moment and try again.",
-        [{ text: "OK", style: "default" }]
-      );
-      setError("Camera is still initializing. Please wait a moment.");
+      const errorMsg =
+        "Camera is still initializing. Please wait a moment and try again.";
+      Alert.alert("Camera Initializing", errorMsg, [
+        { text: "OK", style: "default" },
+      ]);
+      setError(errorMsg);
       return;
     }
 
@@ -362,12 +550,12 @@ export default function BuddiRecordingScreen() {
       console.error("Error code:", e?.code);
       console.error("Error stack:", e?.stack);
 
-      // Provide more specific error messages
+      // Enhanced error handling with better user feedback
       let errorMessage = "Failed to record video";
       let alertTitle = "Recording Error";
 
       if (e?.message) {
-        if (e.message.includes("permission")) {
+        if (e.message.includes("permission") || e.message.includes("denied")) {
           errorMessage =
             "Camera permission denied. Please grant camera access in settings.";
           alertTitle = "Camera Permission Required";
@@ -384,15 +572,19 @@ export default function BuddiRecordingScreen() {
         } else if (e.message.includes("timeout")) {
           errorMessage = "Recording timed out. Please try again.";
           alertTitle = "Recording Timeout";
+        } else if (e.message.includes("camera")) {
+          errorMessage =
+            "Camera error occurred. Please restart the app and try again.";
+          alertTitle = "Camera Error";
         } else {
           errorMessage = `Recording failed: ${e.message}`;
           alertTitle = "Recording Failed";
         }
       }
 
-      // Show alert to user
-      Alert.alert(alertTitle, errorMessage, [
-        { text: "OK", style: "default" },
+      // Show alert to user with appropriate actions
+      const alertButtons: any[] = [
+        { text: "OK", style: "default" as const },
         {
           text: "Try Again",
           onPress: () => {
@@ -403,7 +595,20 @@ export default function BuddiRecordingScreen() {
             }, 1000);
           },
         },
-      ]);
+      ];
+
+      // Add settings button for permission errors
+      if (
+        errorMessage.includes("permission") ||
+        errorMessage.includes("denied")
+      ) {
+        alertButtons.push({
+          text: "Open Settings",
+          onPress: handlePermissionRequest,
+        });
+      }
+
+      Alert.alert(alertTitle, errorMessage, alertButtons);
 
       setError(errorMessage);
     } finally {
@@ -593,6 +798,7 @@ export default function BuddiRecordingScreen() {
           </View>
           <TouchableOpacity
             style={{ backgroundColor: "#fff", borderRadius: 999, padding: 8 }}
+            onPress={debugCameraStatus}
           >
             <Ionicons name="ellipsis-vertical" size={20} color="#555" />
           </TouchableOpacity>
@@ -657,23 +863,42 @@ export default function BuddiRecordingScreen() {
                   }}
                   onMountError={(error) => {
                     console.error("Camera mount error:", error);
-                    Alert.alert(
-                      "Camera Error",
-                      "Failed to initialize camera. Please restart the app and try again.",
-                      [
-                        { text: "OK", style: "default" },
-                        {
-                          text: "Restart App",
-                          onPress: () => {
-                            // This would typically restart the app, but for now just clear error
-                            setError("");
-                          },
+                    console.error("Mount error details:", {
+                      message: error?.message,
+                      error: error,
+                    });
+
+                    let errorMessage =
+                      "Failed to initialize camera. Please restart the app and try again.";
+
+                    if (error?.message) {
+                      if (error.message.includes("permission")) {
+                        errorMessage =
+                          "Camera permission denied. Please grant camera access in settings.";
+                      } else if (error.message.includes("not available")) {
+                        errorMessage =
+                          "Camera is not available on this device.";
+                      } else if (error.message.includes("in use")) {
+                        errorMessage =
+                          "Camera is currently in use by another app. Please close other camera apps and try again.";
+                      }
+                    }
+
+                    Alert.alert("Camera Error", errorMessage, [
+                      { text: "OK", style: "default" },
+                      {
+                        text: "Retry",
+                        onPress: () => {
+                          setError("");
+                          reinitializeCamera();
                         },
-                      ]
-                    );
-                    setError(
-                      "Failed to initialize camera. Please restart the app."
-                    );
+                      },
+                      {
+                        text: "Open Settings",
+                        onPress: handlePermissionRequest,
+                      },
+                    ]);
+                    setError(errorMessage);
                   }}
                 >
                   {/* Camera controls overlay */}
@@ -807,28 +1032,60 @@ export default function BuddiRecordingScreen() {
                 >
                   {error}
                 </Text>
-                <TouchableOpacity
-                  style={[
-                    styles.recordBtn,
-                    {
-                      backgroundColor: "#d32f2f",
-                      marginTop: 8,
-                    },
-                  ]}
-                  onPress={handleSubmit}
-                  disabled={submitting}
+                <View
+                  style={{
+                    flexDirection: "row",
+                    gap: 8,
+                    justifyContent: "center",
+                  }}
                 >
-                  <Ionicons name="refresh" size={20} color="#fff" />
-                  <Text
-                    style={{
-                      color: "#fff",
-                      fontFamily: "Comfortaa-Bold",
-                      marginLeft: 8,
-                    }}
+                  <TouchableOpacity
+                    style={[
+                      styles.recordBtn,
+                      {
+                        backgroundColor: "#d32f2f",
+                        flex: 1,
+                        maxWidth: 150,
+                      },
+                    ]}
+                    onPress={handleSubmit}
+                    disabled={submitting}
                   >
-                    Retry Upload
-                  </Text>
-                </TouchableOpacity>
+                    <Ionicons name="refresh" size={20} color="#fff" />
+                    <Text
+                      style={{
+                        color: "#fff",
+                        fontFamily: "Comfortaa-Bold",
+                        marginLeft: 8,
+                      }}
+                    >
+                      Retry Upload
+                    </Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[
+                      styles.recordBtn,
+                      {
+                        backgroundColor: "#2196F3",
+                        flex: 1,
+                        maxWidth: 150,
+                      },
+                    ]}
+                    onPress={reinitializeCamera}
+                    disabled={submitting}
+                  >
+                    <Ionicons name="camera" size={20} color="#fff" />
+                    <Text
+                      style={{
+                        color: "#fff",
+                        fontFamily: "Comfortaa-Bold",
+                        marginLeft: 8,
+                      }}
+                    >
+                      Reinitialize Camera
+                    </Text>
+                  </TouchableOpacity>
+                </View>
               </View>
             )}
           </View>

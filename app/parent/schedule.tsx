@@ -170,16 +170,16 @@ const SchedulePage = () => {
             <AnalyticsCard
               icon={<Ionicons name="flash" size={20} color="#8B5CF6" />}
               title="Today's Pickups"
-              value="12"
-              subtitle="2 Schools"
+              value="0"
+              subtitle="0 Schools"
             />
 
             {/* This Week's Trips */}
             <AnalyticsCard
               icon={<Ionicons name="flash" size={20} color="#8B5CF6" />}
               title="This Week's Trips"
-              value="12"
-              subtitle="2 Schools"
+              value="0"
+              subtitle="0 Schools"
             />
           </View>
 
@@ -188,8 +188,8 @@ const SchedulePage = () => {
             <AnalyticsCard
               icon={<Ionicons name="flash" size={20} color="#8B5CF6" />}
               title="Coverage Requests"
-              value="12"
-              subtitle="2 Schools"
+              value="0"
+              subtitle="0 Schools"
             />
 
             {/* Total Earnings */}
@@ -200,7 +200,7 @@ const SchedulePage = () => {
                 </View>
               }
               title="Total Earnings"
-              value="$1,234"
+              value="$0"
               subtitle="All time"
             />
           </View>
@@ -212,7 +212,7 @@ const SchedulePage = () => {
           >
             <View className="flex-row items-center gap-2">
               <Text className="text-white font-comfortaa-bold text-lg">
-                View Buddis&apos;s Timesheets
+                View Your  Buddis&apos;s Timesheets
               </Text>
               <Ionicons name="arrow-forward" size={18} color="white" />
             </View>
@@ -261,12 +261,7 @@ const SchedulePage = () => {
                   <Text className="font-comfortaa-bold text-xl">
                     Scheduled Pickups
                   </Text>
-                  <TouchableOpacity className="flex-row items-center gap-1">
-                    <Text className="text-primary font-comfortaa">
-                      View All
-                    </Text>
-                    <Ionicons name="arrow-forward" size={16} color="#FF932E" />
-                  </TouchableOpacity>
+                  
                 </View>
                 {loading ? (
                   <Text
