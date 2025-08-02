@@ -1319,12 +1319,22 @@ export default function ParentDashboard() {
           {/* Render KidPickupCard for each pickup request and only for the next relevant day */}
           {pickupRequests.length > 0 ? (
             pickupRequests.map((pickup) => {
+              console.log("Processing pickup request:", pickup.id);
+              console.log("Pickup request data:", pickup);
+
               const child = childDetailsMap[pickup.childId];
+              console.log("Child details:", child);
+
               const pickupData = getPickupData(pickup.id);
+              console.log("Pickup data:", pickupData);
+
               const currentPickupStatus = pickupData?.status || null;
+              console.log("Current pickup status:", currentPickupStatus);
 
               // If not matched with a Buddi, show waiting card
+              console.log("Matched buddi ID:", pickup.matchedBuddiId);
               if (!pickup.matchedBuddiId) {
+                console.log("No matched buddi, showing waiting card");
                 return (
                   <View
                     key={`waiting-${pickup.id}`}
@@ -1410,26 +1420,46 @@ export default function ParentDashboard() {
               const todayIdx = new Date().getDay();
               let nextDay = null;
               if (pickup.availableDays && pickup.availableDays.length > 0) {
+                // Parse the comma-separated available days string
+                const availableDaysString = pickup.availableDays[0];
+                const availableDays = availableDaysString
+                  .split(",")
+                  .map((day) => day.trim());
+
+                console.log("Today's day:", daysOfWeek[todayIdx]);
+                console.log("Available days string:", availableDaysString);
+                console.log("Parsed available days:", availableDays);
+
                 // Try to find today
                 const todayName = daysOfWeek[todayIdx];
-                if (pickup.availableDays.includes(todayName)) {
+                if (availableDays.includes(todayName)) {
                   nextDay = todayName;
+                  console.log("Found today in available days:", todayName);
                 } else {
                   // Find the next closest day
-                  const sortedDays = pickup.availableDays
+                  const sortedDays = availableDays
                     .map((day) => ({
                       day,
                       idx: daysOfWeek.indexOf(day),
                     }))
                     .filter((d) => d.idx !== -1)
                     .sort((a, b) => a.idx - b.idx);
+
+                  console.log("Sorted days:", sortedDays);
+
                   // Find the first day after today
                   nextDay =
                     sortedDays.find((d) => d.idx > todayIdx)?.day ||
                     sortedDays[0]?.day;
+
+                  console.log("Next day found:", nextDay);
                 }
               }
-              if (!nextDay) return null;
+              if (!nextDay) {
+                console.log("No next day found, skipping card");
+                return null;
+              }
+              console.log("Rendering KidPickupCard for day:", nextDay);
               return (
                 <KidPickupCard
                   key={`${pickup.id}-${nextDay}`}

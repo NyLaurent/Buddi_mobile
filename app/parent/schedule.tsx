@@ -212,7 +212,7 @@ const SchedulePage = () => {
           >
             <View className="flex-row items-center gap-2">
               <Text className="text-white font-comfortaa-bold text-lg">
-                View Your  Buddis&apos;s Timesheets
+                View Your Buddis&apos;s Timesheets
               </Text>
               <Ionicons name="arrow-forward" size={18} color="white" />
             </View>
@@ -261,7 +261,6 @@ const SchedulePage = () => {
                   <Text className="font-comfortaa-bold text-xl">
                     Scheduled Pickups
                   </Text>
-                  
                 </View>
                 {loading ? (
                   <Text
@@ -295,9 +294,16 @@ const SchedulePage = () => {
                   </Text>
                 ) : (
                   pickupRequests.map((pickup) => {
+                    console.log("Processing pickup request:", pickup.id);
+                    console.log("Pickup request data:", pickup);
+
                     const child = childDetailsMap[pickup.childId];
+                    console.log("Child details:", child);
+
                     // If not matched with a Buddi, show waiting card
+                    console.log("Matched buddi ID:", pickup.matchedBuddiId);
                     if (!pickup.matchedBuddiId) {
+                      console.log("No matched buddi, showing waiting card");
                       return (
                         <View
                           key={`waiting-${pickup.id}`}
@@ -360,11 +366,29 @@ const SchedulePage = () => {
                     }
                     const buddiStatus =
                       pickup.status === "matched" ? "Available" : "Pending";
-                    // Show up to 3 cards for the first 3 scheduled days
-                    const days =
-                      pickup.availableDays && pickup.availableDays.length > 0
-                        ? pickup.availableDays.slice(0, 3)
-                        : [];
+
+                    // Parse the available days string and show up to 3 cards
+                    let days: string[] = [];
+                    if (
+                      pickup.availableDays &&
+                      pickup.availableDays.length > 0
+                    ) {
+                      // Parse the comma-separated available days string
+                      const availableDaysString = pickup.availableDays[0];
+                      const availableDays = availableDaysString
+                        .split(",")
+                        .map((day: string) => day.trim());
+
+                      console.log(
+                        "Available days string:",
+                        availableDaysString
+                      );
+                      console.log("Parsed available days:", availableDays);
+
+                      // Take up to 3 days
+                      days = availableDays.slice(0, 3);
+                      console.log("Days to display:", days);
+                    }
                     return (
                       <View key={pickup.id} style={{ marginBottom: 18 }}>
                         <ScrollView

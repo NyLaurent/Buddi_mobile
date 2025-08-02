@@ -55,13 +55,23 @@ export default function SchedulePage() {
   // Helper to get today's day as a string (e.g., 'Monday')
   const today = new Date().toLocaleDateString("en-US", { weekday: "long" });
   // Filter pickups for today
-  const todaysPickups = matchedPickups.filter(
-    (pickup) =>
-      Array.isArray(pickup.availableDays) &&
-      pickup.availableDays
-        .map((d: string) => d.trim().toLowerCase())
-        .includes(today.toLowerCase())
-  );
+  const todaysPickups = matchedPickups.filter((pickup) => {
+    if (!pickup.availableDays || !Array.isArray(pickup.availableDays)) {
+      return false;
+    }
+
+    // Parse the comma-separated available days string
+    const availableDaysString = pickup.availableDays[0];
+    const availableDays = availableDaysString
+      .split(",")
+      .map((day: string) => day.trim().toLowerCase());
+
+    console.log("[BUDDI SCHEDULE] Available days string:", availableDaysString);
+    console.log("[BUDDI SCHEDULE] Parsed available days:", availableDays);
+    console.log("[BUDDI SCHEDULE] Today:", today.toLowerCase());
+
+    return availableDays.includes(today.toLowerCase());
+  });
   const pickupsToShow = showAll ? matchedPickups : todaysPickups;
 
   return (
@@ -214,37 +224,72 @@ export default function SchedulePage() {
                   contentContainerStyle={{ paddingRight: 16 }}
                 >
                   {pickupsToShow.length > 0 ? (
-                    pickupsToShow.flatMap(
-                      (pickup) =>
-                        // Create separate cards for each available day that matches today
-                        pickup.availableDays
-                          ?.filter(
-                            (day: string) =>
-                              day.trim().toLowerCase() === today.toLowerCase()
-                          )
-                          .map((day: string, dayIndex: number) => (
-                            <View
-                              key={`${pickup.id}-${day}-${dayIndex}`}
-                              className="mr-4"
-                            >
-                              <PickupCard
-                                id={pickup.id.toString()}
-                                name={"Child"}
-                                time={pickup.pickupTime || "-"}
-                                days={day} // Show only the specific day
-                                school={pickup.fromZone || "School"}
-                                home={pickup.toZone || "Home"}
-                                onButtonPress={() => {
-                                  router.push({
-                                    pathname: "/buddi/pickup/[id]",
-                                    params: { id: pickup.id.toString() },
-                                  });
-                                }}
-                                cardWidth={340}
-                              />
-                            </View>
-                          )) || []
-                    )
+                    pickupsToShow.flatMap((pickup) => {
+                      console.log(
+                        "[BUDDI SCHEDULE] Processing pickup:",
+                        pickup.id
+                      );
+
+                      // Parse the available days string
+                      if (
+                        !pickup.availableDays ||
+                        !Array.isArray(pickup.availableDays)
+                      ) {
+                        console.log(
+                          "[BUDDI SCHEDULE] No available days for pickup:",
+                          pickup.id
+                        );
+                        return [];
+                      }
+
+                      const availableDaysString = pickup.availableDays[0];
+                      const availableDays = availableDaysString
+                        .split(",")
+                        .map((day: string) => day.trim());
+
+                      console.log(
+                        "[BUDDI SCHEDULE] Available days string:",
+                        availableDaysString
+                      );
+                      console.log(
+                        "[BUDDI SCHEDULE] Parsed available days:",
+                        availableDays
+                      );
+
+                      // Filter for today's day
+                      const todaysDays = availableDays.filter(
+                        (day: string) =>
+                          day.toLowerCase() === today.toLowerCase()
+                      );
+
+                      console.log(
+                        "[BUDDI SCHEDULE] Today's days to render:",
+                        todaysDays
+                      );
+
+                      return todaysDays.map((day: string, dayIndex: number) => (
+                        <View
+                          key={`${pickup.id}-${day}-${dayIndex}`}
+                          className="mr-4"
+                        >
+                          <PickupCard
+                            id={pickup.id.toString()}
+                            name={"Child"}
+                            time={pickup.pickupTime || "-"}
+                            days={day} // Show only the specific day
+                            school={pickup.fromZone || "School"}
+                            home={pickup.toZone || "Home"}
+                            onButtonPress={() => {
+                              router.push({
+                                pathname: "/buddi/pickup/[id]",
+                                params: { id: pickup.id.toString() },
+                              });
+                            }}
+                            cardWidth={340}
+                          />
+                        </View>
+                      ));
+                    })
                   ) : (
                     <View
                       style={{

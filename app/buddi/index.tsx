@@ -86,14 +86,27 @@ export default function BuddiHome() {
   };
 
   // Helper to check if matchedCall is for today
-  const isPickupToday =
-    matchedCall &&
-    matchedCall.availableDays &&
-    Array.isArray(matchedCall.availableDays)
-      ? matchedCall.availableDays
-          .map((d: string) => d.trim().toLowerCase())
-          .includes(today.toLowerCase())
-      : false;
+  const isPickupToday = (() => {
+    if (
+      !matchedCall ||
+      !matchedCall.availableDays ||
+      !Array.isArray(matchedCall.availableDays)
+    ) {
+      return false;
+    }
+
+    // Parse the comma-separated available days string
+    const availableDaysString = matchedCall.availableDays[0];
+    const availableDays = availableDaysString
+      .split(",")
+      .map((day: string) => day.trim().toLowerCase());
+
+    console.log("[BUDDI] Available days string:", availableDaysString);
+    console.log("[BUDDI] Parsed available days:", availableDays);
+    console.log("[BUDDI] Today:", today.toLowerCase());
+
+    return availableDays.includes(today.toLowerCase());
+  })();
 
   // Real-time trip event listeners and local persistence
   useEffect(() => {
@@ -388,12 +401,26 @@ export default function BuddiHome() {
         >
           {matchedCall && isPickupToday ? (
             // Create separate cards for each available day that matches today
-            matchedCall.availableDays
-              ?.filter(
-                (day: string) =>
-                  day.trim().toLowerCase() === today.toLowerCase()
-              )
-              .map((day: string, index: number) => (
+            (() => {
+              // Parse the available days string
+              const availableDaysString = matchedCall.availableDays[0];
+              const availableDays = availableDaysString
+                .split(",")
+                .map((day: string) => day.trim());
+
+              console.log(
+                "[BUDDI] Rendering pickup cards for available days:",
+                availableDays
+              );
+
+              // Filter for today's day
+              const todaysDays = availableDays.filter(
+                (day: string) => day.toLowerCase() === today.toLowerCase()
+              );
+
+              console.log("[BUDDI] Today's days to render:", todaysDays);
+
+              return todaysDays.map((day: string, index: number) => (
                 <PickupCard
                   key={`${matchedCall.id}-${day}-${index}`}
                   id={matchedCall.id?.toString() || "0"}
@@ -531,7 +558,8 @@ export default function BuddiHome() {
                       : undefined
                   }
                 />
-              ))
+              ));
+            })()
           ) : (
             <View
               style={{
