@@ -3,145 +3,410 @@ import { io, Socket } from 'socket.io-client';
 // Socket server URL from your configuration
 const SOCKET_SERVER_URL = 'https://backend-service-hw1rh.kinsta.app';
 
+interface PickupData {
+  id: number;
+  buddiId: number;
+  parentId: number;
+  childId: number;
+  status: 'pending' | 'enRoute' | 'pickedUp' | 'completed' | 'cancelled';
+  tripStartTime?: string;
+  pickupTime?: string;
+  dropoffTime?: string;
+  fare?: number;
+  fromLocation?: string;
+  toLocation?: string;
+  scheduledTime?: string;
+}
+
+interface ChatMessage {
+  message: string;
+  senderId: string;
+  senderType: 'Parent' | 'Buddi';
+  timestamp: string;
+}
+
 class SocketService {
   private socket: Socket | null = null;
   private isConnected = false;
-  private pendingRoomJoins: { chatRoomId: string; userId: string; userType: 'Parent' | 'Buddi' }[] = [];
+  private reconnectAttempts = 0;
+  private maxReconnectAttempts = 5;
+  private reconnectDelay = 1000; // Start with 1 second
+  private userId: string | null = null;
+  private userType: 'Parent' | 'Buddi' | null = null;
+  private eventListeners: Map<string, Function[]> = new Map();
 
-  // Initialize socket connection
+  // Initialize socket connection with enhanced error handling
   connect(userId: string, userType: 'Parent' | 'Buddi') {
     try {
+      this.userId = userId;
+      this.userType = userType;
+
+      console.log('[SocketService] 🔌 Connecting to socket server:', SOCKET_SERVER_URL);
+      console.log('[SocketService] 👤 User:', { userId, userType });
+
       this.socket = io(SOCKET_SERVER_URL, {
-        transports: ['websocket'],
+        transports: ['websocket', 'polling'], // Fallback to polling if websocket fails
+        timeout: 20000, // 20 second timeout
+        forceNew: true, // Force new connection
         query: {
           userId,
           userType,
         },
       });
 
-      this.socket.on('connect', () => {
-        console.log('[SocketService] Socket connected:', this.socket?.id);
-        console.log('[SocketService] Socket URL:', SOCKET_SERVER_URL);
-        this.isConnected = true;
-        // Process any pending room joins
-        this.pendingRoomJoins.forEach(({ chatRoomId, userId, userType }) => {
-          console.log('[SocketService] Processing pending room join:', { chatRoomId, userId, userType });
-          this.joinChatRoom(chatRoomId, userId, userType);
-        });
-        this.pendingRoomJoins = [];
-      });
-
-      this.socket.on('disconnect', () => {
-        console.log('Socket disconnected');
-        this.isConnected = false;
-      });
-
-      this.socket.on('connect_error', (error) => {
-        console.error('Socket connection error:', error);
-        this.isConnected = false;
-      });
+      this.setupEventListeners();
+      this.setupReconnectionLogic();
 
     } catch (error) {
-      console.error('Error initializing socket:', error);
+      console.error('[SocketService] ❌ Error initializing socket:', error);
+      this.handleConnectionError(error);
     }
   }
 
-  // Join a chat room
-  joinChatRoom(chatRoomId: string, userId: string, userType: 'Parent' | 'Buddi') {
-    if (!this.socket || !this.isConnected) {
-      console.warn('[SocketService] Socket not connected, queuing room join:', { chatRoomId, userId, userType });
-      this.pendingRoomJoins.push({ chatRoomId, userId, userType });
+  private setupEventListeners() {
+    if (!this.socket) return;
+
+    // Connection events
+    this.socket.on('connect', () => {
+      console.log('[SocketService] ✅ Socket connected successfully:', this.socket?.id);
+      this.isConnected = true;
+      this.reconnectAttempts = 0;
+      this.reconnectDelay = 1000; // Reset delay
+      
+      // Join personal room based on user type
+      this.joinPersonalRoom();
+      
+      // Emit custom event for connection success
+      this.emit('connection-established', { userId: this.userId, userType: this.userType });
+    });
+
+    this.socket.on('disconnect', (reason) => {
+      console.log('[SocketService] ❌ Socket disconnected:', reason);
+      this.isConnected = false;
+      
+      if (reason === 'io server disconnect') {
+        // Server initiated disconnect, don't reconnect
+        console.log('[SocketService] 🛑 Server initiated disconnect');
+      } else {
+        // Client initiated disconnect or network issue
+        this.attemptReconnection();
+      }
+    });
+
+    this.socket.on('connect_error', (error) => {
+      console.error('[SocketService] ❌ Socket connection error:', error);
+      this.isConnected = false;
+      this.handleConnectionError(error);
+    });
+
+    // Pickup status events (from your backend)
+    this.socket.on('pickup-assigned', (data: string) => {
+      console.log('[SocketService] 📋 Pickup assigned:', data);
+      try {
+        const pickupData: PickupData = JSON.parse(data);
+        this.triggerEvent('pickup-assigned', pickupData);
+      } catch (error) {
+        console.error('[SocketService] ❌ Error parsing pickup-assigned data:', error);
+      }
+    });
+
+    this.socket.on('pickup-started', (data: string) => {
+      console.log('[SocketService] 🚀 Pickup started:', data);
+      try {
+        const pickupData: PickupData = JSON.parse(data);
+        this.triggerEvent('pickup-started', pickupData);
+      } catch (error) {
+        console.error('[SocketService] ❌ Error parsing pickup-started data:', error);
+      }
+    });
+
+    this.socket.on('child-picked-up', (data: string) => {
+      console.log('[SocketService] 👶 Child picked up:', data);
+      try {
+        const pickupData: PickupData = JSON.parse(data);
+        this.triggerEvent('child-picked-up', pickupData);
+      } catch (error) {
+        console.error('[SocketService] ❌ Error parsing child-picked-up data:', error);
+      }
+    });
+
+    this.socket.on('trip-completed', (data: string) => {
+      console.log('[SocketService] ✅ Trip completed:', data);
+      try {
+        const pickupData: PickupData = JSON.parse(data);
+        this.triggerEvent('trip-completed', pickupData);
+      } catch (error) {
+        console.error('[SocketService] ❌ Error parsing trip-completed data:', error);
+      }
+    });
+
+    this.socket.on('trip-cancelled', (data: string) => {
+      console.log('[SocketService] ❌ Trip cancelled:', data);
+      try {
+        const pickupData: PickupData = JSON.parse(data);
+        this.triggerEvent('trip-cancelled', pickupData);
+      } catch (error) {
+        console.error('[SocketService] ❌ Error parsing trip-cancelled data:', error);
+      }
+    });
+
+    // Earnings and timesheet events
+    this.socket.on('earnings-updated', (data: any) => {
+      console.log('[SocketService] 💰 Earnings updated:', data);
+      this.triggerEvent('earnings-updated', data);
+    });
+
+    this.socket.on('timesheet-updated', (data: string) => {
+      console.log('[SocketService] 📊 Timesheet updated:', data);
+      try {
+        const timesheetData = JSON.parse(data);
+        this.triggerEvent('timesheet-updated', timesheetData);
+      } catch (error) {
+        console.error('[SocketService] ❌ Error parsing timesheet-updated data:', error);
+      }
+    });
+
+    // Availability events
+    this.socket.on('availability-status-changed', (data: any) => {
+      console.log('[SocketService] 🔄 Availability status changed:', data);
+      this.triggerEvent('availability-status-changed', data);
+    });
+
+    // Chat events
+    this.socket.on('receive-message', (data: string) => {
+      console.log('[SocketService] 💬 Message received:', data);
+      try {
+        const messageData: ChatMessage = JSON.parse(data);
+        this.triggerEvent('receive-message', messageData);
+      } catch (error) {
+        console.error('[SocketService] ❌ Error parsing receive-message data:', error);
+      }
+    });
+
+    // Pickup updates
+    this.socket.on('active-pickups', (data: any) => {
+      console.log('[SocketService] 📋 Active pickups updated:', data);
+      this.triggerEvent('active-pickups', data);
+    });
+
+    this.socket.on('pickup-history', (data: any) => {
+      console.log('[SocketService] 📚 Pickup history updated:', data);
+      this.triggerEvent('pickup-history', data);
+    });
+
+    this.socket.on('all-pickups-updated', (data: string) => {
+      console.log('[SocketService] 📋 All pickups updated:', data);
+      try {
+        const pickupsData = JSON.parse(data);
+        this.triggerEvent('all-pickups-updated', pickupsData);
+      } catch (error) {
+        console.error('[SocketService] ❌ Error parsing all-pickups-updated data:', error);
+      }
+    });
+
+    // Rating events
+    this.socket.on('buddi-rated', (data: any) => {
+      console.log('[SocketService] ⭐ Buddi rated:', data);
+      this.triggerEvent('buddi-rated', data);
+    });
+  }
+
+  private setupReconnectionLogic() {
+    if (!this.socket) return;
+
+    // Exponential backoff for reconnection
+    this.socket.on('reconnect_attempt', (attemptNumber) => {
+      console.log(`[SocketService] 🔄 Reconnection attempt ${attemptNumber}/${this.maxReconnectAttempts}`);
+      this.reconnectAttempts = attemptNumber;
+      
+      if (attemptNumber > this.maxReconnectAttempts) {
+        console.log('[SocketService] 🛑 Max reconnection attempts reached');
+        this.emit('max-reconnect-attempts-reached');
+        return;
+      }
+      
+      // Exponential backoff: 1s, 2s, 4s, 8s, 16s
+      const delay = Math.min(1000 * Math.pow(2, attemptNumber - 1), 30000);
+      console.log(`[SocketService] ⏱️ Waiting ${delay}ms before next attempt`);
+    });
+
+    this.socket.on('reconnect', (attemptNumber) => {
+      console.log(`[SocketService] ✅ Reconnected after ${attemptNumber} attempts`);
+      this.isConnected = true;
+      this.reconnectAttempts = 0;
+      this.reconnectDelay = 1000;
+      
+      // Rejoin personal room after reconnection
+      this.joinPersonalRoom();
+      
+      this.emit('reconnected', { attemptNumber });
+    });
+
+    this.socket.on('reconnect_error', (error) => {
+      console.error('[SocketService] ❌ Reconnection error:', error);
+      this.emit('reconnection-error', error);
+    });
+
+    this.socket.on('reconnect_failed', () => {
+      console.error('[SocketService] ❌ Reconnection failed');
+      this.emit('reconnection-failed');
+    });
+  }
+
+  private joinPersonalRoom() {
+    if (!this.socket || !this.isConnected || !this.userId || !this.userType) {
+      console.warn('[SocketService] ⚠️ Cannot join personal room - missing connection or user data');
       return;
     }
-    console.log('[SocketService] Joining chat room:', { chatRoomId, userId, userType });
-    console.log('[SocketService] Socket connected:', this.socket.connected);
-    console.log('[SocketService] Socket ID:', this.socket.id);
+
+    const roomId = this.userType === 'Buddi' ? `buddi-${this.userId}` : `parent-${this.userId}`;
+    const eventName = this.userType === 'Buddi' ? 'join-buddi-room' : 'join-parent-room';
+    
+    console.log(`[SocketService] 🏠 Joining personal room: ${roomId}`);
+    this.socket.emit(eventName, this.userId);
+  }
+
+  // Join a chat room (for parent-buddi communication)
+  joinChatRoom(chatRoomId: string, userId: string, userType: 'Parent' | 'Buddi') {
+    if (!this.socket || !this.isConnected) {
+      console.warn('[SocketService] ⚠️ Socket not connected, cannot join chat room');
+      return;
+    }
+
+    console.log(`[SocketService] 💬 Joining chat room: ${chatRoomId}`);
     this.socket.emit('join-chat-room', {
       chatRoomId,
       userId,
       userType,
     });
-    console.log('[SocketService] join-chat-room event emitted');
   }
 
-  // Send a message
+  // Send a message in chat room
   sendMessage(chatRoomId: string, message: string, senderId: string, senderType: 'Parent' | 'Buddi') {
     if (!this.socket || !this.isConnected) {
-      console.error('[SocketService] Socket not connected');
+      console.error('[SocketService] ❌ Socket not connected, cannot send message');
       return;
     }
 
-    console.log('[SocketService] Sending message:', { chatRoomId, message, senderId, senderType });
-    console.log('[SocketService] Socket connected:', this.socket.connected);
-    console.log('[SocketService] Socket ID:', this.socket.id);
-    
+    console.log(`[SocketService] 💬 Sending message to room ${chatRoomId}:`, message);
     this.socket.emit('send-message', {
       chatRoomId,
       message,
       senderId,
       senderType,
     });
-    console.log('[SocketService] send-message event emitted');
   }
 
-  // Listen for incoming messages
-  onReceiveMessage(callback: (data: any) => void) {
-    if (!this.socket) {
-      console.error('Socket not initialized');
-      return;
-    }
-
-    this.socket.on('receive-message', (data) => {
-      console.log('Message received:', data);
-      callback(data);
-    });
-  }
-
-  // Listen for room join confirmation
-  onRoomJoined(callback: (data: any) => void) {
-    if (!this.socket) {
-      console.error('Socket not initialized');
-      return;
-    }
-
-    this.socket.on('room-joined', (data) => {
-      console.log('Room joined:', data);
-      callback(data);
-    });
-  }
-
-  // Leave a chat room
-  leaveChatRoom(chatRoomId: string) {
+  // Emit custom events
+  emit(eventName: string, data?: any) {
     if (!this.socket || !this.isConnected) {
-      console.error('Socket not connected');
+      console.warn(`[SocketService] ⚠️ Socket not connected, cannot emit ${eventName}`);
       return;
     }
 
-    console.log('Leaving chat room:', chatRoomId);
+    console.log(`[SocketService] 📤 Emitting event: ${eventName}`, data);
+    this.socket.emit(eventName, data);
+  }
+
+  // Add event listener
+  on(eventName: string, callback: Function) {
+    if (!this.eventListeners.has(eventName)) {
+      this.eventListeners.set(eventName, []);
+    }
+    this.eventListeners.get(eventName)!.push(callback);
+    console.log(`[SocketService] 👂 Added listener for event: ${eventName}`);
+  }
+
+  // Remove event listener
+  off(eventName: string, callback?: Function) {
+    if (!callback) {
+      this.eventListeners.delete(eventName);
+      console.log(`[SocketService] 🗑️ Removed all listeners for event: ${eventName}`);
+    } else {
+      const listeners = this.eventListeners.get(eventName);
+      if (listeners) {
+        const index = listeners.indexOf(callback);
+        if (index > -1) {
+          listeners.splice(index, 1);
+          console.log(`[SocketService] 🗑️ Removed specific listener for event: ${eventName}`);
+        }
+      }
+    }
+  }
+
+  // Trigger event for all listeners
+  private triggerEvent(eventName: string, data?: any) {
+    const listeners = this.eventListeners.get(eventName);
+    if (listeners) {
+      listeners.forEach(callback => {
+        try {
+          callback(data);
+        } catch (error) {
+          console.error(`[SocketService] ❌ Error in event listener for ${eventName}:`, error);
+        }
+      });
+    }
+  }
+
+  private attemptReconnection() {
+    if (this.reconnectAttempts >= this.maxReconnectAttempts) {
+      console.log('[SocketService] 🛑 Max reconnection attempts reached');
+      return;
+    }
+
+    console.log(`[SocketService] 🔄 Attempting reconnection (${this.reconnectAttempts + 1}/${this.maxReconnectAttempts})`);
     
-    this.socket.emit('leave-chat-room', {
-      chatRoomId,
-    });
+    setTimeout(() => {
+      if (this.socket && !this.isConnected) {
+        this.socket.connect();
+      }
+    }, this.reconnectDelay);
+
+    this.reconnectDelay = Math.min(this.reconnectDelay * 2, 30000); // Max 30 seconds
+  }
+
+  private handleConnectionError(error: any) {
+    console.error('[SocketService] ❌ Connection error:', error);
+    this.emit('connection-error', error);
+    
+    // Attempt reconnection for network errors
+    if (error.type === 'TransportError' || error.message?.includes('network')) {
+      this.attemptReconnection();
+    }
   }
 
   // Disconnect socket
   disconnect() {
     if (this.socket) {
+      console.log('[SocketService] 🔌 Disconnecting socket');
       this.socket.disconnect();
       this.socket = null;
       this.isConnected = false;
-      console.log('Socket disconnected');
+      this.userId = null;
+      this.userType = null;
+      this.eventListeners.clear();
     }
   }
 
   // Check if socket is connected
   isSocketConnected(): boolean {
-    return this.isConnected && this.socket !== null;
+    return this.isConnected && this.socket !== null && this.socket.connected;
   }
 
   // Get socket instance (for advanced usage)
   getSocket(): Socket | null {
     return this.socket;
+  }
+
+  // Get connection status
+  getConnectionStatus() {
+    return {
+      isConnected: this.isConnected,
+      socketId: this.socket?.id,
+      userId: this.userId,
+      userType: this.userType,
+      reconnectAttempts: this.reconnectAttempts,
+    };
   }
 }
 

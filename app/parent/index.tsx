@@ -256,18 +256,58 @@ export default function ParentDashboard() {
       refreshPickups();
     };
 
-    // Add listeners
-    const socket = getSocket();
-    if (socket) {
-      console.log("[PARENT] Setting up socket event listeners");
-      socket.on("pickup-requested", handlePickupRequested);
-      socket.on("pickup-started", handlePickupStarted);
-      socket.on("child-picked-up", handleChildPickedUp);
-      socket.on("trip-completed", handleTripCompleted);
-      console.log("[PARENT] Socket event listeners set up successfully");
-    } else {
-      console.log("[PARENT] Socket not available for event listeners");
-    }
+    // Enhanced socket event listeners for real-time updates
+    SocketService.on("pickup-started", (pickupData: any) => {
+      console.log("[PARENT] Received pickup-started event:", pickupData);
+      // Update pickup status in real-time
+      setPickupRequests((prev) =>
+        prev.map((pickup) => {
+          if (pickup.id === pickupData.id) {
+            return { ...pickup, status: "enRoute" };
+          }
+          return pickup;
+        })
+      );
+    });
+
+    SocketService.on("child-picked-up", (pickupData: any) => {
+      console.log("[PARENT] Received child-picked-up event:", pickupData);
+      // Update pickup status in real-time
+      setPickupRequests((prev) =>
+        prev.map((pickup) => {
+          if (pickup.id === pickupData.id) {
+            return { ...pickup, status: "pickedUp" };
+          }
+          return pickup;
+        })
+      );
+    });
+
+    SocketService.on("trip-completed", (pickupData: any) => {
+      console.log("[PARENT] Received trip-completed event:", pickupData);
+      // Update pickup status in real-time
+      setPickupRequests((prev) =>
+        prev.map((pickup) => {
+          if (pickup.id === pickupData.id) {
+            return { ...pickup, status: "completed" };
+          }
+          return pickup;
+        })
+      );
+    });
+
+    SocketService.on("trip-cancelled", (pickupData: any) => {
+      console.log("[PARENT] Received trip-cancelled event:", pickupData);
+      // Update pickup status in real-time
+      setPickupRequests((prev) =>
+        prev.map((pickup) => {
+          if (pickup.id === pickupData.id) {
+            return { ...pickup, status: "cancelled" };
+          }
+          return pickup;
+        })
+      );
+    });
 
     // On mount, load pickups from AsyncStorage
     AsyncStorage.getItem("parentPickups").then((stored) => {
@@ -278,15 +318,25 @@ export default function ParentDashboard() {
 
     // Cleanup listeners on unmount
     return () => {
-      const socket = getSocket();
-      if (socket) {
-        socket.off("pickup-requested", handlePickupRequested);
-        socket.off("pickup-started", handlePickupStarted);
-        socket.off("child-picked-up", handleChildPickedUp);
-        socket.off("trip-completed", handleTripCompleted);
-      }
+      SocketService.off("pickup-started");
+      SocketService.off("child-picked-up");
+      SocketService.off("trip-completed");
+      SocketService.off("trip-cancelled");
     };
   }, [parentDetails?.id]);
+
+  // Check socket connection status periodically
+  React.useEffect(() => {
+    const checkConnection = () => {
+      const status = SocketService.getConnectionStatus();
+      console.log("[PARENT] Socket connection status:", status);
+    };
+
+    checkConnection();
+    const interval = setInterval(checkConnection, 30000); // Check every 30 seconds
+
+    return () => clearInterval(interval);
+  }, []);
 
   // Profile polling effect - poll every 30 seconds to track status changes
   React.useEffect(() => {

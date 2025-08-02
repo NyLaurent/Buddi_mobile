@@ -561,15 +561,29 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         console.log("Login - Setting buddi data:", buddiData);
         setBuddiDetails(buddiData);
         await AsyncStorage.setItem("buddi_details", JSON.stringify(buddiData));
-        // Join buddi personal room
+        // Connect to socket and join buddi personal room
         if (buddiData.id && cleanUser.userId) {
-          console.log("[Socket] Joining buddi room:", {
+          console.log("[Socket] Connecting and joining buddi room:", {
             roomId: `buddi-${buddiData.id}`,
             userId: cleanUser.userId,
             userType: "Buddi",
           });
-          const roomId = `buddi-${buddiData.id}`;
-          SocketService.joinChatRoom(roomId, cleanUser.userId, "Buddi");
+
+          // Connect to socket service
+          SocketService.connect(cleanUser.userId, "Buddi");
+
+          // Listen for connection events
+          SocketService.on("connection-established", (data: any) => {
+            console.log("[Socket] ✅ Buddi connection established:", data);
+          });
+
+          SocketService.on("connection-error", (error: any) => {
+            console.error("[Socket] ❌ Buddi connection error:", error);
+          });
+
+          SocketService.on("reconnected", (data: any) => {
+            console.log("[Socket] 🔄 Buddi reconnected:", data);
+          });
         }
       }
 
@@ -581,15 +595,29 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
           "parent_details",
           JSON.stringify(parentData)
         );
-        // Join parent personal room
+        // Connect to socket and join parent personal room
         if (parentData.id && cleanUser.userId) {
-          console.log("[Socket] Joining parent room:", {
+          console.log("[Socket] Connecting and joining parent room:", {
             roomId: `parent-${parentData.id}`,
             userId: cleanUser.userId,
             userType: "Parent",
           });
-          const roomId = `parent-${parentData.id}`;
-          SocketService.joinChatRoom(roomId, cleanUser.userId, "Parent");
+
+          // Connect to socket service
+          SocketService.connect(cleanUser.userId, "Parent");
+
+          // Listen for connection events
+          SocketService.on("connection-established", (data: any) => {
+            console.log("[Socket] ✅ Parent connection established:", data);
+          });
+
+          SocketService.on("connection-error", (error: any) => {
+            console.error("[Socket] ❌ Parent connection error:", error);
+          });
+
+          SocketService.on("reconnected", (data: any) => {
+            console.log("[Socket] 🔄 Parent reconnected:", data);
+          });
         }
       }
 
