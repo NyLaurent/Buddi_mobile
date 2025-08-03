@@ -82,8 +82,9 @@
     "extra": {
       "router": {},
       "eas": {
-        "projectId": "d085e9f0-3e7f-47a1-8ef1-8c8fd280ee68"
+        "projectId": "15adc2c2-b938-4207-899d-4eb68721b62f"
       }
-    }
+    },
+    "owner": "pickup_buddi_llc"
   }
 }
