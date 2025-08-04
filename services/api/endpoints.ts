@@ -6,7 +6,7 @@
 export const AUTH_ENDPOINTS = {
   LOGIN: '/auth/login',
   REGISTER: '/auth/register',
-  REGISTER_BUDDI: 'https://backend-service-hw1rh.kinsta.app/api/v1/auth/register/buddi',
+  REGISTER_BUDDI: '/auth/register/buddi',
   REGISTER_PARENT: '/auth/register/parent',
   LOGOUT: '/auth/logout',
   REFRESH_TOKEN: '/auth/refresh',
@@ -15,9 +15,9 @@ export const AUTH_ENDPOINTS = {
   VERIFY_EMAIL: '/auth/verify-email',
   RESEND_VERIFICATION: '/auth/resend-verification',
   PROFILE: '/auth/profile',
-  UPDATE_PROFILE: 'https://backend-service-hw1rh.kinsta.app/api/v1/auth/update/profile',
+  UPDATE_PROFILE: '/auth/update/profile',
   UPLOAD_INTERVIEW_VIDEO: (buddiId: number) => `/buddi/interview/${buddiId}/uploadBuddiInterviewVideo/video`,
-  REGISTER_REFERRAL_TEACHER: 'https://backend-service-hw1rh.kinsta.app/api/v1/referralTeacher/register',
+  REGISTER_REFERRAL_TEACHER: '/referralTeacher/register',
 } as const;
 
 // User Endpoints
@@ -184,5 +184,5 @@ export const CHILDREN_ENDPOINTS = {
 // Coverage Endpoints
 export const COVERAGE_ENDPOINTS = {
   CREATE_REQUEST: '/coverage/buddi-requests',
-  MATCH_BUDDI: 'https://backend-service-hw1rh.kinsta.app/api/v1/coverage/match-buddi',
+  MATCH_BUDDI: '/coverage/match-buddi',
 } as const; 

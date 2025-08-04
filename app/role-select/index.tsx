@@ -58,37 +58,8 @@ const RoleSelect = () => {
             Choose Your Role
           </Text>
           <Text className="text-base font-comfortaa text-center text-[#71727A]">
-            Select how you&apos;ll use Pickup Buddi to continue.
+            Select how you&apos;ll use Pickup Buddi to get started.
           </Text>
-        </View>
-
-        {/* Go to Login CTA */}
-        <View className="px-6 mb-6">
-          <TouchableOpacity
-            className="flex-row items-center justify-center px-6 py-4 rounded-full border-2 border-primary bg-white"
-            onPress={() => router.push("/auth/login" as any)}
-            activeOpacity={0.8}
-          >
-            <Ionicons
-              name="log-in-outline"
-              size={20}
-              color={PRIMARY_COLOR}
-              style={{ marginRight: 8 }}
-            />
-            <Text
-              className="font-comfortaa-bold text-base"
-              style={{ color: PRIMARY_COLOR }}
-            >
-              Already have an account? Go to Login
-            </Text>
-          </TouchableOpacity>
-        </View>
-
-        {/* Divider */}
-        <View className="flex-row items-center px-6 mb-6">
-          <View className="flex-1 h-px bg-gray-300" />
-          <Text className="mx-4 text-[#71727A] font-comfortaa">or</Text>
-          <View className="flex-1 h-px bg-gray-300" />
         </View>
 
         {/* Role Cards */}
@@ -187,7 +158,7 @@ const RoleSelect = () => {
         <View className="flex-row justify-between items-center px-6 mb-6">
           <TouchableOpacity
             className="flex-row items-center px-6 py-3 rounded-full border border-gray bg-white"
-            onPress={() => router.push("/auth/login" as any)}
+            onPress={() => router.push("/onboarding" as any)}
           >
             <Ionicons
               name="arrow-back"
@@ -218,9 +189,37 @@ const RoleSelect = () => {
             }}
           >
             <Text className="font-comfortaa-bold text-white mr-2 text-base">
-              Next
+              Continue
             </Text>
             <Ionicons name="arrow-forward" size={18} color="#fff" />
+          </TouchableOpacity>
+        </View>
+
+        {/* Login Option - Less Prominent */}
+        <View className="px-6 mb-4">
+          <View className="flex-row items-center justify-center">
+            <View className="flex-1 h-px bg-gray-300" />
+            <Text className="mx-4 text-[#71727A] font-comfortaa text-sm">
+              or
+            </Text>
+            <View className="flex-1 h-px bg-gray-300" />
+          </View>
+        </View>
+        <View className="px-6 mb-6">
+          <TouchableOpacity
+            className="flex-row items-center justify-center px-6 py-3 rounded-full border border-gray-300 bg-white"
+            onPress={() => router.push("/auth/login" as any)}
+            activeOpacity={0.8}
+          >
+            <Ionicons
+              name="log-in-outline"
+              size={18}
+              color="#71727A"
+              style={{ marginRight: 8 }}
+            />
+            <Text className="font-comfortaa text-[#71727A] text-sm">
+              Already have an account? Sign in
+            </Text>
           </TouchableOpacity>
         </View>
       </ScrollView>

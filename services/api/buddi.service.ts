@@ -1,5 +1,3 @@
-import AsyncStorage from "@react-native-async-storage/async-storage";
-import axios from "axios";
 import { authorizedApi } from './config';
 import { BUDDI_ENDPOINTS } from './endpoints';
 
@@ -152,7 +150,7 @@ async function pickUpChild(pickupId: number | string): Promise<any> {
 }
 
 export async function getRandomInterviewQuestions() {
-  const res = await axios.get("https://backend-service-hw1rh.kinsta.app/api/v1/admin/interview-questions");
+  const res = await authorizedApi.get("/admin/interview-questions");
   const allQuestions = res.data.data;
   // Shuffle and pick 3 random questions
   const shuffled = allQuestions.sort(() => 0.5 - Math.random());
@@ -228,34 +226,13 @@ export async function uploadBuddiProfileVideo(buddiId: number, videoUri: string)
     console.log("[UPLOAD] FormData created successfully");
     console.log("[UPLOAD] FormData key: 'file' (matches Postman implementation)");
 
-    // Create a custom axios instance for this upload with longer timeout
-    console.log("[UPLOAD] Creating axios instance...");
-    const uploadApi = axios.create({
-      baseURL: 'https://backend-service-hw1rh.kinsta.app/api/v1',
-      timeout: 120000, // 2 minutes timeout for video upload
-      headers: {
-        'Accept': 'application/json',
-        'Content-Type': 'multipart/form-data',
-      },
-    });
-    console.log("[UPLOAD] Axios instance created with timeout:", 120000, "ms");
-
-    // Add auth token
-    console.log("[UPLOAD] Getting auth token...");
-    const token = await AsyncStorage.getItem('access_token');
-    if (token) {
-      uploadApi.defaults.headers.Authorization = `Bearer ${token}`;
-      console.log("[UPLOAD] Auth token added to headers (length:", token.length, ")");
-    } else {
-      console.warn("[UPLOAD] No auth token found in AsyncStorage");
-    }
-
     const url = `/buddi/interview/${buddiId}/uploadBuddiInterviewVideo/video`;
-    console.log("[UPLOAD] Full upload URL:", `https://backend-service-hw1rh.kinsta.app/api/v1${url}`);
+    console.log("[UPLOAD] Making POST request to:", url);
     console.log("[UPLOAD] Making POST request...");
 
     const uploadStartTime = Date.now();
-    const response = await uploadApi.post(url, formData, {
+    const response = await authorizedApi.post(url, formData, {
+      timeout: 120000, // 2 minutes timeout for video upload
       headers: {
         'Content-Type': 'multipart/form-data',
       },
@@ -337,7 +314,7 @@ export async function uploadBuddiProfileIntroVideo(buddiId: number, videoUri: st
     } as any;
     formData.append("file", fileObj);
     
-    const url = `https://backend-service-hw1rh.kinsta.app/api/v1/buddi/profile/${buddiId}/uploadBuddiProfileVideo/video`;
+    const url = `/buddi/profile/${buddiId}/uploadBuddiProfileVideo/video`;
     const res = await authorizedApi.post(url, formData);
     return res.data;
   } catch (err: any) {

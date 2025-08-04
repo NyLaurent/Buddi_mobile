@@ -12,6 +12,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useAuth } from "../../../context/AuthContext";
+import { authorizedApi } from "../../../services/api/config";
 import TimesheetSummaryCard from "./TimesheetSummaryCard";
 
 interface DailyPickup {
@@ -57,11 +58,10 @@ export default function TimesheetDetailsPage() {
       setLoading(true);
       setError(null);
       try {
-        const res = await fetch(
-          `https://backend-service-hw1rh.kinsta.app/api/v1/timesheets/buddi/${buddiDetails.id}/sheet/${id}`
+        const response = await authorizedApi.get(
+          `/timesheets/buddi/${buddiDetails.id}/sheet/${id}`
         );
-        const data = await res.json();
-        setTimesheet(data);
+        setTimesheet(response.data);
       } catch (err: any) {
         setError("Failed to fetch timesheet details.");
       } finally {

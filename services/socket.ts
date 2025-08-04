@@ -1,7 +1,7 @@
 import { io, Socket } from 'socket.io-client';
 
 // Socket server URL from your configuration
-const SOCKET_SERVER_URL = 'https://backend-service-hw1rh.kinsta.app';
+const SOCKET_SERVER_URL = process.env.API_BASE_URL?.replace('/api/v1', '') || 'https://backend-service-hw1rh.kinsta.app';
 
 interface PickupData {
   id: number;
@@ -52,7 +52,6 @@ class SocketService {
         reconnectionAttempts: 5, // Increased attempts
         reconnectionDelay: 500, // Faster initial reconnection
         reconnectionDelayMax: 3000, // Reduced max delay
-        maxReconnectionAttempts: 5,
         upgrade: true, // Allow transport upgrade
         rememberUpgrade: true, // Remember successful upgrades
         query: {

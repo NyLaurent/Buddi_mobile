@@ -14,6 +14,7 @@ import {
   useSafeAreaInsets,
 } from "react-native-safe-area-context";
 import { useAuth } from "../../../context/AuthContext";
+import { authorizedApi } from "../../../services/api/config";
 import TimesheetSummaryCard from "./TimesheetSummaryCard";
 
 interface DailyPickup {
@@ -63,19 +64,17 @@ export default function TimesheetPage() {
       setLoading(true);
       setError(null);
       try {
-        const url = `https://backend-service-hw1rh.kinsta.app/api/v1/timesheets/buddi/${buddiDetails.id}?page=1&limit=10`;
-        console.log("API URL:", url);
+        const response = await authorizedApi.get(
+          `/timesheets/buddi/${buddiDetails.id}?page=1&limit=10`
+        );
+        console.log(
+          "Full API response:",
+          JSON.stringify(response.data, null, 2)
+        );
+        console.log("Timesheets data:", response.data.data);
+        console.log("Number of timesheets:", response.data.data?.length || 0);
 
-        const res = await fetch(url);
-        console.log("Response status:", res.status);
-        console.log("Response headers:", res.headers);
-
-        const data = await res.json();
-        console.log("Full API response:", JSON.stringify(data, null, 2));
-        console.log("Timesheets data:", data.data);
-        console.log("Number of timesheets:", data.data?.length || 0);
-
-        setTimesheets(data.data || []);
+        setTimesheets(response.data.data || []);
       } catch (err: any) {
         console.error("Error fetching timesheets:", err);
         console.error("Error message:", err.message);
