@@ -5,7 +5,6 @@ import { useEffect, useState } from "react";
 import {
   ActivityIndicator,
   FlatList,
-  Image,
   StatusBar,
   Text,
   TouchableOpacity,
@@ -19,7 +18,6 @@ interface ChatItem {
   id: string;
   roomId: string;
   otherUserName: string;
-  otherUserAvatar: string;
   lastMessage: string;
   timestamp: string;
   unreadCount: number;
@@ -46,22 +44,15 @@ export default function BuddiMessagesScreen() {
       setLoading(true);
       setError(null);
 
-      // Fetch all calls (could be paginated, but for now fetch first page with a high limit)
-      const response = await BuddiService.getAvailableCalls(1, 50);
-      // Filter only matched calls for this Buddi
-      const matchedCalls = response.data.filter(
-        (call: AvailableCall) =>
-          call.status === "matched" &&
-          call.matchedBuddiId &&
-          String(call.matchedBuddiId) === String(buddiDetails.id)
-      );
+      // Fetch matched calls using the new API
+      const response = await BuddiService.getMatchedRequests(buddiDetails.id);
+      const matchedCalls = response.data || [];
 
       const chatItemsData: ChatItem[] = matchedCalls.map(
         (call: AvailableCall) => ({
           id: call.id.toString(),
           roomId: `${call.parentId}-${call.matchedBuddiId}`,
           otherUserName: "Parent", // Placeholder, can fetch real name if needed
-          otherUserAvatar: "https://randomuser.me/api/portraits/women/32.jpg", // Placeholder
           lastMessage: "Tap to start chatting about pickup details",
           timestamp: new Date(call.updatedAt).toLocaleDateString(),
           unreadCount: 0,
@@ -128,7 +119,6 @@ export default function BuddiMessagesScreen() {
       params: {
         roomId: chatItem.roomId,
         parentName: chatItem.otherUserName,
-        parentAvatar: chatItem.otherUserAvatar,
       },
     });
   };
@@ -137,13 +127,34 @@ export default function BuddiMessagesScreen() {
     router.back();
   };
 
+  // Get user initials
+  const getUserInitials = (name: string) => {
+    if (!name) return "?";
+    return name
+      .split(" ")
+      .map((word) => word.charAt(0))
+      .join("")
+      .toUpperCase()
+      .slice(0, 2);
+  };
+
+  // Render user avatar with initials
+  const renderAvatar = (name: string) => {
+    const initials = getUserInitials(name);
+    return (
+      <View style={styles.avatarContainer}>
+        <Text style={styles.avatarText}>{initials}</Text>
+      </View>
+    );
+  };
+
   const renderChatItem = ({ item }: { item: ChatItem }) => (
     <TouchableOpacity
       style={styles.chatItem}
       onPress={() => handleChatPress(item)}
       activeOpacity={0.7}
     >
-      <Image source={{ uri: item.otherUserAvatar }} style={styles.avatar} />
+      {renderAvatar(item.otherUserName)}
       <View style={styles.chatContent}>
         <View style={styles.chatHeader}>
           <Text style={styles.chatName}>{item.otherUserName}</Text>
@@ -308,12 +319,20 @@ const styles = {
     shadowRadius: 2,
     elevation: 1,
   },
-  avatar: {
+  avatarContainer: {
     width: 48,
     height: 48,
     borderRadius: 24,
     marginRight: 12,
-    backgroundColor: "#EEE",
+    backgroundColor: "#E0E0E0",
+    alignItems: "center" as const,
+    justifyContent: "center" as const,
+  },
+  avatarText: {
+    color: "#666666",
+    fontSize: 16,
+    fontWeight: "bold" as const,
+    fontFamily: "Comfortaa-Bold",
   },
   chatContent: {
     flex: 1,

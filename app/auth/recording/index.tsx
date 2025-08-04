@@ -1,5 +1,5 @@
 import { Ionicons } from "@expo/vector-icons";
-import { ResizeMode, Video } from "expo-av";
+import { Audio, ResizeMode, Video } from "expo-av";
 import { CameraType, CameraView, useCameraPermissions } from "expo-camera";
 import { useRouter } from "expo-router";
 import { useEffect, useRef, useState } from "react";
@@ -7,7 +7,6 @@ import {
   Alert,
   Image,
   ImageBackground,
-  Linking,
   Platform,
   ScrollView,
   StyleSheet,
@@ -52,6 +51,7 @@ export default function BuddiRecordingScreen() {
   const [submitting, setSubmitting] = useState(false);
   const [cameraReady, setCameraReady] = useState(false);
   const [permissionChecked, setPermissionChecked] = useState(false);
+  const [audioPermission, setAudioPermission] = useState<boolean>(false);
 
   useEffect(() => {
     let mounted = true;
@@ -81,6 +81,7 @@ export default function BuddiRecordingScreen() {
         console.log("Permission granted:", permission?.granted);
         console.log("Permission canAskAgain:", permission?.canAskAgain);
 
+        // Check and request camera permission
         if (permission) {
           setPermissionChecked(true);
 
@@ -90,6 +91,18 @@ export default function BuddiRecordingScreen() {
             const result = await requestPermission();
             console.log("Permission request result:", result);
           }
+        }
+
+        // Check and request audio permission (for microphone access)
+        console.log("Checking audio permission...");
+        const audioPermissionStatus = await Audio.getPermissionsAsync();
+        setAudioPermission(audioPermissionStatus.granted);
+
+        if (!audioPermissionStatus.granted) {
+          console.log("Requesting audio permission...");
+          const audioResult = await Audio.requestPermissionsAsync();
+          console.log("Audio permission result:", audioResult);
+          setAudioPermission(audioResult.granted);
         }
       } catch (error) {
         console.error("Error checking permissions:", error);
@@ -144,6 +157,7 @@ export default function BuddiRecordingScreen() {
     console.log("Permission object:", permission);
     console.log("Permission granted:", permission?.granted);
     console.log("Permission canAskAgain:", permission?.canAskAgain);
+    console.log("Audio permission:", audioPermission);
     console.log("Camera ref exists:", !!cameraRef.current);
     console.log("Camera ready:", cameraReady);
     console.log("Currently recording:", recording);
@@ -170,55 +184,36 @@ export default function BuddiRecordingScreen() {
     try {
       console.log("Handling permission request...");
 
+      // Request camera permission
       if (permission?.canAskAgain) {
         const result = await requestPermission();
-        console.log("Permission request result:", result);
+        console.log("Camera permission request result:", result);
+      }
 
-        if (!result.granted) {
-          // Show settings redirect dialog
-          Alert.alert(
-            "Camera Permission Required",
-            "Camera access is essential for recording your interview video. Please enable camera access in your device settings.",
-            [
-              { text: "Cancel", style: "cancel" },
-              {
-                text: "Open Settings",
-                onPress: () => {
-                  if (Platform.OS === "ios") {
-                    Linking.openURL("app-settings:");
-                  } else {
-                    Linking.openSettings();
-                  }
-                },
-              },
-            ]
-          );
-        }
-      } else {
-        // Permission denied and can't ask again - redirect to settings
-        Alert.alert(
-          "Camera Permission Required",
-          "Camera access is essential for recording your interview video. Please enable camera access in your device settings.",
-          [
-            { text: "Cancel", style: "cancel" },
-            {
-              text: "Open Settings",
-              onPress: () => {
-                if (Platform.OS === "ios") {
-                  Linking.openURL("app-settings:");
-                } else {
-                  Linking.openSettings();
-                }
-              },
-            },
-          ]
-        );
+      // Request audio permission (for microphone)
+      const audioPermissionStatus = await Audio.getPermissionsAsync();
+      if (!audioPermissionStatus.granted) {
+        const audioResult = await Audio.requestPermissionsAsync();
+        console.log("Audio permission result:", audioResult);
+        setAudioPermission(audioResult.granted);
+      }
+
+      // Check if both permissions are granted
+      const currentCameraPermission = await permission;
+      const currentAudioPermission = await Audio.getPermissionsAsync();
+
+      // Update state to trigger UI update if permissions are still not granted
+      if (
+        !currentCameraPermission?.granted ||
+        !currentAudioPermission.granted
+      ) {
+        setAudioPermission(currentAudioPermission.granted);
       }
     } catch (error) {
-      console.error("Error requesting permission:", error);
+      console.error("Error requesting permissions:", error);
       Alert.alert(
         "Permission Error",
-        "Unable to request camera permission. Please check your device settings.",
+        "Unable to request permissions. Please check your device settings.",
         [{ text: "OK", style: "default" }]
       );
     }
@@ -282,7 +277,7 @@ export default function BuddiRecordingScreen() {
     );
   }
 
-  if (!permission?.granted) {
+  if (!permission?.granted || !audioPermission) {
     return (
       <ImageBackground
         source={require("../../../assets/images/auth/video_bg.jpg")}
@@ -319,7 +314,7 @@ export default function BuddiRecordingScreen() {
                   marginBottom: 12,
                 }}
               >
-                Camera Access Required
+                Camera & Microphone Access Required
               </Text>
               <Text
                 style={{
@@ -331,8 +326,9 @@ export default function BuddiRecordingScreen() {
                   lineHeight: 22,
                 }}
               >
-                To record your interview video, we need access to your camera.
-                This helps us capture your responses for the interview process.
+                To record your interview video, we need access to your camera
+                and microphone. This helps us capture your responses for the
+                interview process.
               </Text>
               <TouchableOpacity
                 style={{
@@ -355,7 +351,7 @@ export default function BuddiRecordingScreen() {
                   }}
                 >
                   {permission?.canAskAgain
-                    ? "Grant Camera Permission"
+                    ? "Grant Permissions"
                     : "Open Settings"}
                 </Text>
               </TouchableOpacity>
@@ -366,12 +362,12 @@ export default function BuddiRecordingScreen() {
                 }}
                 onPress={() => {
                   Alert.alert(
-                    "Camera Permission Required",
-                    "Camera access is essential for recording your interview video. Please grant permission to continue.",
+                    "Permissions Required",
+                    "Camera and microphone access are essential for recording your interview video. Please grant permissions to continue.",
                     [
                       { text: "Cancel", style: "cancel" },
                       {
-                        text: "Grant Permission",
+                        text: "Grant Permissions",
                         onPress: handlePermissionRequest,
                       },
                     ]
@@ -427,14 +423,10 @@ export default function BuddiRecordingScreen() {
       return;
     }
 
-    if (!permission?.granted) {
-      console.error("Camera permission not granted");
+    if (!permission?.granted || !audioPermission) {
+      console.error("Camera or microphone permission not granted");
       const errorMsg =
-        "Camera permission is required. Please grant camera access in settings.";
-      Alert.alert("Camera Permission Required", errorMsg, [
-        { text: "Cancel", style: "cancel" },
-        { text: "Open Settings", onPress: handlePermissionRequest },
-      ]);
+        "Camera and microphone permissions are required. Please grant these permissions in settings.";
       setError(errorMsg);
       return;
     }
@@ -597,18 +589,16 @@ export default function BuddiRecordingScreen() {
         },
       ];
 
-      // Add settings button for permission errors
+      // Show error in UI instead of alert for permission errors
       if (
         errorMessage.includes("permission") ||
         errorMessage.includes("denied")
       ) {
-        alertButtons.push({
-          text: "Open Settings",
-          onPress: handlePermissionRequest,
-        });
+        // Don't show alert for permission errors, let the UI handle it
+        setError(errorMessage);
+      } else {
+        Alert.alert(alertTitle, errorMessage, alertButtons);
       }
-
-      Alert.alert(alertTitle, errorMessage, alertButtons);
 
       setError(errorMessage);
     } finally {

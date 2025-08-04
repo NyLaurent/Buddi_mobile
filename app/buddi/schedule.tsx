@@ -2,6 +2,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import React from "react";
 import {
+  Alert,
   Platform,
   ScrollView,
   StatusBar,
@@ -18,30 +19,117 @@ import CoverageRequestCard from "../../components/commons/CoverageRequestCard";
 import PickupCard from "../../components/commons/PickupCard";
 import { useAuth } from "../../context/AuthContext";
 import BuddiService from "../../services/api/buddi.service";
+import SocketService from "../../services/socket";
 
 export default function SchedulePage() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { buddiDetails } = useAuth();
   const [matchedPickups, setMatchedPickups] = React.useState<any[]>([]);
+  const [activePickup, setActivePickup] = React.useState<any>(null); // New state for current trip
+
+  // Helper to get the socket instance
+  const getSocket = () =>
+    SocketService.getSocket ? SocketService.getSocket() : null;
+
+  // Helper to emit pickup events to parent's room
+  const emitPickupEvent = (eventName: string, pickupData: any, pickup: any) => {
+    const socket = getSocket();
+    if (socket && pickup) {
+      const parentRoomId = `parent-${pickup.parentId}`;
+      console.log(
+        `[BUDDI SCHEDULE] Emitting ${eventName} to parent room:`,
+        parentRoomId
+      );
+      console.log(`[BUDDI SCHEDULE] Pickup data:`, pickupData);
+      console.log(`[BUDDI SCHEDULE] Pickup:`, pickup);
+      socket.emit(eventName, {
+        roomId: parentRoomId,
+        pickupData: pickupData,
+      });
+    } else {
+      console.log(`[BUDDI SCHEDULE] Cannot emit ${eventName}:`, {
+        socket: !!socket,
+        pickup: !!pickup,
+        pickupParentId: pickup?.parentId,
+      });
+    }
+  };
   React.useEffect(() => {
     const fetchMatchedPickups = async () => {
       try {
-        const res = await BuddiService.getAvailableCalls(1, 50);
         if (buddiDetails?.id) {
-          const matched = (res.data || []).filter(
-            (call: any) => call.matchedBuddiId === buddiDetails.id
-          );
-          setMatchedPickups(matched);
+          const res = await BuddiService.getMatchedRequests(buddiDetails.id);
+          setMatchedPickups(res.data || []);
         } else {
           setMatchedPickups([]);
         }
       } catch (err) {
+        console.error("[BUDDI SCHEDULE] Error fetching matched pickups:", err);
         setMatchedPickups([]);
       }
     };
     fetchMatchedPickups();
   }, [buddiDetails?.id]);
+
+  // Enhanced socket event listeners for real-time updates
+  React.useEffect(() => {
+    // Listen for pickup status updates from backend
+    SocketService.on("pickup-started", (pickupData: any) => {
+      console.log(
+        "[BUDDI SCHEDULE] Received pickup-started event:",
+        pickupData
+      );
+      // Update active pickup if this matches any of our pickups
+      if (
+        activePickup &&
+        pickupData.parentPickupRequestId === activePickup.id
+      ) {
+        setActivePickup(pickupData);
+      }
+    });
+
+    SocketService.on("child-picked-up", (pickupData: any) => {
+      console.log(
+        "[BUDDI SCHEDULE] Received child-picked-up event:",
+        pickupData
+      );
+      // Update active pickup if this is the current trip
+      if (activePickup && pickupData.id === activePickup.id) {
+        setActivePickup(pickupData);
+      }
+    });
+
+    SocketService.on("trip-completed", (pickupData: any) => {
+      console.log(
+        "[BUDDI SCHEDULE] Received trip-completed event:",
+        pickupData
+      );
+      // Update active pickup if this is the current trip
+      if (activePickup && pickupData.id === activePickup.id) {
+        setActivePickup(pickupData);
+      }
+    });
+
+    SocketService.on("trip-cancelled", (pickupData: any) => {
+      console.log(
+        "[BUDDI SCHEDULE] Received trip-cancelled event:",
+        pickupData
+      );
+      // Update active pickup if this is the current trip
+      if (activePickup && pickupData.id === activePickup.id) {
+        setActivePickup(pickupData);
+      }
+    });
+
+    // Cleanup listeners on unmount
+    return () => {
+      SocketService.off("pickup-started");
+      SocketService.off("child-picked-up");
+      SocketService.off("trip-completed");
+      SocketService.off("trip-cancelled");
+    };
+  }, [activePickup]);
 
   // Tab state for navigator
   const [activeTab, setActiveTab] = React.useState<"pickups" | "coverage">(
@@ -51,28 +139,9 @@ export default function SchedulePage() {
   // Empty coverage requests data - waiting for integration
   const coverageRequestsData: any[] = [];
 
-  const [showAll, setShowAll] = React.useState(false);
   // Helper to get today's day as a string (e.g., 'Monday')
   const today = new Date().toLocaleDateString("en-US", { weekday: "long" });
-  // Filter pickups for today
-  const todaysPickups = matchedPickups.filter((pickup) => {
-    if (!pickup.availableDays || !Array.isArray(pickup.availableDays)) {
-      return false;
-    }
-
-    // Parse the comma-separated available days string
-    const availableDaysString = pickup.availableDays[0];
-    const availableDays = availableDaysString
-      .split(",")
-      .map((day: string) => day.trim().toLowerCase());
-
-    console.log("[BUDDI SCHEDULE] Available days string:", availableDaysString);
-    console.log("[BUDDI SCHEDULE] Parsed available days:", availableDays);
-    console.log("[BUDDI SCHEDULE] Today:", today.toLowerCase());
-
-    return availableDays.includes(today.toLowerCase());
-  });
-  const pickupsToShow = showAll ? matchedPickups : todaysPickups;
+  const pickupsToShow = matchedPickups;
 
   return (
     <SafeAreaView
@@ -230,7 +299,7 @@ export default function SchedulePage() {
                         pickup.id
                       );
 
-                      // Parse the available days string
+                      // Parse all available days from the array
                       if (
                         !pickup.availableDays ||
                         !Array.isArray(pickup.availableDays)
@@ -242,49 +311,290 @@ export default function SchedulePage() {
                         return [];
                       }
 
-                      const availableDaysString = pickup.availableDays[0];
-                      const availableDays = availableDaysString
-                        .split(",")
-                        .map((day: string) => day.trim());
+                      const allAvailableDays: string[] = [];
+                      pickup.availableDays.forEach((dayString: string) => {
+                        const days = dayString
+                          .split(",")
+                          .map((day: string) => day.trim());
+                        allAvailableDays.push(...days);
+                      });
 
                       console.log(
-                        "[BUDDI SCHEDULE] Available days string:",
-                        availableDaysString
-                      );
-                      console.log(
-                        "[BUDDI SCHEDULE] Parsed available days:",
-                        availableDays
+                        "[BUDDI SCHEDULE] All available days:",
+                        allAvailableDays
                       );
 
-                      // Filter for today's day
-                      const todaysDays = availableDays.filter(
-                        (day: string) =>
-                          day.toLowerCase() === today.toLowerCase()
-                      );
+                      // Show all available days
+                      const daysToShow = allAvailableDays;
 
                       console.log(
-                        "[BUDDI SCHEDULE] Today's days to render:",
-                        todaysDays
+                        "[BUDDI SCHEDULE] Days to render:",
+                        daysToShow
                       );
 
-                      return todaysDays.map((day: string, dayIndex: number) => (
+                      return daysToShow.map((day: string, dayIndex: number) => (
                         <View
                           key={`${pickup.id}-${day}-${dayIndex}`}
                           className="mr-4"
                         >
                           <PickupCard
                             id={pickup.id.toString()}
-                            name={"Child"}
+                            name={pickup.description || "Pickup Request"}
                             time={pickup.pickupTime || "-"}
                             days={day} // Show only the specific day
                             school={pickup.fromZone || "School"}
                             home={pickup.toZone || "Home"}
-                            onButtonPress={() => {
-                              router.push({
-                                pathname: "/buddi/pickup/[id]",
-                                params: { id: pickup.id.toString() },
-                              });
-                            }}
+                            status={
+                              activePickup?.status === "pickedUp"
+                                ? "pickedUp"
+                                : activePickup?.status === "enRoute"
+                                ? "enRoute"
+                                : activePickup?.status === "completed"
+                                ? "completed"
+                                : "notStarted"
+                            }
+                            pickupTime={
+                              activePickup?.pickupTime ||
+                              pickup.pickupTime ||
+                              "-"
+                            }
+                            tripStartTime={activePickup?.tripStartTime || "-"}
+                            dropoffTime={activePickup?.dropoffTime || "-"}
+                            fare={activePickup?.fare || 0}
+                            onButtonPress={
+                              activePickup?.status === "enRoute" ||
+                              activePickup?.status === "pickedUp" ||
+                              activePickup?.status === "completed"
+                                ? () => {}
+                                : async () => {
+                                    // Check if we already have an active pickup to prevent duplicate calls
+                                    if (
+                                      activePickup &&
+                                      activePickup.status !== "pending"
+                                    ) {
+                                      Alert.alert(
+                                        "Trip Already Started",
+                                        "This pickup trip has already been started. Please check the current status.",
+                                        [{ text: "OK", style: "default" }]
+                                      );
+                                      return;
+                                    }
+
+                                    Alert.alert(
+                                      "Start Trip",
+                                      "Are you ready to start this pickup trip?",
+                                      [
+                                        { text: "Cancel", style: "cancel" },
+                                        {
+                                          text: "Yes, Start Trip",
+                                          style: "default",
+                                          onPress: async () => {
+                                            try {
+                                              const res =
+                                                await BuddiService.startPickupTrip(
+                                                  pickup.id
+                                                );
+                                              setActivePickup(res.pickup);
+                                              // Emit pickup-started event to parent
+                                              emitPickupEvent(
+                                                "pickup-started",
+                                                res.pickup,
+                                                pickup
+                                              );
+                                              console.log(
+                                                "[BUDDI SCHEDULE] Trip started:",
+                                                res
+                                              );
+                                            } catch (err) {
+                                              console.error(
+                                                "[BUDDI SCHEDULE] Start trip error:",
+                                                err
+                                              );
+
+                                              // Handle different types of errors
+                                              let errorMessage =
+                                                "Failed to start trip.";
+                                              let shouldShowAlert = true;
+
+                                              if (
+                                                err &&
+                                                typeof err === "object"
+                                              ) {
+                                                // Check for network/HTTP errors
+                                                if (
+                                                  (err as any).status === 400
+                                                ) {
+                                                  errorMessage =
+                                                    "This trip has already been started or is not available.";
+                                                } else if (
+                                                  (err as any).status === 401
+                                                ) {
+                                                  errorMessage =
+                                                    "Please log in again to continue.";
+                                                } else if (
+                                                  (err as any).status === 403
+                                                ) {
+                                                  errorMessage =
+                                                    "You don't have permission to start this trip.";
+                                                } else if (
+                                                  (err as any).status === 404
+                                                ) {
+                                                  errorMessage =
+                                                    "No pickup request found. Please wait for the parent to request a pickup.";
+                                                } else if (
+                                                  (err as any).status >= 500
+                                                ) {
+                                                  errorMessage =
+                                                    "Server error. Please try again later.";
+                                                } else if (
+                                                  (err as any).message
+                                                ) {
+                                                  errorMessage = (err as any)
+                                                    .message;
+                                                } else if (
+                                                  (err as any).data?.error
+                                                ) {
+                                                  errorMessage = (err as any)
+                                                    .data.error;
+                                                }
+                                              }
+
+                                              // Check for specific error patterns
+                                              if (
+                                                errorMessage
+                                                  .toLowerCase()
+                                                  .includes(
+                                                    "already started"
+                                                  ) ||
+                                                errorMessage
+                                                  .toLowerCase()
+                                                  .includes(
+                                                    "pikcup already started"
+                                                  ) ||
+                                                errorMessage
+                                                  .toLowerCase()
+                                                  .includes("not available")
+                                              ) {
+                                                Alert.alert(
+                                                  "Trip Already Started",
+                                                  "This pickup trip has already been started. Please check the current status.",
+                                                  [
+                                                    {
+                                                      text: "OK",
+                                                      style: "default",
+                                                    },
+                                                  ]
+                                                );
+                                              } else if (
+                                                errorMessage
+                                                  .toLowerCase()
+                                                  .includes(
+                                                    "pickup not found"
+                                                  ) ||
+                                                errorMessage
+                                                  .toLowerCase()
+                                                  .includes("no pickup request")
+                                              ) {
+                                                Alert.alert(
+                                                  "No Pickup Request",
+                                                  "No pickup request found. Please wait for the parent to request a pickup.",
+                                                  [
+                                                    {
+                                                      text: "OK",
+                                                      style: "default",
+                                                    },
+                                                  ]
+                                                );
+                                              } else if (shouldShowAlert) {
+                                                Alert.alert(
+                                                  "Error",
+                                                  errorMessage
+                                                );
+                                              }
+                                            }
+                                          },
+                                        },
+                                      ]
+                                    );
+                                  }
+                            }
+                            onPickUp={
+                              activePickup?.status === "enRoute"
+                                ? async () => {
+                                    Alert.alert(
+                                      "Child Picked Up",
+                                      "Confirm you have picked up the child?",
+                                      [
+                                        { text: "Cancel", style: "cancel" },
+                                        {
+                                          text: "Yes, Picked Up",
+                                          style: "default",
+                                          onPress: async () => {
+                                            try {
+                                              const res =
+                                                await BuddiService.pickUpChild(
+                                                  activePickup.id
+                                                );
+                                              setActivePickup(res.pickup);
+                                              // Emit child-picked-up event to parent
+                                              emitPickupEvent(
+                                                "child-picked-up",
+                                                res.pickup,
+                                                pickup
+                                              );
+                                            } catch (err) {
+                                              Alert.alert(
+                                                "Error",
+                                                (err as any)?.message ||
+                                                  "Failed to mark as picked up."
+                                              );
+                                            }
+                                          },
+                                        },
+                                      ]
+                                    );
+                                  }
+                                : undefined
+                            }
+                            onClockOut={
+                              activePickup?.status === "pickedUp"
+                                ? async () => {
+                                    Alert.alert(
+                                      "Complete Trip",
+                                      "Are you sure you want to complete this trip?",
+                                      [
+                                        { text: "Cancel", style: "cancel" },
+                                        {
+                                          text: "Yes, Complete Trip",
+                                          style: "default",
+                                          onPress: async () => {
+                                            try {
+                                              const res =
+                                                await BuddiService.completePickupTrip(
+                                                  activePickup.id,
+                                                  pickup.pickupTime
+                                                );
+                                              setActivePickup(res.pickup);
+                                              // Emit trip-completed event to parent
+                                              emitPickupEvent(
+                                                "trip-completed",
+                                                res.pickup,
+                                                pickup
+                                              );
+                                            } catch (err) {
+                                              Alert.alert(
+                                                "Error",
+                                                (err as any)?.message ||
+                                                  "Failed to complete trip."
+                                              );
+                                            }
+                                          },
+                                        },
+                                      ]
+                                    );
+                                  }
+                                : undefined
+                            }
                             cardWidth={340}
                           />
                         </View>
@@ -312,9 +622,7 @@ export default function SchedulePage() {
                           marginBottom: 6,
                         }}
                       >
-                        {showAll
-                          ? "No pickups assigned yet."
-                          : "No pickups for this day."}
+                        No pickups assigned yet.
                       </Text>
                       <Text
                         style={{
@@ -324,9 +632,7 @@ export default function SchedulePage() {
                           textAlign: "center",
                         }}
                       >
-                        {showAll
-                          ? "Once you are matched to a pickup, you will see it here."
-                          : "Once you are matched to a pickup for today, you will see it here."}
+                        Once you are matched to a pickup, you will see it here.
                       </Text>
                     </View>
                   )}

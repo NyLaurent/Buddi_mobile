@@ -1,10 +1,10 @@
 import { FontAwesome5, Ionicons } from "@expo/vector-icons";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useRouter } from "expo-router";
 import { useEffect, useState } from "react";
 import {
   ActivityIndicator,
   FlatList,
-  Image,
   StatusBar,
   Text,
   TouchableOpacity,
@@ -15,13 +15,11 @@ import { useAuth } from "../../context/AuthContext";
 import ParentService, {
   ParentPickupRequest,
 } from "../../services/api/parent.service";
-import AsyncStorage from "@react-native-async-storage/async-storage";
 
 interface ChatItem {
   id: string;
   roomId: string;
   otherUserName: string;
-  otherUserAvatar: string;
   lastMessage: string;
   timestamp: string;
   unreadCount: number;
@@ -44,7 +42,6 @@ export default function ParentMessagesScreen() {
     chatItems.forEach((chat) => {
       AsyncStorage.setItem(`latestMsg_${chat.roomId}`, chat.timestamp);
     });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [chatItems, parentDetails?.id]);
 
   const fetchMatchedCalls = async () => {
@@ -69,7 +66,6 @@ export default function ParentMessagesScreen() {
           id: call.id.toString(),
           roomId: `${call.parentId}-${call.matchedBuddiId}`,
           otherUserName: "Buddi", // You can get this from API if needed
-          otherUserAvatar: "https://randomuser.me/api/portraits/men/32.jpg",
           lastMessage: "Tap to start chatting about pickup details",
           timestamp: new Date(call.updatedAt).toLocaleDateString(),
           unreadCount: 0, // You can implement unread count logic
@@ -91,7 +87,6 @@ export default function ParentMessagesScreen() {
       params: {
         roomId: chatItem.roomId,
         buddiName: chatItem.otherUserName,
-        buddiAvatar: chatItem.otherUserAvatar,
       },
     });
   };
@@ -100,13 +95,34 @@ export default function ParentMessagesScreen() {
     router.back();
   };
 
+  // Get user initials
+  const getUserInitials = (name: string) => {
+    if (!name) return "?";
+    return name
+      .split(" ")
+      .map((word) => word.charAt(0))
+      .join("")
+      .toUpperCase()
+      .slice(0, 2);
+  };
+
+  // Render user avatar with initials
+  const renderAvatar = (name: string) => {
+    const initials = getUserInitials(name);
+    return (
+      <View style={styles.avatarContainer}>
+        <Text style={styles.avatarText}>{initials}</Text>
+      </View>
+    );
+  };
+
   const renderChatItem = ({ item }: { item: ChatItem }) => (
     <TouchableOpacity
       style={styles.chatItem}
       onPress={() => handleChatPress(item)}
       activeOpacity={0.7}
     >
-      <Image source={{ uri: item.otherUserAvatar }} style={styles.avatar} />
+      {renderAvatar(item.otherUserName)}
       <View style={styles.chatContent}>
         <View style={styles.chatHeader}>
           <Text style={styles.chatName}>{item.otherUserName}</Text>
@@ -271,12 +287,20 @@ const styles = {
     shadowRadius: 2,
     elevation: 1,
   },
-  avatar: {
+  avatarContainer: {
     width: 48,
     height: 48,
     borderRadius: 24,
     marginRight: 12,
-    backgroundColor: "#EEE",
+    backgroundColor: "#FF932E",
+    alignItems: "center" as const,
+    justifyContent: "center" as const,
+  },
+  avatarText: {
+    color: "#FFFFFF",
+    fontSize: 16,
+    fontWeight: "bold" as const,
+    fontFamily: "Comfortaa-Bold",
   },
   chatContent: {
     flex: 1,

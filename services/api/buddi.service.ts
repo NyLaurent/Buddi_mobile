@@ -114,7 +114,14 @@ async function startTrip(payload: {
  * @param pickupId - the ID of the pickup to start
  */
 async function startPickupTrip(pickupId: number | string): Promise<any> {
+  console.log("[BUDDI SERVICE] Starting pickup trip:", {
+    pickupId,
+    endpoint: `/pickups/${pickupId}/start`,
+    method: 'PATCH'
+  });
+  
   const response = await authorizedApi.patch(`/pickups/${pickupId}/start`);
+  console.log("[BUDDI SERVICE] Start trip response:", response.data);
   return response.data;
 }
 
@@ -344,6 +351,29 @@ export async function uploadBuddiProfileIntroVideo(buddiId: number, videoUri: st
 }
 
 const BuddiService = {
+  async getMatchedRequests(buddiId: number): Promise<AvailableCallsResponse> {
+    try {
+      const response = await authorizedApi.get(`/buddi/${buddiId}/matched-requests`);
+      return response.data;
+    } catch (err: any) {
+      let message = 'Failed to fetch matched requests.';
+      if (err?.response?.data?.message) {
+        message = err.response.data.message;
+      } else if (err?.message) {
+        if (err.message.includes('Network')) {
+          message = 'Network error. Please check your connection and try again.';
+        } else if (err.message.includes('timeout')) {
+          message = 'Request timed out. Please try again.';
+        } else {
+          message = err.message;
+        }
+      } else if (typeof err === 'string') {
+        message = err;
+      }
+      throw new Error(message);
+    }
+  },
+
   async getAvailableCalls(page: number = 1, limit: number = 5): Promise<AvailableCallsResponse> {
     try {
       const response = await authorizedApi.get(`/parent/requests/all?page=${page}&limit=${limit}`);

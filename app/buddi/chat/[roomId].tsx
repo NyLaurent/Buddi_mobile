@@ -2,10 +2,9 @@ import { useLocalSearchParams } from "expo-router";
 import ChatScreen from "../../../components/commons/ChatScreen";
 
 export default function BuddiChatScreen() {
-  const { roomId, parentName, parentAvatar } = useLocalSearchParams<{
+  const { roomId, parentName } = useLocalSearchParams<{
     roomId: string;
     parentName: string;
-    parentAvatar?: string;
   }>();
 
   if (!roomId) {
@@ -13,10 +12,6 @@ export default function BuddiChatScreen() {
   }
 
   return (
-    <ChatScreen
-      chatRoomId={roomId}
-      otherUserName={parentName || "Parent"}
-      otherUserAvatar={parentAvatar}
-    />
+    <ChatScreen chatRoomId={roomId} otherUserName={parentName || "Parent"} />
   );
 }

@@ -25,16 +25,17 @@ export default function AllPickupsPage() {
   React.useEffect(() => {
     const fetchMatchedPickups = async () => {
       try {
-        const res = await BuddiService.getAvailableCalls(1, 50);
         if (buddiDetails?.id) {
-          const matched = (res.data || []).filter(
-            (call: any) => call.matchedBuddiId === buddiDetails.id
-          );
-          setMatchedPickups(matched);
+          const res = await BuddiService.getMatchedRequests(buddiDetails.id);
+          setMatchedPickups(res.data || []);
         } else {
           setMatchedPickups([]);
         }
       } catch (err) {
+        console.error(
+          "[BUDDI ALL-PICKUPS] Error fetching matched pickups:",
+          err
+        );
         setMatchedPickups([]);
       }
     };
@@ -76,29 +77,43 @@ export default function AllPickupsPage() {
           (() => {
             // Create a sortable array of {pickup, day}
             const dayOrder = {
-              "monday": 1,
-              "tuesday": 2,
-              "wednesday": 3,
-              "thursday": 4,
-              "friday": 5,
-              "saturday": 6,
-              "sunday": 7,
+              monday: 1,
+              tuesday: 2,
+              wednesday: 3,
+              thursday: 4,
+              friday: 5,
+              saturday: 6,
+              sunday: 7,
             };
             const pickupDayPairs = matchedPickups.flatMap((pickup) => {
               console.log("[BUDDI ALL-PICKUPS] Processing pickup:", pickup.id);
-              
-              if (!pickup.availableDays || !Array.isArray(pickup.availableDays)) {
-                console.log("[BUDDI ALL-PICKUPS] No available days for pickup:", pickup.id);
+
+              if (
+                !pickup.availableDays ||
+                !Array.isArray(pickup.availableDays)
+              ) {
+                console.log(
+                  "[BUDDI ALL-PICKUPS] No available days for pickup:",
+                  pickup.id
+                );
                 return [{ pickup, day: "-" }];
               }
-              
+
               // Parse the comma-separated available days string
               const availableDaysString = pickup.availableDays[0];
-              const availableDays = availableDaysString.split(',').map((day: string) => day.trim());
-              
-              console.log("[BUDDI ALL-PICKUPS] Available days string:", availableDaysString);
-              console.log("[BUDDI ALL-PICKUPS] Parsed available days:", availableDays);
-              
+              const availableDays = availableDaysString
+                .split(",")
+                .map((day: string) => day.trim());
+
+              console.log(
+                "[BUDDI ALL-PICKUPS] Available days string:",
+                availableDaysString
+              );
+              console.log(
+                "[BUDDI ALL-PICKUPS] Parsed available days:",
+                availableDays
+              );
+
               return availableDays.map((day: string) => ({ pickup, day }));
             });
             // Sort by day of week

@@ -46,8 +46,15 @@ class SocketService {
 
       this.socket = io(SOCKET_SERVER_URL, {
         transports: ['websocket', 'polling'], // Fallback to polling if websocket fails
-        timeout: 20000, // 20 second timeout
+        timeout: 10000, // Reduced to 10s for faster timeout
         forceNew: true, // Force new connection
+        reconnection: true,
+        reconnectionAttempts: 5, // Increased attempts
+        reconnectionDelay: 500, // Faster initial reconnection
+        reconnectionDelayMax: 3000, // Reduced max delay
+        maxReconnectionAttempts: 5,
+        upgrade: true, // Allow transport upgrade
+        rememberUpgrade: true, // Remember successful upgrades
         query: {
           userId,
           userType,
@@ -183,6 +190,24 @@ class SocketService {
       }
     });
 
+    // Room joined confirmation
+    this.socket.on('room-joined', (data: any) => {
+      console.log('[SocketService] 🏠 Room joined confirmation:', data);
+      this.triggerEvent('room-joined', data);
+    });
+
+    // Room left confirmation
+    this.socket.on('room-left', (data: any) => {
+      console.log('[SocketService] 🚪 Room left confirmation:', data);
+      this.triggerEvent('room-left', data);
+    });
+
+    // Chat room error
+    this.socket.on('chat-room-error', (data: any) => {
+      console.error('[SocketService] ❌ Chat room error:', data);
+      this.triggerEvent('chat-room-error', data);
+    });
+
     // Pickup updates
     this.socket.on('active-pickups', (data: any) => {
       console.log('[SocketService] 📋 Active pickups updated:', data);
@@ -295,6 +320,27 @@ class SocketService {
       senderId,
       senderType,
     });
+  }
+
+  // Leave a chat room
+  leaveChatRoom(chatRoomId: string) {
+    if (!this.socket || !this.isConnected) {
+      console.warn('[SocketService] ⚠️ Socket not connected, cannot leave chat room');
+      return;
+    }
+
+    console.log(`[SocketService] 🚪 Leaving chat room: ${chatRoomId}`);
+    this.socket.emit('leave-chat-room', { chatRoomId });
+  }
+
+  // Listen for room joined confirmation
+  onRoomJoined(callback: (data: any) => void) {
+    this.on('room-joined', callback);
+  }
+
+  // Listen for incoming messages
+  onReceiveMessage(callback: (data: any) => void) {
+    this.on('receive-message', callback);
   }
 
   // Emit custom events

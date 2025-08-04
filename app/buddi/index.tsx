@@ -96,17 +96,20 @@ export default function BuddiHome() {
       return false;
     }
 
-    // Parse the comma-separated available days string
-    const availableDaysString = matchedCall.availableDays[0];
-    const availableDays = availableDaysString
-      .split(",")
-      .map((day: string) => day.trim().toLowerCase());
+    // Parse all available days from the array
+    const allAvailableDays: string[] = [];
+    matchedCall.availableDays.forEach((dayString: string) => {
+      const days = dayString
+        .split(",")
+        .map((day: string) => day.trim().toLowerCase());
+      allAvailableDays.push(...days);
+    });
 
-    console.log("[BUDDI] Available days string:", availableDaysString);
-    console.log("[BUDDI] Parsed available days:", availableDays);
+    console.log("[BUDDI] Available days array:", matchedCall.availableDays);
+    console.log("[BUDDI] Parsed all available days:", allAvailableDays);
     console.log("[BUDDI] Today:", today.toLowerCase());
 
-    return availableDays.includes(today.toLowerCase());
+    return allAvailableDays.includes(today.toLowerCase());
   })();
 
   // Handler for trip-completed event (moved outside for stability)
@@ -328,20 +331,52 @@ export default function BuddiHome() {
   React.useEffect(() => {
     const fetchCalls = async () => {
       try {
-        const res = await BuddiService.getAvailableCalls(1, 10);
-        setAvailableCalls(res.data || []);
+        console.log("[BuddiHome] Fetching matched requests...");
+
         if (buddiDetails?.id) {
-          const matched = res.data.find(
-            (call: any) => call.matchedBuddiId === buddiDetails.id
+          // Fetch matched requests using the new API
+          const matchedRes = await BuddiService.getMatchedRequests(
+            buddiDetails.id
           );
-          setMatchedCall(matched || null);
+          console.log(
+            "[BuddiHome] Matched requests received:",
+            matchedRes.data?.length || 0
+          );
+
+          // Set the first matched call (or null if none)
+          const matched = matchedRes.data?.[0] || null;
+          console.log(
+            "[BuddiHome] Matched call found:",
+            matched
+              ? {
+                  id: matched.id,
+                  status: matched.status,
+                  availableDays: matched.availableDays,
+                  pickupTime: matched.pickupTime,
+                }
+              : "No match"
+          );
+
+          setMatchedCall(matched);
+
+          // Fetch available calls for application (pending requests)
+          const availableRes = await BuddiService.getAvailableCalls(1, 50);
+          const availableForApplication = availableRes.data.filter(
+            (call: any) =>
+              call.status === "pending" && call.matchedBuddiId === null
+          );
+          setAvailableCalls(availableForApplication || []);
+
           // Clear active pickup when fetching new calls
           setActivePickup(null);
         } else {
+          console.log("[BuddiHome] No buddi details available");
           setMatchedCall(null);
+          setAvailableCalls([]);
           setActivePickup(null);
         }
       } catch (err) {
+        console.error("[BuddiHome] Error fetching calls:", err);
         setAvailableCalls([]);
         setMatchedCall(null);
         setActivePickup(null);
@@ -504,19 +539,22 @@ export default function BuddiHome() {
           {matchedCall && isPickupToday ? (
             // Create separate cards for each available day that matches today
             (() => {
-              // Parse the available days string
-              const availableDaysString = matchedCall.availableDays[0];
-              const availableDays = availableDaysString
-                .split(",")
-                .map((day: string) => day.trim());
+              // Parse all available days from the array
+              const allAvailableDays: string[] = [];
+              matchedCall.availableDays.forEach((dayString: string) => {
+                const days = dayString
+                  .split(",")
+                  .map((day: string) => day.trim());
+                allAvailableDays.push(...days);
+              });
 
               console.log(
-                "[BUDDI] Rendering pickup cards for available days:",
-                availableDays
+                "[BUDDI] Rendering pickup cards for all available days:",
+                allAvailableDays
               );
 
               // Filter for today's day
-              const todaysDays = availableDays.filter(
+              const todaysDays = allAvailableDays.filter(
                 (day: string) => day.toLowerCase() === today.toLowerCase()
               );
 
@@ -539,7 +577,7 @@ export default function BuddiHome() {
                   <PickupCard
                     key={`${matchedCall.id}-${day}-${index}`}
                     id={pickupData.id?.toString() || "0"}
-                    name={"Child"}
+                    name={matchedCall.kidsCount?.toString() || "Child"}
                     time={matchedCall.pickupTime || "-"}
                     days={day} // Show only the specific day
                     school={
@@ -602,6 +640,19 @@ export default function BuddiHome() {
                                   style: "default",
                                   onPress: async () => {
                                     try {
+                                      // Debug: Log current user and pickup details
+                                      console.log(
+                                        "[BUDDI] Starting trip with details:",
+                                        {
+                                          buddiId: buddiDetails?.id,
+                                          pickupId: matchedCall.id,
+                                          pickupStatus: matchedCall.status,
+                                          matchedBuddiId:
+                                            matchedCall.matchedBuddiId,
+                                          userRole: user?.role,
+                                        }
+                                      );
+
                                       const res =
                                         await BuddiService.startPickupTrip(
                                           matchedCall.id

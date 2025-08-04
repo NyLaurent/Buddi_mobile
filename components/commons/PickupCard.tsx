@@ -131,6 +131,35 @@ const PickupCard = ({
         </View>
       </View>
 
+      {/* Available Days Information */}
+      <View className="mb-3">
+        <View className="flex-row items-center mb-2">
+          <Ionicons name="calendar-outline" size={16} color={"#666"} />
+          <Text
+            className="ml-2 font-comfortaa-bold text-sm"
+            style={{ color: textColor }}
+          >
+            Available Days:
+          </Text>
+        </View>
+        <View className="flex-row flex-wrap gap-1">
+          {days.split(",").map((day, index) => (
+            <View
+              key={index}
+              className="px-2 py-1 rounded-lg"
+              style={{ backgroundColor: "#E8F4FD" }}
+            >
+              <Text
+                className="font-comfortaa text-xs"
+                style={{ color: "#2563EB" }}
+              >
+                {day.trim()}
+              </Text>
+            </View>
+          ))}
+        </View>
+      </View>
+
       <View className="mb-4">
         <View className="flex-row items-center mb-2">
           <Ionicons name="school" size={16} color={"#666"} />
@@ -141,13 +170,22 @@ const PickupCard = ({
             {school}
           </Text>
         </View>
-        <View className="flex-row items-center">
+        <View className="flex-row items-center mb-2">
           <Ionicons name="home" size={16} color={"#666"} />
           <Text
             className="ml-2 font-comfortaa text-sm"
             style={{ color: subTextColor }}
           >
             {home}
+          </Text>
+        </View>
+        <View className="flex-row items-center">
+          <Ionicons name="people-outline" size={16} color={"#666"} />
+          <Text
+            className="ml-2 font-comfortaa text-sm"
+            style={{ color: subTextColor }}
+          >
+            Kids: {name}
           </Text>
         </View>
       </View>

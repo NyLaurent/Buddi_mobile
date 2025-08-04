@@ -1,12 +1,10 @@
-import React from "react";
 import { useLocalSearchParams } from "expo-router";
 import ChatScreen from "../../../components/commons/ChatScreen";
 
 export default function ParentChatScreen() {
-  const { roomId, buddiName, buddiAvatar } = useLocalSearchParams<{
+  const { roomId, buddiName } = useLocalSearchParams<{
     roomId: string;
     buddiName: string;
-    buddiAvatar?: string;
   }>();
 
   if (!roomId) {
@@ -14,10 +12,6 @@ export default function ParentChatScreen() {
   }
 
   return (
-    <ChatScreen
-      chatRoomId={roomId}
-      otherUserName={buddiName || "Buddi"}
-      otherUserAvatar={buddiAvatar}
-    />
+    <ChatScreen chatRoomId={roomId} otherUserName={buddiName || "Buddi"} />
   );
-} 
+}

@@ -133,7 +133,7 @@ const Header: React.FC<HeaderProps> = ({
       <SafeAreaView edges={["top", "left", "right"]}>
         {showSettings && (
           <View className="flex-row justify-end items-center px-4 pt-2">
-            <TouchableOpacity
+            {/* <TouchableOpacity
               className="bg-white rounded-full p-2"
               onPress={handleSettingsPress}
             >
@@ -142,7 +142,7 @@ const Header: React.FC<HeaderProps> = ({
                 size={22}
                 color={backgroundColor}
               />
-            </TouchableOpacity>
+            </TouchableOpacity> */}
           </View>
         )}
         <View className="items-center mt-1 mb-2">
