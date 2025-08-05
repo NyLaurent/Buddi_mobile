@@ -151,12 +151,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   }, [user, buddiDetails, parentDetails, isLoading, isLoggingIn, segments]);
 
   // Force navigation to login when user is null (after logout)
+  // Only redirect if user is on a protected route
   useEffect(() => {
     if (
       !isLoading &&
       !user &&
       segments[0] !== "auth" &&
-      segments[0] !== "role-select"
+      segments[0] !== "role-select" &&
+      segments[0] !== "onboarding" &&
+      ["buddi", "parent", "admin", "super-admin"].includes(segments[0])
     ) {
       console.log("AuthContext: User is null, forcing navigation to login");
       router.replace("/auth/login" as any);

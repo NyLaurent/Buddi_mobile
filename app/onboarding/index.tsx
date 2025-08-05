@@ -1,18 +1,21 @@
-import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { LogOut } from "lucide-react-native";
 import { useRef, useState } from "react";
 import {
+  AccessibilityInfo,
+  Alert,
   Animated,
   Dimensions,
   Image,
   ScrollView,
   Text,
   TouchableOpacity,
+  Vibration,
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import OnboardingManager from "../../utils/onboarding";
 
 const { width, height } = Dimensions.get("window");
 
@@ -23,6 +26,8 @@ const ONBOARDING_PAGES = [
     description:
       "Trusted student companions walking your child safely home—with heart and care.",
     image: require("../../assets/images/onboarding/onboarding_1.png"),
+    accessibilityLabel:
+      "Welcome to Pickup Buddi - Safe pickups for happy journeys",
   },
   {
     title: "Pickup Buddi",
@@ -30,6 +35,8 @@ const ONBOARDING_PAGES = [
     description:
       "Our Buddis go through background checks, interviews, school verification, and teacher recommendations—so you never have to worry.",
     image: require("../../assets/images/onboarding/onboarding_2.png"),
+    accessibilityLabel:
+      "Safety first - Our Buddis are thoroughly vetted and verified",
   },
   {
     title: "Pickup Buddi",
@@ -37,6 +44,8 @@ const ONBOARDING_PAGES = [
     description:
       "From helping with homework to escorting to afterschool activities, Buddis are more than babysitters—they're buddies.",
     image: require("../../assets/images/onboarding/onboarding_3.png"),
+    accessibilityLabel:
+      "Support beyond pickup - Buddis help with homework and activities",
   },
   {
     title: "Pickup Buddi",
@@ -45,6 +54,7 @@ const ONBOARDING_PAGES = [
       "More than just babysitting — it's student-to-student support.",
     image: require("../../assets/images/onboarding/onboarding_4.png"),
     isFinal: true,
+    accessibilityLabel: "Get started now - Join the Pickup Buddi community",
   },
 ];
 
@@ -63,17 +73,35 @@ const BUTTON_TEXT_COLOR_SECONDARY = "#FF932E";
 const Onboarding = () => {
   const scrollRef = useRef<ScrollView>(null);
   const [page, setPage] = useState(0);
+  const [isTransitioning, setIsTransitioning] = useState(false);
+  const [isMarkingSeen, setIsMarkingSeen] = useState(false);
   const router = useRouter();
   const dotAnimations = useRef(
     ONBOARDING_PAGES.map(() => new Animated.Value(0))
   ).current;
-  const [isTransitioning, setIsTransitioning] = useState(false);
+  const fadeAnim = useRef(new Animated.Value(1)).current;
 
   const markSeen = async () => {
     try {
-      await AsyncStorage.setItem("onboarding_seen", "true");
+      setIsMarkingSeen(true);
+      await OnboardingManager.markOnboardingSeen();
+
+      // Add haptic feedback for success
+      if (Vibration.vibrate) {
+        Vibration.vibrate(100);
+      }
+
+      // Announce to screen readers
+      AccessibilityInfo.announceForAccessibility(
+        "Onboarding completed. Navigating to role selection."
+      );
     } catch (error) {
       console.error("Error marking onboarding as seen:", error);
+      Alert.alert("Error", "Failed to save your progress. Please try again.", [
+        { text: "OK" },
+      ]);
+    } finally {
+      setIsMarkingSeen(false);
     }
   };
 
@@ -93,12 +121,26 @@ const Onboarding = () => {
       ONBOARDING_PAGES.forEach((_, idx) => {
         animateDot(idx, idx === newPage ? 1 : 0);
       });
+
+      // Announce page change to screen readers
+      const currentPage = ONBOARDING_PAGES[newPage];
+      AccessibilityInfo.announceForAccessibility(
+        `Page ${newPage + 1} of ${ONBOARDING_PAGES.length}: ${
+          currentPage.subtitle
+        }`
+      );
     }
   };
 
   const handleNext = () => {
     if (page < ONBOARDING_PAGES.length - 1 && scrollRef.current) {
       setIsTransitioning(true);
+
+      // Add haptic feedback
+      if (Vibration.vibrate) {
+        Vibration.vibrate(50);
+      }
+
       scrollRef.current.scrollTo({ x: width * (page + 1), animated: true });
       setTimeout(() => setIsTransitioning(false), 500);
     }
@@ -106,155 +148,225 @@ const Onboarding = () => {
 
   const handleSkip = () => {
     if (scrollRef.current) {
+      // Add haptic feedback
+      if (Vibration.vibrate) {
+        Vibration.vibrate(50);
+      }
+
       scrollRef.current.scrollTo({
         x: width * (ONBOARDING_PAGES.length - 1),
         animated: true,
       });
       setPage(ONBOARDING_PAGES.length - 1);
+
+      AccessibilityInfo.announceForAccessibility("Skipped to final page");
     }
   };
 
   const handleStartNow = async () => {
-    await markSeen();
-    router.replace("/role-select" as any);
+    // Fade out animation
+    Animated.timing(fadeAnim, {
+      toValue: 0,
+      duration: 300,
+      useNativeDriver: true,
+    }).start(async () => {
+      await markSeen();
+      router.replace("/role-select" as any);
+    });
   };
 
   return (
     <SafeAreaView className="flex-1 bg-white">
       <StatusBar style="dark" backgroundColor="#ffffff" translucent={false} />
-      {/* Background Images */}
-      <View className="absolute left-[-30px] top-[300px] -translate-y-1/2">
-        <Image
-          source={require("../../assets/images/onboarding/left.png")}
-          className="w-48 h-48"
-          resizeMode="contain"
-        />
-      </View>
-      <View
-        className="absolute right-0 bottom-0 opacity-50"
-        style={{ zIndex: -1 }}
+
+      <Animated.View
+        style={{ flex: 1, opacity: fadeAnim }}
+        accessible={true}
+        accessibilityLabel="Onboarding screens"
       >
-        <Image
-          source={require("../../assets/images/onboarding/bottom_right.png")}
-          className="w-40 h-40"
-          resizeMode="contain"
-        />
-      </View>
-      <ScrollView
-        ref={scrollRef}
-        horizontal
-        pagingEnabled
-        showsHorizontalScrollIndicator={false}
-        onScroll={handleScroll}
-        scrollEventThrottle={16}
-        className="flex-1"
-      >
-        {ONBOARDING_PAGES.map((item, idx) => (
-          <View
-            key={idx}
-            style={{ width }}
-            className="items-center justify-center px-6 pt-8 pb-4"
-          >
-            <View className="rounded-full overflow-hidden w-72 h-72 mb-6">
-              <Image
-                source={item.image}
-                className="w-full h-full"
-                resizeMode="contain"
-              />
-            </View>
-            <Image
-              source={require("../../assets/images/logo.png")}
-              className="w-52 h-16 mb-2"
-              resizeMode="contain"
-            />
-            {item.subtitle ? (
-              <Text className="text-lg font-comfortaa-bold text-center mt-2 text-[#71727A]">
-                {item.subtitle}
-              </Text>
-            ) : null}
-            {item.description ? (
-              <Text className="text-center font-comfortaa text-[#71727A] mt-2 mb-4">
-                {item.description}
-              </Text>
-            ) : null}
-            {item.isFinal && (
-              <View className="w-full mt-4 px-4">
-                <TouchableOpacity
-                  className="w-full py-3 rounded-full bg-primary items-center justify-center"
-                  onPress={handleStartNow}
-                >
-                  <Text
-                    className="text-center font-comfortaa-bold"
-                    style={{ color: BUTTON_TEXT_COLOR }}
-                  >
-                    Start Now
-                  </Text>
-                </TouchableOpacity>
-              </View>
-            )}
-          </View>
-        ))}
-      </ScrollView>
-      {/* Dots */}
-      {!ONBOARDING_PAGES[page]?.isFinal && (
+        {/* Background Images */}
+        <View className="absolute left-[-30px] top-[300px] -translate-y-1/2">
+          <Image
+            source={require("../../assets/images/onboarding/left.png")}
+            className="w-48 h-48"
+            resizeMode="contain"
+            accessible={false}
+          />
+        </View>
         <View
-          style={{ position: "absolute", bottom: height * 0.16, width: "100%" }}
-          className="flex-row justify-center items-center"
+          className="absolute right-0 bottom-0 opacity-50"
+          style={{ zIndex: -1 }}
         >
-          {ONBOARDING_PAGES.map((_, idx) => (
-            <Animated.View
+          <Image
+            source={require("../../assets/images/onboarding/bottom_right.png")}
+            className="w-40 h-40"
+            resizeMode="contain"
+            accessible={false}
+          />
+        </View>
+
+        <ScrollView
+          ref={scrollRef}
+          horizontal
+          pagingEnabled
+          showsHorizontalScrollIndicator={false}
+          onScroll={handleScroll}
+          scrollEventThrottle={16}
+          className="flex-1"
+          accessibilityRole="scrollbar"
+          accessibilityLabel="Onboarding pages"
+        >
+          {ONBOARDING_PAGES.map((item, idx) => (
+            <View
               key={idx}
-              style={{
-                width: DOT_SIZE,
-                height: DOT_SIZE,
-                borderRadius: DOT_SIZE / 2,
-                marginHorizontal: DOT_SPACING / 2,
-                backgroundColor:
-                  page === idx ? DOT_COLOR_ACTIVE : DOT_COLOR_INACTIVE,
-                transform: [
-                  {
-                    scale: dotAnimations[idx].interpolate({
-                      inputRange: [0, 1],
-                      outputRange: [DOT_SCALE_INACTIVE, DOT_SCALE_ACTIVE],
-                    }),
-                  },
-                ],
-                opacity: dotAnimations[idx].interpolate({
-                  inputRange: [0, 1],
-                  outputRange: [0.5, 1],
-                }),
-              }}
-            />
-          ))}
-        </View>
-      )}
-      {/* Navigation Buttons */}
-      {!ONBOARDING_PAGES[page]?.isFinal && (
-        <View
-          style={{ position: "absolute", bottom: height * 0.08, width: "100%" }}
-          className="flex-row justify-between items-center px-8"
-        >
-          <TouchableOpacity
-            className="py-3 px-6 rounded-full border border-gray bg-white flex-row items-center justify-center"
-            onPress={handleSkip}
-          >
-            <Text className="font-comfortaa-medium mr-2 text-black">Skip</Text>
-            <LogOut size={20} color="gray" />
-          </TouchableOpacity>
-          <TouchableOpacity
-            className="py-3 px-8 rounded-full bg-primary flex-row items-center justify-center"
-            onPress={handleNext}
-          >
-            <Text
-              className="font-comfortaa-medium mr-2"
-              style={{ color: BUTTON_TEXT_COLOR }}
+              style={{ width }}
+              className="items-center justify-center px-6 pt-8 pb-4"
+              accessible={true}
+              accessibilityRole="tab"
+              accessibilityLabel={item.accessibilityLabel}
+              accessibilityHint={`Swipe left or right to navigate between onboarding pages`}
             >
-              Next
-            </Text>
-            <LogOut size={20} color={BUTTON_TEXT_COLOR} />
-          </TouchableOpacity>
-        </View>
-      )}
+              <View className="rounded-full overflow-hidden w-72 h-72 mb-6">
+                <Image
+                  source={item.image}
+                  className="w-full h-full"
+                  resizeMode="contain"
+                  accessible={true}
+                  accessibilityLabel={`${item.subtitle} illustration`}
+                />
+              </View>
+              <Image
+                source={require("../../assets/images/logo.png")}
+                className="w-52 h-16 mb-2"
+                resizeMode="contain"
+                accessible={true}
+                accessibilityLabel="Pickup Buddi logo"
+              />
+              {item.subtitle ? (
+                <Text className="text-lg font-comfortaa-bold text-center mt-2 text-[#71727A]">
+                  {item.subtitle}
+                </Text>
+              ) : null}
+              {item.description ? (
+                <Text className="text-center font-comfortaa text-[#71727A] mt-2 mb-4">
+                  {item.description}
+                </Text>
+              ) : null}
+              {item.isFinal && (
+                <View className="w-full mt-4 px-4">
+                  <TouchableOpacity
+                    className="w-full py-3 rounded-full bg-primary items-center justify-center"
+                    onPress={handleStartNow}
+                    disabled={isMarkingSeen}
+                    accessible={true}
+                    accessibilityRole="button"
+                    accessibilityLabel="Start now button"
+                    accessibilityHint="Double tap to complete onboarding and proceed to role selection"
+                  >
+                    <Text
+                      className="text-center font-comfortaa-bold"
+                      style={{ color: BUTTON_TEXT_COLOR }}
+                    >
+                      {isMarkingSeen ? "Setting up..." : "Start Now"}
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+              )}
+            </View>
+          ))}
+        </ScrollView>
+
+        {/* Dots */}
+        {!ONBOARDING_PAGES[page]?.isFinal && (
+          <View
+            style={{
+              position: "absolute",
+              bottom: height * 0.16,
+              width: "100%",
+            }}
+            className="flex-row justify-center items-center"
+            accessible={true}
+            accessibilityRole="tablist"
+            accessibilityLabel={`Page ${page + 1} of ${
+              ONBOARDING_PAGES.length
+            }`}
+          >
+            {ONBOARDING_PAGES.map((_, idx) => (
+              <Animated.View
+                key={idx}
+                style={{
+                  width: DOT_SIZE,
+                  height: DOT_SIZE,
+                  borderRadius: DOT_SIZE / 2,
+                  marginHorizontal: DOT_SPACING / 2,
+                  backgroundColor:
+                    page === idx ? DOT_COLOR_ACTIVE : DOT_COLOR_INACTIVE,
+                  transform: [
+                    {
+                      scale: dotAnimations[idx].interpolate({
+                        inputRange: [0, 1],
+                        outputRange: [DOT_SCALE_INACTIVE, DOT_SCALE_ACTIVE],
+                      }),
+                    },
+                  ],
+                  opacity: dotAnimations[idx].interpolate({
+                    inputRange: [0, 1],
+                    outputRange: [0.5, 1],
+                  }),
+                }}
+                accessible={true}
+                accessibilityRole="tab"
+                accessibilityLabel={`Page ${idx + 1}`}
+                accessibilityState={{ selected: page === idx }}
+              />
+            ))}
+          </View>
+        )}
+
+        {/* Navigation Buttons */}
+        {!ONBOARDING_PAGES[page]?.isFinal && (
+          <View
+            style={{
+              position: "absolute",
+              bottom: height * 0.08,
+              width: "100%",
+            }}
+            className="flex-row justify-between items-center px-8"
+          >
+            <TouchableOpacity
+              className="py-3 px-6 rounded-full border border-gray bg-white flex-row items-center justify-center"
+              onPress={handleSkip}
+              disabled={isTransitioning}
+              accessible={true}
+              accessibilityRole="button"
+              accessibilityLabel="Skip to end"
+              accessibilityHint="Double tap to skip to the final onboarding page"
+            >
+              <Text className="font-comfortaa-medium mr-2 text-black">
+                Skip
+              </Text>
+              <LogOut size={20} color="gray" />
+            </TouchableOpacity>
+            <TouchableOpacity
+              className="py-3 px-8 rounded-full bg-primary flex-row items-center justify-center"
+              onPress={handleNext}
+              disabled={isTransitioning}
+              accessible={true}
+              accessibilityRole="button"
+              accessibilityLabel="Next page"
+              accessibilityHint="Double tap to go to the next onboarding page"
+            >
+              <Text
+                className="font-comfortaa-medium mr-2"
+                style={{ color: BUTTON_TEXT_COLOR }}
+              >
+                Next
+              </Text>
+              <LogOut size={20} color={BUTTON_TEXT_COLOR} />
+            </TouchableOpacity>
+          </View>
+        )}
+      </Animated.View>
     </SafeAreaView>
   );
 };
