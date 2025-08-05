@@ -1,7 +1,9 @@
 import { Ionicons } from "@expo/vector-icons";
-import { useRouter } from "expo-router";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import { useRef, useState } from "react";
 import {
+  ActivityIndicator,
+  Alert,
   Image,
   StyleSheet,
   Text,
@@ -10,12 +12,18 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import AuthService from "../../../services/api/auth.service";
 
 const PRIMARY_COLOR = "#FF932E";
 
 const OTPVerificationScreen = () => {
   const router = useRouter();
-  const [otp, setOtp] = useState<string[]>(["", "", "", "", ""]);
+  const params = useLocalSearchParams();
+  const email = params.email as string;
+
+  const [otp, setOtp] = useState<string[]>(["", "", "", "", "", ""]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [isResending, setIsResending] = useState(false);
   const inputRefs = useRef<TextInput[]>([]);
 
   // Handle input change for each OTP digit
@@ -42,14 +50,57 @@ const OTPVerificationScreen = () => {
     }
   };
 
-  const handleSubmit = () => {
-    // In a real app, you would verify the OTP here
-    router.push("/auth/password-reset");
+  const handleSubmit = async () => {
+    const otpString = otp.join("");
+
+    if (otpString.length !== 6) {
+      Alert.alert("Error", "Please enter the complete 6-digit code.");
+      return;
+    }
+
+    if (!email) {
+      Alert.alert("Error", "Email not found. Please go back and try again.");
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      await AuthService.verifyResetCode(email, otpString);
+      router.push({
+        pathname: "/auth/password-reset" as any,
+        params: { email, code: otpString },
+      });
+    } catch (error: any) {
+      Alert.alert(
+        "Error",
+        error.message || "Invalid verification code. Please try again."
+      );
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  const handleResend = () => {
-    // In a real app, you would resend the OTP
-    console.log("Resending OTP");
+  const handleResend = async () => {
+    if (!email) {
+      Alert.alert("Error", "Email not found. Please go back and try again.");
+      return;
+    }
+
+    setIsResending(true);
+    try {
+      await AuthService.forgotPassword(email);
+      Alert.alert(
+        "Success",
+        "A new verification code has been sent to your email."
+      );
+    } catch (error: any) {
+      Alert.alert(
+        "Error",
+        error.message || "Failed to resend code. Please try again."
+      );
+    } finally {
+      setIsResending(false);
+    }
   };
 
   const handleBack = () => {
@@ -59,6 +110,15 @@ const OTPVerificationScreen = () => {
   return (
     <SafeAreaView className="flex-1 bg-white">
       <View className="flex-1 px-6 pt-6">
+        {/* Back Button */}
+        <TouchableOpacity
+          onPress={handleBack}
+          className="mb-4"
+          disabled={isLoading}
+        >
+          <Ionicons name="arrow-back" size={24} color="#71727A" />
+        </TouchableOpacity>
+
         {/* Logo */}
         <View className="items-center mb-8">
           <Image
@@ -70,11 +130,14 @@ const OTPVerificationScreen = () => {
 
         {/* Header */}
         <View className="items-center">
-          <Text className="text-3xl font-comfortaa-bold text-black mb-2">
-            OTP Verification
+          <Text className="text-3xl font-comfortaa-bold text-[#71727A] mb-2">
+            Verify Code
           </Text>
-          <Text className="text-sm font-comfortaa text-center text-[#71727A] mb-8">
-            Enter your email used in signup to get a confirmation code (OTP)
+          <Text className="text-sm font-comfortaa text-center text-[#71727A] mb-2">
+            Enter the 6-digit code sent to
+          </Text>
+          <Text className="text-sm font-comfortaa-bold text-center text-[#71727A] mb-8">
+            {email || "your email"}
           </Text>
         </View>
 
@@ -96,6 +159,7 @@ const OTPVerificationScreen = () => {
                 textAlign="center"
                 selectTextOnFocus
                 className="font-comfortaa-bold text-xl text-[#71727A]"
+                editable={!isLoading}
               />
             ))}
           </View>
@@ -105,22 +169,51 @@ const OTPVerificationScreen = () => {
             <Text className="font-comfortaa text-[#71727A] mr-2">
               Didn't receive code?
             </Text>
-            <TouchableOpacity onPress={handleResend}>
-              <Text className="font-comfortaa-bold text-primary">Resend</Text>
+            <TouchableOpacity
+              onPress={handleResend}
+              disabled={isResending || isLoading}
+              style={{ opacity: isResending || isLoading ? 0.7 : 1 }}
+            >
+              <Text
+                className="font-comfortaa-bold"
+                style={{ color: PRIMARY_COLOR }}
+              >
+                {isResending ? "Resending..." : "Resend"}
+              </Text>
             </TouchableOpacity>
           </View>
         </View>
 
         {/* Submit Button */}
         <TouchableOpacity
-          className="bg-primary rounded-full py-3.5 items-center mb-6"
+          className="rounded-full py-3.5 items-center mb-6"
+          style={{
+            backgroundColor: PRIMARY_COLOR,
+            opacity: isLoading ? 0.7 : 1,
+          }}
           onPress={handleSubmit}
+          disabled={isLoading}
         >
           <View className="flex-row items-center">
-            <Text className="font-comfortaa-bold text-white text-base mr-2">
-              Submit code
-            </Text>
-            <Ionicons name="arrow-forward" size={18} color="#fff" />
+            {isLoading ? (
+              <ActivityIndicator
+                size="small"
+                color="#fff"
+                style={{ marginRight: 8 }}
+              />
+            ) : (
+              <Text className="font-comfortaa-bold text-white text-base mr-2">
+                Verify Code
+              </Text>
+            )}
+            {!isLoading && (
+              <Ionicons name="arrow-forward" size={18} color="#fff" />
+            )}
+            {isLoading && (
+              <Text className="font-comfortaa-bold text-white text-base">
+                Verifying...
+              </Text>
+            )}
           </View>
         </TouchableOpacity>
       </View>
@@ -139,7 +232,7 @@ const OTPVerificationScreen = () => {
 
 const styles = StyleSheet.create({
   otpInput: {
-    width: 56,
+    width: 48,
     height: 56,
     borderWidth: 1,
     borderRadius: 10,

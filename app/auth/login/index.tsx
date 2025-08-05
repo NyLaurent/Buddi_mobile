@@ -170,8 +170,15 @@ const LoginScreen = () => {
               Keep me signed in
             </Text>
           </TouchableOpacity>
-          <TouchableOpacity disabled={true}>
-            <Text className="font-comfortaa" style={{ color: "#A0A0A0" }}>
+          <TouchableOpacity 
+            onPress={handleForgotPassword}
+            disabled={isLoading}
+            style={{ opacity: isLoading ? 0.7 : 1 }}
+          >
+            <Text 
+              className="font-comfortaa" 
+              style={{ color: isLoading ? "#A0A0A0" : PRIMARY_COLOR }}
+            >
               Forgot Password
             </Text>
           </TouchableOpacity>

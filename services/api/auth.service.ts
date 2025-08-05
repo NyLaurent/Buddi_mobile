@@ -378,6 +378,51 @@ class AuthService {
       throw this.handleAuthError(error);
     }
   }
+
+  /**
+   * Send forgot password email
+   */
+  async forgotPassword(email: string): Promise<any> {
+    try {
+      const response = await unauthorizedApi.post(AUTH_ENDPOINTS.FORGOT_PASSWORD, {
+        email
+      });
+      return response.data;
+    } catch (error: any) {
+      throw this.handleAuthError(error);
+    }
+  }
+
+  /**
+   * Verify reset code (OTP)
+   */
+  async verifyResetCode(email: string, code: string): Promise<any> {
+    try {
+      const response = await unauthorizedApi.post(AUTH_ENDPOINTS.VERIFY_RESET_CODE, {
+        email,
+        code
+      });
+      return response.data;
+    } catch (error: any) {
+      throw this.handleAuthError(error);
+    }
+  }
+
+  /**
+   * Reset password with new password
+   */
+  async resetPassword(email: string, code: string, newPassword: string): Promise<any> {
+    try {
+      const response = await unauthorizedApi.post(AUTH_ENDPOINTS.RESET_PASSWORD, {
+        email,
+        code,
+        newPassword
+      });
+      return response.data;
+    } catch (error: any) {
+      throw this.handleAuthError(error);
+    }
+  }
 }
 
 export default new AuthService(); 

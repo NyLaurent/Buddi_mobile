@@ -295,23 +295,28 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       return;
     }
 
-    // TEMPORARY: Allow unrestricted access to these routes for development
-    // TODO: REMOVE THIS BEFORE PRODUCTION
-    const isTemporaryUnprotectedRoute =
-      segments[0] === "onboarding" ||
-      segments[0] === "role-select" ||
-      (inAuthGroup && segments[1] === "signup");
-
-    if (isTemporaryUnprotectedRoute) {
+    // Allow unrestricted access to onboarding and role selection routes
+    // These should be handled by the main index.tsx routing logic
+    const isOnboardingRoute =
+      segments[0] === "onboarding" || segments[0] === "role-select";
+    if (isOnboardingRoute) {
       console.log(
-        "handleNavigation - Temporarily allowing access to development routes"
+        "handleNavigation - Allowing access to onboarding/role-select routes"
       );
+      return;
+    }
+
+    // Allow auth signup routes
+    const isAuthSignupRoute = inAuthGroup && segments[1] === "signup";
+    if (isAuthSignupRoute) {
+      console.log("handleNavigation - Allowing access to auth signup routes");
       return;
     }
 
     // If no user and not on login route, redirect to login
     if (!user) {
       if (inProtectedRoute) {
+        console.log("handleNavigation - No user, redirecting to login");
         router.replace("/auth/login");
       }
       return;
