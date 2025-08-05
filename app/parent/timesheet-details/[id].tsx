@@ -3,12 +3,14 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect, useState } from "react";
 import {
   ActivityIndicator,
+  Alert,
   ScrollView,
   Text,
   TouchableOpacity,
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import PaymentModal from "../../../components/modals/PaymentModal";
 import { useAuth } from "../../../context/AuthContext";
 import ParentService, { Timesheet } from "../../../services/api/parent.service";
 
@@ -17,6 +19,8 @@ export default function TimesheetDetailsPage() {
   const [timesheet, setTimesheet] = useState<Timesheet | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [approving, setApproving] = useState(false);
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
 
   const router = useRouter();
   const { parentDetails } = useAuth();
@@ -105,9 +109,29 @@ export default function TimesheetDetailsPage() {
     return "alert-circle";
   };
 
+  const handleApproveTimesheet = async (timesheetId: number) => {
+    try {
+      setApproving(true);
+      await ParentService.approveTimesheet(timesheetId);
+      Alert.alert("Success", "Timesheet approved successfully!");
+      // Refresh the timesheet data
+      await fetchTimesheetDetails();
+    } catch (error: any) {
+      Alert.alert("Error", error.message || "Failed to approve timesheet");
+    } finally {
+      setApproving(false);
+    }
+  };
+
+  const handleProcessPayment = async (timesheetId: number) => {
+    // This function is now handled by the PaymentModal component
+    // The modal handles the URL opening and error handling
+    console.log("Payment processing for timesheet:", timesheetId);
+  };
+
   if (loading) {
     return (
-      <SafeAreaView style={{ flex: 1, backgroundColor: "#F6F7FB" }}>
+      <SafeAreaView style={{ backgroundColor: "#F6F7FB" }}>
         <View
           style={{ flex: 1, justifyContent: "center", alignItems: "center" }}
         >
@@ -406,7 +430,7 @@ export default function TimesheetDetailsPage() {
                 color: "#6B7280",
               }}
             >
-              Is Full:
+              Full:
             </Text>
             <Text
               style={{
@@ -647,8 +671,60 @@ export default function TimesheetDetailsPage() {
         </View>
 
         {/* Action Buttons */}
-        {!timesheet.isPaid && (
-          <View style={{ marginBottom: 20 }}>
+        <View style={{ marginBottom: 20 }}>
+          {/* Show Approve Button if timesheet is full but not approved */}
+          {timesheet.isFull && !timesheet.isApproved && (
+            <TouchableOpacity
+              style={{
+                backgroundColor: "#3B82F6",
+                borderRadius: 16,
+                paddingVertical: 16,
+                alignItems: "center",
+                marginBottom: 12,
+                opacity: approving ? 0.7 : 1,
+              }}
+              onPress={() => {
+                Alert.alert(
+                  "Approve Timesheet",
+                  "Have you reviewed the timesheet well before approving?",
+                  [
+                    {
+                      text: "Cancel",
+                      style: "cancel",
+                    },
+                    {
+                      text: "Approve",
+                      style: "default",
+                      onPress: () => handleApproveTimesheet(timesheet.id),
+                    },
+                  ]
+                );
+              }}
+              disabled={approving}
+            >
+              <View style={{ flexDirection: "row", alignItems: "center" }}>
+                {approving && (
+                  <ActivityIndicator
+                    size="small"
+                    color="#fff"
+                    style={{ marginRight: 8 }}
+                  />
+                )}
+                <Text
+                  style={{
+                    fontFamily: "Comfortaa-Bold",
+                    fontSize: 16,
+                    color: "#fff",
+                  }}
+                >
+                  {approving ? "Approving..." : "Approve Timesheet"}
+                </Text>
+              </View>
+            </TouchableOpacity>
+          )}
+
+          {/* Show Pay Button if timesheet is full and approved but not paid */}
+          {timesheet.isFull && timesheet.isApproved && !timesheet.isPaid && (
             <TouchableOpacity
               style={{
                 backgroundColor: "#FF932E",
@@ -657,10 +733,7 @@ export default function TimesheetDetailsPage() {
                 alignItems: "center",
                 marginBottom: 12,
               }}
-              onPress={() => {
-                // Handle payment action
-                console.log("Process payment for timesheet:", timesheet.id);
-              }}
+              onPress={() => setShowPaymentModal(true)}
             >
               <Text
                 style={{
@@ -672,9 +745,40 @@ export default function TimesheetDetailsPage() {
                 Process Payment
               </Text>
             </TouchableOpacity>
-          </View>
-        )}
+          )}
+
+          {/* Show status message if already paid */}
+          {timesheet.isPaid && (
+            <View
+              style={{
+                backgroundColor: "#22C55E",
+                borderRadius: 16,
+                paddingVertical: 16,
+                alignItems: "center",
+                marginBottom: 12,
+              }}
+            >
+              <Text
+                style={{
+                  fontFamily: "Comfortaa-Bold",
+                  fontSize: 16,
+                  color: "#fff",
+                }}
+              >
+                Payment Completed
+              </Text>
+            </View>
+          )}
+        </View>
       </ScrollView>
+
+      {/* Payment Modal */}
+      <PaymentModal
+        visible={showPaymentModal}
+        onClose={() => setShowPaymentModal(false)}
+        onConfirm={() => setShowPaymentModal(false)}
+        timesheetId={timesheet?.id || 0}
+      />
     </SafeAreaView>
   );
 }

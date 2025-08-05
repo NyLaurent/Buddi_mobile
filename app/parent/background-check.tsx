@@ -41,7 +41,7 @@ export default function BackgroundCheck() {
 
     try {
       // Redirect to web app for payment
-      const webAppUrl = "https://pickupbuddi-webapp-cl24y.sevalla.app/";
+      const webAppUrl = "https://app.pickupbuddi.com";
       const supported = await Linking.canOpenURL(webAppUrl);
       if (supported) {
         await Linking.openURL(webAppUrl);

@@ -5,6 +5,7 @@ import { useAuth } from "@/context/AuthContext";
 import BuddiService from "@/services/api/buddi.service";
 import ChildrenService from "@/services/api/children.service";
 import ParentService from "@/services/api/parent.service";
+import SocketService from "@/services/socket";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import React from "react";
@@ -91,6 +92,14 @@ const SchedulePage = () => {
   const [loading, setLoading] = React.useState(true);
   const [error, setError] = React.useState<string | null>(null);
 
+  // State for tracking pickup statuses (copied from parent index)
+  const [pickupStatuses, setPickupStatuses] = React.useState<
+    Record<number, string>
+  >({});
+  const [startingTripId, setStartingTripId] = React.useState<number | null>(
+    null
+  );
+
   React.useEffect(() => {
     const fetchDetailsForRequests = async () => {
       if (!parentDetails?.id) return;
@@ -137,6 +146,59 @@ const SchedulePage = () => {
     };
     fetchDetailsForRequests();
   }, [parentDetails?.id]);
+
+  // Socket event listeners for real-time pickup status updates (copied from parent index)
+  React.useEffect(() => {
+    // Enhanced socket event listeners for real-time updates
+    SocketService.on("pickup-started", (pickupData: any) => {
+      console.log("[SCHEDULE] Received pickup-started event:", pickupData);
+      // Update pickup status in real-time
+      setPickupStatuses((prev) => ({
+        ...prev,
+        [pickupData.id]: "enRoute",
+      }));
+    });
+
+    SocketService.on("child-picked-up", (pickupData: any) => {
+      console.log("[SCHEDULE] Received child-picked-up event:", pickupData);
+      // Update pickup status in real-time
+      setPickupStatuses((prev) => ({
+        ...prev,
+        [pickupData.id]: "pickedUp",
+      }));
+    });
+
+    SocketService.on("trip-completed", (pickupData: any) => {
+      console.log("[SCHEDULE] Received trip-completed event:", pickupData);
+      // Update pickup status in real-time
+      setPickupStatuses((prev) => ({
+        ...prev,
+        [pickupData.id]: "completed",
+      }));
+    });
+
+    SocketService.on("trip-cancelled", (pickupData: any) => {
+      console.log("[SCHEDULE] Received trip-cancelled event:", pickupData);
+      // Update pickup status in real-time
+      setPickupStatuses((prev) => ({
+        ...prev,
+        [pickupData.id]: "cancelled",
+      }));
+    });
+
+    // Cleanup listeners on unmount
+    return () => {
+      SocketService.off("pickup-started");
+      SocketService.off("child-picked-up");
+      SocketService.off("trip-completed");
+      SocketService.off("trip-cancelled");
+    };
+  }, []);
+
+  // Helper function to get pickup status (copied from parent index)
+  const getPickupStatus = (buddiRequestId: number) => {
+    return pickupStatuses[buddiRequestId] || null;
+  };
 
   return (
     <SafeAreaView
@@ -367,6 +429,9 @@ const SchedulePage = () => {
                     const buddiStatus =
                       pickup.status === "matched" ? "Available" : "Pending";
 
+                    // Get current pickup status for this request
+                    const currentPickupStatus = getPickupStatus(pickup.id);
+
                     // Parse the available days string and show up to 3 cards
                     let days: string[] = [];
                     if (
@@ -414,9 +479,44 @@ const SchedulePage = () => {
                                 }
                                 destination={pickup.toZone || "Home"}
                                 mainAction={
-                                  pickup.status === "matched"
-                                    ? "Trip Not Yet Started"
+                                  startingTripId === pickup.id
+                                    ? "Starting Trip..."
+                                    : currentPickupStatus === "pending"
+                                    ? "Trip Started"
+                                    : currentPickupStatus === "enRoute"
+                                    ? "En Route"
+                                    : currentPickupStatus === "pickedUp"
+                                    ? "Child Picked Up"
+                                    : currentPickupStatus === "completed"
+                                    ? "Trip Completed"
+                                    : pickup.status === "matched"
+                                    ? parentDetails?.approvalStage === "pending"
+                                      ? "Background Check Required"
+                                      : "Trip Not Yet Started"
                                     : "Pending"
+                                }
+                                mainActionColor={
+                                  currentPickupStatus === "pending"
+                                    ? "#FF932E"
+                                    : currentPickupStatus === "enRoute"
+                                    ? "#3B82F6"
+                                    : currentPickupStatus === "pickedUp"
+                                    ? "#7C3AED"
+                                    : currentPickupStatus === "completed"
+                                    ? "#16A34A"
+                                    : pickup.status === "matched" &&
+                                      parentDetails?.approvalStage === "pending"
+                                    ? "#EF4444"
+                                    : undefined
+                                }
+                                disabled={
+                                  currentPickupStatus === "pending" ||
+                                  currentPickupStatus === "enRoute" ||
+                                  currentPickupStatus === "pickedUp" ||
+                                  currentPickupStatus === "completed" ||
+                                  startingTripId === pickup.id ||
+                                  (pickup.status === "matched" &&
+                                    parentDetails?.approvalStage === "pending")
                                 }
                               />
                             </View>
