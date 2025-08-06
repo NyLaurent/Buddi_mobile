@@ -34,7 +34,7 @@ export interface BuddiDetails {
   profilePicture: string | null;
   rating: number | null;
   isInterviewVideoSubmitted?: boolean;
-  isProfileVideoSubmitted?: boolean,
+  isProfileVideoSubmitted?: boolean;
   totalEarnings: number;
   createdAt: string;
   updatedAt: string;
@@ -523,6 +523,7 @@ const BuddiService = {
   async getBuddiInfo(buddiId: string): Promise<{ message: string; data: BuddiDetails }> {
     try {
       const response = await authorizedApi.get(`/buddi/single/${buddiId}`);
+      console.log("[BUDDI SERVICE] Raw API response:", response.data);
       // The API returns the data directly, not wrapped in a data property
       return { message: "Success", data: response.data };
     } catch (err: any) {

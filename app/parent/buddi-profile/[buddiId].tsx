@@ -1,10 +1,13 @@
 import { FontAwesome5, Ionicons } from "@expo/vector-icons";
 import { useEvent } from "expo";
+import * as FileSystem from "expo-file-system";
 import { useLocalSearchParams, useRouter } from "expo-router";
+import * as Sharing from "expo-sharing";
 import { useVideoPlayer, VideoView } from "expo-video";
 import { useEffect, useState } from "react";
 import {
   ActivityIndicator,
+  Alert,
   Dimensions,
   Image,
   Platform,
@@ -32,7 +35,8 @@ interface BuddiProfileData {
   resume: string;
   profilePicture: string | null;
   rating: number | null;
-  isInterviewVideoSubmitted: boolean;
+  isInterviewVideoSubmitted?: boolean;
+  isProfileVideoSubmitted?: boolean;
   totalEarnings: number;
   createdAt: string;
   updatedAt: string;
@@ -45,9 +49,18 @@ interface BuddiProfileData {
     phoneNumber: string;
     homeAddress: string;
   };
+  Videos?: {
+    id: number;
+    title: string | null;
+    videoUrl: string;
+    videoType: string;
+    buddiId: number;
+    createdAt: string;
+    updatedAt: string;
+  }[];
 }
 
-export default function ParentBuddiProfilePage() {
+export default function ParentBuddiProfilePage() { 
   const { buddiId, data } = useLocalSearchParams<{
     buddiId: string;
     data?: string;
@@ -60,15 +73,35 @@ export default function ParentBuddiProfilePage() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Mock video source - in real app, this would come from the buddi's interview video
-  const videoSource = require("../../../assets/videos/intro.mp4");
-  const player = useVideoPlayer(videoSource, (player) => {
-    player.loop = true;
-  });
+  // Get profile video from buddi data
+  const profileVideo = buddiData?.Videos?.find(
+    (video) => video.videoType === "profile"
+  );
+
+  // Initialize video player with the actual profile video URL if available
+  const videoUrl = profileVideo?.videoUrl;
+
+  // Only create video player if we have the actual video URL
+  const player = useVideoPlayer(
+    videoUrl || require("../../../assets/videos/intro.mp4"),
+    (player) => {
+      player.loop = true;
+    }
+  );
 
   const { isPlaying } = useEvent(player, "playingChange", {
     isPlaying: player.playing,
   });
+
+  // Debug logging to check what video URL is being used
+  console.log("Profile video found:", profileVideo);
+  console.log("Video URL being used:", videoUrl);
+  console.log(
+    "Is profile video submitted:",
+    buddiData?.isProfileVideoSubmitted
+  );
+  console.log("Full buddiData:", buddiData);
+  console.log("Videos array:", buddiData?.Videos);
 
   const cardWidth = Math.min(width * 0.85, 320);
 
@@ -93,6 +126,9 @@ export default function ParentBuddiProfilePage() {
           );
           await BuddiService.getBuddiInfo(buddiId)
             .then((res) => {
+              console.log("loadBuddiData - API response:", res);
+              console.log("loadBuddiData - res.data:", res.data);
+              console.log("loadBuddiData - res.data.Videos:", res.data?.Videos);
               setBuddiData(res.data);
               console.log("loadBuddiData - fetched data:", res.data);
             })
@@ -118,6 +154,14 @@ export default function ParentBuddiProfilePage() {
       loadBuddiData();
     }
   }, [buddiId, data]);
+
+  // Update video player when video URL changes
+  useEffect(() => {
+    if (videoUrl && player) {
+      console.log("Updating video player with URL:", videoUrl);
+      // The video player will automatically use the new source when re-rendered
+    }
+  }, [videoUrl, player]);
 
   if (isLoading) {
     return (
@@ -286,9 +330,6 @@ export default function ParentBuddiProfilePage() {
   }
 
   // Get profile data with fallbacks
-  const profileImage =
-    buddiData.profilePicture ||
-    "https://randomuser.me/api/portraits/men/32.jpg";
   const fullName = buddiData.User
     ? `${buddiData.User.firstName} ${buddiData.User.lastName}`
     : "John Doe Smith";
@@ -297,6 +338,79 @@ export default function ParentBuddiProfilePage() {
   const schoolInfo = `${buddiData.currentSchool} – ${buddiData.AreaOfStudy}`;
   const rating = buddiData.rating || 0;
   const hasResume = !!buddiData.resume;
+
+  // Generate initials from full name
+  const getInitials = (name: string) => {
+    return name
+      .split(" ")
+      .map((word) => word.charAt(0))
+      .join("")
+      .toUpperCase()
+      .slice(0, 2);
+  };
+
+  const initials = getInitials(fullName);
+
+  // Function to download resume
+  const downloadResume = async () => {
+    if (!hasResume) return;
+
+    try {
+      Alert.alert("Download Resume", "Do you want to download the resume?", [
+        {
+          text: "Cancel",
+          style: "cancel",
+        },
+        {
+          text: "Download",
+          onPress: async () => {
+            try {
+              // Get the filename from the URL
+              const fileName =
+                buddiData.resume.split("/").pop() || "resume.pdf";
+
+              // Create a local file path
+              const localUri = `${FileSystem.documentDirectory}${fileName}`;
+
+              // Download the file
+              const downloadResult = await FileSystem.downloadAsync(
+                buddiData.resume,
+                localUri
+              );
+
+              if (downloadResult.status === 200) {
+                // Share the downloaded file
+                if (await Sharing.isAvailableAsync()) {
+                  await Sharing.shareAsync(localUri, {
+                    mimeType: "application/pdf",
+                    dialogTitle: "Resume",
+                  });
+                } else {
+                  Alert.alert(
+                    "Download Complete",
+                    `Resume downloaded to: ${localUri}`,
+                    [{ text: "OK" }]
+                  );
+                }
+              } else {
+                Alert.alert("Error", "Failed to download resume", [
+                  { text: "OK" },
+                ]);
+              }
+            } catch (error) {
+              console.error("Download error:", error);
+              Alert.alert("Error", "Failed to download resume", [
+                { text: "OK" },
+              ]);
+            }
+          },
+        },
+      ]);
+    } catch (error) {
+      console.error("Download error:", error);
+      Alert.alert("Error", "Failed to download resume", [{ text: "OK" }]);
+    }
+  };
 
   return (
     <View style={{ flex: 1, backgroundColor: "#fff" }}>
@@ -340,18 +454,44 @@ export default function ParentBuddiProfilePage() {
 
           {/* Profile Header */}
           <View style={{ alignItems: "center", paddingBottom: 20 }}>
-            <Image
-              source={{ uri: profileImage }}
-              style={{
-                width: 80,
-                height: 80,
-                borderRadius: 40,
-                borderWidth: 4,
-                borderColor: "#fff",
-                marginBottom: 12,
-              }}
-              resizeMode="cover"
-            />
+            {buddiData.profilePicture ? (
+              <Image
+                source={{ uri: buddiData.profilePicture }}
+                style={{
+                  width: 80,
+                  height: 80,
+                  borderRadius: 40,
+                  borderWidth: 4,
+                  borderColor: "#fff",
+                  marginBottom: 12,
+                }}
+                resizeMode="cover"
+              />
+            ) : (
+              <View
+                style={{
+                  width: 80,
+                  height: 80,
+                  borderRadius: 40,
+                  borderWidth: 4,
+                  borderColor: "#fff",
+                  marginBottom: 12,
+                  backgroundColor: "rgba(255, 255, 255, 0.2)",
+                  justifyContent: "center",
+                  alignItems: "center",
+                }}
+              >
+                <Text
+                  style={{
+                    fontFamily: "Comfortaa-Bold",
+                    fontSize: 28,
+                    color: "#fff",
+                  }}
+                >
+                  {initials}
+                </Text>
+              </View>
+            )}
             <Text
               style={{
                 fontFamily: "Comfortaa-Bold",
@@ -643,89 +783,6 @@ export default function ParentBuddiProfilePage() {
               </View>
             </View>
 
-            {/* Interview Video */}
-            {buddiData.isInterviewVideoSubmitted && (
-              <View style={{ marginBottom: 24 }}>
-                <Text
-                  style={{
-                    fontFamily: "Comfortaa-Bold",
-                    fontSize: 18,
-                    color: "#1F2937",
-                    marginBottom: 16,
-                  }}
-                >
-                  Interview Video
-                </Text>
-                <View
-                  style={{
-                    backgroundColor: "#fff",
-                    borderRadius: 18,
-                    overflow: "hidden",
-                    borderWidth: 1,
-                    borderColor: "#E6E6E6",
-                  }}
-                >
-                  <View
-                    style={{
-                      position: "relative",
-                      width: "100%",
-                      height: cardWidth * 0.56,
-                      backgroundColor: "#000",
-                    }}
-                  >
-                    <VideoView
-                      style={{ width: "100%", height: "100%" }}
-                      player={player}
-                      allowsFullscreen
-                      allowsPictureInPicture
-                    />
-                    {/* Reviewed badge */}
-                    <View
-                      style={{
-                        position: "absolute",
-                        top: 12,
-                        right: 12,
-                        zIndex: 3,
-                        backgroundColor: "#34C759",
-                        borderRadius: 12,
-                        paddingHorizontal: 10,
-                        paddingVertical: 2,
-                      }}
-                    >
-                      <Text
-                        style={{
-                          color: "white",
-                          fontWeight: "bold",
-                          fontSize: 12,
-                        }}
-                      >
-                        REVIEWED
-                      </Text>
-                    </View>
-                  </View>
-                  <View
-                    style={{
-                      backgroundColor: "#F8F9FE",
-                      paddingHorizontal: 16,
-                      paddingVertical: 12,
-                    }}
-                  >
-                    <Text
-                      style={{ fontFamily: "Comfortaa-Bold", fontSize: 16 }}
-                    >
-                      {fullName}
-                    </Text>
-                    <Text
-                      style={{ color: "#9CA3AF", fontSize: 12, marginTop: 4 }}
-                    >
-                      Interview submitted on{" "}
-                      {new Date(buddiData.createdAt).toLocaleDateString()}
-                    </Text>
-                  </View>
-                </View>
-              </View>
-            )}
-
             {/* Teacher Reference */}
             <View style={{ marginBottom: 24 }}>
               <Text
@@ -910,7 +967,7 @@ export default function ParentBuddiProfilePage() {
                   gap: 16,
                 }}
               >
-                <TouchableOpacity
+                {/* <TouchableOpacity
                   style={{
                     backgroundColor: "#F8FAFC",
                     borderRadius: 24,
@@ -934,7 +991,7 @@ export default function ParentBuddiProfilePage() {
                     size={24}
                     color={hasResume ? "#6B7280" : "#BDBDBD"}
                   />
-                </TouchableOpacity>
+                </TouchableOpacity> */}
                 <TouchableOpacity
                   style={{
                     backgroundColor: hasResume ? "#FF932E" : "#E5E7EB",
@@ -944,12 +1001,7 @@ export default function ParentBuddiProfilePage() {
                     alignItems: "center",
                     justifyContent: "center",
                   }}
-                  onPress={() => {
-                    if (hasResume) {
-                      // TODO: Download resume
-                      console.log("Download resume:", buddiData.resume);
-                    }
-                  }}
+                  onPress={downloadResume}
                   disabled={!hasResume}
                 >
                   <Ionicons
@@ -960,6 +1012,9 @@ export default function ParentBuddiProfilePage() {
                 </TouchableOpacity>
               </View>
             </View>
+
+           
+           
           </View>
         )}
       </ScrollView>

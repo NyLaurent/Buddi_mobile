@@ -97,7 +97,6 @@ interface BuddiInfo {
 
 interface KidPickupCardProps {
   childName: string;
-  onReportIssue?: () => void;
   remaining: string;
   schedule: string;
   buddiName?: string;
@@ -120,7 +119,6 @@ interface KidPickupCardProps {
 
 const KidPickupCard = ({
   childName,
-  onReportIssue,
   remaining,
   schedule,
   buddiName,
@@ -189,22 +187,6 @@ const KidPickupCard = ({
           >
             {childName}
           </Text>
-          <TouchableOpacity
-            onPress={onReportIssue}
-            style={{ flexDirection: "row", alignItems: "center" }}
-          >
-            <Text
-              style={{
-                fontFamily: "Comfortaa-Regular",
-                color: "#F87171",
-                fontSize: 13,
-                marginRight: 3,
-              }}
-            >
-              Report issue
-            </Text>
-            <Feather name="send" size={16} color="#F87171" />
-          </TouchableOpacity>
         </View>
         {/* Timer & Schedule */}
         <View
@@ -567,7 +549,7 @@ const KidPickupCard = ({
         maxWidth: "98%",
       }}
     >
-      {/* Top Row: Child Name & Report Issue */}
+      {/* Top Row: Child Name */}
       <View
         style={{ flexDirection: "row", alignItems: "center", marginBottom: 6 }}
       >
@@ -587,22 +569,6 @@ const KidPickupCard = ({
         >
           {childName}
         </Text>
-        <TouchableOpacity
-          onPress={onReportIssue}
-          style={{ flexDirection: "row", alignItems: "center" }}
-        >
-          <Text
-            style={{
-              fontFamily: "Comfortaa-Regular",
-              color: "#F87171",
-              fontSize: 12,
-              marginRight: 3,
-            }}
-          >
-            Report issue
-          </Text>
-          <Feather name="send" size={14} color="#F87171" />
-        </TouchableOpacity>
       </View>
       {/* Remaining & Schedule */}
       <View
