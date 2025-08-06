@@ -325,6 +325,80 @@ export default function ParentDashboard() {
     };
   }, [parentDetails?.id]);
 
+  React.useEffect(() => {
+    if (!parentDetails?.id) return;
+
+    // Ensure socket connection and join parent room
+    if (user?.userId && user?.role === "parent") {
+      console.log("[PARENT] 🔌 Connecting to socket as parent:", user.userId);
+      SocketService.connect(user.userId.toString(), "Parent");
+    }
+
+    // Handler for real-time pickup events
+    const handlePickupStarted = (pickupData: any) => {
+      console.log("[PARENT] 🚀 Received pickup-started event:", pickupData);
+      console.log("[PARENT] 📊 Current pickups before update:", pickups);
+      setPickups((prev) => {
+        const updated = prev.map((pickup) =>
+          pickup.id === pickupData.id
+            ? { ...pickup, status: "enRoute" as const }
+            : pickup
+        ) as Pickup[];
+        console.log(
+          "[PARENT] 📊 Updated pickups after pickup-started:",
+          updated
+        );
+        return updated;
+      });
+    };
+    const handleChildPickedUp = (pickupData: any) => {
+      console.log("[PARENT] 👶 Received child-picked-up event:", pickupData);
+      console.log("[PARENT] 📊 Current pickups before update:", pickups);
+      setPickups((prev) => {
+        const updated = prev.map((pickup) =>
+          pickup.id === pickupData.id
+            ? { ...pickup, status: "pickedUp" as const }
+            : pickup
+        ) as Pickup[];
+        console.log(
+          "[PARENT] 📊 Updated pickups after child-picked-up:",
+          updated
+        );
+        return updated;
+      });
+    };
+    const handleTripCompleted = (pickupData: any) => {
+      console.log("[PARENT] ✅ Received trip-completed event:", pickupData);
+      console.log("[PARENT] 📊 Current pickups before update:", pickups);
+      setPickups((prev) => {
+        const updated = prev.map((pickup) =>
+          pickup.id === pickupData.id
+            ? { ...pickup, status: "completed" as const }
+            : pickup
+        ) as Pickup[];
+        console.log(
+          "[PARENT] 📊 Updated pickups after trip-completed:",
+          updated
+        );
+        return updated;
+      });
+    };
+
+    // Register listeners
+    console.log("[PARENT] 👂 Registering real-time event listeners...");
+    SocketService.on("pickup-started", handlePickupStarted);
+    SocketService.on("child-picked-up", handleChildPickedUp);
+    SocketService.on("trip-completed", handleTripCompleted);
+
+    // Cleanup listeners on unmount or id change
+    return () => {
+      console.log("[PARENT] 🧹 Cleaning up real-time event listeners...");
+      SocketService.off("pickup-started", handlePickupStarted);
+      SocketService.off("child-picked-up", handleChildPickedUp);
+      SocketService.off("trip-completed", handleTripCompleted);
+    };
+  }, [parentDetails?.id, user?.userId]);
+
   // Check socket connection status periodically
   React.useEffect(() => {
     const checkConnection = () => {
@@ -1481,16 +1555,42 @@ export default function ParentDashboard() {
                   .split(",")
                   .map((day) => day.trim());
 
-                console.log("Today's day:", daysOfWeek[todayIdx]);
-                console.log("Available days string:", availableDaysString);
-                console.log("Parsed available days:", availableDays);
+                console.log("🔍 [PICKUP DEBUG] Pickup ID:", pickup.id);
+                console.log(
+                  "🔍 [PICKUP DEBUG] Today's day:",
+                  daysOfWeek[todayIdx]
+                );
+                console.log("🔍 [PICKUP DEBUG] Today's index:", todayIdx);
+                console.log(
+                  "🔍 [PICKUP DEBUG] Available days string:",
+                  availableDaysString
+                );
+                console.log(
+                  "🔍 [PICKUP DEBUG] Parsed available days:",
+                  availableDays
+                );
+                console.log(
+                  "🔍 [PICKUP DEBUG] Raw availableDays array:",
+                  pickup.availableDays
+                );
 
                 // Try to find today
                 const todayName = daysOfWeek[todayIdx];
+                console.log(
+                  "🔍 [PICKUP DEBUG] Checking if today ('" +
+                    todayName +
+                    "') is in available days"
+                );
                 if (availableDays.includes(todayName)) {
                   nextDay = todayName;
-                  console.log("Found today in available days:", todayName);
+                  console.log(
+                    "🔍 [PICKUP DEBUG] Found today in available days:",
+                    todayName
+                  );
                 } else {
+                  console.log(
+                    "🔍 [PICKUP DEBUG] Today NOT found in available days, looking for next closest day"
+                  );
                   // Find the next closest day
                   const sortedDays = availableDays
                     .map((day) => ({
@@ -1500,21 +1600,39 @@ export default function ParentDashboard() {
                     .filter((d) => d.idx !== -1)
                     .sort((a, b) => a.idx - b.idx);
 
-                  console.log("Sorted days:", sortedDays);
+                  console.log("🔍 [PICKUP DEBUG] Sorted days:", sortedDays);
 
                   // Find the first day after today
-                  nextDay =
-                    sortedDays.find((d) => d.idx > todayIdx)?.day ||
-                    sortedDays[0]?.day;
+                  const nextDayAfterToday = sortedDays.find(
+                    (d) => d.idx > todayIdx
+                  )?.day;
+                  const firstAvailableDay = sortedDays[0]?.day;
+                  nextDay = nextDayAfterToday || firstAvailableDay;
 
-                  console.log("Next day found:", nextDay);
+                  console.log(
+                    "🔍 [PICKUP DEBUG] Next day after today:",
+                    nextDayAfterToday
+                  );
+                  console.log(
+                    "🔍 [PICKUP DEBUG] First available day:",
+                    firstAvailableDay
+                  );
+                  console.log(
+                    "🔍 [PICKUP DEBUG] Final nextDay selected:",
+                    nextDay
+                  );
                 }
               }
               if (!nextDay) {
-                console.log("No next day found, skipping card");
+                console.log(
+                  "🔍 [PICKUP DEBUG] No next day found, skipping card"
+                );
                 return null;
               }
-              console.log("Rendering KidPickupCard for day:", nextDay);
+              console.log(
+                "🔍 [PICKUP DEBUG] Rendering KidPickupCard for day:",
+                nextDay
+              );
               return (
                 <KidPickupCard
                   key={`${pickup.id}-${nextDay}`}
