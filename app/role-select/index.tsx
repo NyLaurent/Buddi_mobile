@@ -281,7 +281,7 @@ const RoleSelect = () => {
 
           {/* Bottom Buttons */}
           <View className="flex-row justify-between items-center px-6 mb-6">
-            <TouchableOpacity
+            {/* <TouchableOpacity
               className="flex-row items-center px-6 py-3 rounded-full border border-gray bg-white"
               onPress={handleBack}
               disabled={isNavigating}
@@ -299,7 +299,7 @@ const RoleSelect = () => {
               <Text className="font-comfortaa-bold text-[#4B5563] text-base">
                 Back
               </Text>
-            </TouchableOpacity>
+            </TouchableOpacity> */}
             <TouchableOpacity
               className="flex-row items-center px-8 py-3 rounded-full bg-primary"
               style={{

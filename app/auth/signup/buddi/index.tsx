@@ -95,17 +95,41 @@ interface StepProps {
 
 // Date format validation helper function
 function validateDateFormat(dateString: string) {
+  // First try to parse as YYYY-MM-DD
   const regex = /^\d{4}-\d{2}-\d{2}$/;
-  if (!regex.test(dateString)) return false;
+  if (regex.test(dateString)) {
+    const date = new Date(dateString);
+    const [year, month, day] = dateString.split("-").map(Number);
+    return (
+      date.getFullYear() === year &&
+      date.getMonth() === month - 1 &&
+      date.getDate() === day
+    );
+  }
 
+  // If not YYYY-MM-DD, try to parse as any valid date format
   const date = new Date(dateString);
-  const [year, month, day] = dateString.split("-").map(Number);
+  return !isNaN(date.getTime());
+}
 
-  return (
-    date.getFullYear() === year &&
-    date.getMonth() === month - 1 &&
-    date.getDate() === day
-  );
+// Helper function to normalize date to YYYY-MM-DD format
+function normalizeDate(dateString: string): string {
+  // If already in YYYY-MM-DD format, return as is
+  const regex = /^\d{4}-\d{2}-\d{2}$/;
+  if (regex.test(dateString)) {
+    return dateString;
+  }
+
+  // Try to parse the date and convert to YYYY-MM-DD
+  const date = new Date(dateString);
+  if (!isNaN(date.getTime())) {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const day = String(date.getDate()).padStart(2, "0");
+    return `${year}-${month}-${day}`;
+  }
+
+  return dateString; // Return original if can't parse
 }
 
 // Enhanced validation function with better error messages
@@ -168,12 +192,13 @@ function validateForm(formData: FormData, step: number) {
     if (!formData.dob) {
       errors.dob = "Date of birth is required";
     } else {
-      // Validate date format for manual entry
+      // Validate date format - accept any valid date format
       if (!validateDateFormat(formData.dob)) {
-        errors.dob =
-          "Please enter date in YYYY-MM-DD format (e.g., 2000-01-15)";
+        errors.dob = "Please enter a valid date";
       } else {
-        const dobDate = new Date(formData.dob);
+        // Normalize the date to YYYY-MM-DD format for consistent processing
+        const normalizedDob = normalizeDate(formData.dob);
+        const dobDate = new Date(normalizedDob);
         const today = new Date();
 
         // Check if date is valid
@@ -612,9 +637,8 @@ const RegistrationStep: React.FC<StepProps> = ({
                 onChangeText={(text) => {
                   setFormData((prev) => ({ ...prev, dob: text }));
                 }}
-                placeholder="YYYY-MM-DD (e.g., 2000-01-15)"
+                placeholder="Enter your date of birth"
                 placeholderTextColor="#A0A0A0"
-                maxLength={10}
               />
             </View>
           ) : (
@@ -643,7 +667,7 @@ const RegistrationStep: React.FC<StepProps> = ({
 
           {manualDateEntry && (
             <Text className="font-comfortaa text-xs text-[#71727A] mt-1 opacity-70">
-              Format: YYYY-MM-DD (Year-Month-Day) • Must be 16+ years old
+              Enter any valid date format • Must be 16+ years old
             </Text>
           )}
         </View>
@@ -1563,9 +1587,7 @@ export default function BuddiSignup() {
           referralOccupation: formData.referralOccupation.trim() || undefined,
           resume: formData.resume || undefined,
           gender: mappedGender,
-          dob: formData.dob
-            ? new Date(formData.dob).toISOString().split("T")[0]
-            : "",
+          dob: formData.dob ? normalizeDate(formData.dob) : "",
         };
 
         console.log("=== REGISTRATION DEBUG INFO ===");
