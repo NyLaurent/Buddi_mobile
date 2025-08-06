@@ -19,6 +19,7 @@ import { useAuth } from "../../context/AuthContext";
 interface ProfileEditModalProps {
   visible: boolean;
   onClose: () => void;
+  onSave?: () => void;
 }
 
 const { width, height } = Dimensions.get("window");
@@ -26,6 +27,7 @@ const { width, height } = Dimensions.get("window");
 const ProfileEditModal: React.FC<ProfileEditModalProps> = ({
   visible,
   onClose,
+  onSave,
 }) => {
   const { user, updateProfile } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
@@ -79,6 +81,12 @@ const ProfileEditModal: React.FC<ProfileEditModalProps> = ({
       await updateProfile(updateData);
 
       Alert.alert("Success", "Profile updated successfully!");
+
+      // Call onSave callback if provided
+      if (onSave) {
+        onSave();
+      }
+
       onClose();
     } catch (error: any) {
       Alert.alert("Error", error.message || "Failed to update profile");

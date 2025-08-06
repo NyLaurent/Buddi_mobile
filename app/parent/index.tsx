@@ -517,9 +517,9 @@ export default function ParentDashboard() {
               </View> */}
             </View>
             {/* Search Icon */}
-            <TouchableOpacity className="p-2 bg-orange-400 rounded-xl shadow-sm">
+            {/* <TouchableOpacity className="p-2 bg-orange-400 rounded-xl shadow-sm">
               <Ionicons name="search-outline" size={22} color="white" />
-            </TouchableOpacity>
+            </TouchableOpacity> */}
             {/* Notification Icon */}
             <TouchableOpacity className="p-2 bg-orange-400 rounded-xl shadow-sm">
               <Ionicons name="notifications-outline" size={22} color="white" />
@@ -554,58 +554,63 @@ export default function ParentDashboard() {
               <Text className="text-lg">😊</Text>
             </Text>
           </View>
-          {parentDetails?.profilePicture ? (
-            <Image
-              source={{ uri: parentDetails.profilePicture }}
-              className="w-14 h-14 rounded-full bg-gray-100"
-              resizeMode="cover"
-            />
-          ) : user?.firstName && user?.lastName ? (
-            <View
-              style={{
-                width: 56,
-                height: 56,
-                borderRadius: 28,
-                backgroundColor: "#FFD9B3",
-                alignItems: "center",
-                justifyContent: "center",
-              }}
-            >
-              <Text
+          <TouchableOpacity
+            onPress={() => router.push("/parent/profile")}
+            activeOpacity={0.7}
+          >
+            {parentDetails?.profilePicture ? (
+              <Image
+                source={{ uri: parentDetails.profilePicture }}
+                className="w-14 h-14 rounded-full bg-gray-100"
+                resizeMode="cover"
+              />
+            ) : user?.firstName && user?.lastName ? (
+              <View
                 style={{
-                  fontSize: 22,
-                  color: "#FF932E",
-                  fontWeight: "bold",
-                  fontFamily: "Comfortaa-Bold",
+                  width: 56,
+                  height: 56,
+                  borderRadius: 28,
+                  backgroundColor: "#FFD9B3",
+                  alignItems: "center",
+                  justifyContent: "center",
                 }}
               >
-                {user.firstName[0]?.toUpperCase()}
-                {user.lastName[0]?.toUpperCase()}
-              </Text>
-            </View>
-          ) : (
-            <View
-              style={{
-                width: 56,
-                height: 56,
-                borderRadius: 28,
-                backgroundColor: "#FFD9B3",
-                alignItems: "center",
-                justifyContent: "center",
-              }}
-            >
-              <Text
+                <Text
+                  style={{
+                    fontSize: 22,
+                    color: "#FF932E",
+                    fontWeight: "bold",
+                    fontFamily: "Comfortaa-Bold",
+                  }}
+                >
+                  {user.firstName[0]?.toUpperCase()}
+                  {user.lastName[0]?.toUpperCase()}
+                </Text>
+              </View>
+            ) : (
+              <View
                 style={{
-                  fontSize: 22,
-                  color: "#FF932E",
-                  fontWeight: "bold",
-                  fontFamily: "Comfortaa-Bold",
+                  width: 56,
+                  height: 56,
+                  borderRadius: 28,
+                  backgroundColor: "#FFD9B3",
+                  alignItems: "center",
+                  justifyContent: "center",
                 }}
               >
-                P
-              </Text>
-            </View>
-          )}
+                <Text
+                  style={{
+                    fontSize: 22,
+                    color: "#FF932E",
+                    fontWeight: "bold",
+                    fontFamily: "Comfortaa-Bold",
+                  }}
+                >
+                  P
+                </Text>
+              </View>
+            )}
+          </TouchableOpacity>
         </View>
 
         {/* Approval Status Indicator */}
