@@ -1,6 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { Link, usePathname } from "expo-router";
+import { Link, usePathname, useRouter } from "expo-router";
 import { useEffect, useState } from "react";
 import { Text, TouchableOpacity, View } from "react-native";
 
@@ -18,6 +18,7 @@ const tabs = [
 
 export default function BuddiBottomNav() {
   const pathname = usePathname();
+  const router = useRouter();
   const [unreadCount, setUnreadCount] = useState(0);
 
   // Helper to get all lastSeen keys for this Buddi
@@ -108,7 +109,7 @@ export default function BuddiBottomNav() {
           </Link>
         ))}
 
-        {/* Center Add Button */}
+        {/* Center Calls Button */}
         <TouchableOpacity
           style={{
             marginTop: -40,
@@ -117,6 +118,7 @@ export default function BuddiBottomNav() {
             justifyContent: "center",
             alignItems: "center",
           }}
+          onPress={() => router.push("/buddi/available-calls")}
         >
           <View
             style={{
@@ -133,7 +135,7 @@ export default function BuddiBottomNav() {
               elevation: 8,
             }}
           >
-            <Ionicons name="add" size={32} color="#fff" />
+            <Ionicons name="call-outline" size={28} color="#fff" />
           </View>
         </TouchableOpacity>
 

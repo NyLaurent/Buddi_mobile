@@ -18,14 +18,17 @@ import BuddiService from "../../../services/api/buddi.service";
 interface CallDetails {
   id: number;
   parentId: string;
+  childId: string;
   description: string;
   availableDays: string[];
-  pickupTime: string;
+  callPickupTime: string | null;
+  callDropTime: string | null;
   kidsCount: number;
   fromZone: string;
   toZone: string;
   status: string;
   matchedBuddiId: number | null;
+  isBuddiRecommended: boolean;
   createdAt: string;
   updatedAt: string;
 }
@@ -50,7 +53,12 @@ export default function CallDetailsScreen() {
       setError(null);
 
       const response = await BuddiService.getCallDetails(Number(id));
-      setCallDetails(response.data);
+      setCallDetails({
+        callPickupTime: response.data.pickupTime ?? null,
+        callDropTime: null,
+        isBuddiRecommended: false,
+        ...response.data,
+      });
     } catch (err: any) {
       setError(err.message || "Failed to fetch call details");
       console.error("Error fetching call details:", err);
@@ -77,7 +85,7 @@ export default function CallDetailsScreen() {
   };
 
   const formatTime = (time: string) => {
-    if (time.includes(":")) {
+    if (typeof time === "string" && time.includes(":")) {
       return time;
     }
     return time;
@@ -203,13 +211,22 @@ export default function CallDetailsScreen() {
 
         {/* Details Grid */}
         <View style={styles.detailsGrid}>
-          {/* Time */}
+          {/* Pickup Time */}
           <View style={styles.detailCard}>
             <FontAwesome5 name="clock" size={24} color="#FF932E" />
             <Text style={styles.detailValue}>
-              {formatTime(callDetails.pickupTime)}
+              {formatTime(callDetails.callPickupTime || "-")}
             </Text>
             <Text style={styles.detailLabel}>Pickup Time</Text>
+          </View>
+
+          {/* Drop-off Time */}
+          <View style={styles.detailCard}>
+            <FontAwesome5 name="clock" size={24} color="#3B82F6" />
+            <Text style={styles.detailValue}>
+              {formatTime(callDetails.callDropTime || "-")}
+            </Text>
+            <Text style={styles.detailLabel}>Drop-off Time</Text>
           </View>
 
           {/* Kids Count */}
@@ -432,11 +449,8 @@ const styles = {
     marginBottom: 20,
     borderRadius: 16,
     overflow: "hidden" as const,
-    shadowColor: "#FF932E",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.15,
-    shadowRadius: 12,
-    elevation: 4,
+    borderWidth: 1,
+    borderColor: "#E6E6E6",
   },
   statusGradient: {
     padding: 24,
@@ -465,11 +479,8 @@ const styles = {
     borderRadius: 16,
     padding: 20,
     marginBottom: 16,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 3,
+    borderWidth: 1,
+    borderColor: "#E6E6E6",
   },
   cardHeader: {
     flexDirection: "row" as const,
@@ -500,11 +511,8 @@ const styles = {
     padding: 16,
     alignItems: "center" as const,
     marginHorizontal: 4,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 2,
+    borderWidth: 1,
+    borderColor: "#E6E6E6",
   },
   detailValue: {
     fontFamily: "Comfortaa-Bold",

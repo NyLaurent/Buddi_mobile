@@ -65,12 +65,15 @@ export interface AvailableCall {
   childId: string;
   description: string;
   availableDays: string[];
+  callPickupTime: string | null;
+  callDropTime: string | null;
   pickupTime: string;
   kidsCount: number;
   fromZone: string;
   toZone: string;
   status: string;
   matchedBuddiId: number | null;
+  isBuddiRecommended: boolean;
   createdAt: string;
   updatedAt: string;
 }

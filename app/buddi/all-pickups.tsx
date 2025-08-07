@@ -99,15 +99,16 @@ export default function AllPickupsPage() {
                 return [{ pickup, day: "-" }];
               }
 
-              // Parse the comma-separated available days string
-              const availableDaysString = pickup.availableDays[0];
-              const availableDays = availableDaysString
-                .split(",")
-                .map((day: string) => day.trim());
+              // Parse the available days array
+              const availableDays = pickup.availableDays.flatMap(
+                (dayString: string) => {
+                  return dayString.split(",").map((day: string) => day.trim());
+                }
+              );
 
               console.log(
-                "[BUDDI ALL-PICKUPS] Available days string:",
-                availableDaysString
+                "[BUDDI ALL-PICKUPS] Available days array:",
+                pickup.availableDays
               );
               console.log(
                 "[BUDDI ALL-PICKUPS] Parsed available days:",
@@ -120,24 +121,29 @@ export default function AllPickupsPage() {
             pickupDayPairs.sort((a, b) => {
               const aDay = (a.day || "").toLowerCase();
               const bDay = (b.day || "").toLowerCase();
-              return (dayOrder[aDay] || 99) - (dayOrder[bDay] || 99);
+              return (
+                (dayOrder[aDay as keyof typeof dayOrder] || 99) -
+                (dayOrder[bDay as keyof typeof dayOrder] || 99)
+              );
             });
             return pickupDayPairs.map(({ pickup, day }) => (
               <View key={`${pickup.id}-${day}`} style={{ marginBottom: 18 }}>
                 <PickupCard
                   id={pickup.id.toString()}
-                  name={"Child"}
-                  time={pickup.pickupTime || "-"}
+                  name={pickup.description || "Pickup Request"}
+                  time={pickup.callPickupTime || "-"}
                   days={day}
                   school={pickup.fromZone || "School"}
                   home={pickup.toZone || "Home"}
+                  dropoffTime={pickup.callDropTime || "-"}
+                  kidsCount={pickup.kidsCount || 0}
                   onButtonPress={() => {
                     router.push({
                       pathname: "/buddi/pickup/[id]",
                       params: { id: pickup.id.toString() },
                     });
                   }}
-                  cardWidth={"100%"}
+                  
                 />
               </View>
             ));

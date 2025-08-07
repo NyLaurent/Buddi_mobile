@@ -1731,14 +1731,18 @@ export default function ParentDashboard() {
                                     // Handle specific 400 error for duplicate pickup
                                     if (err?.response?.status === 400) {
                                       if (
-                                        err?.response?.data?.error?.includes(
+                                        typeof err?.response?.data?.error ===
+                                          "string" &&
+                                        err.response.data.error.includes(
                                           "already requested"
                                         )
                                       ) {
                                         errorMessage =
                                           "This pickup trip has already been started today. You can only start one trip per day.";
                                       } else if (
-                                        err?.response?.data?.error?.includes(
+                                        typeof err?.response?.data?.error ===
+                                          "string" &&
+                                        err.response.data.error.includes(
                                           "already started"
                                         )
                                       ) {

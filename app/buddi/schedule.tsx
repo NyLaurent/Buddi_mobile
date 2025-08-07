@@ -340,7 +340,7 @@ export default function SchedulePage() {
                           <PickupCard
                             id={pickup.id.toString()}
                             name={pickup.description || "Pickup Request"}
-                            time={pickup.pickupTime || "-"}
+                            time={pickup.callPickupTime || "-"}
                             days={day} // Show only the specific day
                             school={pickup.fromZone || "School"}
                             home={pickup.toZone || "Home"}
@@ -354,13 +354,18 @@ export default function SchedulePage() {
                                 : "notStarted"
                             }
                             pickupTime={
-                              activePickup?.pickupTime ||
-                              pickup.pickupTime ||
+                              activePickup?.callPickupTime ||
+                              pickup.callPickupTime ||
                               "-"
                             }
                             tripStartTime={activePickup?.tripStartTime || "-"}
-                            dropoffTime={activePickup?.dropoffTime || "-"}
+                            dropoffTime={
+                              activePickup?.callDropTime ||
+                              pickup.callDropTime ||
+                              "-"
+                            }
                             fare={activePickup?.fare || 0}
+                            kidsCount={pickup.kidsCount || 0}
                             onButtonPress={
                               activePickup?.status === "enRoute" ||
                               activePickup?.status === "pickedUp" ||

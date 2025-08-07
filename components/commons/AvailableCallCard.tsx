@@ -1,5 +1,4 @@
-import { FontAwesome5 } from "@expo/vector-icons";
-import React from "react";
+import { FontAwesome5, Ionicons } from "@expo/vector-icons";
 import { Image, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { AvailableCall } from "../../services/api/buddi.service";
 
@@ -14,13 +13,17 @@ export default function AvailableCallCard({
   onApplyPress,
   onViewDetails,
 }: AvailableCallCardProps) {
-  const formatTime = (time: string) => {
-    // Handle time format like "07:30" or "2566" (invalid format)
-    if (time.includes(":")) {
+  const formatTime = (time: string | null) => {
+    if (!time) return "Not set";
+    if (typeof time === "string" && time.includes(":")) {
       return time;
     }
-    // For invalid formats, return as is
     return time;
+  };
+
+  const formatDays = (days: string[]) => {
+    if (!days || !Array.isArray(days)) return "Not set";
+    return days.join(", ");
   };
 
   const getStatusColor = (status: string) => {
@@ -105,9 +108,21 @@ export default function AvailableCallCard({
         {/* Details */}
         <View style={styles.detailsContainer}>
           {/* Time */}
-          <View style={styles.detailItem}>
-            <FontAwesome5 name="clock" size={14} color="#666" />
-            <Text style={styles.detailText}>{formatTime(call.pickupTime)}</Text>
+          <View style={styles.timeContainer}>
+            <View style={styles.timeItem}>
+              <Ionicons name="time-outline" size={16} color="#666" />
+              <Text style={styles.timeLabel}>Pickup:</Text>
+              <Text style={styles.timeValue}>
+                {formatTime(call.callPickupTime)}
+              </Text>
+            </View>
+            <View style={styles.timeItem}>
+              <Ionicons name="time-outline" size={16} color="#666" />
+              <Text style={styles.timeLabel}>Drop-off:</Text>
+              <Text style={styles.timeValue}>
+                {formatTime(call.callDropTime)}
+              </Text>
+            </View>
           </View>
 
           {/* Location */}
@@ -120,21 +135,11 @@ export default function AvailableCallCard({
 
           {/* Available Days */}
           <View style={styles.daysContainer}>
+            <Ionicons name="calendar-outline" size={16} color="#666" />
             <Text style={styles.daysLabel}>Available Days:</Text>
-            <View style={styles.daysList}>
-              {call.availableDays.slice(0, 3).map((day, index) => (
-                <View key={index} style={styles.dayTag}>
-                  <Text style={styles.dayText}>{day.slice(0, 3)}</Text>
-                </View>
-              ))}
-              {call.availableDays.length > 3 && (
-                <View style={styles.dayTag}>
-                  <Text style={styles.dayText}>
-                    +{call.availableDays.length - 3}
-                  </Text>
-                </View>
-              )}
-            </View>
+            <Text style={styles.daysValue}>
+              {formatDays(call.availableDays)}
+            </Text>
           </View>
         </View>
 
@@ -285,22 +290,9 @@ const styles = StyleSheet.create({
     marginBottom: 8,
     fontFamily: "Comfortaa-Regular",
   },
-  daysList: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-  },
-  dayTag: {
-    backgroundColor: "#FF932E",
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 12,
-    marginRight: 6,
-    marginBottom: 4,
-  },
-  dayText: {
-    fontSize: 10,
-    fontWeight: "600",
-    color: "#fff",
+  daysValue: {
+    fontSize: 14,
+    color: "#8A8A8A",
     fontFamily: "Comfortaa-Regular",
   },
   buttonsRow: {
@@ -344,6 +336,28 @@ const styles = StyleSheet.create({
     color: "#FF932E",
     fontSize: 14,
     fontWeight: "600",
+    fontFamily: "Comfortaa-Regular",
+  },
+  timeContainer: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginBottom: 12,
+  },
+  timeItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginRight: 20,
+  },
+  timeLabel: {
+    fontSize: 14,
+    color: "#666",
+    marginLeft: 8,
+    fontFamily: "Comfortaa-Regular",
+  },
+  timeValue: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: "#23272F",
     fontFamily: "Comfortaa-Regular",
   },
 });

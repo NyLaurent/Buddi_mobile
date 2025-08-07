@@ -19,6 +19,7 @@ interface PickupCardProps {
   tripStartTime?: string;
   dropoffTime?: string;
   fare?: number | null;
+  kidsCount?: number;
 }
 
 const PickupCard = ({
@@ -37,6 +38,7 @@ const PickupCard = ({
   tripStartTime,
   dropoffTime,
   fare,
+  kidsCount,
 }: PickupCardProps) => {
   const router = useRouter();
 
@@ -100,15 +102,6 @@ const PickupCard = ({
         >
           {name}
         </Text>
-        <TouchableOpacity className="flex-row items-center">
-          <Text
-            className="text-primary font-comfortaa-medium text-sm mr-1"
-            style={{ color: undefined }}
-          >
-            Request Coverage
-          </Text>
-          <Ionicons name="chevron-forward" size={16} color={"#FF932E"} />
-        </TouchableOpacity>
       </View>
 
       <View className="flex-row items-center mb-3">
@@ -179,13 +172,22 @@ const PickupCard = ({
             {home}
           </Text>
         </View>
+        <View className="flex-row items-center mb-2">
+          <Ionicons name="time-outline" size={16} color={"#666"} />
+          <Text
+            className="ml-2 font-comfortaa text-sm"
+            style={{ color: subTextColor }}
+          >
+            Drop-off: {dropoffTime || "Not set"}
+          </Text>
+        </View>
         <View className="flex-row items-center">
           <Ionicons name="people-outline" size={16} color={"#666"} />
           <Text
             className="ml-2 font-comfortaa text-sm"
             style={{ color: subTextColor }}
           >
-            Kids: {name}
+            Kids: {kidsCount}
           </Text>
         </View>
       </View>

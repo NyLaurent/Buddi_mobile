@@ -39,6 +39,7 @@ export default function BuddiHome() {
   const [matchedCall, setMatchedCall] = useState<any>(null);
   const [activePickup, setActivePickup] = useState<any>(null); // New state for current trip
   const [completedTrips, setCompletedTrips] = useState<any[]>([]);
+  const [matchedPickups, setMatchedPickups] = useState<any[]>([]);
   // const [childInfo, setChildInfo] = useState<any>(null);
 
   // Helper to get the socket instance (assume SocketService exposes getSocket())
@@ -338,27 +339,10 @@ export default function BuddiHome() {
           const matchedRes = await BuddiService.getMatchedRequests(
             buddiDetails.id
           );
-          console.log(
-            "[BuddiHome] Matched requests received:",
-            matchedRes.data?.length || 0
-          );
-
-          // Set the first matched call (or null if none)
-          const matched = matchedRes.data?.[0] || null;
-          console.log(
-            "[BuddiHome] Matched call found:",
-            matched
-              ? {
-                  id: matched.id,
-                  status: matched.status,
-                  availableDays: matched.availableDays,
-                  pickupTime: matched.pickupTime,
-                }
-              : "No match"
-          );
-
+          const matchedList = matchedRes.data || [];
+          setMatchedPickups(matchedList);
+          const matched = matchedList[0] || null;
           setMatchedCall(matched);
-
           // Fetch available calls for application (pending requests)
           const availableRes = await BuddiService.getAvailableCalls(1, 50);
           const availableForApplication = availableRes.data.filter(
@@ -366,7 +350,6 @@ export default function BuddiHome() {
               call.status === "pending" && call.matchedBuddiId === null
           );
           setAvailableCalls(availableForApplication || []);
-
           // Clear active pickup when fetching new calls
           setActivePickup(null);
         } else {
@@ -374,12 +357,14 @@ export default function BuddiHome() {
           setMatchedCall(null);
           setAvailableCalls([]);
           setActivePickup(null);
+          setMatchedPickups([]);
         }
       } catch (err) {
         console.error("[BuddiHome] Error fetching calls:", err);
         setAvailableCalls([]);
         setMatchedCall(null);
         setActivePickup(null);
+        setMatchedPickups([]);
       }
     };
     fetchCalls();
@@ -418,6 +403,16 @@ export default function BuddiHome() {
     }
   };
 
+  const todayName = new Date().toLocaleDateString("en-US", { weekday: "long" });
+  const todaysPickups = matchedPickups.filter((pickup) => {
+    if (!pickup.availableDays || !Array.isArray(pickup.availableDays))
+      return false;
+    const days = pickup.availableDays
+      .flatMap((d: string) => d.split(","))
+      .map((d: string) => d.trim().toLowerCase());
+    return days.includes(todayName.toLowerCase());
+  });
+
   return (
     <SafeAreaView style={styles.container} edges={["top", "left", "right"]}>
       <StatusBar
@@ -442,9 +437,9 @@ export default function BuddiHome() {
             resizeMode="contain"
           />
           <View className="flex-row items-center gap-2 pr-1">
-            <TouchableOpacity className="p-2 bg-primary rounded-xl shadow-sm">
+            {/* <TouchableOpacity className="p-2 bg-primary rounded-xl shadow-sm">
               <Ionicons name="search-outline" size={20} color="white" />
-            </TouchableOpacity>
+            </TouchableOpacity> */}
             <TouchableOpacity
               className="p-2 bg-primary rounded-xl shadow-sm"
               onPress={() => router.push("/buddi/messages")}
@@ -492,8 +487,24 @@ export default function BuddiHome() {
               </View>
             }
             title="Today's Pickups"
-            value="0"
-            subtitle="0 Schools"
+            value={todaysPickups.length.toString()}
+            subtitle={
+              todaysPickups.length > 0
+                ? `${
+                    [
+                      ...new Set(
+                        todaysPickups.map((p) =>
+                          p.fromZone &&
+                          typeof p.fromZone === "string" &&
+                          p.fromZone.trim() !== ""
+                            ? p.fromZone.trim()
+                            : "-"
+                        )
+                      ),
+                    ].length
+                  }`
+                : "0 Zones"
+            }
           />
           <AnalyticsCard
             icon={
@@ -501,7 +512,7 @@ export default function BuddiHome() {
                 <Ionicons name="wallet" size={20} color="white" />
               </View>
             }
-            title="Total Earnings"
+            title="Paid Timesheets"
             value="$0"
             subtitle="All time"
           />
@@ -577,8 +588,8 @@ export default function BuddiHome() {
                   <PickupCard
                     key={`${matchedCall.id}-${day}-${index}`}
                     id={pickupData.id?.toString() || "0"}
-                    name={matchedCall.kidsCount?.toString() || "Child"}
-                    time={matchedCall.pickupTime || "-"}
+                    name={matchedCall.description || "Pickup"}
+                    time={matchedCall.callPickupTime || "-"}
                     days={day} // Show only the specific day
                     school={
                       matchedCall.fromLocation ||
@@ -598,7 +609,9 @@ export default function BuddiHome() {
                         : "notStarted"
                     }
                     pickupTime={
-                      activePickup?.pickupTime || matchedCall.pickupTime || "-"
+                      activePickup?.callPickupTime ||
+                      matchedCall.callPickupTime ||
+                      "-"
                     }
                     tripStartTime={
                       activePickup?.tripStartTime ||
@@ -606,11 +619,12 @@ export default function BuddiHome() {
                       "-"
                     }
                     dropoffTime={
-                      activePickup?.dropoffTime ||
-                      matchedCall.dropoffTime ||
+                      activePickup?.callDropTime ||
+                      matchedCall.callDropTime ||
                       "-"
                     }
                     fare={activePickup?.fare || matchedCall.fare || 0}
+                    kidsCount={matchedCall.kidsCount || 0}
                     onButtonPress={
                       status === "enRoute" ||
                       status === "pickedUp" ||

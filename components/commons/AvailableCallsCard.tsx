@@ -198,7 +198,7 @@ export default function AvailableCallsCard({
                     fontSize: 12,
                   }}
                 >
-                  View Call Details
+                  View Request Details
                 </Text>
               </TouchableOpacity>
               <TouchableOpacity
