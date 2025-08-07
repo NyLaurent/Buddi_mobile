@@ -24,6 +24,7 @@ export default function CallPage() {
   const [description, setDescription] = useState("");
   const [availableDays, setAvailableDays] = useState<string[]>([]);
   const [pickupTime, setPickupTime] = useState("");
+  const [dropTime, setDropTime] = useState("");
   const [kidsCount, setKidsCount] = useState("");
   const [fromZone, setFromZone] = useState("");
   const [toZone, setToZone] = useState("");
@@ -51,6 +52,7 @@ export default function CallPage() {
 
   const [selectedChildId, setSelectedChildId] = useState("");
   const [showTimePicker, setShowTimePicker] = useState(false);
+  const [showDropTimePicker, setShowDropTimePicker] = useState(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
 
   const toggleDay = (day: string) => {
@@ -122,6 +124,7 @@ export default function CallPage() {
       !description ||
       !availableDays.length ||
       !pickupTime ||
+      !dropTime ||
       !kidsCount ||
       !fromZone ||
       !toZone
@@ -136,7 +139,8 @@ export default function CallPage() {
         childId: selectedChildId,
         description,
         availableDays,
-        pickupTime,
+        callPickupTime: pickupTime,
+        callDropTime: dropTime,
         kidsCount: Number(kidsCount),
         fromZone,
         toZone,
@@ -147,6 +151,7 @@ export default function CallPage() {
       setDescription("");
       setAvailableDays([]);
       setPickupTime("");
+      setDropTime("");
       setKidsCount("");
       setFromZone("");
       setToZone("");
@@ -221,6 +226,20 @@ export default function CallPage() {
     }
   };
 
+  // Drop time picker handler
+  const handleDropTimeChange = (
+    event: any,
+    selectedDate?: Date | undefined
+  ) => {
+    setShowDropTimePicker(Platform.OS === "ios");
+    if (selectedDate) {
+      // Format to HH:mm
+      const hours = selectedDate.getHours().toString().padStart(2, "0");
+      const minutes = selectedDate.getMinutes().toString().padStart(2, "0");
+      setDropTime(`${hours}:${minutes}`);
+    }
+  };
+
   // Debug: log registeredKids before rendering
   console.log("registeredKids (before render):", registeredKids);
 
@@ -237,7 +256,7 @@ export default function CallPage() {
       >
         <View
           style={{
-            flex: 1,
+            
             backgroundColor: "rgba(44, 44, 84, 0.18)",
             justifyContent: "center",
             alignItems: "center",
@@ -1088,6 +1107,79 @@ export default function CallPage() {
                 is24Hour={true}
                 display="default"
                 onChange={handleTimeChange}
+              />
+            )}
+          </View>
+          {/* Drop-off Time */}
+          <Text
+            style={{
+              fontFamily: "Comfortaa-Bold",
+              fontSize: 16,
+              color: "#232B3A",
+              marginBottom: 8,
+            }}
+          >
+            Drop-off Time
+          </Text>
+          <View
+            style={{
+              flexDirection: "row",
+              alignItems: "center",
+              marginBottom: 18,
+            }}
+          >
+            <MaterialIcons
+              name="access-time"
+              size={20}
+              color="#4f46e5"
+              style={{ marginRight: 8 }}
+            />
+            <TouchableOpacity
+              onPress={() => setShowDropTimePicker(true)}
+              style={{
+                borderWidth: 1,
+                borderColor: "#E0E0E0",
+                borderRadius: 12,
+                padding: 12,
+                backgroundColor: "#F9FAFB",
+                flex: 1,
+                flexDirection: "row",
+                alignItems: "center",
+              }}
+              activeOpacity={0.85}
+            >
+              <Text
+                style={{
+                  fontFamily: "Comfortaa-Regular",
+                  fontSize: 15,
+                  color: dropTime ? "#232B3A" : "#BDBDBD",
+                }}
+              >
+                {dropTime
+                  ? `Selected Time: ${dropTime}`
+                  : "Select Drop-off Time"}
+              </Text>
+            </TouchableOpacity>
+            {showDropTimePicker && (
+              <DateTimePicker
+                testID="dropTimePicker"
+                value={
+                  dropTime
+                    ? (() => {
+                        const [h, m] = dropTime.split(":");
+                        const d = new Date();
+                        d.setHours(Number(h));
+                        d.setMinutes(Number(m));
+                        d.setSeconds(0);
+                        d.setMilliseconds(0);
+                        return d;
+                      })()
+                    : new Date()
+                }
+                mode="time"
+                is24Hour={true}
+                display="default"
+                onChange={handleDropTimeChange}
               />
             )}
           </View>

@@ -19,7 +19,10 @@ const RequestBuddiScreen = () => {
   const [selectedDays, setSelectedDays] = useState<string[]>([]);
   const [pickupHour, setPickupHour] = useState("");
   const [pickupMinute, setPickupMinute] = useState("");
-  const [amPm, setAmPm] = useState("AM");
+  const [pickupAmPm, setPickupAmPm] = useState("AM");
+  const [dropHour, setDropHour] = useState("");
+  const [dropMinute, setDropMinute] = useState("");
+  const [dropAmPm, setDropAmPm] = useState("AM");
   const [numKids, setNumKids] = useState("");
   const [fromZone, setFromZone] = useState("");
   const [toZone, setToZone] = useState("");
@@ -35,12 +38,14 @@ const RequestBuddiScreen = () => {
     // Prepare the data for submission
     const data = {
       description,
-      days: selectedDays,
-      pickupTime: `${pickupHour}:${pickupMinute} ${amPm}`,
-      numKids,
+      availableDays: selectedDays,
+      callPickupTime: `${pickupHour}:${pickupMinute}`,
+      callDropTime: `${dropHour}:${dropMinute}`,
+      kidsCount: parseInt(numKids) || 0,
       fromZone,
       toZone,
     };
+    console.log("Submitting buddi request data:", data);
     // TODO: send data to API
     setSuccessVisible(true);
   };
@@ -167,13 +172,13 @@ const RequestBuddiScreen = () => {
             <View className="flex-col w-20 border-l border-gray h-full">
               <TouchableOpacity
                 className={`flex-1 items-center justify-center rounded-tr-2xl ${
-                  amPm === "AM" ? "bg-primary" : "bg-white"
+                  pickupAmPm === "AM" ? "bg-primary" : "bg-white"
                 }`}
-                onPress={() => setAmPm("AM")}
+                onPress={() => setPickupAmPm("AM")}
               >
                 <Text
                   className={`font-comfortaa-bold text-lg ${
-                    amPm === "AM" ? "text-white" : "text-[#71727A]"
+                    pickupAmPm === "AM" ? "text-white" : "text-[#71727A]"
                   }`}
                 >
                   AM
@@ -181,13 +186,76 @@ const RequestBuddiScreen = () => {
               </TouchableOpacity>
               <TouchableOpacity
                 className={`flex-1 items-center justify-center rounded-br-2xl ${
-                  amPm === "PM" ? "bg-primary" : "bg-white"
+                  pickupAmPm === "PM" ? "bg-primary" : "bg-white"
                 }`}
-                onPress={() => setAmPm("PM")}
+                onPress={() => setPickupAmPm("PM")}
               >
                 <Text
                   className={`font-comfortaa-bold text-lg ${
-                    amPm === "PM" ? "text-white" : "text-[#71727A]"
+                    pickupAmPm === "PM" ? "text-white" : "text-[#71727A]"
+                  }`}
+                >
+                  PM
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+          {/* Drop-off Time */}
+          <Text className="text-sm text-[#71727A]Text font-comfortaa mb-1">
+            Drop-off Time
+          </Text>
+          <View className="flex-row items-center h-16 rounded-2xl border border-gray overflow-hidden mb-3">
+            {/* Time Inputs */}
+            <View className="flex-1 flex-row items-center justify-center">
+              <TextInput
+                className="text-3xl font-comfortaa-bold text-[#71727A]Text text-center w-16 bg-transparent"
+                placeholder="08"
+                keyboardType="number-pad"
+                maxLength={2}
+                value={dropHour}
+                onChangeText={setDropHour}
+                underlineColorAndroid="transparent"
+                selectionColor="#FF9100"
+              />
+              <Text className="text-3xl font-comfortaa-bold text-[#71727A]Text mx-2">
+                :
+              </Text>
+              <TextInput
+                className="text-3xl font-comfortaa-bold text-[#71727A]Text text-center w-16 bg-transparent"
+                placeholder="00"
+                keyboardType="number-pad"
+                maxLength={2}
+                value={dropMinute}
+                onChangeText={setDropMinute}
+                underlineColorAndroid="transparent"
+                selectionColor="#FF9100"
+              />
+            </View>
+            {/* AM/PM Selector */}
+            <View className="flex-col w-20 border-l border-gray h-full">
+              <TouchableOpacity
+                className={`flex-1 items-center justify-center rounded-tr-2xl ${
+                  dropAmPm === "AM" ? "bg-primary" : "bg-white"
+                }`}
+                onPress={() => setDropAmPm("AM")}
+              >
+                <Text
+                  className={`font-comfortaa-bold text-lg ${
+                    dropAmPm === "AM" ? "text-white" : "text-[#71727A]"
+                  }`}
+                >
+                  AM
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                className={`flex-1 items-center justify-center rounded-br-2xl ${
+                  dropAmPm === "PM" ? "bg-primary" : "bg-white"
+                }`}
+                onPress={() => setDropAmPm("PM")}
+              >
+                <Text
+                  className={`font-comfortaa-bold text-lg ${
+                    dropAmPm === "PM" ? "text-white" : "text-[#71727A]"
                   }`}
                 >
                   PM

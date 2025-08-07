@@ -7,7 +7,8 @@ export interface CreatePickupRequest {
   childId: string;
   description: string;
   availableDays: string[];
-  pickupTime: string;
+  callPickupTime: string;
+  callDropTime: string;
   kidsCount: number;
   fromZone: string;
   toZone: string;
@@ -26,7 +27,8 @@ export interface PickupRequestResponse {
     childId: string;
     description: string;
     availableDays: string[];
-    pickupTime: string;
+    callPickupTime: string;
+    callDropTime: string;
     kidsCount: number;
     fromZone: string;
     toZone: string;
