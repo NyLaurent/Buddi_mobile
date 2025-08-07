@@ -1,11 +1,10 @@
-import { FontAwesome5, Ionicons } from "@expo/vector-icons";
+import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useEffect, useState } from "react";
 import {
   ScrollView,
   StatusBar,
   Text,
-  TextInput,
   TouchableOpacity,
   View,
 } from "react-native";
@@ -16,6 +15,7 @@ import BuyTokensCTA from "../../components/parent/BuyTokensCTA";
 import PendingTimesheetCard from "../../components/parent/PendingTimesheetCard";
 import { useAuth } from "../../context/AuthContext";
 import ParentService, { Timesheet } from "../../services/api/parent.service";
+import { getTokenBalance } from "../../services/payments";
 
 const Payments = () => {
   // Handler for BuyTokensCTA (could be a navigation or modal trigger)
@@ -30,9 +30,25 @@ const Payments = () => {
   const [timesheets, setTimesheets] = useState<Timesheet[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [tokenBalance, setTokenBalance] = useState<number>(0);
 
   const router = useRouter();
   const { parentDetails } = useAuth();
+
+  const fetchTokenBalance = async () => {
+    if (!parentDetails?.id) return;
+    try {
+      const res = await getTokenBalance(parentDetails.id.toString());
+      setTokenBalance(res.tokens);
+    } catch (err: any) {
+      // Handle 404 error gracefully - no tokens means 0 balance
+      if (err?.response?.status === 404 || err?.message?.includes("404")) {
+        setTokenBalance(0);
+      } else {
+        console.error("Failed to fetch token balance:", err);
+      }
+    }
+  };
 
   const fetchTimesheets = async () => {
     if (!parentDetails?.id) return;
@@ -57,6 +73,7 @@ const Payments = () => {
 
   useEffect(() => {
     fetchTimesheets();
+    fetchTokenBalance();
   }, [parentDetails?.id]);
 
   const formatDate = (dateString: string) => {
@@ -128,50 +145,27 @@ const Payments = () => {
               message="Unlock more rides and features for your family by topping up your Buddi tokens. Enjoy seamless, secure payments!"
               showButtonBelow={true}
             />
-            {/* 2x2 Analytics Cards Grid */}
+            {/* 2 Analytics Cards */}
             <View
               style={{
                 flexDirection: "row",
-                flexWrap: "wrap",
                 justifyContent: "space-between",
                 marginTop: 18,
                 marginBottom: 8,
               }}
             >
-              <View style={{ width: "48%", marginBottom: 16 }}>
+              <View style={{ width: "48%" }}>
+                <AnalyticsCard
+                  icon={<Ionicons name="people" size={32} color="#FF9100" />}
+                  value={tokenBalance.toString()}
+                  title="Total Tokens"
+                />
+              </View>
+              <View style={{ width: "48%" }}>
                 <AnalyticsCard
                   icon={<Ionicons name="flash" size={32} color="#2196F3" />}
                   value={timesheets.length.toString()}
                   title="Timesheets"
-                />
-              </View>
-              <View style={{ width: "48%", marginBottom: 16 }}>
-                <AnalyticsCard
-                  icon={
-                    <Ionicons name="timer-outline" size={32} color="#03A9F4" />
-                  }
-                  value={pendingCount.toString()}
-                  title="Pending"
-                />
-              </View>
-              <View style={{ width: "48%", marginBottom: 8 }}>
-                <AnalyticsCard
-                  icon={
-                    <FontAwesome5
-                      name="money-bill-wave"
-                      size={32}
-                      color="#A259FF"
-                    />
-                  }
-                  value={paidCount.toString()}
-                  title="Paid"
-                />
-              </View>
-              <View style={{ width: "48%", marginBottom: 8 }}>
-                <AnalyticsCard
-                  icon={<Ionicons name="people" size={32} color="#FF9100" />}
-                  value={`$${totalEarnings.toFixed(2)}`}
-                  title="Total Earnings"
                 />
               </View>
             </View>
@@ -237,6 +231,7 @@ const Payments = () => {
               {activeTab === "pending" ? (
                 <View style={{ paddingVertical: 16 }}>
                   {/* Search and Filter Row */}
+                  {/*
                   <View
                     style={{
                       flexDirection: "row",
@@ -306,6 +301,7 @@ const Payments = () => {
                       </Text>
                     </TouchableOpacity>
                   </View>
+                  */}
                   {/* Pending Timesheet Cards */}
                   {loading ? (
                     <View style={{ alignItems: "center", paddingVertical: 40 }}>
@@ -399,6 +395,7 @@ const Payments = () => {
               ) : (
                 <View style={{ paddingVertical: 16 }}>
                   {/* Search and Filter Row */}
+                  {/*
                   <View
                     style={{
                       flexDirection: "row",
@@ -468,26 +465,60 @@ const Payments = () => {
                       </Text>
                     </TouchableOpacity>
                   </View>
+                  */}
                   {/* Paid Timesheet Cards */}
                   {loading ? (
                     <View style={{ alignItems: "center", paddingVertical: 40 }}>
-                      <Text style={{ fontFamily: "Comfortaa-Regular", fontSize: 14, color: "#6B7280" }}>
+                      <Text
+                        style={{
+                          fontFamily: "Comfortaa-Regular",
+                          fontSize: 14,
+                          color: "#6B7280",
+                        }}
+                      >
                         Loading timesheets...
                       </Text>
                     </View>
                   ) : error ? (
                     <View style={{ alignItems: "center", paddingVertical: 40 }}>
-                      <Text style={{ fontFamily: "Comfortaa-Medium", fontSize: 14, color: "#EF4444", textAlign: "center" }}>
+                      <Text
+                        style={{
+                          fontFamily: "Comfortaa-Medium",
+                          fontSize: 14,
+                          color: "#EF4444",
+                          textAlign: "center",
+                        }}
+                      >
                         {error}
                       </Text>
                     </View>
                   ) : filteredTimesheets.length === 0 ? (
                     <View style={{ alignItems: "center", paddingVertical: 40 }}>
-                      <Ionicons name="document-text-outline" size={48} color="#6B7280" />
-                      <Text style={{ fontFamily: "Comfortaa-Bold", fontSize: 16, color: "#232B3A", marginTop: 12, textAlign: "center" }}>
+                      <Ionicons
+                        name="document-text-outline"
+                        size={48}
+                        color="#6B7280"
+                      />
+                      <Text
+                        style={{
+                          fontFamily: "Comfortaa-Bold",
+                          fontSize: 16,
+                          color: "#232B3A",
+                          marginTop: 12,
+                          textAlign: "center",
+                        }}
+                      >
                         No Paid Timesheets
                       </Text>
-                      <Text style={{ fontFamily: "Comfortaa-Regular", fontSize: 14, color: "#6B7280", marginTop: 8, textAlign: "center" }}>
+                      <Text
+                        style={{
+                          fontFamily: "Comfortaa-Regular",
+                          fontSize: 14,
+                          color: "#6B7280",
+                          marginTop: 8,
+                          textAlign: "center",
+                        }}
+                      >
                         No paid timesheets yet
                       </Text>
                     </View>
@@ -496,12 +527,20 @@ const Payments = () => {
                       <PendingTimesheetCard
                         key={timesheet.id}
                         week={getWeekLabel(timesheet.weekStart)}
-                        dateRange={formatWeekRange(timesheet.weekStart, timesheet.weekEnd)}
+                        dateRange={formatWeekRange(
+                          timesheet.weekStart,
+                          timesheet.weekEnd
+                        )}
                         shifts={timesheet.totalPickups}
                         pendingAmount={`$${timesheet.totalEarnings.toFixed(2)}`}
-                        variant={getVariant(timesheet.isPaid, timesheet.isApproved)}
+                        variant={getVariant(
+                          timesheet.isPaid,
+                          timesheet.isApproved
+                        )}
                         onPress={() => {
-                          router.push(`/parent/timesheet-details/${timesheet.id}` as any);
+                          router.push(
+                            `/parent/timesheet-details/${timesheet.id}` as any
+                          );
                         }}
                       />
                     ))

@@ -98,7 +98,7 @@ export default function ParentBottomNav() {
           </TouchableOpacity>
         ))}
 
-        {/* Center Search Button */}
+        {/* Center Chat Button */}
         <TouchableOpacity
           style={{
             marginTop: -40,
@@ -107,7 +107,7 @@ export default function ParentBottomNav() {
             justifyContent: "center",
             alignItems: "center",
           }}
-          onPress={() => router.push("/admin/search" as any)}
+          onPress={() => router.push("/parent/messages" as any)}
         >
           <View
             style={{
@@ -124,7 +124,7 @@ export default function ParentBottomNav() {
               elevation: 8,
             }}
           >
-            <Ionicons name="search" size={32} color="#fff" />
+            <Ionicons name="chatbubbles-outline" size={32} color="#fff" />
           </View>
         </TouchableOpacity>
 

@@ -1,9 +1,4 @@
-import {
-  Feather,
-  FontAwesome5,
-  Ionicons,
-  MaterialIcons,
-} from "@expo/vector-icons";
+import { Feather, FontAwesome5, Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
@@ -595,9 +590,9 @@ export default function ParentDashboard() {
               <Ionicons name="search-outline" size={22} color="white" />
             </TouchableOpacity> */}
             {/* Notification Icon */}
-            <TouchableOpacity className="p-2 bg-orange-400 rounded-xl shadow-sm">
+            {/* <TouchableOpacity className="p-2 bg-orange-400 rounded-xl shadow-sm">
               <Ionicons name="notifications-outline" size={22} color="white" />
-            </TouchableOpacity>
+            </TouchableOpacity> */}
             <TouchableOpacity
               className="p-2 bg-red-500 rounded-xl shadow-sm"
               onPress={handleLogout}
@@ -1320,36 +1315,20 @@ export default function ParentDashboard() {
         <View className="flex-row flex-wrap justify-between mb-4">
           <View className="w-[48%] mb-3">
             <AnalyticsCard
-              icon={<FontAwesome5 name="car" size={28} color="#8B5CF6" />}
-              title={"Today's Pickups"}
-              value="0"
-              subtitle="0 Schools"
-            />
-          </View>
-          <View className="w-[48%] mb-3">
-            <AnalyticsCard
-              icon={
-                <MaterialIcons name="access-time" size={28} color="#3B82F6" />
-              }
-              title="Timesheets"
-              value="0"
-              subtitle="All time"
-            />
-          </View>
-          <View className="w-[48%] mb-3">
-            <AnalyticsCard
               icon={<Feather name="users" size={28} color="#22C55E" />}
               title="Buddis"
-              value="0"
-              subtitle="Connected"
+              value={pickupRequests
+                .filter((p) => p.matchedBuddiId)
+                .length.toString()}
+              subtitle="Matched"
             />
           </View>
           <View className="w-[48%] mb-3">
             <AnalyticsCard
               icon={<FontAwesome5 name="child" size={28} color="#FF9100" />}
               title="Registered Kids"
-              value="0"
-              subtitle="0 Schools"
+              value={Object.keys(childDetailsMap).length.toString()}
+              subtitle="Total"
             />
           </View>
         </View>
@@ -1386,7 +1365,7 @@ export default function ParentDashboard() {
           </View>
 
           {/* Refresh Button Inside Box */}
-          <View
+          {/* <View
             style={{
               backgroundColor: "#fff",
               borderRadius: 16,
@@ -1444,7 +1423,7 @@ export default function ParentDashboard() {
             <Text className="text-xs text-gray-500 mt-2 font-comfortaa">
               Tap refresh to get the latest status of your pickup trips
             </Text>
-          </View>
+          </View> */}
           {/* Render KidPickupCard for each pickup request and only for the next relevant day */}
           {pickupRequests.length > 0 ? (
             pickupRequests.map((pickup) => {

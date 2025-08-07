@@ -79,7 +79,13 @@ const BuyTokens = () => {
       const res = await getTokenBalance(parentId);
       setBalance(res.tokens);
     } catch (err: any) {
-      setError(err.message || "Failed to fetch token balance");
+      // Handle 404 error gracefully - no tokens means 0 balance
+      if (err?.response?.status === 404 || err?.message?.includes("404")) {
+        setBalance(0);
+        setError(null);
+      } else {
+        setError(err.message || "Failed to fetch token balance");
+      }
     } finally {
       setLoading(false);
     }
@@ -261,6 +267,18 @@ const BuyTokens = () => {
                 }}
               >
                 {balance ?? 0}
+              </Text>
+            )}
+            {!loading && !error && (balance === 0 || balance === null) && (
+              <Text
+                style={{
+                  color: "#71727A",
+                  fontFamily: "Comfortaa-Regular",
+                  fontSize: 14,
+                  marginTop: 4,
+                }}
+              >
+                You have no tokens yet. Buy some to get started!
               </Text>
             )}
             {successMsg && (
@@ -450,14 +468,27 @@ const BuyTokens = () => {
                   width: 320,
                   maxHeight: "80%",
                   alignItems: "center",
+                  position: "relative",
                 }}
               >
+                <TouchableOpacity
+                  onPress={closeModal}
+                  style={{
+                    position: "absolute",
+                    top: 16,
+                    right: 16,
+                    zIndex: 1,
+                  }}
+                >
+                  <Ionicons name="close" size={24} color="#71727A" />
+                </TouchableOpacity>
                 <Text
                   style={{
                     fontFamily: "Comfortaa-Bold",
                     fontSize: 20,
                     color: "#232B3A",
                     marginBottom: 8,
+                    marginTop: 8,
                   }}
                 >
                   Buy Tokens
@@ -471,7 +502,7 @@ const BuyTokens = () => {
                     textAlign: "center",
                   }}
                 >
-                  You'll be redirected to our web app for secure payment
+                  You&apos;ll be redirected to our web app for secure payment
                   processing
                 </Text>
                 {selectedPkg && (
@@ -571,62 +602,29 @@ const BuyTokens = () => {
                           : 0}
                       </Text>
                     </Text>
-                    <View
+                    <TouchableOpacity
                       style={{
-                        flexDirection: "row",
-                        gap: 12,
+                        backgroundColor: selectedPkg.gradient[0],
+                        borderRadius: 8,
+                        paddingVertical: 12,
+                        paddingHorizontal: 16,
                         width: "100%",
-                        justifyContent: "space-between",
+                        alignItems: "center",
                         marginTop: 8,
                       }}
+                      onPress={handleModalBuy}
+                      disabled={buying}
                     >
-                      <TouchableOpacity
+                      <Text
                         style={{
-                          backgroundColor: "#e9ecef",
-                          borderRadius: 8,
-                          paddingVertical: 12,
-                          paddingHorizontal: 16,
-                          flex: 1,
-                          marginRight: 6,
-                          alignItems: "center",
+                          fontFamily: "Comfortaa-Bold",
+                          color: "#fff",
+                          fontSize: 14,
                         }}
-                        onPress={closeModal}
-                        disabled={buying}
                       >
-                        <Text
-                          style={{
-                            fontFamily: "Comfortaa-Bold",
-                            color: "#232B3A",
-                            fontSize: 14,
-                          }}
-                        >
-                          Cancel
-                        </Text>
-                      </TouchableOpacity>
-                      <TouchableOpacity
-                        style={{
-                          backgroundColor: selectedPkg.gradient[0],
-                          borderRadius: 8,
-                          paddingVertical: 12,
-                          paddingHorizontal: 16,
-                          flex: 1,
-                          marginLeft: 6,
-                          alignItems: "center",
-                        }}
-                        onPress={handleModalBuy}
-                        disabled={buying}
-                      >
-                        <Text
-                          style={{
-                            fontFamily: "Comfortaa-Bold",
-                            color: "#fff",
-                            fontSize: 14,
-                          }}
-                        >
-                          {buying ? "Redirecting..." : "Continue to Web App"}
-                        </Text>
-                      </TouchableOpacity>
-                    </View>
+                        {buying ? "Redirecting..." : "Continue to Web App"}
+                      </Text>
+                    </TouchableOpacity>
                   </>
                 )}
               </View>

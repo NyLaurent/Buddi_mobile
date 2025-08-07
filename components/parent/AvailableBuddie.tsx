@@ -197,13 +197,16 @@ const AvailableBuddie = ({
                 {data.status}
               </Text>
             </View>
-            <TouchableOpacity className="ml-2" onPress={handleChatPress}>
-              <Ionicons
-                name="chatbubble-ellipses-outline"
-                size={26}
-                color="#FF9100"
-              />
-            </TouchableOpacity>
+            {/* Show chat icon only if matched */}
+            {matched && (
+              <TouchableOpacity className="ml-2" onPress={handleChatPress}>
+                <Ionicons
+                  name="chatbubble-ellipses-outline"
+                  size={26}
+                  color="#FF9100"
+                />
+              </TouchableOpacity>
+            )}
           </View>
           {matched && (
             <View

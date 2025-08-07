@@ -26,6 +26,39 @@ const MyBuddyPage = () => {
   const [error, setError] = useState<string | null>(null);
   const [matchedBuddiId, setMatchedBuddiId] = useState<number | null>(null);
 
+  // State for analytics data
+  const [pickupRequests, setPickupRequests] = useState<any[]>([]);
+  const [coverageRequests, setCoverageRequests] = useState<any[]>([]);
+  const [coveragePagination, setCoveragePagination] = useState({
+    total: 0,
+    page: 1,
+    limit: 5,
+    totalPages: 1,
+  });
+
+  // Function to fetch coverage requests
+  const fetchCoverageRequests = async () => {
+    if (!parentDetails?.id) return;
+    try {
+      const response = await ParentService.getCoverageRequests(
+        parentDetails.id.toString(),
+        1,
+        5
+      );
+      setCoverageRequests(response.data || []);
+      setCoveragePagination(
+        response.pagination || {
+          total: 0,
+          page: 1,
+          limit: 5,
+          totalPages: 1,
+        }
+      );
+    } catch (err: any) {
+      console.error("Failed to fetch coverage requests:", err);
+    }
+  };
+
   useEffect(() => {
     const fetchBuddies = async () => {
       if (!parentDetails?.id) return;
@@ -37,6 +70,8 @@ const MyBuddyPage = () => {
           parentDetails.id.toString()
         );
         const requests = requestsRes.data || [];
+        setPickupRequests(requests);
+
         // Find the latest call/request
         const latestRequest = requests.length > 0 ? requests[0] : null;
         if (!latestRequest) {
@@ -59,6 +94,9 @@ const MyBuddyPage = () => {
         // Flatten all buddis from all recommendations (should be 3)
         const buddis = recommendations.flatMap((rec) => rec.buddis);
         setBuddies(buddis);
+
+        // Fetch coverage requests
+        await fetchCoverageRequests();
       } catch (err: any) {
         setError(err.message || "Failed to fetch buddies");
       } finally {
@@ -87,24 +125,41 @@ const MyBuddyPage = () => {
       >
         <View className="pt-12">
           <PageHeader title="My Buddi" />
-          <View className="flex-row gap-3 px-3">
-            <AnalyticsCard
-              icon={<Ionicons name="flash" size={20} color="#8B5CF6" />}
-              title="Today's Pickups"
-              value="0"
-              subtitle="0 Schools"
-            />
-            <AnalyticsCard
-              icon={<Ionicons name="send" size={20} color="#FF932E" />}
-              title="This Week's Trips"
-              value="0"
-              subtitle="0 Schools"
-            />
+          <View className="px-4 mb-6">
+            <View className="flex-row gap-3">
+              {/* Today's Pickups */}
+              <View className="w-[48%]">
+                <AnalyticsCard
+                  icon={<Ionicons name="calendar" size={20} color="#FF932E" />}
+                  title="Today's Pickups"
+                  value={pickupRequests
+                    .filter((p) => p.status === "matched")
+                    .length.toString()}
+                  subtitle="Scheduled"
+                />
+              </View>
+
+              {/* Coverage Requests */}
+              <View className="w-[48%]">
+                <AnalyticsCard
+                  icon={
+                    <Ionicons name="shield-outline" size={20} color="#3B82F6" />
+                  }
+                  title="Coverage Requests"
+                  value={coveragePagination.total.toString()}
+                  subtitle={`${
+                    coverageRequests.filter((cr) => cr.status === "pending")
+                      .length
+                  } Active`}
+                />
+              </View>
+            </View>
           </View>
           <View className="px-4 mt-6">
             <TouchableOpacity
               className="bg-primary rounded-full py-4 items-center flex-row justify-center"
               activeOpacity={0.8}
+              onPress={() => router.push("/parent/timesheets" as any)}
             >
               <Text className="text-white font-comfortaa-bold text-lg mr-2">
                 View Timesheets

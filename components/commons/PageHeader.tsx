@@ -14,7 +14,7 @@ interface PageHeaderProps {
 const PageHeader: React.FC<PageHeaderProps> = ({
   title,
   showBackButton = true,
-  showMenuButton = true,
+  showMenuButton = false,
   onMenuPress,
   className = "",
 }) => {
@@ -37,16 +37,7 @@ const PageHeader: React.FC<PageHeaderProps> = ({
 
       <Text className="text-xl font-comfortaa-bold text-black">{title}</Text>
 
-      {showMenuButton ? (
-        <TouchableOpacity
-          className="w-10 h-10 bg-primary rounded-xl items-center justify-center"
-          onPress={onMenuPress}
-        >
-          <Ionicons name="ellipsis-horizontal" size={20} color="white" />
-        </TouchableOpacity>
-      ) : (
-        <View className="w-10" />
-      )}
+      <View className="w-10" />
     </View>
   );
 };
