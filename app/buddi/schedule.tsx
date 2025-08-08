@@ -6,6 +6,7 @@ import KidPickupCard from "@/components/parent/KidPickupCard";
 import { useAuth } from "@/context/AuthContext";
 import BuddiService from "@/services/api/buddi.service";
 import ChildrenService from "@/services/api/children.service";
+import CoverageService from "@/services/api/coverage.service";
 import ParentService from "@/services/api/parent.service";
 import SocketService from "@/services/socket";
 import { Ionicons } from "@expo/vector-icons";
@@ -46,44 +47,10 @@ import { SafeAreaView } from "react-native-safe-area-context";
 //   },
 // ];
 
-const coverageRequestsData = [
-  {
-    studentName: "Liam Brown",
-    time: "1:45:00",
-    hourlyRate: "$27 per hour",
-    school: "Maple Elementary",
-    home: "Greenfield",
-    requesterName: "Olivia Lee",
-    requesterEmail: "olivia.lee@email.com",
-    requesterAvatar: undefined,
-  },
-  {
-    studentName: "Sophia Miller",
-    time: "2:30:00",
-    hourlyRate: "$26 per hour",
-    school: "Cedar Middle School",
-    home: "Northside",
-    requesterName: "Noah Kim",
-    requesterEmail: "noah.kim@email.com",
-    requesterAvatar: undefined,
-  },
-  {
-    studentName: "Ava Smith",
-    time: "4:10:00",
-    hourlyRate: "$25 per hour",
-    school: "Pine Middle School",
-    home: "Eastside",
-    requesterName: "Mason Lee",
-    requesterEmail: "mason.lee@email.com",
-    requesterAvatar: undefined,
-  },
-];
-
 const SchedulePage = () => {
   const router = useRouter();
-  const { parentDetails } = useAuth();
+  const { parentDetails, buddiDetails, user } = useAuth();
   const [activeTab, setActiveTab] = React.useState("pickups");
-  const [pickupIndex, setPickupIndex] = React.useState(0);
 
   // State for real pickup requests and details
   const [pickupRequests, setPickupRequests] = React.useState<any[]>([]);
@@ -100,9 +67,6 @@ const SchedulePage = () => {
   const [pickupStatuses, setPickupStatuses] = React.useState<
     Record<number, string>
   >({});
-  const [startingTripId, setStartingTripId] = React.useState<number | null>(
-    null
-  );
 
   // State for coverage request modal
   const [showCoverageModal, setShowCoverageModal] = React.useState(false);
@@ -122,9 +86,28 @@ const SchedulePage = () => {
     totalPages: 0,
   });
 
-  React.useEffect(() => {
-    const fetchDetailsForRequests = async () => {
-      if (!parentDetails?.id) return;
+  const fetchDetailsForRequests = async () => {
+    // For Buddi users - get matched requests
+    if (user?.role === "buddi" && buddiDetails?.id) {
+      setLoading(true);
+      setError(null);
+      try {
+        const res = await BuddiService.getMatchedRequests(buddiDetails.id);
+        const requests = res.data || [];
+        setPickupRequests(requests);
+
+        // For Buddi, we don't need children details but we might need parent details
+        // We can leave child and buddi details maps empty for now
+        setChildDetailsMap({});
+        setBuddiDetailsMap({});
+      } catch (err: any) {
+        setError(err.message || "Failed to fetch pickup requests.");
+      } finally {
+        setLoading(false);
+      }
+    }
+    // For Parent users - existing functionality
+    else if (parentDetails?.id) {
       setLoading(true);
       setError(null);
       try {
@@ -155,7 +138,7 @@ const SchedulePage = () => {
               buddiId.toString()
             );
             buddiMap[buddiId] = buddiRes.data;
-          } catch (e) {
+          } catch {
             buddiMap[buddiId] = { id: buddiId };
           }
         }
@@ -165,9 +148,30 @@ const SchedulePage = () => {
       } finally {
         setLoading(false);
       }
-    };
+    }
+  };
+
+  // Fail-safe: stop loading after 8s to avoid endless spinner
+  React.useEffect(() => {
+    if (!loading) return;
+    const timeoutId = setTimeout(() => {
+      console.warn("[SCHEDULE] Loading timed out. Showing fallback UI.");
+      setError(
+        (prev) => prev ?? "This is taking longer than usual. Please try again."
+      );
+      setLoading(false);
+    }, 8000);
+    return () => clearTimeout(timeoutId);
+  }, [loading]);
+
+  React.useEffect(() => {
+    if (!parentDetails?.id && !(user?.role === "buddi" && buddiDetails?.id)) {
+      setLoading(false);
+      setPickupRequests([]);
+      return;
+    }
     fetchDetailsForRequests();
-  }, [parentDetails?.id]);
+  }, [parentDetails?.id, buddiDetails?.id, user?.role]);
 
   // Socket event listeners for real-time pickup status updates (copied from parent index)
   React.useEffect(() => {
@@ -224,43 +228,77 @@ const SchedulePage = () => {
 
   // Function to handle coverage request creation
   const handleCreateCoverageRequest = async (reason: string) => {
-    if (!parentDetails?.id || !selectedBuddiId) {
+    // For Buddi users
+    if (user?.role === "buddi" && buddiDetails?.id && selectedBuddiId) {
+      try {
+        await CoverageService.createBuddiCoverageRequest({
+          parentId: selectedBuddiId, // This is actually the parent ID we got from matched request
+          buddiId: buddiDetails.id.toString(),
+          reason: reason,
+        });
+
+        Alert.alert(
+          "Success",
+          "Coverage request sent successfully! The parent will be notified.",
+          [
+            {
+              text: "OK",
+              onPress: () => {
+                setShowCoverageModal(false);
+                setSelectedBuddiId(null);
+                setSelectedBuddiName("");
+                // Refresh coverage requests list
+                if (activeTab === "coverage") {
+                  fetchCoverageRequests(1);
+                }
+              },
+            },
+          ]
+        );
+      } catch (error: any) {
+        Alert.alert(
+          "Error",
+          error.message || "Failed to create coverage request."
+        );
+      }
+    }
+    // For Parent users (existing functionality)
+    else if (parentDetails?.id && selectedBuddiId) {
+      try {
+        await ParentService.createCoverageRequest({
+          parentId: parentDetails.id.toString(),
+          buddiId: selectedBuddiId,
+          reason: reason,
+        });
+
+        Alert.alert(
+          "Success",
+          "Coverage request sent successfully! Your Buddi will be notified.",
+          [
+            {
+              text: "OK",
+              onPress: () => {
+                setShowCoverageModal(false);
+                setSelectedBuddiId(null);
+                setSelectedBuddiName("");
+                // Refresh coverage requests list
+                if (activeTab === "coverage") {
+                  fetchCoverageRequests(1);
+                }
+              },
+            },
+          ]
+        );
+      } catch (error: any) {
+        Alert.alert(
+          "Error",
+          error.message || "Failed to create coverage request."
+        );
+      }
+    } else {
       Alert.alert(
         "Error",
         "Missing required information for coverage request."
-      );
-      return;
-    }
-
-    try {
-      await ParentService.createCoverageRequest({
-        parentId: parentDetails.id.toString(),
-        buddiId: selectedBuddiId,
-        reason: reason,
-      });
-
-      Alert.alert(
-        "Success",
-        "Coverage request sent successfully! Your Buddi will be notified.",
-        [
-          {
-            text: "OK",
-            onPress: () => {
-              setShowCoverageModal(false);
-              setSelectedBuddiId(null);
-              setSelectedBuddiName("");
-              // Refresh coverage requests list
-              if (activeTab === "coverage") {
-                fetchCoverageRequests(1);
-              }
-            },
-          },
-        ]
-      );
-    } catch (error: any) {
-      Alert.alert(
-        "Error",
-        error.message || "Failed to create coverage request."
       );
     }
   };
@@ -275,40 +313,72 @@ const SchedulePage = () => {
     setShowCoverageModal(true);
   };
 
-  // Function to fetch coverage requests
+  // Function to fetch coverage requests (for Buddi)
   const fetchCoverageRequests = async (page: number = 1) => {
-    if (!parentDetails?.id) return;
+    // Check if user is a Buddi or Parent
+    if (user?.role === "buddi" && buddiDetails?.id) {
+      setCoverageLoading(true);
+      setCoverageError(null);
 
-    setCoverageLoading(true);
-    setCoverageError(null);
+      try {
+        const response = await CoverageService.getBuddiCoverageRequests(
+          buddiDetails.id.toString(),
+          page,
+          2 // Only show 2 coverage requests on schedule page
+        );
 
-    try {
-      const response = await ParentService.getCoverageRequests(
-        parentDetails.id.toString(),
-        page,
-        5
-      );
+        if (page === 1) {
+          setCoverageRequests(response.data);
+        } else {
+          setCoverageRequests((prev) => [...prev, ...response.data]);
+        }
 
-      if (page === 1) {
-        setCoverageRequests(response.data);
-      } else {
-        setCoverageRequests((prev) => [...prev, ...response.data]);
+        setCoveragePagination({
+          total: response.pagination.totalItems,
+          page: response.pagination.currentPage,
+          limit: response.pagination.perPage,
+          totalPages: response.pagination.totalPages,
+        });
+      } catch (err: any) {
+        setCoverageError(err.message || "Failed to fetch coverage requests.");
+      } finally {
+        setCoverageLoading(false);
       }
+    } else if (parentDetails?.id) {
+      setCoverageLoading(true);
+      setCoverageError(null);
 
-      setCoveragePagination(response.pagination);
-    } catch (err: any) {
-      setCoverageError(err.message || "Failed to fetch coverage requests.");
-    } finally {
-      setCoverageLoading(false);
+      try {
+        const response = await ParentService.getCoverageRequests(
+          parentDetails.id.toString(),
+          page,
+          5
+        );
+
+        if (page === 1) {
+          setCoverageRequests(response.data);
+        } else {
+          setCoverageRequests((prev) => [...prev, ...response.data]);
+        }
+
+        setCoveragePagination(response.pagination);
+      } catch (err: any) {
+        setCoverageError(err.message || "Failed to fetch coverage requests.");
+      } finally {
+        setCoverageLoading(false);
+      }
     }
   };
 
   // Fetch coverage requests when tab is active
   React.useEffect(() => {
-    if (activeTab === "coverage" && parentDetails?.id) {
+    if (
+      activeTab === "coverage" &&
+      (parentDetails?.id || (user?.role === "buddi" && buddiDetails?.id))
+    ) {
       fetchCoverageRequests(1);
     }
-  }, [activeTab, parentDetails?.id]);
+  }, [activeTab, parentDetails?.id, buddiDetails?.id, user?.role]);
 
   return (
     <SafeAreaView
@@ -424,35 +494,143 @@ const SchedulePage = () => {
                   </Text>
                 </View>
                 {loading ? (
-                  <Text
-                    style={{
-                      color: "#888",
-                      fontFamily: "Comfortaa-Regular",
-                      marginTop: 10,
-                    }}
-                  >
-                    Loading pickups...
-                  </Text>
+                  <View style={{ alignItems: "center", padding: 40 }}>
+                    <ActivityIndicator size="large" color="#FF932E" />
+                    <Text
+                      style={{
+                        fontFamily: "Comfortaa-Regular",
+                        fontSize: 14,
+                        color: "#6B7280",
+                        marginTop: 12,
+                      }}
+                    >
+                      Loading your pickups...
+                    </Text>
+                  </View>
                 ) : error ? (
-                  <Text
+                  <View
                     style={{
-                      color: "red",
-                      fontFamily: "Comfortaa-Regular",
-                      marginTop: 10,
+                      backgroundColor: "#FEF2F2",
+                      borderRadius: 16,
+                      padding: 24,
+                      alignItems: "center",
+                      marginTop: 16,
                     }}
                   >
-                    {error}
-                  </Text>
+                    <Ionicons
+                      name="alert-circle-outline"
+                      size={40}
+                      color="#F44336"
+                    />
+                    <Text
+                      style={{
+                        fontFamily: "Comfortaa-Bold",
+                        fontSize: 16,
+                        color: "#F44336",
+                        marginTop: 12,
+                        textAlign: "center",
+                      }}
+                    >
+                      {error}
+                    </Text>
+                    <TouchableOpacity
+                      style={{
+                        backgroundColor: "#FF932E",
+                        borderRadius: 12,
+                        paddingVertical: 12,
+                        paddingHorizontal: 20,
+                        marginTop: 16,
+                      }}
+                      onPress={() => {
+                        // Refresh the data
+                        if (parentDetails?.id) {
+                          fetchDetailsForRequests();
+                        }
+                      }}
+                    >
+                      <Text
+                        style={{
+                          fontFamily: "Comfortaa-Bold",
+                          fontSize: 14,
+                          color: "white",
+                        }}
+                      >
+                        Try Again
+                      </Text>
+                    </TouchableOpacity>
+                  </View>
                 ) : pickupRequests.length === 0 ? (
-                  <Text
+                  <View
                     style={{
-                      color: "#888",
-                      fontFamily: "Comfortaa-Regular",
-                      marginTop: 10,
+                      backgroundColor: "#F4F7FE",
+                      borderRadius: 16,
+                      borderWidth: 1,
+                      borderColor: "#E6E6E6",
+                      padding: 32,
+                      alignItems: "center",
+                      justifyContent: "center",
+                      marginTop: 16,
                     }}
                   >
-                    No pickups scheduled yet.
-                  </Text>
+                    <Ionicons
+                      name="calendar-outline"
+                      size={48}
+                      color="#FF932E"
+                      style={{ marginBottom: 16 }}
+                    />
+                    <Text
+                      style={{
+                        fontFamily: "Comfortaa-Bold",
+                        fontSize: 20,
+                        color: "#FF932E",
+                        marginBottom: 8,
+                        textAlign: "center",
+                      }}
+                    >
+                      No Pickups Scheduled
+                    </Text>
+                    <Text
+                      style={{
+                        fontFamily: "Comfortaa-Regular",
+                        fontSize: 14,
+                        color: "#6B7280",
+                        textAlign: "center",
+                        marginBottom: 24,
+                        lineHeight: 20,
+                      }}
+                    >
+                      You don&apos;t have any pickup requests scheduled yet.
+                    </Text>
+
+                    {/* <TouchableOpacity
+                      style={{
+                        backgroundColor: "#FF932E",
+                        borderRadius: 12,
+                        paddingVertical: 14,
+                        paddingHorizontal: 24,
+                        flexDirection: "row",
+                        alignItems: "center",
+                        justifyContent: "center",
+                      }}
+                      onPress={() => router.push("/parent/request-buddi")}
+                    >
+                      <Ionicons
+                        name="add-circle-outline"
+                        size={18}
+                        color="white"
+                        style={{ marginRight: 8 }}
+                      />
+                      <Text
+                        style={{
+                          fontFamily: "Comfortaa-Bold",
+                          fontSize: 16,
+                          color: "white",
+                        }}
+                      >
+                        Request a Buddi
+                      </Text>
+                    </TouchableOpacity> */}
+                  </View>
                 ) : (
                   pickupRequests.map((pickup) => {
                     console.log("Processing pickup request:", pickup.id);
@@ -578,7 +756,7 @@ const SchedulePage = () => {
                                 }
                                 destination={pickup.toZone || "Home"}
                                 mainAction={
-                                  startingTripId === pickup.id
+                                  false
                                     ? "Starting Trip..."
                                     : currentPickupStatus === "pending"
                                     ? "Trip Started"
@@ -613,7 +791,7 @@ const SchedulePage = () => {
                                   currentPickupStatus === "enRoute" ||
                                   currentPickupStatus === "pickedUp" ||
                                   currentPickupStatus === "completed" ||
-                                  startingTripId === pickup.id ||
+                                  false ||
                                   (pickup.status === "matched" &&
                                     parentDetails?.approvalStage === "pending")
                                 }
@@ -686,7 +864,7 @@ const SchedulePage = () => {
                   </Text>
                   <TouchableOpacity
                     className="flex-row items-center gap-1"
-                    onPress={() => router.push("/parent/coverage-requests")}
+                    onPress={() => router.push("/buddi/coverage-requests")}
                   >
                     <Text className="text-primary font-comfortaa">
                       View All
@@ -764,9 +942,8 @@ const SchedulePage = () => {
                         />
                       ))}
 
-                      {/* Load More Button */}
-                      {coveragePagination.page <
-                        coveragePagination.totalPages && (
+                      {/* Show Load More only if there are more than 2 items */}
+                      {coveragePagination.total > 2 && (
                         <TouchableOpacity
                           style={{
                             backgroundColor: "#F4F7FE",
@@ -776,30 +953,78 @@ const SchedulePage = () => {
                             alignItems: "center",
                             borderWidth: 1,
                             borderColor: "#E6E6E6",
+                            marginTop: 8,
                           }}
                           onPress={() =>
-                            fetchCoverageRequests(coveragePagination.page + 1)
+                            router.push("/buddi/coverage-requests")
                           }
-                          disabled={coverageLoading}
                         >
-                          {coverageLoading ? (
-                            <ActivityIndicator size="small" color="#FF932E" />
-                          ) : (
+                          <Text
+                            style={{
+                              fontFamily: "Comfortaa-Bold",
+                              fontSize: 14,
+                              color: "#FF932E",
+                            }}
+                          >
+                            View All ({coveragePagination.total} requests)
+                          </Text>
+                        </TouchableOpacity>
+                      )}
+
+                      {/* Create Coverage Request Button - For Buddi users */}
+                      {user?.role === "buddi" &&
+                        buddiDetails?.id &&
+                        pickupRequests.length > 0 && (
+                          <TouchableOpacity
+                            style={{
+                              backgroundColor: "#FF932E",
+                              borderRadius: 12,
+                              paddingVertical: 12,
+                              paddingHorizontal: 20,
+                              flexDirection: "row",
+                              alignItems: "center",
+                              justifyContent: "center",
+                              marginTop: 16,
+                            }}
+                            onPress={() => {
+                              // For Buddi, we need to get parent ID from matched pickup requests
+                              const matchedPickup = pickupRequests.find(
+                                (pickup) => pickup.matchedBuddiId
+                              );
+                              if (matchedPickup?.parentId) {
+                                openCoverageRequestModal(
+                                  matchedPickup.parentId,
+                                  "Parent"
+                                );
+                              } else {
+                                Alert.alert(
+                                  "No Active Pickups",
+                                  "You need to have active pickup requests to create coverage requests."
+                                );
+                              }
+                            }}
+                          >
+                            <Ionicons
+                              name="add-circle-outline"
+                              size={18}
+                              color="white"
+                              style={{ marginRight: 6 }}
+                            />
                             <Text
                               style={{
                                 fontFamily: "Comfortaa-Bold",
                                 fontSize: 14,
-                                color: "#FF932E",
+                                color: "white",
                               }}
                             >
-                              Load More
+                              Create Another Coverage Request
                             </Text>
-                          )}
-                        </TouchableOpacity>
-                      )}
+                          </TouchableOpacity>
+                        )}
 
-                      {/* Create Coverage Request Button - Always visible when there are matched pickups */}
-                      {pickupRequests.length > 0 &&
+                      {/* Create Coverage Request Button - For Parent users */}
+                      {user?.role === "parent" &&
+                        pickupRequests.length > 0 &&
                         pickupRequests.some(
                           (pickup) => pickup.matchedBuddiId
                         ) && (
@@ -895,12 +1120,64 @@ const SchedulePage = () => {
                           marginBottom: 16,
                         }}
                       >
-                        You currently have no coverage requests. When a parent
-                        requests coverage, you&apos;ll see it here!
+                        {user?.role === "buddi"
+                          ? "You currently have no coverage requests. When you need coverage from parents, create a request here!"
+                          : "You currently have no coverage requests. When a parent requests coverage, you'll see it here!"}
                       </Text>
 
-                      {/* Create Coverage Request Button */}
-                      {pickupRequests.length > 0 &&
+                      {/* Create Coverage Request Button for Buddis */}
+                      {user?.role === "buddi" &&
+                        buddiDetails?.id &&
+                        pickupRequests.length > 0 && (
+                          <TouchableOpacity
+                            style={{
+                              backgroundColor: "#FF932E",
+                              borderRadius: 12,
+                              paddingVertical: 12,
+                              paddingHorizontal: 20,
+                              flexDirection: "row",
+                              alignItems: "center",
+                              justifyContent: "center",
+                            }}
+                            onPress={() => {
+                              // For Buddi, we need to get parent ID from matched pickup requests
+                              const matchedPickup = pickupRequests.find(
+                                (pickup) => pickup.matchedBuddiId
+                              );
+                              if (matchedPickup?.parentId) {
+                                openCoverageRequestModal(
+                                  matchedPickup.parentId,
+                                  "Parent"
+                                );
+                              } else {
+                                Alert.alert(
+                                  "No Active Pickups",
+                                  "You need to have active pickup requests to create coverage requests."
+                                );
+                              }
+                            }}
+                          >
+                            <Ionicons
+                              name="add-circle-outline"
+                              size={18}
+                              color="white"
+                              style={{ marginRight: 6 }}
+                            />
+                            <Text
+                              style={{
+                                fontFamily: "Comfortaa-Bold",
+                                fontSize: 14,
+                                color: "white",
+                              }}
+                            >
+                              Request Coverage
+                            </Text>
+                          </TouchableOpacity>
+                        )}
+
+                      {/* Create Coverage Request Button for Parents */}
+                      {user?.role === "parent" &&
+                        pickupRequests.length > 0 &&
                         pickupRequests.some(
                           (pickup) => pickup.matchedBuddiId
                         ) && (

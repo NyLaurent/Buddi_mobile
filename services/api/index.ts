@@ -4,7 +4,7 @@
 // ===============================
 
 // Core API Configuration
-export { STORAGE_KEYS, authorizedApi, unauthorizedApi } from './config';
+export { authorizedApi, STORAGE_KEYS, unauthorizedApi } from './config';
 export type { ApiError } from './config';
 
 // API Endpoints
@@ -29,6 +29,11 @@ export type { ParentListResponse, ParentRecord } from './parent.service';
 // export { default as AnalyticsService } from './analytics.service';
 export { default as ChildrenService } from './children.service';
 export { default as CoverageService } from './coverage.service';
+export type {
+    BuddiCoverageListResponse, BuddiCoverageRequest,
+    BuddiCoverageResponse,
+    CoverageRequestItem
+} from './coverage.service';
 
 // ===============================
 // Utility Functions (to be implemented)

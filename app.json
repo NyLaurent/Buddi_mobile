@@ -34,7 +34,8 @@
         "android.permission.WRITE_EXTERNAL_STORAGE",
         "android.permission.READ_EXTERNAL_STORAGE"
       ],
-      "package": "com.lau_lanez.pickupbuddi"
+      "package": "com.lau_lanez.pickupbuddi",
+      "googleServicesFile": "./google-services.json"
     },
     "web": {
       "bundler": "metro",

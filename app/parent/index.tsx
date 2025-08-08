@@ -27,7 +27,7 @@ import ParentService, {
 import SocketService from "../../services/socket";
 
 export default function ParentDashboard() {
-  const [selectedDate, setSelectedDate] = React.useState(new Date());
+  // const [selectedDate, setSelectedDate] = React.useState(new Date());
   const { user, logout, parentDetails, refreshUserData } = useAuth();
   const router = useRouter();
 
@@ -40,8 +40,8 @@ export default function ParentDashboard() {
 
   // New state for actual pickups tracking
   const [pickups, setPickups] = React.useState<Pickup[]>([]);
-  const [loadingPickups, setLoadingPickups] = React.useState(true);
-  const [errorPickups, setErrorPickups] = React.useState<string | null>(null);
+  // const [loadingPickups, setLoadingPickups] = React.useState(true);
+  // const [errorPickups, setErrorPickups] = React.useState<string | null>(null);
 
   // New state for child and buddi details per pickup request
   const [childDetailsMap, setChildDetailsMap] = React.useState<
@@ -125,7 +125,7 @@ export default function ParentDashboard() {
               buddiId.toString()
             );
             buddiMap[buddiId] = buddiRes.data;
-          } catch (e) {
+          } catch {
             // fallback: just store id
             buddiMap[buddiId] = { id: buddiId };
           }
@@ -140,17 +140,13 @@ export default function ParentDashboard() {
 
     const fetchPickups = async () => {
       if (!parentDetails?.id) return;
-      setLoadingPickups(true);
-      setErrorPickups(null);
       try {
         const res = await ParentService.getAllPickups(
           parentDetails.id.toString()
         );
         setPickups(res.pickups || []);
       } catch (err: any) {
-        setErrorPickups(err.message || "Failed to fetch pickups.");
-      } finally {
-        setLoadingPickups(false);
+        console.error("Failed to fetch pickups:", err);
       }
     };
 
@@ -321,38 +317,120 @@ export default function ParentDashboard() {
   }, [parentDetails?.id]);
 
   React.useEffect(() => {
-    if (!parentDetails?.id) return;
+    if (!parentDetails?.id || !user?.userId) return;
 
-    // Ensure socket connection and join parent room
-    if (user?.userId && user?.role === "parent") {
+    // Enhanced socket connection and room management
+    const connectAndJoinRoom = () => {
       console.log("[PARENT] 🔌 Connecting to socket as parent:", user.userId);
+      console.log("[PARENT] 🏠 Parent details:", parentDetails);
+      console.log("[PARENT] 🆔 Parent ID for room:", parentDetails.id);
+
+      // Connect to socket
       SocketService.connect(user.userId.toString(), "Parent");
+
+      // Join parent-specific room for real-time updates
+      const socket = SocketService.getSocket();
+      if (socket) {
+        console.log(
+          "[PARENT] 🚪 Joining parent room with ID:",
+          parentDetails.id
+        );
+        console.log("[PARENT] 🚪 Emitting join-parent-room event...");
+        socket.emit("join-parent-room", parentDetails.id);
+        console.log(
+          "[PARENT] ✅ join-parent-room event emitted for parent:",
+          parentDetails.id
+        );
+
+        // Listen for room join confirmation (if your server sends it)
+        socket.on("room-joined", (data) => {
+          console.log("[PARENT] ✅ Successfully joined room:", data);
+        });
+
+        socket.on("room-join-error", (error) => {
+          console.error("[PARENT] ❌ Failed to join room:", error);
+        });
+      } else {
+        console.error("[PARENT] ❌ Socket not available for room joining");
+      }
+    };
+
+    // Initial connection
+    connectAndJoinRoom();
+
+    // Reconnect on socket reconnection
+    const socket = SocketService.getSocket();
+    if (socket) {
+      socket.on("connect", () => {
+        console.log("[PARENT] 🔄 Socket reconnected, rejoining room");
+        connectAndJoinRoom();
+      });
+
+      socket.on("disconnect", (reason) => {
+        console.log("[PARENT] 💔 Socket disconnected:", reason);
+      });
     }
 
-    // Handler for real-time pickup events
+    // Enhanced handlers for all trip events
+    const handlePickupRequested = (pickupData: any) => {
+      console.log("[PARENT] 📋 Received pickup-requested event:", pickupData);
+      // Update pickup requests state when a pickup is requested
+      setPickupRequests((prev) => {
+        const exists = prev.find((p) => p.id === pickupData.id);
+        if (!exists) {
+          console.log("[PARENT] ➕ Adding new pickup request");
+          return [...prev, pickupData];
+        }
+        console.log("[PARENT] 🔄 Updating existing pickup request");
+        return prev.map((p) =>
+          p.id === pickupData.id ? { ...p, ...pickupData } : p
+        );
+      });
+    };
+
     const handlePickupStarted = (pickupData: any) => {
       console.log("[PARENT] 🚀 Received pickup-started event:", pickupData);
       console.log("[PARENT] 📊 Current pickups before update:", pickups);
+
+      // Update both pickups and pickup requests
       setPickups((prev) => {
         const updated = prev.map((pickup) =>
           pickup.id === pickupData.id
-            ? { ...pickup, status: "enRoute" as const }
+            ? { ...pickup, status: "enRoute" as const, ...pickupData }
             : pickup
         ) as Pickup[];
+
+        // Add new pickup if it doesn't exist
+        const exists = updated.find((p) => p.id === pickupData.id);
+        if (!exists) {
+          updated.push({ ...pickupData, status: "enRoute" as const });
+        }
+
         console.log(
           "[PARENT] 📊 Updated pickups after pickup-started:",
           updated
         );
         return updated;
       });
+
+      // Update pickup requests status
+      setPickupRequests((prev) =>
+        prev.map((req) =>
+          req.id === pickupData.parentPickupRequestId
+            ? { ...req, tripStatus: "enRoute" }
+            : req
+        )
+      );
     };
+
     const handleChildPickedUp = (pickupData: any) => {
       console.log("[PARENT] 👶 Received child-picked-up event:", pickupData);
       console.log("[PARENT] 📊 Current pickups before update:", pickups);
+
       setPickups((prev) => {
         const updated = prev.map((pickup) =>
           pickup.id === pickupData.id
-            ? { ...pickup, status: "pickedUp" as const }
+            ? { ...pickup, status: "pickedUp" as const, ...pickupData }
             : pickup
         ) as Pickup[];
         console.log(
@@ -361,14 +439,25 @@ export default function ParentDashboard() {
         );
         return updated;
       });
+
+      // Update pickup requests status
+      setPickupRequests((prev) =>
+        prev.map((req) =>
+          req.id === pickupData.parentPickupRequestId
+            ? { ...req, tripStatus: "pickedUp" }
+            : req
+        )
+      );
     };
+
     const handleTripCompleted = (pickupData: any) => {
       console.log("[PARENT] ✅ Received trip-completed event:", pickupData);
       console.log("[PARENT] 📊 Current pickups before update:", pickups);
+
       setPickups((prev) => {
         const updated = prev.map((pickup) =>
           pickup.id === pickupData.id
-            ? { ...pickup, status: "completed" as const }
+            ? { ...pickup, status: "completed" as const, ...pickupData }
             : pickup
         ) as Pickup[];
         console.log(
@@ -377,10 +466,71 @@ export default function ParentDashboard() {
         );
         return updated;
       });
+
+      // Update pickup requests status
+      setPickupRequests((prev) =>
+        prev.map((req) =>
+          req.id === pickupData.parentPickupRequestId
+            ? { ...req, tripStatus: "completed" }
+            : req
+        )
+      );
+
+      // Show completion alert with details
+      Alert.alert(
+        "Trip Completed! 🎉",
+        `Your pickup trip has been completed successfully!\n\nFare: $${
+          pickupData.fare?.toFixed(2) || "0.00"
+        }\nDuration: ${pickupData.duration || "N/A"}`,
+        [{ text: "Great!", style: "default" }]
+      );
     };
 
-    // Register listeners
+    const handleTripCancelled = (pickupData: any) => {
+      console.log("[PARENT] ❌ Received trip-cancelled event:", pickupData);
+
+      setPickups((prev) => {
+        const updated = prev.map((pickup) =>
+          pickup.id === pickupData.id
+            ? { ...pickup, status: "cancelled" as const, ...pickupData }
+            : pickup
+        ) as Pickup[];
+        console.log(
+          "[PARENT] 📊 Updated pickups after trip-cancelled:",
+          updated
+        );
+        return updated;
+      });
+
+      // Update pickup requests status
+      setPickupRequests((prev) =>
+        prev.map((req) =>
+          req.id === pickupData.parentPickupRequestId
+            ? { ...req, tripStatus: "cancelled" }
+            : req
+        )
+      );
+
+      Alert.alert(
+        "Trip Cancelled",
+        "Your pickup trip has been cancelled. Please contact support if you need assistance.",
+        [{ text: "OK", style: "default" }]
+      );
+    };
+
+    // Register listeners for all trip events matching your server's event names
     console.log("[PARENT] 👂 Registering real-time event listeners...");
+    SocketService.on("pickup-requests-updated", (data: any) => {
+      console.log("[PARENT] 📋 Pickup requests updated:", data);
+      // Refresh pickup requests when updated
+      if (parentDetails?.id) {
+        ParentService.getMyPickupRequests(parentDetails.id.toString())
+          .then((res) => setPickupRequests(res.data || []))
+          .catch((err) =>
+            console.error("Failed to refresh pickup requests:", err)
+          );
+      }
+    });
     SocketService.on("pickup-started", handlePickupStarted);
     SocketService.on("child-picked-up", handleChildPickedUp);
     SocketService.on("trip-completed", handleTripCompleted);
@@ -388,10 +538,43 @@ export default function ParentDashboard() {
     // Cleanup listeners on unmount or id change
     return () => {
       console.log("[PARENT] 🧹 Cleaning up real-time event listeners...");
+      const socket = SocketService.getSocket();
+      if (socket) {
+        socket.off("connect");
+        socket.off("disconnect");
+        socket.off("room-joined");
+        socket.off("room-join-error");
+      }
+      SocketService.off("pickup-requests-updated");
       SocketService.off("pickup-started", handlePickupStarted);
       SocketService.off("child-picked-up", handleChildPickedUp);
       SocketService.off("trip-completed", handleTripCompleted);
     };
+  }, [parentDetails?.id, user?.userId]);
+
+  // Periodic room check to ensure we stay connected
+  React.useEffect(() => {
+    if (!parentDetails?.id || !user?.userId) return;
+
+    const intervalId = setInterval(() => {
+      const socket = SocketService.getSocket();
+      if (socket && socket.connected) {
+        console.log(
+          "[PARENT] 🔄 Periodic room rejoin check for parent:",
+          parentDetails.id
+        );
+        console.log("[PARENT] 🔄 Re-emitting join-parent-room...");
+        socket.emit("join-parent-room", parentDetails.id);
+        console.log("[PARENT] ✅ Periodic join-parent-room event emitted");
+      } else if (user?.userId) {
+        console.log(
+          "[PARENT] 🚨 Socket disconnected during periodic check, reconnecting..."
+        );
+        SocketService.connect(user.userId.toString(), "Parent");
+      }
+    }, 30000); // Check every 30 seconds
+
+    return () => clearInterval(intervalId);
   }, [parentDetails?.id, user?.userId]);
 
   // Check socket connection status periodically
@@ -1616,7 +1799,7 @@ export default function ParentDashboard() {
                 <KidPickupCard
                   key={`${pickup.id}-${nextDay}`}
                   childName={child?.name || "Child"}
-                  remaining={pickup.pickupTime || "-"}
+                  remaining={pickup.callPickupTime || "-"}
                   schedule={nextDay}
                   buddiName={buddiName}
                   buddiEmail={buddiEmail}
@@ -1624,6 +1807,8 @@ export default function ParentDashboard() {
                   buddiStatus={buddiStatus}
                   schoolName={child?.school || pickup.fromZone || "School"}
                   destination={pickup.toZone || "Home"}
+                  callPickupTime={pickup.callPickupTime}
+                  callDropTime={pickup.callDropTime}
                   mainAction={
                     startingTripId === pickup.id
                       ? "Starting Trip..."
@@ -1708,6 +1893,39 @@ export default function ParentDashboard() {
                                       fromLocation: pickup.fromZone,
                                       toLocation: pickup.toZone,
                                     });
+                                    // Ensure parent is in room before making pickup request
+                                    let socket = SocketService.getSocket();
+                                    if (
+                                      socket &&
+                                      !socket.connected &&
+                                      user?.userId
+                                    ) {
+                                      console.log(
+                                        "[PARENT] 🔄 Socket disconnected, reconnecting..."
+                                      );
+                                      SocketService.connect(
+                                        user.userId.toString(),
+                                        "Parent"
+                                      );
+                                      await new Promise((resolve) =>
+                                        setTimeout(resolve, 1000)
+                                      ); // Wait for connection
+                                    }
+
+                                    // Re-join room to ensure we're connected
+                                    if (socket) {
+                                      console.log(
+                                        "[PARENT] 🚪 Re-joining parent room before pickup request"
+                                      );
+                                      socket.emit(
+                                        "join-parent-room",
+                                        parentDetails!.id
+                                      );
+                                      await new Promise((resolve) =>
+                                        setTimeout(resolve, 500)
+                                      ); // Wait for room join
+                                    }
+
                                     const res =
                                       await ParentService.createPickupRequest({
                                         parentId: parentDetails!.id,
@@ -1718,6 +1936,29 @@ export default function ParentDashboard() {
                                         buddiRequestId: pickup.id,
                                         callId: pickup.id,
                                       });
+
+                                    console.log(
+                                      "[PARENT] ✅ Pickup request created successfully:",
+                                      res
+                                    );
+
+                                    // Emit a direct event to the buddi to ensure they get the update
+                                    // Re-get socket in case it reconnected
+                                    socket = SocketService.getSocket();
+                                    if (socket && pickup.matchedBuddiId) {
+                                      console.log(
+                                        "[PARENT] 📡 Emitting pickup-requested event to buddi:",
+                                        pickup.matchedBuddiId
+                                      );
+                                      socket.emit("pickup-requested", {
+                                        pickupData:
+                                          res.pickup || res.data || res,
+                                        buddiId: pickup.matchedBuddiId,
+                                        parentId: parentDetails!.id,
+                                        timestamp: new Date().toISOString(),
+                                      });
+                                    }
+
                                     // Refresh pickups to get updated status
                                     await refreshPickups();
                                     Alert.alert(

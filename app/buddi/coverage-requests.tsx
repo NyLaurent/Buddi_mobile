@@ -1,5 +1,4 @@
 import { Ionicons } from "@expo/vector-icons";
-import { useRouter } from "expo-router";
 import React from "react";
 import {
   ActivityIndicator,
@@ -15,14 +14,14 @@ import {
   SafeAreaView,
   useSafeAreaInsets,
 } from "react-native-safe-area-context";
-import CoverageRequestCard from "../../components/commons/CoverageRequestCard";
 import PageHeader from "../../components/commons/PageHeader";
 import CoverageRequestModal from "../../components/modals/CoverageRequestModal";
+import CoverageRequestCard from "../../components/parent/CoverageRequestCard";
 import { useAuth } from "../../context/AuthContext";
 import BuddiService from "../../services/api/buddi.service";
+import CoverageService from "../../services/api/coverage.service";
 
 export default function CoverageRequestsPage() {
-  const router = useRouter();
   const insets = useSafeAreaInsets();
   const { buddiDetails } = useAuth();
   const [coverageRequests, setCoverageRequests] = React.useState<any[]>([]);
@@ -31,28 +30,57 @@ export default function CoverageRequestsPage() {
   const [coveragePagination, setCoveragePagination] = React.useState<any>(null);
   const [showCoverageModal, setShowCoverageModal] = React.useState(false);
   const [selectedPickup, setSelectedPickup] = React.useState<any>(null);
+  const [pickupRequests, setPickupRequests] = React.useState<any[]>([]);
 
   const fetchCoverageRequests = async (page: number = 1) => {
     if (!buddiDetails?.id) return;
-    
+
     setCoverageLoading(true);
     setCoverageError(null);
     try {
-      const res = await BuddiService.getCoverageRequests(buddiDetails.id.toString(), page, 10);
+      const res = await CoverageService.getBuddiCoverageRequests(
+        buddiDetails.id.toString(),
+        page,
+        10
+      );
       if (page === 1) {
         setCoverageRequests(res.data || []);
       } else {
-        setCoverageRequests(prev => [...prev, ...(res.data || [])]);
+        setCoverageRequests((prev) => [...prev, ...(res.data || [])]);
       }
-      setCoveragePagination(res.pagination || {});
+      setCoveragePagination({
+        total: res.pagination.totalItems,
+        page: res.pagination.currentPage,
+        limit: res.pagination.perPage,
+        totalPages: res.pagination.totalPages,
+        hasNextPage: res.pagination.hasNextPage,
+      });
     } catch (err: any) {
-      console.error("[BUDDI COVERAGE REQUESTS] Error fetching coverage requests:", err);
+      console.error(
+        "[BUDDI COVERAGE REQUESTS] Error fetching coverage requests:",
+        err
+      );
       setCoverageError(err.message || "Failed to fetch coverage requests");
       if (page === 1) {
         setCoverageRequests([]);
       }
     } finally {
       setCoverageLoading(false);
+    }
+  };
+
+  // Fetch pickup requests to get parent IDs for coverage requests
+  const fetchPickupRequests = async () => {
+    if (!buddiDetails?.id) return;
+
+    try {
+      const res = await BuddiService.getMatchedRequests(buddiDetails.id);
+      setPickupRequests(res.data || []);
+    } catch (err: any) {
+      console.error(
+        "[BUDDI COVERAGE REQUESTS] Error fetching pickup requests:",
+        err
+      );
     }
   };
 
@@ -63,11 +91,51 @@ export default function CoverageRequestsPage() {
 
   React.useEffect(() => {
     fetchCoverageRequests();
+    fetchPickupRequests();
   }, [buddiDetails?.id]);
 
   const handleLoadMore = () => {
     if (coveragePagination?.hasNextPage && !coverageLoading) {
-      fetchCoverageRequests(coveragePagination.currentPage + 1);
+      fetchCoverageRequests(coveragePagination.page + 1);
+    }
+  };
+
+  // Handle creating a coverage request
+  const handleCreateCoverageRequest = async (reason: string) => {
+    if (!buddiDetails?.id || !selectedPickup?.parentId) {
+      Alert.alert(
+        "Error",
+        "Missing required information for coverage request."
+      );
+      return;
+    }
+
+    try {
+      await CoverageService.createBuddiCoverageRequest({
+        parentId: selectedPickup.parentId,
+        buddiId: buddiDetails.id.toString(),
+        reason: reason,
+      });
+
+      Alert.alert(
+        "Success",
+        "Coverage request sent successfully! The parent will be notified.",
+        [
+          {
+            text: "OK",
+            onPress: () => {
+              setShowCoverageModal(false);
+              setSelectedPickup(null);
+              fetchCoverageRequests(1); // Refresh the list
+            },
+          },
+        ]
+      );
+    } catch (error: any) {
+      Alert.alert(
+        "Error",
+        error.message || "Failed to create coverage request."
+      );
     }
   };
 
@@ -96,7 +164,7 @@ export default function CoverageRequestsPage() {
         {/* Total Count */}
         <View className="px-4 mb-4">
           <Text className="text-gray-600 font-comfortaa">
-            Total: {coveragePagination?.totalItems || 0} requests
+            Total: {coveragePagination?.total || 0} requests
           </Text>
         </View>
 
@@ -105,12 +173,21 @@ export default function CoverageRequestsPage() {
           <TouchableOpacity
             className="bg-[#FF932E] rounded-lg py-3 px-4 flex-row items-center justify-center"
             onPress={() => {
-              // For now, we'll create a dummy pickup object
-              const dummyPickup = {
-                parentId: "dummy-parent-id",
-                description: "Coverage Request"
-              };
-              openCoverageRequestModal(dummyPickup);
+              // Find the first matched pickup to get parent ID
+              const matchedPickup = pickupRequests.find(
+                (pickup) => pickup.matchedBuddiId && pickup.parentId
+              );
+              if (matchedPickup?.parentId) {
+                openCoverageRequestModal({
+                  parentId: matchedPickup.parentId,
+                  description: "Coverage Request",
+                });
+              } else {
+                Alert.alert(
+                  "No Active Pickups",
+                  "You need to have active pickup requests to create coverage requests."
+                );
+              }
             }}
           >
             <Ionicons name="add" size={20} color="white" />
@@ -125,11 +202,15 @@ export default function CoverageRequestsPage() {
           {coverageLoading && coverageRequests.length === 0 ? (
             <View className="items-center justify-center py-8">
               <ActivityIndicator size="large" color="#FF932E" />
-              <Text className="text-gray-500 mt-2 font-comfortaa">Loading coverage requests...</Text>
+              <Text className="text-gray-500 mt-2 font-comfortaa">
+                Loading coverage requests...
+              </Text>
             </View>
           ) : coverageError ? (
             <View className="items-center justify-center py-8">
-              <Text className="text-red-500 font-comfortaa">{coverageError}</Text>
+              <Text className="text-red-500 font-comfortaa">
+                {coverageError}
+              </Text>
             </View>
           ) : coverageRequests.length > 0 ? (
             <View className="gap-4">
@@ -139,7 +220,7 @@ export default function CoverageRequestsPage() {
                   coverage={request}
                 />
               ))}
-              
+
               {/* Load More Button */}
               {coveragePagination?.hasNextPage && (
                 <TouchableOpacity
@@ -194,8 +275,8 @@ export default function CoverageRequestsPage() {
                   textAlign: "center",
                 }}
               >
-                When parents request coverage for their children,
-                you&apos;ll see those requests here.
+                When parents request coverage for their children, you&apos;ll
+                see those requests here.
               </Text>
             </View>
           )}
@@ -205,15 +286,9 @@ export default function CoverageRequestsPage() {
       <CoverageRequestModal
         visible={showCoverageModal}
         onClose={() => setShowCoverageModal(false)}
-        onSuccess={() => {
-          setShowCoverageModal(false);
-          setSelectedPickup(null);
-          fetchCoverageRequests(); // Refresh the list
-        }}
-        parentId={selectedPickup?.parentId}
-        buddiId={buddiDetails?.id?.toString()}
-        userType="buddi"
+        onSubmit={handleCreateCoverageRequest}
+        buddiName="Parent"
       />
     </SafeAreaView>
   );
-} 
+}

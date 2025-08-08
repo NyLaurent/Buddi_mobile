@@ -46,44 +46,12 @@ import { SafeAreaView } from "react-native-safe-area-context";
 //   },
 // ];
 
-const coverageRequestsData = [
-  {
-    studentName: "Liam Brown",
-    time: "1:45:00",
-    hourlyRate: "$27 per hour",
-    school: "Maple Elementary",
-    home: "Greenfield",
-    requesterName: "Olivia Lee",
-    requesterEmail: "olivia.lee@email.com",
-    requesterAvatar: undefined,
-  },
-  {
-    studentName: "Sophia Miller",
-    time: "2:30:00",
-    hourlyRate: "$26 per hour",
-    school: "Cedar Middle School",
-    home: "Northside",
-    requesterName: "Noah Kim",
-    requesterEmail: "noah.kim@email.com",
-    requesterAvatar: undefined,
-  },
-  {
-    studentName: "Ava Smith",
-    time: "4:10:00",
-    hourlyRate: "$25 per hour",
-    school: "Pine Middle School",
-    home: "Eastside",
-    requesterName: "Mason Lee",
-    requesterEmail: "mason.lee@email.com",
-    requesterAvatar: undefined,
-  },
-];
+
 
 const SchedulePage = () => {
   const router = useRouter();
   const { parentDetails } = useAuth();
   const [activeTab, setActiveTab] = React.useState("pickups");
-  const [pickupIndex, setPickupIndex] = React.useState(0);
 
   // State for real pickup requests and details
   const [pickupRequests, setPickupRequests] = React.useState<any[]>([]);
@@ -100,16 +68,9 @@ const SchedulePage = () => {
   const [pickupStatuses, setPickupStatuses] = React.useState<
     Record<number, string>
   >({});
-  const [startingTripId, setStartingTripId] = React.useState<number | null>(
-    null
-  );
+  const [startingTripId] = React.useState<number | null>(null);
 
-  // State for coverage request modal
-  const [showCoverageModal, setShowCoverageModal] = React.useState(false);
-  const [selectedBuddiId, setSelectedBuddiId] = React.useState<string | null>(
-    null
-  );
-  const [selectedBuddiName, setSelectedBuddiName] = React.useState<string>("");
+  // Coverage request modal is handled in the coverage tab only
 
   // State for coverage requests
   const [coverageRequests, setCoverageRequests] = React.useState<any[]>([]);
@@ -155,7 +116,7 @@ const SchedulePage = () => {
               buddiId.toString()
             );
             buddiMap[buddiId] = buddiRes.data;
-          } catch (e) {
+          } catch {
             buddiMap[buddiId] = { id: buddiId };
           }
         }
@@ -222,6 +183,13 @@ const SchedulePage = () => {
     return pickupStatuses[buddiRequestId] || null;
   };
 
+  // Coverage request modal states - only used in coverage tab
+  const [showCoverageModal, setShowCoverageModal] = React.useState(false);
+  const [selectedBuddiId, setSelectedBuddiId] = React.useState<string | null>(
+    null
+  );
+  const [selectedBuddiName, setSelectedBuddiName] = React.useState<string>("");
+
   // Function to handle coverage request creation
   const handleCreateCoverageRequest = async (reason: string) => {
     if (!parentDetails?.id || !selectedBuddiId) {
@@ -265,7 +233,7 @@ const SchedulePage = () => {
     }
   };
 
-  // Function to open coverage request modal
+  // Function to open coverage request modal - only used in coverage tab
   const openCoverageRequestModal = (
     buddiId: string | number,
     buddiName: string
@@ -567,7 +535,7 @@ const SchedulePage = () => {
                             >
                               <KidPickupCard
                                 childName={child?.name || "Child"}
-                                remaining={pickup.pickupTime || "-"}
+                                remaining={pickup.callPickupTime || "-"}
                                 schedule={day}
                                 buddiName={buddiName}
                                 buddiEmail={buddiEmail}
@@ -577,6 +545,8 @@ const SchedulePage = () => {
                                   child?.school || pickup.fromZone || "School"
                                 }
                                 destination={pickup.toZone || "Home"}
+                                callPickupTime={pickup.callPickupTime}
+                                callDropTime={pickup.callDropTime}
                                 mainAction={
                                   startingTripId === pickup.id
                                     ? "Starting Trip..."
@@ -618,16 +588,8 @@ const SchedulePage = () => {
                                     parentDetails?.approvalStage === "pending")
                                 }
                                 onMainAction={() => {
-                                  // If the main action is disabled, show coverage request option
-                                  if (
-                                    pickup.status === "matched" &&
-                                    !currentPickupStatus
-                                  ) {
-                                    openCoverageRequestModal(
-                                      pickup.matchedBuddiId!,
-                                      buddiName
-                                    );
-                                  }
+                                  // Handle pickup action - coverage requests are handled in coverage tab
+                                  console.log("Pickup action triggered for pickup:", pickup.id);
                                 }}
                               />
                             </View>

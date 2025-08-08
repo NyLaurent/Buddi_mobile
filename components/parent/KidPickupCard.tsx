@@ -115,6 +115,8 @@ interface KidPickupCardProps {
   defaultBuddi?: BuddiInfo;
   coverageBuddi?: BuddiInfo;
   disabled?: boolean;
+  callPickupTime?: string;
+  callDropTime?: string;
 }
 
 const KidPickupCard = ({
@@ -137,6 +139,8 @@ const KidPickupCard = ({
   defaultBuddi,
   coverageBuddi,
   disabled = false,
+  callPickupTime,
+  callDropTime,
 }: KidPickupCardProps) => {
   const badgeBg =
     badgeColor || (variant === "coverage" ? "#3B82F6" : "#FF9100");
@@ -194,6 +198,7 @@ const KidPickupCard = ({
             flexDirection: "row",
             alignItems: "center",
             marginBottom: 10,
+            flexWrap: "wrap",
           }}
         >
           <View
@@ -205,6 +210,7 @@ const KidPickupCard = ({
               paddingHorizontal: 9,
               paddingVertical: 3,
               marginRight: 7,
+              marginBottom: 4,
             }}
           >
             <MaterialIcons
@@ -220,15 +226,46 @@ const KidPickupCard = ({
                 fontSize: 13,
               }}
             >
-              {remaining} Remaining
+              {callPickupTime ? `Pickup: ${callPickupTime}` : remaining}
             </Text>
           </View>
+          {callDropTime && (
+            <View
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                backgroundColor: "#10B981",
+                borderRadius: 6,
+                paddingHorizontal: 9,
+                paddingVertical: 3,
+                marginRight: 7,
+                marginBottom: 4,
+              }}
+            >
+              <MaterialIcons
+                name="schedule"
+                size={15}
+                color="#fff"
+                style={{ marginRight: 4 }}
+              />
+              <Text
+                style={{
+                  color: "#fff",
+                  fontFamily: "Comfortaa-Bold",
+                  fontSize: 13,
+                }}
+              >
+                Drop: {callDropTime}
+              </Text>
+            </View>
+          )}
           <View
             style={{
               backgroundColor: "#F3F4F6",
               borderRadius: 6,
               paddingHorizontal: 9,
               paddingVertical: 3,
+              marginBottom: 4,
             }}
           >
             <Text
@@ -572,7 +609,12 @@ const KidPickupCard = ({
       </View>
       {/* Remaining & Schedule */}
       <View
-        style={{ flexDirection: "row", alignItems: "center", marginBottom: 8 }}
+        style={{
+          flexDirection: "row",
+          alignItems: "center",
+          marginBottom: 8,
+          flexWrap: "wrap",
+        }}
       >
         <View
           style={{
@@ -582,7 +624,8 @@ const KidPickupCard = ({
             borderRadius: 6,
             paddingHorizontal: 7,
             paddingVertical: 2,
-            marginRight: 7,
+            marginRight: 5,
+            marginBottom: 2,
           }}
         >
           <MaterialIcons
@@ -598,15 +641,46 @@ const KidPickupCard = ({
               fontSize: 11,
             }}
           >
-            {remaining}
+            {callPickupTime ? `${callPickupTime}` : remaining}
           </Text>
         </View>
+        {callDropTime && (
+          <View
+            style={{
+              flexDirection: "row",
+              alignItems: "center",
+              backgroundColor: "#10B981",
+              borderRadius: 6,
+              paddingHorizontal: 7,
+              paddingVertical: 2,
+              marginRight: 5,
+              marginBottom: 2,
+            }}
+          >
+            <MaterialIcons
+              name="schedule"
+              size={13}
+              color="#fff"
+              style={{ marginRight: 3 }}
+            />
+            <Text
+              style={{
+                color: "#fff",
+                fontFamily: "Comfortaa-Bold",
+                fontSize: 11,
+              }}
+            >
+              {callDropTime}
+            </Text>
+          </View>
+        )}
         <View
           style={{
             backgroundColor: "#F3F4F6",
             borderRadius: 6,
             paddingHorizontal: 7,
             paddingVertical: 2,
+            marginBottom: 2,
           }}
         >
           <Text

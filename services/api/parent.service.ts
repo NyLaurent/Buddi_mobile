@@ -50,12 +50,15 @@ export interface ParentPickupRequest {
   childId: string;
   description: string;
   availableDays: string[];
-  pickupTime: string;
+  callPickupTime: string;
+  callDropTime: string;
+  pickupTime?: string; // Keep for backward compatibility
   kidsCount: number;
   fromZone: string;
   toZone: string;
   status: string;
   matchedBuddiId: string | null;
+  isBuddiRecommended: boolean;
   createdAt: string;
   updatedAt: string;
 }

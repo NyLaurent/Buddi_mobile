@@ -44,6 +44,51 @@ export interface MatchBuddiResponse {
   success: boolean;
 }
 
+export interface BuddiCoverageRequest {
+  parentId: string;
+  buddiId: string;
+  reason: string;
+}
+
+export interface BuddiCoverageResponse {
+  message: string;
+  coverage: {
+    id: number;
+    parentId: string;
+    buddiId: number;
+    reason: string;
+    status: string;
+    coverageType: string;
+    updatedAt: string;
+    createdAt: string;
+    coveredBy: string | null;
+  };
+}
+
+export interface CoverageRequestItem {
+  id: number;
+  parentId: string;
+  buddiId: number;
+  reason: string;
+  coveredBy: string | null;
+  status: string;
+  coverageType: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface BuddiCoverageListResponse {
+  data: CoverageRequestItem[];
+  pagination: {
+    totalItems: number;
+    currentPage: number;
+    perPage: number;
+    totalPages: number;
+    hasNextPage: boolean;
+    hasPrevPage: boolean;
+  };
+}
+
 const CoverageService = {
   async createPickupRequest(data: CreatePickupRequest): Promise<PickupRequestResponse> {
     try {
@@ -74,6 +119,52 @@ const CoverageService = {
       return response.data.data;
     } catch (err: any) {
       let message = 'Failed to match buddi.';
+      if (err?.response?.data?.message) {
+        message = err.response.data.message;
+      } else if (err?.message) {
+        if (err.message.includes('Network')) {
+          message = 'Network error. Please check your connection and try again.';
+        } else if (err.message.includes('timeout')) {
+          message = 'Request timed out. Please try again.';
+        } else {
+          message = err.message;
+        }
+      } else if (typeof err === 'string') {
+        message = err;
+      }
+      throw new Error(message);
+    }
+  },
+
+  async createBuddiCoverageRequest(data: BuddiCoverageRequest): Promise<BuddiCoverageResponse> {
+    try {
+      const response = await authorizedApi.post('/coverage/coverage-requests/buddi', data);
+      return response.data;
+    } catch (err: any) {
+      let message = 'Failed to create coverage request.';
+      if (err?.response?.data?.message) {
+        message = err.response.data.message;
+      } else if (err?.message) {
+        if (err.message.includes('Network')) {
+          message = 'Network error. Please check your connection and try again.';
+        } else if (err.message.includes('timeout')) {
+          message = 'Request timed out. Please try again.';
+        } else {
+          message = err.message;
+        }
+      } else if (typeof err === 'string') {
+        message = err;
+      }
+      throw new Error(message);
+    }
+  },
+
+  async getBuddiCoverageRequests(buddiId: string, page: number = 1, limit: number = 10): Promise<BuddiCoverageListResponse> {
+    try {
+      const response = await authorizedApi.get(`/coverage/coverage-requests/buddi/${buddiId}?page=${page}&limit=${limit}`);
+      return response.data;
+    } catch (err: any) {
+      let message = 'Failed to fetch coverage requests.';
       if (err?.response?.data?.message) {
         message = err.response.data.message;
       } else if (err?.message) {
