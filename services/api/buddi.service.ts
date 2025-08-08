@@ -354,6 +354,41 @@ const BuddiService = {
     }
   },
 
+  async createCoverageRequest(
+    parentId: string,
+    buddiId: string,
+    reason: string
+  ): Promise<any> {
+    try {
+      const response = await authorizedApi.post(
+        "/api/v1/coverage/coverage-requests/buddi",
+        {
+          parentId,
+          buddiId,
+          reason,
+        }
+      );
+      return response.data;
+    } catch (error: any) {
+      throw new Error(error.response?.data?.message || "Failed to create coverage request");
+    }
+  },
+
+  async getCoverageRequests(
+    buddiId: string,
+    page: number = 1,
+    limit: number = 10
+  ): Promise<any> {
+    try {
+      const response = await authorizedApi.get(
+        `/api/v1/coverage/coverage-requests/buddi/${buddiId}?page=${page}&limit=${limit}`
+      );
+      return response.data;
+    } catch (error: any) {
+      throw new Error(error.response?.data?.message || "Failed to fetch coverage requests");
+    }
+  },
+
   async getAvailableCalls(page: number = 1, limit: number = 5): Promise<AvailableCallsResponse> {
     try {
       const response = await authorizedApi.get(`/parent/requests/all?page=${page}&limit=${limit}`);

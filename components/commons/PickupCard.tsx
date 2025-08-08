@@ -286,6 +286,7 @@ const PickupCard = ({
           </Text>
           <Ionicons name="chevron-forward" size={16} color="#666" />
         </TouchableOpacity>
+
         {isEnRoute ? (
           <TouchableOpacity
             className="py-2.5 px-6 rounded-xl flex-row items-center gap-2"
