@@ -1,17 +1,20 @@
 import { Ionicons, MaterialIcons } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
+  Modal,
   ScrollView,
   Text,
+  TextInput,
   TouchableOpacity,
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import PaymentModal from "../../../components/modals/PaymentModal";
 import { useAuth } from "../../../context/AuthContext";
+import { authorizedApi } from "../../../services/api/config";
 import ParentService, { Timesheet } from "../../../services/api/parent.service";
 
 export default function TimesheetDetailsPage() {
@@ -22,10 +25,15 @@ export default function TimesheetDetailsPage() {
   const [approving, setApproving] = useState(false);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
 
-  const router = useRouter();
-  const { parentDetails } = useAuth();
+  // Flag/Report modal states
+  const [showFlagModal, setShowFlagModal] = useState(false);
+  const [flagMessage, setFlagMessage] = useState("");
+  const [isReporting, setIsReporting] = useState(false);
 
-  const fetchTimesheetDetails = async () => {
+  const router = useRouter();
+  const { parentDetails, user } = useAuth();
+
+  const fetchTimesheetDetails = useCallback(async () => {
     if (!parentDetails?.id || !id) return;
 
     try {
@@ -54,11 +62,11 @@ export default function TimesheetDetailsPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [parentDetails?.id, id]);
 
   useEffect(() => {
     fetchTimesheetDetails();
-  }, [parentDetails?.id, id]);
+  }, [fetchTimesheetDetails]);
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
@@ -67,14 +75,6 @@ export default function TimesheetDetailsPage() {
       year: "numeric",
       month: "long",
       day: "numeric",
-    });
-  };
-
-  const formatTime = (dateString: string) => {
-    const date = new Date(dateString);
-    return date.toLocaleTimeString("en-US", {
-      hour: "2-digit",
-      minute: "2-digit",
     });
   };
 
@@ -123,10 +123,53 @@ export default function TimesheetDetailsPage() {
     }
   };
 
-  const handleProcessPayment = async (timesheetId: number) => {
-    // This function is now handled by the PaymentModal component
-    // The modal handles the URL opening and error handling
-    console.log("Payment processing for timesheet:", timesheetId);
+  const handleFlagTimesheet = async () => {
+    if (!timesheet || !parentDetails || !flagMessage.trim()) {
+      Alert.alert(
+        "Error",
+        "Please enter a reason for flagging this timesheet."
+      );
+      return;
+    }
+
+    setIsReporting(true);
+    try {
+      const reportData = {
+        parentId: parentDetails.id,
+        parentName: `${user?.firstName || ""} ${user?.lastName || ""}`.trim(),
+        buddiId: timesheet.buddiId,
+        timesheetId: timesheet.id,
+        message: flagMessage.trim(),
+      };
+
+      console.log("Reporting timesheet with data:", reportData);
+
+      const response = await authorizedApi.post(
+        "/reports/issue-reports",
+        reportData
+      );
+
+      console.log("Report response:", response.data);
+
+      setShowFlagModal(false);
+      setFlagMessage("");
+
+      Alert.alert(
+        "Timesheet Flagged! 🚩",
+        "Your report has been submitted successfully. The buddi will be notified to review and correct their timesheet.",
+        [{ text: "OK", style: "default" }]
+      );
+    } catch (error: any) {
+      console.error("Error reporting timesheet:", error);
+      Alert.alert(
+        "Report Failed",
+        error?.response?.data?.error ||
+          "Failed to submit report. Please try again.",
+        [{ text: "OK", style: "default" }]
+      );
+    } finally {
+      setIsReporting(false);
+    }
   };
 
   if (loading) {
@@ -672,6 +715,35 @@ export default function TimesheetDetailsPage() {
 
         {/* Action Buttons */}
         <View style={{ marginBottom: 20 }}>
+          {/* Flag Timesheet Button - Always visible */}
+          <TouchableOpacity
+            style={{
+              backgroundColor: "#EF4444",
+              borderRadius: 16,
+              paddingVertical: 16,
+              alignItems: "center",
+              marginBottom: 12,
+              flexDirection: "row",
+              justifyContent: "center",
+            }}
+            onPress={() => setShowFlagModal(true)}
+          >
+            <Ionicons
+              name="flag-outline"
+              size={20}
+              color="#fff"
+              style={{ marginRight: 8 }}
+            />
+            <Text
+              style={{
+                fontFamily: "Comfortaa-Bold",
+                fontSize: 16,
+                color: "#fff",
+              }}
+            >
+              Flag Timesheet
+            </Text>
+          </TouchableOpacity>
           {/* Show Approve Button if timesheet is full but not approved */}
           {timesheet.isFull && !timesheet.isApproved && (
             <TouchableOpacity
@@ -779,6 +851,141 @@ export default function TimesheetDetailsPage() {
         onConfirm={() => setShowPaymentModal(false)}
         timesheetId={timesheet?.id || 0}
       />
+
+      {/* Flag Timesheet Modal */}
+      <Modal
+        visible={showFlagModal}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setShowFlagModal(false)}
+      >
+        <View
+          style={{
+            flex: 1,
+            backgroundColor: "rgba(0,0,0,0.5)",
+            justifyContent: "center",
+            alignItems: "center",
+            paddingHorizontal: 20,
+          }}
+        >
+          <View
+            style={{
+              backgroundColor: "#fff",
+              borderRadius: 16,
+              padding: 24,
+              width: "100%",
+              maxWidth: 400,
+            }}
+          >
+            <View style={{ alignItems: "center", marginBottom: 20 }}>
+              <Ionicons name="flag" size={48} color="#EF4444" />
+              <Text
+                style={{
+                  fontFamily: "Comfortaa-Bold",
+                  fontSize: 18,
+                  color: "#232B3A",
+                  textAlign: "center",
+                  marginTop: 12,
+                }}
+              >
+                Flag Timesheet
+              </Text>
+            </View>
+
+            <Text
+              style={{
+                fontFamily: "Comfortaa-Regular",
+                fontSize: 15,
+                color: "#666",
+                textAlign: "center",
+                marginBottom: 20,
+                lineHeight: 22,
+              }}
+            >
+              Please describe the issue with this timesheet. The buddi will be
+              notified and can make corrections.
+            </Text>
+
+            <TextInput
+              value={flagMessage}
+              onChangeText={setFlagMessage}
+              placeholder="Describe the issue (e.g., incorrect hours, wrong pickup count...)"
+              multiline={true}
+              numberOfLines={4}
+              textAlignVertical="top"
+              style={{
+                borderWidth: 2,
+                borderColor: "#E5E7EB",
+                borderRadius: 12,
+                paddingHorizontal: 16,
+                paddingVertical: 12,
+                fontSize: 15,
+                fontFamily: "Comfortaa-Regular",
+                marginBottom: 24,
+                minHeight: 100,
+              }}
+            />
+
+            <View style={{ flexDirection: "row", gap: 12 }}>
+              <TouchableOpacity
+                onPress={() => {
+                  setShowFlagModal(false);
+                  setFlagMessage("");
+                }}
+                style={{
+                  flex: 1,
+                  backgroundColor: "#E5E7EB",
+                  borderRadius: 12,
+                  paddingVertical: 14,
+                  alignItems: "center",
+                }}
+              >
+                <Text
+                  style={{
+                    fontFamily: "Comfortaa-Bold",
+                    fontSize: 16,
+                    color: "#374151",
+                  }}
+                >
+                  Cancel
+                </Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                onPress={handleFlagTimesheet}
+                disabled={isReporting || !flagMessage.trim()}
+                style={{
+                  flex: 1,
+                  backgroundColor:
+                    isReporting || !flagMessage.trim() ? "#9CA3AF" : "#EF4444",
+                  borderRadius: 12,
+                  paddingVertical: 14,
+                  alignItems: "center",
+                  flexDirection: "row",
+                  justifyContent: "center",
+                }}
+              >
+                {isReporting && (
+                  <ActivityIndicator
+                    size="small"
+                    color="#fff"
+                    style={{ marginRight: 8 }}
+                  />
+                )}
+                <Text
+                  style={{
+                    fontFamily: "Comfortaa-Bold",
+                    fontSize: 16,
+                    color: "#fff",
+                  }}
+                >
+                  {isReporting ? "Flagging..." : "Flag Timesheet"}
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }

@@ -439,7 +439,7 @@ const SchedulePage = () => {
         <View className="px-4 mb-6">
           <TouchableOpacity
             className="bg-primary rounded-full py-4 items-center"
-            onPress={() => router.push("/parent/timesheets")}
+            onPress={() => router.push("/buddi/timesheet")}
           >
             <View className="flex-row items-center gap-2">
               <Text className="text-white font-comfortaa-bold text-lg">

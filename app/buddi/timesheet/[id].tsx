@@ -3,10 +3,13 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect, useState } from "react";
 import {
   ActivityIndicator,
+  Alert,
+  Modal,
   Platform,
   ScrollView,
   StatusBar,
   Text,
+  TextInput,
   TouchableOpacity,
   View,
 } from "react-native";
@@ -39,6 +42,7 @@ interface Timesheet {
   isPaid: boolean;
   isFull: boolean;
   isApproved: boolean;
+  isSubmited: boolean;
   createdAt: string;
   updatedAt: string;
   dailyPickups: DailyPickup[];
@@ -52,6 +56,13 @@ export default function TimesheetDetailsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  // Modal states
+  const [showSubmitModal, setShowSubmitModal] = useState(false);
+  const [showUpdateModal, setShowUpdateModal] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isUpdating, setIsUpdating] = useState(false);
+  const [updatedHours, setUpdatedHours] = useState<string>("");
+
   useEffect(() => {
     const fetchTimesheet = async () => {
       if (!id || !buddiDetails?.id) return;
@@ -62,7 +73,8 @@ export default function TimesheetDetailsPage() {
           `/timesheets/buddi/${buddiDetails.id}/sheet/${id}`
         );
         setTimesheet(response.data);
-      } catch (err: any) {
+      } catch (error: any) {
+        console.error("Error fetching timesheet:", error);
         setError("Failed to fetch timesheet details.");
       } finally {
         setLoading(false);
@@ -70,6 +82,84 @@ export default function TimesheetDetailsPage() {
     };
     fetchTimesheet();
   }, [id, buddiDetails?.id]);
+
+  // Submit timesheet function
+  const handleSubmitTimesheet = async () => {
+    if (!timesheet || !buddiDetails?.id) return;
+
+    setIsSubmitting(true);
+    try {
+      await authorizedApi.patch(`/buddi/${timesheet.id}/submit`, {
+        buddiId: buddiDetails.id,
+      });
+
+      // Update local state
+      setTimesheet((prev) => (prev ? { ...prev, isSubmited: true } : null));
+      setShowSubmitModal(false);
+
+      Alert.alert(
+        "Success! 🎉",
+        "Your timesheet has been submitted successfully! It will be reviewed by the parent.",
+        [{ text: "OK", style: "default" }]
+      );
+    } catch (error: any) {
+      console.error("Error submitting timesheet:", error);
+      Alert.alert(
+        "Submission Failed",
+        error?.response?.data?.error ||
+          "Failed to submit timesheet. Please try again.",
+        [{ text: "OK", style: "default" }]
+      );
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  // Update hours function
+  const handleUpdateHours = async () => {
+    if (!timesheet || !buddiDetails?.id || !updatedHours) return;
+
+    const hours = parseFloat(updatedHours);
+    if (isNaN(hours) || hours < 0) {
+      Alert.alert("Invalid Hours", "Please enter valid hours (numbers only).");
+      return;
+    }
+
+    setIsUpdating(true);
+    try {
+      await authorizedApi.patch(`/buddi/${timesheet.id}/update-hours`, {
+        totalHours: hours,
+        buddiId: buddiDetails.id,
+      });
+
+      // Update local state
+      setTimesheet((prev) => (prev ? { ...prev, totalHours: hours } : null));
+      setShowUpdateModal(false);
+      setUpdatedHours("");
+
+      Alert.alert(
+        "Hours Updated! ✅",
+        `Your total hours have been updated to ${hours} hours.`,
+        [{ text: "OK", style: "default" }]
+      );
+    } catch (error: any) {
+      console.error("Error updating hours:", error);
+      Alert.alert(
+        "Update Failed",
+        error?.response?.data?.error ||
+          "Failed to update hours. Please try again.",
+        [{ text: "OK", style: "default" }]
+      );
+    } finally {
+      setIsUpdating(false);
+    }
+  };
+
+  // Open update modal with current hours
+  const openUpdateModal = () => {
+    setUpdatedHours(timesheet?.totalHours?.toString() || "0");
+    setShowUpdateModal(true);
+  };
 
   if (loading) {
     return (
@@ -273,8 +363,99 @@ export default function TimesheetDetailsPage() {
                 <Text style={{ color: "#fff", fontSize: 13 }}>Approved</Text>
               </View>
             )}
+            {timesheet.isSubmited && (
+              <View
+                style={{
+                  backgroundColor: "#7C3AED",
+                  borderRadius: 8,
+                  paddingHorizontal: 10,
+                  paddingVertical: 4,
+                  marginRight: 8,
+                  marginBottom: 6,
+                }}
+              >
+                <Text style={{ color: "#fff", fontSize: 13 }}>Submitted</Text>
+              </View>
+            )}
           </View>
         </View>
+
+        {/* Action Buttons */}
+        <View style={{ marginBottom: 18 }}>
+          {/* Update Hours Button - Always visible */}
+          <TouchableOpacity
+            onPress={openUpdateModal}
+            style={{
+              backgroundColor: "#2563EB",
+              borderRadius: 12,
+              paddingVertical: 14,
+              paddingHorizontal: 20,
+              flexDirection: "row",
+              alignItems: "center",
+              justifyContent: "center",
+              marginBottom: 12,
+              shadowColor: "#2563EB",
+              shadowOffset: { width: 0, height: 2 },
+              shadowOpacity: 0.1,
+              shadowRadius: 4,
+              elevation: 2,
+            }}
+          >
+            <Ionicons
+              name="time-outline"
+              size={20}
+              color="#fff"
+              style={{ marginRight: 8 }}
+            />
+            <Text
+              style={{
+                color: "#fff",
+                fontFamily: "Comfortaa-Bold",
+                fontSize: 16,
+              }}
+            >
+              Update Hours
+            </Text>
+          </TouchableOpacity>
+
+          {/* Submit Button - Only show if not submitted */}
+          {!timesheet.isSubmited && (
+            <TouchableOpacity
+              onPress={() => setShowSubmitModal(true)}
+              style={{
+                backgroundColor: "#16A34A",
+                borderRadius: 12,
+                paddingVertical: 14,
+                paddingHorizontal: 20,
+                flexDirection: "row",
+                alignItems: "center",
+                justifyContent: "center",
+                shadowColor: "#16A34A",
+                shadowOffset: { width: 0, height: 2 },
+                shadowOpacity: 0.1,
+                shadowRadius: 4,
+                elevation: 2,
+              }}
+            >
+              <Ionicons
+                name="checkmark-circle-outline"
+                size={20}
+                color="#fff"
+                style={{ marginRight: 8 }}
+              />
+              <Text
+                style={{
+                  color: "#fff",
+                  fontFamily: "Comfortaa-Bold",
+                  fontSize: 16,
+                }}
+              >
+                Submit Timesheet
+              </Text>
+            </TouchableOpacity>
+          )}
+        </View>
+
         {/* Daily Pickups */}
         <Text
           style={{
@@ -348,6 +529,246 @@ export default function TimesheetDetailsPage() {
           </Text>
         )}
       </ScrollView>
+
+      {/* Submit Confirmation Modal */}
+      <Modal
+        visible={showSubmitModal}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setShowSubmitModal(false)}
+      >
+        <View
+          style={{
+            flex: 1,
+            backgroundColor: "rgba(0,0,0,0.5)",
+            justifyContent: "center",
+            alignItems: "center",
+            paddingHorizontal: 20,
+          }}
+        >
+          <View
+            style={{
+              backgroundColor: "#fff",
+              borderRadius: 16,
+              padding: 24,
+              width: "100%",
+              maxWidth: 400,
+            }}
+          >
+            <View style={{ alignItems: "center", marginBottom: 20 }}>
+              <Ionicons name="warning-outline" size={48} color="#FF932E" />
+              <Text
+                style={{
+                  fontFamily: "Comfortaa-Bold",
+                  fontSize: 18,
+                  color: "#232B3A",
+                  textAlign: "center",
+                  marginTop: 12,
+                }}
+              >
+                Submit Timesheet
+              </Text>
+            </View>
+
+            <Text
+              style={{
+                fontFamily: "Comfortaa-Regular",
+                fontSize: 15,
+                color: "#666",
+                textAlign: "center",
+                marginBottom: 24,
+                lineHeight: 22,
+              }}
+            >
+              Please review your timesheet carefully before submitting. Once
+              submitted, you cannot make changes unless flagged by the parent.
+              {"\n\n"}Make sure all hours and details are accurate to avoid
+              being flagged.
+            </Text>
+
+            <View style={{ flexDirection: "row", gap: 12 }}>
+              <TouchableOpacity
+                onPress={() => setShowSubmitModal(false)}
+                style={{
+                  flex: 1,
+                  backgroundColor: "#E5E7EB",
+                  borderRadius: 12,
+                  paddingVertical: 14,
+                  alignItems: "center",
+                }}
+              >
+                <Text
+                  style={{
+                    fontFamily: "Comfortaa-Bold",
+                    fontSize: 16,
+                    color: "#374151",
+                  }}
+                >
+                  Review Again
+                </Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                onPress={handleSubmitTimesheet}
+                disabled={isSubmitting}
+                style={{
+                  flex: 1,
+                  backgroundColor: isSubmitting ? "#9CA3AF" : "#16A34A",
+                  borderRadius: 12,
+                  paddingVertical: 14,
+                  alignItems: "center",
+                  flexDirection: "row",
+                  justifyContent: "center",
+                }}
+              >
+                {isSubmitting && (
+                  <ActivityIndicator
+                    size="small"
+                    color="#fff"
+                    style={{ marginRight: 8 }}
+                  />
+                )}
+                <Text
+                  style={{
+                    fontFamily: "Comfortaa-Bold",
+                    fontSize: 16,
+                    color: "#fff",
+                  }}
+                >
+                  {isSubmitting ? "Submitting..." : "Submit"}
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Update Hours Modal */}
+      <Modal
+        visible={showUpdateModal}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setShowUpdateModal(false)}
+      >
+        <View
+          style={{
+            flex: 1,
+            backgroundColor: "rgba(0,0,0,0.5)",
+            justifyContent: "center",
+            alignItems: "center",
+            paddingHorizontal: 20,
+          }}
+        >
+          <View
+            style={{
+              backgroundColor: "#fff",
+              borderRadius: 16,
+              padding: 24,
+              width: "100%",
+              maxWidth: 400,
+            }}
+          >
+            <View style={{ alignItems: "center", marginBottom: 20 }}>
+              <Ionicons name="time-outline" size={48} color="#2563EB" />
+              <Text
+                style={{
+                  fontFamily: "Comfortaa-Bold",
+                  fontSize: 18,
+                  color: "#232B3A",
+                  textAlign: "center",
+                  marginTop: 12,
+                }}
+              >
+                Update Total Hours
+              </Text>
+            </View>
+
+            <Text
+              style={{
+                fontFamily: "Comfortaa-Regular",
+                fontSize: 15,
+                color: "#666",
+                textAlign: "center",
+                marginBottom: 20,
+              }}
+            >
+              Enter the correct total hours for this timesheet:
+            </Text>
+
+            <TextInput
+              value={updatedHours}
+              onChangeText={setUpdatedHours}
+              placeholder="Enter hours (e.g., 8.5)"
+              keyboardType="decimal-pad"
+              style={{
+                borderWidth: 2,
+                borderColor: "#E5E7EB",
+                borderRadius: 12,
+                paddingHorizontal: 16,
+                paddingVertical: 14,
+                fontSize: 16,
+                fontFamily: "Comfortaa-Regular",
+                marginBottom: 24,
+                textAlign: "center",
+              }}
+            />
+
+            <View style={{ flexDirection: "row", gap: 12 }}>
+              <TouchableOpacity
+                onPress={() => setShowUpdateModal(false)}
+                style={{
+                  flex: 1,
+                  backgroundColor: "#E5E7EB",
+                  borderRadius: 12,
+                  paddingVertical: 14,
+                  alignItems: "center",
+                }}
+              >
+                <Text
+                  style={{
+                    fontFamily: "Comfortaa-Bold",
+                    fontSize: 16,
+                    color: "#374151",
+                  }}
+                >
+                  Cancel
+                </Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                onPress={handleUpdateHours}
+                disabled={isUpdating}
+                style={{
+                  flex: 1,
+                  backgroundColor: isUpdating ? "#9CA3AF" : "#2563EB",
+                  borderRadius: 12,
+                  paddingVertical: 14,
+                  alignItems: "center",
+                  flexDirection: "row",
+                  justifyContent: "center",
+                }}
+              >
+                {isUpdating && (
+                  <ActivityIndicator
+                    size="small"
+                    color="#fff"
+                    style={{ marginRight: 8 }}
+                  />
+                )}
+                <Text
+                  style={{
+                    fontFamily: "Comfortaa-Bold",
+                    fontSize: 16,
+                    color: "#fff",
+                  }}
+                >
+                  {isUpdating ? "Updating..." : "Update"}
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
