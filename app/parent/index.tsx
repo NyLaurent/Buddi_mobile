@@ -15,6 +15,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import AnalyticsCard from "../../components/commons/AnalyticsCard";
+import SuccessModal from "../../components/modals/SuccessModal";
 import BuyTokensCTA from "../../components/parent/BuyTokensCTA";
 import KidPickupCard from "../../components/parent/KidPickupCard";
 import { useAuth } from "../../context/AuthContext";
@@ -53,6 +54,31 @@ export default function ParentDashboard() {
   const [startingTripId, setStartingTripId] = React.useState<number | null>(
     null
   );
+
+  // Success modal states
+  const [successModal, setSuccessModal] = React.useState({
+    visible: false,
+    title: "",
+    message: "",
+    iconName: "checkmark-circle" as keyof typeof Ionicons.glyphMap,
+    iconColor: "#22C55E",
+  });
+
+  // Helper to show success modal
+  const showSuccessModal = (
+    title: string,
+    message: string,
+    iconName: keyof typeof Ionicons.glyphMap = "checkmark-circle",
+    iconColor: string = "#22C55E"
+  ) => {
+    setSuccessModal({
+      visible: true,
+      title,
+      message,
+      iconName,
+      iconColor,
+    });
+  };
 
   // Helper to emit pickup events to buddi's room
   const emitPickupEvent = (
@@ -476,13 +502,12 @@ export default function ParentDashboard() {
         )
       );
 
-      // Show completion alert with details
-      Alert.alert(
+      // Show completion success modal
+      showSuccessModal(
         "Trip Completed! 🎉",
-        `Your pickup trip has been completed successfully!\n\nFare: $${
-          pickupData.fare?.toFixed(2) || "0.00"
-        }\nDuration: ${pickupData.duration || "N/A"}`,
-        [{ text: "Great!", style: "default" }]
+        "Your pickup trip has been completed successfully! Wait for the next day pickup and your buddi to submit their timesheet.",
+        "trophy",
+        "#FFD700"
       );
     };
 
@@ -1941,6 +1966,26 @@ export default function ParentDashboard() {
                                       "[PARENT] ✅ Pickup request created successfully:",
                                       res
                                     );
+                                    console.log(
+                                      "[PARENT] 🔍 Raw response keys:",
+                                      Object.keys(res)
+                                    );
+                                    console.log(
+                                      "[PARENT] 🔍 res.pickup:",
+                                      res.pickup
+                                    );
+                                    console.log(
+                                      "[PARENT] 🔍 res.data:",
+                                      res.data
+                                    );
+
+                                    // Get the actual pickup data from response
+                                    const pickupDataToSend =
+                                      res.pickup || res.data || res;
+                                    console.log(
+                                      "[PARENT] 📦 Pickup data to send:",
+                                      pickupDataToSend
+                                    );
 
                                     // Emit a direct event to the buddi to ensure they get the update
                                     // Re-get socket in case it reconnected
@@ -1951,8 +1996,7 @@ export default function ParentDashboard() {
                                         pickup.matchedBuddiId
                                       );
                                       socket.emit("pickup-requested", {
-                                        pickupData:
-                                          res.pickup || res.data || res,
+                                        pickupData: pickupDataToSend,
                                         buddiId: pickup.matchedBuddiId,
                                         parentId: parentDetails!.id,
                                         timestamp: new Date().toISOString(),
@@ -1961,10 +2005,13 @@ export default function ParentDashboard() {
 
                                     // Refresh pickups to get updated status
                                     await refreshPickups();
-                                    Alert.alert(
-                                      "Trip Started",
+
+                                    // Show success modal
+                                    showSuccessModal(
+                                      "Trip Started! 🚀",
                                       "Your pickup trip has been started successfully! The Buddi is now on their way.",
-                                      [{ text: "OK", style: "default" }]
+                                      "car-sport",
+                                      "#22C55E"
                                     );
                                   } catch (err: any) {
                                     let errorMessage = "Failed to start trip.";
@@ -2064,6 +2111,18 @@ export default function ParentDashboard() {
           />
         </View> */}
       </ScrollView>
+
+      {/* Success Modal */}
+      <SuccessModal
+        visible={successModal.visible}
+        title={successModal.title}
+        message={successModal.message}
+        iconName={successModal.iconName}
+        iconColor={successModal.iconColor}
+        onClose={() => setSuccessModal((prev) => ({ ...prev, visible: false }))}
+        autoCloseDelay={4000}
+        showCloseButton={true}
+      />
     </SafeAreaView>
   );
 }

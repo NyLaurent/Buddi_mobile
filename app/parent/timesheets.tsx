@@ -249,7 +249,7 @@ export default function TimesheetsPage() {
                 textAlign: "center",
               }}
             >
-              Timesheets will appear here once trips are completed
+              Timesheets will appear here once your buddi has completed their trips and submitted them.
             </Text>
           </View>
         ) : (

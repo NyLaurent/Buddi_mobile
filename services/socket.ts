@@ -116,6 +116,16 @@ class SocketService {
       }
     });
 
+    this.socket.on('pickup-requested', (data: string) => {
+      console.log('[SocketService] 📋 Pickup requested:', data);
+      try {
+        const pickupData: PickupData = JSON.parse(data);
+        this.triggerEvent('pickup-requested', pickupData);
+      } catch (error) {
+        console.error('[SocketService] ❌ Error parsing pickup-requested data:', error);
+      }
+    });
+
     this.socket.on('pickup-started', (data: string) => {
       console.log('[SocketService] 🚀 Pickup started:', data);
       try {

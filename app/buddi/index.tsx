@@ -21,6 +21,7 @@ import {
 import AnalyticsCard from "../../components/commons/AnalyticsCard";
 import AvailableCallsCard from "../../components/commons/AvailableCallsCard";
 import PickupCard from "../../components/commons/PickupCard";
+import SuccessModal from "../../components/modals/SuccessModal";
 import { useAuth } from "../../context/AuthContext";
 import BuddiService from "../../services/api/buddi.service";
 import SocketService from "../../services/socket";
@@ -38,11 +39,40 @@ export default function BuddiHome() {
   const [activePickup, setActivePickup] = useState<any>(null); // New state for current trip
   // const [completedTrips, setCompletedTrips] = useState<any[]>([]);
   const [matchedPickups, setMatchedPickups] = useState<any[]>([]);
+
+  // Store the pickup ID from real-time events
+  const [currentPickupId, setCurrentPickupId] = useState<number | null>(null);
+
+  // Success modal states
+  const [successModal, setSuccessModal] = useState({
+    visible: false,
+    title: "",
+    message: "",
+    iconName: "checkmark-circle" as keyof typeof Ionicons.glyphMap,
+    iconColor: "#22C55E",
+  });
+
   // const [childInfo, setChildInfo] = useState<any>(null);
 
   // Helper to get the socket instance (assume SocketService exposes getSocket())
   const getSocket = () =>
     SocketService.getSocket ? SocketService.getSocket() : null;
+
+  // Helper to show success modal
+  const showSuccessModal = (
+    title: string,
+    message: string,
+    iconName: keyof typeof Ionicons.glyphMap = "checkmark-circle",
+    iconColor: string = "#22C55E"
+  ) => {
+    setSuccessModal({
+      visible: true,
+      title,
+      message,
+      iconName,
+      iconColor,
+    });
+  };
 
   // Enhanced helper to emit pickup events to parent's room
   const emitPickupEvent = (
@@ -257,52 +287,37 @@ export default function BuddiHome() {
         JSON.stringify(pickupData, null, 2)
       );
 
-      // Check if this pickup is for this buddi
-      if (
-        pickupData.buddiId === buddiDetails?.id &&
-        pickupData.status === "pending"
-      ) {
-        console.log("[BUDDI] 📋 Processing pickup request for this buddi");
+      // Check if this pickup is for this buddi (same pattern as other working handlers)
+      console.log("[BUDDI] 🔍 Checking pickup compatibility:", {
+        pickupBuddiId: pickupData.buddiId,
+        thisBuddiId: buddiDetails?.id,
+        pickupStatus: pickupData.status,
+        buddiIdsMatch: pickupData.buddiId === buddiDetails?.id,
+      });
 
-        // The pickup object IS the request we need to track, not a separate BuddiRequest
-        setAvailableCalls((prev) => {
-          const existingIndex = prev.findIndex(
-            (call: any) =>
-              call.buddiRequestId === pickupData.buddiRequestId ||
-              call.id === pickupData.buddiRequestId
-          );
+      if (pickupData.buddiId === buddiDetails?.id) {
+        console.log(
+          "[BUDDI] ✅ REAL-TIME pickup request received for this buddi!"
+        );
+        console.log("[BUDDI] 🆔 Pickup ID:", pickupData.id);
+        console.log(
+          "[BUDDI] 📍 From:",
+          pickupData.fromLocation,
+          "To:",
+          pickupData.toLocation
+        );
 
-          if (existingIndex !== -1) {
-            console.log(
-              "[BUDDI] 🔄 Updating existing pickup request with pickup ID"
-            );
-            // Update existing entry with pickup ID
-            const updated = [...prev];
-            updated[existingIndex] = {
-              ...updated[existingIndex],
-              pickupId: pickupData.id, // Store the actual pickup ID
-              status: "requested", // Update status to show pickup is requested
-            };
-            return updated;
-          } else {
-            console.log(
-              "[BUDDI] ➕ Adding new pickup request to available calls"
-            );
-            // Create a BuddiRequest-like object from the pickup data
-            const buddiRequestFromPickup = {
-              id: pickupData.buddiRequestId,
-              parentId: pickupData.parentId,
-              childId: pickupData.childId,
-              fromZone: pickupData.fromLocation,
-              toZone: pickupData.toLocation,
-              status: "requested", // Pickup has been requested
-              matchedBuddiId: pickupData.buddiId,
-              pickupId: pickupData.id, // Store the pickup ID for later reference
-              buddiRequestId: pickupData.buddiRequestId,
-            };
-            return [...prev, buddiRequestFromPickup];
-          }
-        });
+        // Store the pickup ID from the event to use directly
+        console.log("[BUDDI] ✅ Storing pickup ID from event:", pickupData.id);
+        setCurrentPickupId(pickupData.id);
+
+        // Show immediate notification with success modal
+        showSuccessModal(
+          "🚨 New Pickup Request!",
+          `You have a new pickup request!\nFrom: ${pickupData.fromLocation}\nTo: ${pickupData.toLocation}\n\nYou can now start the trip!`,
+          "notifications",
+          "#FF932E"
+        );
       } else {
         console.log("[BUDDI] 📋 Pickup not for this buddi:", {
           pickupBuddiId: pickupData.buddiId,
@@ -360,31 +375,15 @@ export default function BuddiHome() {
         // Store completed trip and show success message
         handleTripCompleted(pickupData);
 
-        Alert.alert(
+        showSuccessModal(
           "Trip Completed! 🎉",
-          `Great job! You've successfully completed the pickup trip.\n\nEarnings: $${
-            pickupData.fare?.toFixed(2) || "0.00"
-          }\nDuration: ${pickupData.duration || "N/A"}`,
-          [{ text: "Awesome!", style: "default" }]
+          "Great job! You've successfully completed the pickup trip. Well done!",
+          "trophy",
+          "#FFD700"
         );
       } else {
         console.log("[BUDDI] ❌ Trip completed not for this buddi");
       }
-    };
-
-    const handleTripCancelled = (pickupData: any) => {
-      console.log("[BUDDI] ❌ Received trip-cancelled event:", pickupData);
-      // Update active pickup
-      if (activePickup && pickupData.id === activePickup.id) {
-        console.log("[BUDDI] 🔄 Updating active pickup with cancelled data");
-        setActivePickup(pickupData);
-      }
-
-      Alert.alert(
-        "Trip Cancelled",
-        "The pickup trip has been cancelled. Please contact support if you need assistance.",
-        [{ text: "OK", style: "default" }]
-      );
     };
 
     const handleEarningsUpdated = (data: any) => {
@@ -509,86 +508,6 @@ export default function BuddiHome() {
       }
     };
 
-    // Handler for pickup-requested event (when parent requests pickup)
-    const handlePickupRequested = (data: any) => {
-      console.log("[BUDDI] 📋 Raw pickup-requested event received:", data);
-      console.log("[BUDDI] 📋 Data type:", typeof data);
-
-      let pickupData;
-      try {
-        // Backend sends JSON.stringify(pickup), so we need to parse it
-        pickupData = typeof data === "string" ? JSON.parse(data) : data;
-      } catch (err) {
-        console.error("[BUDDI] Parse error (pickup-requested):", err);
-        return;
-      }
-
-      console.log("[BUDDI] 📋 Parsed pickup-requested data:", pickupData);
-      console.log(
-        "[BUDDI] 📋 Check buddiId match:",
-        pickupData.buddiId,
-        "===",
-        buddiDetails?.id
-      );
-      console.log("[BUDDI] 📋 Pickup status:", pickupData.status);
-      console.log(
-        "[BUDDI] 📋 Pickup buddiRequestId:",
-        pickupData.buddiRequestId
-      );
-
-      // Verify this pickup is for this buddi and is in pending status
-      if (
-        pickupData.buddiId === buddiDetails?.id &&
-        pickupData.status === "pending"
-      ) {
-        console.log(
-          "[BUDDI] ✅ Pickup request is for this buddi, updating available calls"
-        );
-
-        setAvailableCalls((prev) => {
-          console.log("[BUDDI] 📋 Current availableCalls before update:", prev);
-
-          // Find existing call by buddiRequestId and update it with pickup information
-          const updatedCalls = prev.map((call) => {
-            if (call.buddiRequestId === pickupData.buddiRequestId) {
-              console.log(
-                "[BUDDI] 🔄 Found matching call, adding pickup info:",
-                {
-                  callId: call.id,
-                  buddiRequestId: call.buddiRequestId,
-                  pickupId: pickupData.id,
-                }
-              );
-
-              // Add the pickup ID to the call and update status
-              return {
-                ...call,
-                status: "requested" as const,
-                pickupId: pickupData.id, // Store the actual pickup ID
-                pickupData: pickupData, // Store full pickup data for reference
-              };
-            }
-            return call;
-          });
-
-          console.log(
-            "[BUDDI] 📋 Updated availableCalls after pickup-requested:",
-            updatedCalls
-          );
-          return updatedCalls;
-        });
-      } else {
-        console.log(
-          "[BUDDI] ❌ Pickup request not for this buddi or wrong status:",
-          {
-            receivedBuddiId: pickupData.buddiId,
-            thisBuddiId: buddiDetails?.id,
-            status: pickupData.status,
-          }
-        );
-      }
-    };
-
     // Handler for pickup-started event
     const handlePickupStarted = (data: any) => {
       console.log("[BUDDI] 🚀 Raw pickup-started event received:", data);
@@ -653,36 +572,14 @@ export default function BuddiHome() {
       }
     };
 
-    // Add socket event listeners
-    const socket = getSocket();
-    if (socket) {
-      console.log("[BUDDI] Setting up socket event listeners");
-      socket.on("trip-completed", handleTripCompleted);
-      socket.on("pickup-requested", handlePickupRequested);
-      socket.on("pickup-started", handlePickupStarted);
-      socket.on("child-picked-up", handleChildPickedUp);
-      console.log("[BUDDI] Socket event listeners set up successfully");
-      // Add other event listeners here as needed
-    } else {
-      console.log("[BUDDI] Socket not available for event listeners");
-    }
+    // Socket event listeners are already registered via SocketService.on above
 
     // On mount, load completed trips from AsyncStorage
     AsyncStorage.getItem("completedTrips").then((stored) => {
       // setCompletedTrips(stored ? JSON.parse(stored) : []); // Commented out as completedTrips state is not used
     });
 
-    // Cleanup listeners on unmount
-    return () => {
-      const socket = getSocket();
-      if (socket) {
-        socket.off("trip-completed", handleTripCompleted);
-        socket.off("pickup-requested", handlePickupRequested);
-        socket.off("pickup-started", handlePickupStarted);
-        socket.off("child-picked-up", handleChildPickedUp);
-        // Remove other listeners here as needed
-      }
-    };
+    // Cleanup is handled by SocketService automatically
   }, [matchedCall, activePickup]); // Include both dependencies
 
   React.useEffect(() => {
@@ -1016,7 +913,7 @@ export default function BuddiHome() {
                                         {
                                           buddiId: buddiDetails?.id,
                                           buddiRequestId: matchedCall.id,
-                                          pickupId: matchedCall.pickupId,
+                                          pickupIdFromEvent: currentPickupId,
                                           pickupStatus: matchedCall.status,
                                           matchedBuddiId:
                                             matchedCall.matchedBuddiId,
@@ -1025,7 +922,7 @@ export default function BuddiHome() {
                                       );
 
                                       // Check if we have the actual pickup ID from the pickup-requested event
-                                      if (!matchedCall.pickupId) {
+                                      if (!currentPickupId) {
                                         Alert.alert(
                                           "Trip Not Ready",
                                           "The pickup hasn't been requested by the parent yet. Please wait for the parent to request a pickup before starting the trip.",
@@ -1034,8 +931,7 @@ export default function BuddiHome() {
                                         return;
                                       }
 
-                                      const pickupIdToUse =
-                                        matchedCall.pickupId;
+                                      const pickupIdToUse = currentPickupId;
                                       console.log(
                                         "[BUDDI] Using pickup ID for trip start:",
                                         pickupIdToUse
@@ -1046,10 +942,20 @@ export default function BuddiHome() {
                                           pickupIdToUse
                                         );
                                       setActivePickup(res.pickup);
+                                      // Clear the pickup ID since trip is started
+                                      setCurrentPickupId(null);
                                       // Emit pickup-started event to parent
                                       emitPickupEvent(
                                         "pickup-started",
                                         res.pickup
+                                      );
+
+                                      // Show success modal
+                                      showSuccessModal(
+                                        "Trip Started! 🚀",
+                                        "Your pickup trip has started successfully! You can now navigate to pick up the child.",
+                                        "car-sport",
+                                        "#22C55E"
                                       );
                                     } catch (err) {
                                       console.log(
@@ -1156,6 +1062,14 @@ export default function BuddiHome() {
                                         "child-picked-up",
                                         res.pickup
                                       );
+
+                                      // Show success modal
+                                      showSuccessModal(
+                                        "Child Picked Up! 👶",
+                                        "Great! You've successfully picked up the child. Now head to the destination.",
+                                        "people",
+                                        "#8B5CF6"
+                                      );
                                     } catch (err) {
                                       Alert.alert(
                                         "Error",
@@ -1193,6 +1107,14 @@ export default function BuddiHome() {
                                       emitPickupEvent(
                                         "trip-completed",
                                         res.pickup
+                                      );
+
+                                      // Show success modal
+                                      showSuccessModal(
+                                        "Trip Completed! 🎉",
+                                        "Excellent work! You've successfully completed the pickup trip. Well done!",
+                                        "checkmark-circle",
+                                        "#16A34A"
                                       );
                                     } catch (err) {
                                       Alert.alert(
@@ -1272,6 +1194,18 @@ export default function BuddiHome() {
           />
         </View> */}
       </ScrollView>
+
+      {/* Success Modal */}
+      <SuccessModal
+        visible={successModal.visible}
+        title={successModal.title}
+        message={successModal.message}
+        iconName={successModal.iconName}
+        iconColor={successModal.iconColor}
+        onClose={() => setSuccessModal((prev) => ({ ...prev, visible: false }))}
+        autoCloseDelay={4000}
+        showCloseButton={true}
+      />
     </SafeAreaView>
   );
 }
