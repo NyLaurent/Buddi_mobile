@@ -22,12 +22,63 @@ export default function AllPickupsPage() {
   const insets = useSafeAreaInsets();
   const { buddiDetails } = useAuth();
   const [matchedPickups, setMatchedPickups] = React.useState<any[]>([]);
+  const [weeklyPickupSummary, setWeeklyPickupSummary] =
+    React.useState<any>(null);
+  const [weeklySummaryLoading, setWeeklySummaryLoading] = React.useState(false);
+  const [weeklySummaryError, setWeeklySummaryError] = React.useState<
+    string | null
+  >(null);
+
+  // Helper to get today's day as a string (e.g., 'Monday')
+  const today = new Date().toLocaleDateString("en-US", { weekday: "long" });
+
+  // Helper to fetch weekly pickup summary
+  const fetchWeeklyPickupSummary = async () => {
+    if (!buddiDetails?.id) return;
+
+    setWeeklySummaryLoading(true);
+    setWeeklySummaryError(null);
+
+    try {
+      const summary = await BuddiService.getWeeklyPickupSummary(
+        buddiDetails.id
+      );
+      console.log("[ALL-PICKUPS] Weekly pickup summary:", summary);
+      setWeeklyPickupSummary(summary);
+    } catch (err: any) {
+      console.error("[ALL-PICKUPS] Error fetching weekly pickup summary:", err);
+      setWeeklySummaryError(err.message || "Failed to fetch weekly summary");
+    } finally {
+      setWeeklySummaryLoading(false);
+    }
+  };
+
+  // Helper to check if a pickup is completed for a specific day
+  const isPickupCompletedForDay = (pickup: any, day: string) => {
+    if (!weeklyPickupSummary?.completed) return false;
+
+    const dayKey = day as keyof typeof weeklyPickupSummary.completed;
+    const completedForDay = weeklyPickupSummary.completed[dayKey];
+
+    if (!completedForDay) return false;
+
+    // Check if this pickup matches the completed one
+    // We'll match based on fromLocation and toLocation for now
+    return (
+      completedForDay.fromLocation === pickup.fromZone &&
+      completedForDay.toLocation === pickup.toZone
+    );
+  };
+
   React.useEffect(() => {
     const fetchMatchedPickups = async () => {
       try {
         if (buddiDetails?.id) {
           const res = await BuddiService.getMatchedRequests(buddiDetails.id);
           setMatchedPickups(res.data || []);
+
+          // Also fetch weekly pickup summary
+          await fetchWeeklyPickupSummary();
         } else {
           setMatchedPickups([]);
         }
@@ -126,27 +177,36 @@ export default function AllPickupsPage() {
                 (dayOrder[bDay as keyof typeof dayOrder] || 99)
               );
             });
-            return pickupDayPairs.map(({ pickup, day }) => (
-              <View key={`${pickup.id}-${day}`} style={{ marginBottom: 18 }}>
-                <PickupCard
-                  id={pickup.id.toString()}
-                  name={pickup.description || "Pickup Request"}
-                  time={pickup.callPickupTime || "-"}
-                  days={day}
-                  school={pickup.fromZone || "School"}
-                  home={pickup.toZone || "Home"}
-                  dropoffTime={pickup.callDropTime || "-"}
-                  kidsCount={pickup.kidsCount || 0}
-                  onButtonPress={() => {
-                    router.push({
-                      pathname: "/buddi/pickup/[id]",
-                      params: { id: pickup.id.toString() },
-                    });
-                  }}
-                  
-                />
-              </View>
-            ));
+            return pickupDayPairs.map(({ pickup, day }) => {
+              // Check if this pickup is completed for this day
+              const isCompleted = isPickupCompletedForDay(pickup, day);
+
+              return (
+                <View key={`${pickup.id}-${day}`} style={{ marginBottom: 18 }}>
+                  <PickupCard
+                    id={pickup.id.toString()}
+                    name={pickup.description || "Pickup Request"}
+                    time={pickup.callPickupTime || "-"}
+                    days={day}
+                    school={pickup.fromZone || "School"}
+                    home={pickup.toZone || "Home"}
+                    dropoffTime={pickup.callDropTime || "-"}
+                    kidsCount={pickup.kidsCount || 0}
+                    status={isCompleted ? "completed" : "notStarted"}
+                    onButtonPress={() => {
+                      // Don't allow navigation if pickup is completed
+                      if (isCompleted) {
+                        return;
+                      }
+                      router.push({
+                        pathname: "/buddi/pickup/[id]",
+                        params: { id: pickup.id.toString() },
+                      });
+                    }}
+                  />
+                </View>
+              );
+            });
           })()
         ) : (
           <View

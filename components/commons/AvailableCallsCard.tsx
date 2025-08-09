@@ -87,7 +87,7 @@ export default function AvailableCallsCard({
                   flex: 1,
                 }}
               >
-                You have a matched call!
+                You have a matched Request!
               </Text>
             </View>
             <View

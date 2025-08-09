@@ -123,25 +123,25 @@ const BuddiProfile = () => {
   })();
 
   // Get rating from buddi details
-  const rating = (() => {
-    const rawRating =
-      profileData?.user?.Buddi?.rating || buddiDetails?.rating || 5;
-    console.log("BuddiProfile: Raw rating:", rawRating, typeof rawRating);
-    // Ensure rating is a valid number and within reasonable bounds
-    if (
-      typeof rawRating === "number" &&
-      !isNaN(rawRating) &&
-      isFinite(rawRating) &&
-      rawRating >= 0 &&
-      rawRating <= 5
-    ) {
-      const result = Math.floor(rawRating);
-      console.log("BuddiProfile: Valid rating:", result);
-      return result;
-    }
-    console.log("BuddiProfile: Using default rating: 5");
-    return 5; // Default fallback
-  })();
+  // const rating = (() => {
+  //   const rawRating =
+  //     profileData?.user?.Buddi?.rating || buddiDetails?.rating || 5;
+  //   console.log("BuddiProfile: Raw rating:", rawRating, typeof rawRating);
+  //   // Ensure rating is a valid number and within reasonable bounds
+  //   if (
+  //     typeof rawRating === "number" &&
+  //     !isNaN(rawRating) &&
+  //     isFinite(rawRating) &&
+  //     rawRating >= 0 &&
+  //     rawRating <= 5
+  //   ) {
+  //     const result = Math.floor(rawRating);
+  //     console.log("BuddiProfile: Valid rating:", result);
+  //     return result;
+  //   }
+  //   console.log("BuddiProfile: Using default rating: 5");
+  //   return 5; // Default fallback
+  // })();
 
   if (isLoading) {
     return (
@@ -170,7 +170,7 @@ const BuddiProfile = () => {
           name={fullName}
           email={email}
           profileImage={profileImage}
-          rating={rating}
+          
         />
 
         {/* Toggler Tabs */}

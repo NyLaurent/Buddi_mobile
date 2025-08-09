@@ -582,6 +582,30 @@ const BuddiService = {
       throw new Error(message);
     }
   },
+
+  async getWeeklyPickupSummary(buddiId: number): Promise<any> {
+    try {
+      const response = await authorizedApi.patch(`/buddi/${buddiId}/getWeeklyPickupSummary`);
+      console.log("[BUDDI SERVICE] Weekly pickup summary response:", response.data);
+      return response.data;
+    } catch (err: any) {
+      let message = 'Failed to fetch weekly pickup summary.';
+      if (err?.response?.data?.message) {
+        message = err.response.data.message;
+      } else if (err?.message) {
+        if (err.message.includes('Network')) {
+          message = 'Network error. Please check your connection and try again.';
+        } else if (err.message.includes('timeout')) {
+          message = 'Request timed out. Please try again.';
+        } else {
+          message = err.message;
+        }
+      } else if (typeof err === 'string') {
+        message = err;
+      }
+      throw new Error(message);
+    }
+  },
   startTrip,
   startPickupTrip,
   completePickupTrip,

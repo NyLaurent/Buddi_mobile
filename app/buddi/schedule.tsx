@@ -86,6 +86,76 @@ const SchedulePage = () => {
     totalPages: 0,
   });
 
+  // State for weekly pickup summary (completed pickups)
+  const [weeklyPickupSummary, setWeeklyPickupSummary] =
+    React.useState<any>(null);
+  const [weeklySummaryLoading, setWeeklySummaryLoading] = React.useState(false);
+  const [weeklySummaryError, setWeeklySummaryError] = React.useState<
+    string | null
+  >(null);
+
+  // Helper to get today's day as a string (e.g., 'Monday')
+  const today = new Date().toLocaleDateString("en-US", { weekday: "long" });
+
+  // Helper to check if a pickup is for today
+  const isPickupForToday = (pickup: any) => {
+    if (!pickup.availableDays || !Array.isArray(pickup.availableDays)) {
+      return false;
+    }
+
+    // Parse all available days from the array
+    const allAvailableDays: string[] = [];
+    pickup.availableDays.forEach((dayString: string) => {
+      const days = dayString
+        .split(",")
+        .map((day: string) => day.trim().toLowerCase());
+      allAvailableDays.push(...days);
+    });
+
+    return allAvailableDays.includes(today.toLowerCase());
+  };
+
+  // Helper to fetch weekly pickup summary
+  const fetchWeeklyPickupSummary = async () => {
+    if (!buddiDetails?.id) return;
+
+    setWeeklySummaryLoading(true);
+    setWeeklySummaryError(null);
+
+    try {
+      const summary = await BuddiService.getWeeklyPickupSummary(
+        buddiDetails.id
+      );
+      console.log("[SCHEDULE] Weekly pickup summary:", summary);
+      setWeeklyPickupSummary(summary);
+    } catch (err: any) {
+      console.error("[SCHEDULE] Error fetching weekly pickup summary:", err);
+      setWeeklySummaryError(err.message || "Failed to fetch weekly summary");
+    } finally {
+      setWeeklySummaryLoading(false);
+    }
+  };
+
+  // Helper to check if a pickup is completed for today
+  const isPickupCompletedForToday = (pickup: any) => {
+    if (!weeklyPickupSummary?.completed) return false;
+
+    const todayKey = today as keyof typeof weeklyPickupSummary.completed;
+    const completedToday = weeklyPickupSummary.completed[todayKey];
+
+    if (!completedToday) return false;
+
+    // Check if this pickup matches the completed one
+    // We'll match based on fromLocation and toLocation for now
+    return (
+      completedToday.fromLocation === pickup.fromZone &&
+      completedToday.toLocation === pickup.toZone
+    );
+  };
+
+  // Filter pickups for today
+  const todaysPickups = pickupRequests.filter(isPickupForToday);
+
   const fetchDetailsForRequests = async () => {
     // For Buddi users - get matched requests
     if (user?.role === "buddi" && buddiDetails?.id) {
@@ -171,6 +241,11 @@ const SchedulePage = () => {
       return;
     }
     fetchDetailsForRequests();
+
+    // Fetch weekly pickup summary for buddi users
+    if (user?.role === "buddi" && buddiDetails?.id) {
+      fetchWeeklyPickupSummary();
+    }
   }, [parentDetails?.id, buddiDetails?.id, user?.role]);
 
   // Socket event listeners for real-time pickup status updates (copied from parent index)
@@ -413,9 +488,7 @@ const SchedulePage = () => {
               <AnalyticsCard
                 icon={<Ionicons name="calendar" size={20} color="#FF932E" />}
                 title="Today's Pickups"
-                value={pickupRequests
-                  .filter((p) => p.status === "matched")
-                  .length.toString()}
+                value={todaysPickups.length.toString()}
                 subtitle="Scheduled"
               />
             </View>
@@ -492,6 +565,15 @@ const SchedulePage = () => {
                   <Text className="font-comfortaa-bold text-xl">
                     Scheduled Pickups
                   </Text>
+                  <TouchableOpacity
+                    className="flex-row items-center gap-1"
+                    onPress={() => router.push("/buddi/all-pickups")}
+                  >
+                    <Text className="text-primary font-comfortaa">
+                      View All
+                    </Text>
+                    <Ionicons name="arrow-forward" size={16} color="#FF932E" />
+                  </TouchableOpacity>
                 </View>
                 {loading ? (
                   <View style={{ alignItems: "center", padding: 40 }}>
@@ -559,7 +641,7 @@ const SchedulePage = () => {
                       </Text>
                     </TouchableOpacity>
                   </View>
-                ) : pickupRequests.length === 0 ? (
+                ) : todaysPickups.length === 0 ? (
                   <View
                     style={{
                       backgroundColor: "#F4F7FE",
@@ -587,7 +669,7 @@ const SchedulePage = () => {
                         textAlign: "center",
                       }}
                     >
-                      No Pickups Scheduled
+                      No Pickups Scheduled Today
                     </Text>
                     <Text
                       style={{
@@ -599,7 +681,8 @@ const SchedulePage = () => {
                         lineHeight: 20,
                       }}
                     >
-                      You don&apos;t have any pickup requests scheduled yet.
+                      You don&apos;t have any pickup requests scheduled for
+                      today.
                     </Text>
 
                     {/* <TouchableOpacity
@@ -632,7 +715,7 @@ const SchedulePage = () => {
                     </TouchableOpacity> */}
                   </View>
                 ) : (
-                  pickupRequests.map((pickup) => {
+                  todaysPickups.map((pickup) => {
                     console.log("Processing pickup request:", pickup.id);
                     console.log("Pickup request data:", pickup);
 
@@ -709,28 +792,46 @@ const SchedulePage = () => {
                     // Get current pickup status for this request
                     const currentPickupStatus = getPickupStatus(pickup.id);
 
-                    // Parse the available days string and show up to 3 cards
-                    let days: string[] = [];
+                    // Check if this pickup is completed for today
+                    const isCompleted = isPickupCompletedForToday(pickup);
+
+                    // Parse the available days string and show only today's day
+                    let todaysDays: string[] = [];
                     if (
                       pickup.availableDays &&
                       pickup.availableDays.length > 0
                     ) {
                       // Parse the comma-separated available days string
-                      const availableDaysString = pickup.availableDays[0];
-                      const availableDays = availableDaysString
-                        .split(",")
-                        .map((day: string) => day.trim());
+                      const allAvailableDays: string[] = [];
+                      pickup.availableDays.forEach((dayString: string) => {
+                        const days = dayString
+                          .split(",")
+                          .map((day: string) => day.trim());
+                        allAvailableDays.push(...days);
+                      });
+
+                      // Filter for today's day only
+                      todaysDays = allAvailableDays.filter(
+                        (day: string) =>
+                          day.toLowerCase() === today.toLowerCase()
+                      );
 
                       console.log(
                         "Available days string:",
-                        availableDaysString
+                        pickup.availableDays
                       );
-                      console.log("Parsed available days:", availableDays);
-
-                      // Take up to 3 days
-                      days = availableDays.slice(0, 3);
-                      console.log("Days to display:", days);
+                      console.log(
+                        "Parsed all available days:",
+                        allAvailableDays
+                      );
+                      console.log("Today's days to display:", todaysDays);
                     }
+
+                    // If no days for today, skip this pickup
+                    if (todaysDays.length === 0) {
+                      return null;
+                    }
+
                     return (
                       <View key={pickup.id} style={{ marginBottom: 18 }}>
                         <ScrollView
@@ -738,7 +839,7 @@ const SchedulePage = () => {
                           showsHorizontalScrollIndicator={false}
                           contentContainerStyle={{ paddingRight: 16 }}
                         >
-                          {days.map((day: string, idx: number) => (
+                          {todaysDays.map((day: string, idx: number) => (
                             <View
                               key={`${pickup.id}-${day}`}
                               style={{ width: 338, marginRight: 12 }}
@@ -756,7 +857,9 @@ const SchedulePage = () => {
                                 }
                                 destination={pickup.toZone || "Home"}
                                 mainAction={
-                                  false
+                                  isCompleted
+                                    ? "Completed"
+                                    : false
                                     ? "Starting Trip..."
                                     : currentPickupStatus === "pending"
                                     ? "Trip Started"
@@ -773,7 +876,9 @@ const SchedulePage = () => {
                                     : "Pending"
                                 }
                                 mainActionColor={
-                                  currentPickupStatus === "pending"
+                                  isCompleted
+                                    ? "#16A34A"
+                                    : currentPickupStatus === "pending"
                                     ? "#FF932E"
                                     : currentPickupStatus === "enRoute"
                                     ? "#3B82F6"
@@ -787,6 +892,7 @@ const SchedulePage = () => {
                                     : undefined
                                 }
                                 disabled={
+                                  isCompleted ||
                                   currentPickupStatus === "pending" ||
                                   currentPickupStatus === "enRoute" ||
                                   currentPickupStatus === "pickedUp" ||
@@ -795,60 +901,22 @@ const SchedulePage = () => {
                                   (pickup.status === "matched" &&
                                     parentDetails?.approvalStage === "pending")
                                 }
-                                onMainAction={() => {
-                                  // If the main action is disabled, show coverage request option
-                                  if (
-                                    pickup.status === "matched" &&
-                                    !currentPickupStatus
-                                  ) {
-                                    openCoverageRequestModal(
-                                      pickup.matchedBuddiId!,
-                                      buddiName
-                                    );
-                                  }
-                                }}
+                                // onMainAction={() => {
+                                //   // If the main action is disabled, show coverage request option
+                                //   if (
+                                //     pickup.status === "matched" &&
+                                //     !currentPickupStatus
+                                //   ) {
+                                //     openCoverageRequestModal(
+                                //       pickup.matchedBuddiId!,
+                                //       buddiName
+                                //     );
+                                //   }
+                                // }}
                               />
                             </View>
                           ))}
                         </ScrollView>
-                        {/* Show View All if more than 3 days */}
-                        {pickup.availableDays &&
-                          pickup.availableDays.length > 3 && (
-                            <TouchableOpacity
-                              style={{
-                                marginTop: 8,
-                                alignSelf: "flex-end",
-                                backgroundColor: "#FF932E",
-                                borderRadius: 999,
-                                paddingVertical: 8,
-                                paddingHorizontal: 22,
-                                flexDirection: "row",
-                                alignItems: "center",
-                              }}
-                              onPress={() => {
-                                router.push({
-                                  pathname: "/parent/all-pickups/[callId]",
-                                  params: { callId: pickup.id.toString() },
-                                });
-                              }}
-                            >
-                              <Text
-                                style={{
-                                  color: "#fff",
-                                  fontFamily: "Comfortaa-Bold",
-                                  fontSize: 15,
-                                  marginRight: 8,
-                                }}
-                              >
-                                View All
-                              </Text>
-                              <Ionicons
-                                name="arrow-forward"
-                                size={18}
-                                color="#fff"
-                              />
-                            </TouchableOpacity>
-                          )}
                       </View>
                     );
                   })

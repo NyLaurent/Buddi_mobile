@@ -119,14 +119,14 @@ const Header: React.FC<HeaderProps> = ({
   };
 
   // Ensure rating is a valid number and within reasonable bounds
-  const validRating =
-    typeof rating === "number" &&
-    !isNaN(rating) &&
-    isFinite(rating) &&
-    rating >= 0 &&
-    rating <= 5
-      ? Math.floor(rating)
-      : 5;
+  // const validRating =
+  //   typeof rating === "number" &&
+  //   !isNaN(rating) &&
+  //   isFinite(rating) &&
+  //   rating >= 0 &&
+  //   rating <= 5
+  //     ? Math.floor(rating)
+  //     : 5;
 
   return (
     <View className="rounded-b-3xl" style={{ minHeight: 120, backgroundColor }}>
@@ -160,13 +160,13 @@ const Header: React.FC<HeaderProps> = ({
           <Text className="font-comfortaa mt-0.5" style={{ color: textColor }}>
             {email}
           </Text>
-          {validRating > 0 && (
+          {/* {validRating > 0 && (
             <View className="flex-row items-center bg-white rounded-xl px-3 py-0.5 mt-2">
               {[...Array(validRating)].map((_, i) => (
                 <Ionicons key={i} name="star" size={16} color={starColor} />
               ))}
             </View>
-          )}
+          )} */}
         </View>
       </SafeAreaView>
     </View>
