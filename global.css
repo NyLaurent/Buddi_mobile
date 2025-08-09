@@ -2,3 +2,21 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Global default text colors for better visibility */
+* {
+  color: #23272f;
+}
+
+/* Default styling for text inputs */
+input,
+textarea {
+  color: #23272f;
+  caret-color: #23272f;
+}
+
+/* Placeholder styling */
+input::placeholder,
+textarea::placeholder {
+  color: #8b8b8b;
+  opacity: 1;
+}

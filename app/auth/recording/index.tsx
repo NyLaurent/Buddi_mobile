@@ -1,6 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import { Audio, ResizeMode, Video } from "expo-av";
 import { CameraType, CameraView, useCameraPermissions } from "expo-camera";
+import * as FileSystem from "expo-file-system";
 import { useRouter } from "expo-router";
 import { useEffect, useRef, useState } from "react";
 import {
@@ -24,6 +25,193 @@ import {
 type InterviewQuestion = { id: string; questionDescription: string };
 
 const PRIMARY_COLOR = "#FF932E";
+
+// Helper function for video size check
+async function checkVideoSize(
+  videoUri: string
+): Promise<{ uri: string; size: number; sizeWarning: boolean }> {
+  try {
+    const fileInfo = await FileSystem.getInfoAsync(videoUri);
+
+    if (fileInfo.exists && "size" in fileInfo) {
+      const sizeInMB = fileInfo.size / (1024 * 1024);
+      console.log(`[SIZE_CHECK] Video size: ${sizeInMB.toFixed(2)} MB`);
+
+      return {
+        uri: videoUri,
+        size: fileInfo.size,
+        sizeWarning: sizeInMB > 20, // Warn if larger than 20MB
+      };
+    }
+
+    return {
+      uri: videoUri,
+      size: 0,
+      sizeWarning: false,
+    };
+  } catch (error) {
+    console.error("[SIZE_CHECK] Error checking video size:", error);
+    return {
+      uri: videoUri,
+      size: 0,
+      sizeWarning: false,
+    };
+  }
+}
+
+// Optimized upload function with progress tracking
+async function uploadBuddiProfileVideoOptimized(
+  buddiId: number,
+  videoUri: string,
+  onProgress?: (progress: number) => void
+) {
+  try {
+    console.log("=== OPTIMIZED VIDEO UPLOAD START ===");
+    console.log("[UPLOAD] Buddi ID:", buddiId);
+    console.log("[UPLOAD] Video URI:", videoUri);
+
+    // Check and compress video if needed
+    const videoSizeCheck = await checkVideoSize(videoUri);
+    console.log("[UPLOAD] Video size check:", videoSizeCheck);
+
+    if (videoSizeCheck.sizeWarning) {
+      console.warn(
+        "[UPLOAD] Large video file detected, this may take longer to upload"
+      );
+    }
+
+    // Get video info for debugging
+    console.log("[UPLOAD] Getting video info...");
+    const fileInfo = await FileSystem.getInfoAsync(videoUri);
+    console.log("[UPLOAD] File info:", fileInfo);
+
+    if (!fileInfo.exists) {
+      throw new Error("Video file does not exist");
+    }
+
+    // Create FormData with optimized settings
+    console.log("[UPLOAD] Creating FormData...");
+    const formData = new FormData();
+
+    const fileName =
+      videoUri.split("/").pop() || `interview-video-${Date.now()}.mp4`;
+    console.log("[UPLOAD] Filename:", fileName);
+
+    const fileObj = {
+      uri: videoUri,
+      name: fileName,
+      type: "video/mp4",
+    } as any;
+
+    formData.append("file", fileObj);
+    console.log("[UPLOAD] FormData created successfully");
+
+    const url = `/buddi/interview/${buddiId}/uploadBuddiInterviewVideo/video`;
+    console.log("[UPLOAD] Upload URL:", url);
+
+    // Retry logic with exponential backoff
+    const maxRetries = 3;
+    let retryCount = 0;
+    let lastError: any = null;
+
+    while (retryCount < maxRetries) {
+      try {
+        console.log(`[UPLOAD] Attempt ${retryCount + 1}/${maxRetries}`);
+        const uploadStartTime = Date.now();
+
+        const response = await uploadBuddiProfileVideo(buddiId, videoUri);
+
+        const uploadEndTime = Date.now();
+        const uploadDuration = uploadEndTime - uploadStartTime;
+
+        console.log("[UPLOAD] Upload completed successfully!");
+        console.log("[UPLOAD] Upload duration:", uploadDuration, "ms");
+        console.log("=== OPTIMIZED VIDEO UPLOAD END ===");
+
+        return response;
+      } catch (attemptError: any) {
+        lastError = attemptError;
+        retryCount++;
+
+        console.error(
+          `[UPLOAD] Attempt ${retryCount} failed:`,
+          attemptError?.message
+        );
+
+        // Don't retry on certain errors
+        if (
+          attemptError.response?.status === 400 ||
+          attemptError.response?.status === 401 ||
+          attemptError.response?.status === 403 ||
+          attemptError.response?.status === 404
+        ) {
+          console.error("[UPLOAD] Client error, not retrying");
+          break;
+        }
+
+        // Don't retry if we've reached max attempts
+        if (retryCount >= maxRetries) {
+          console.error("[UPLOAD] Max retries reached");
+          break;
+        }
+
+        // Exponential backoff: wait longer between retries
+        const backoffDelay = Math.min(
+          1000 * Math.pow(2, retryCount - 1),
+          10000
+        ); // Max 10 seconds
+        console.log(
+          `[UPLOAD] Waiting ${backoffDelay}ms before retry ${retryCount + 1}`
+        );
+        await new Promise((resolve) => setTimeout(resolve, backoffDelay));
+      }
+    }
+
+    // If we get here, all retries failed
+    throw lastError;
+  } catch (error: any) {
+    console.error("=== OPTIMIZED VIDEO UPLOAD ERROR ===");
+    console.error("[UPLOAD] Upload failed:", error);
+
+    // Enhanced error handling
+    if (error.response) {
+      console.error("[UPLOAD] Server error:", {
+        status: error.response.status,
+        statusText: error.response.statusText,
+        data: error.response.data,
+      });
+
+      if (error.response.status === 413) {
+        throw new Error(
+          "Video file is too large. Please record a shorter video or check your connection."
+        );
+      } else if (
+        error.response.status === 408 ||
+        error.response.status === 504
+      ) {
+        throw new Error(
+          "Upload timed out. Please check your connection and try again."
+        );
+      } else {
+        throw new Error(
+          `Upload failed: ${error.response.data?.message || "Server error"}`
+        );
+      }
+    } else if (error.request) {
+      console.error("[UPLOAD] Network error:", error.request);
+      throw new Error(
+        "Network error. Please check your internet connection and try again."
+      );
+    } else if (error.code === "ECONNABORTED") {
+      throw new Error(
+        "Upload timed out. Please check your connection and try again."
+      );
+    } else {
+      console.error("[UPLOAD] Other error:", error.message);
+      throw new Error(`Upload failed: ${error.message}`);
+    }
+  }
+}
 
 export default function BuddiRecordingScreen() {
   const router = useRouter();
@@ -52,6 +240,12 @@ export default function BuddiRecordingScreen() {
   const [cameraReady, setCameraReady] = useState(false);
   const [permissionChecked, setPermissionChecked] = useState(false);
   const [audioPermission, setAudioPermission] = useState<boolean>(false);
+
+  // Upload progress states
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [uploadStatus, setUploadStatus] = useState<
+    "idle" | "uploading" | "success" | "error"
+  >("idle");
 
   useEffect(() => {
     let mounted = true;
@@ -409,10 +603,8 @@ export default function BuddiRecordingScreen() {
         {
           text: "Restart App",
           onPress: () => {
-            // In a real app, you might want to restart the app
             setError("");
             setCameraReady(false);
-            // Force re-initialization
             setTimeout(() => {
               setCameraReady(true);
             }, 2000);
@@ -442,7 +634,6 @@ export default function BuddiRecordingScreen() {
       return;
     }
 
-    // Prevent multiple recordings
     if (recording) {
       console.log("Recording already in progress, ignoring start request");
       return;
@@ -454,8 +645,6 @@ export default function BuddiRecordingScreen() {
 
     try {
       console.log("Starting recording process...");
-
-      // Wait for camera to be fully ready
       await new Promise((resolve) => setTimeout(resolve, 1000));
 
       let video: any;
@@ -468,57 +657,47 @@ export default function BuddiRecordingScreen() {
             `Recording attempt ${recordingAttempts + 1}/${maxAttempts}`
           );
 
-          // Ensure camera ref is still valid
           if (!cameraRef.current) {
             throw new Error("Camera reference lost during recording");
           }
 
-          // Start recording with minimal options for better compatibility
+          // OPTIMIZED RECORDING OPTIONS FOR SMALLER FILE SIZE
           video = await cameraRef.current.recordAsync({
             maxDuration: 300, // 5 minutes max
+            maxFileSize: 50 * 1024 * 1024, // 50MB max file size
           });
 
           console.log(
             "Recording completed successfully on attempt",
             recordingAttempts + 1
           );
-          break; // Success, exit the retry loop
+          break;
         } catch (recordingError: any) {
           recordingAttempts++;
           console.log(
             `Recording attempt ${recordingAttempts} failed:`,
             recordingError
           );
-          console.log("Error message:", recordingError?.message);
-          console.log("Error code:", recordingError?.code);
 
-          // If it's the last attempt, throw the error
           if (recordingAttempts >= maxAttempts) {
             throw recordingError;
           }
 
-          // If it's a "recording already in progress" error, try to stop and restart
           if (
             recordingError.message &&
             (recordingError.message.includes("already in progress") ||
               recordingError.message.includes("recording"))
           ) {
             console.log("Attempting to stop existing recording and restart...");
-
             try {
-              // Try to stop any existing recording
               if (cameraRef.current) {
                 await cameraRef.current.stopRecording();
               }
-
-              // Wait longer for camera to reset
               await new Promise((resolve) => setTimeout(resolve, 2000));
             } catch (stopError) {
               console.log("Error stopping recording:", stopError);
-              // Continue to next attempt anyway
             }
           } else {
-            // For other errors, wait a bit before retrying
             await new Promise((resolve) => setTimeout(resolve, 1000));
           }
         }
@@ -531,6 +710,22 @@ export default function BuddiRecordingScreen() {
         console.log("Recording successful:", video.uri);
         console.log("Video duration:", video.duration);
         console.log("Video size:", video.size);
+
+        // Log file size information
+        if (video.size) {
+          const sizeInMB = (video.size / (1024 * 1024)).toFixed(2);
+          console.log(`Video file size: ${sizeInMB} MB`);
+
+          // Warn if file is still large
+          if (video.size > 25 * 1024 * 1024) {
+            // 25MB
+            Alert.alert(
+              "Large Video File",
+              `Video size is ${sizeInMB}MB. Upload may take longer on slow connections.`,
+              [{ text: "OK" }]
+            );
+          }
+        }
       } else {
         console.error("No video URI in response:", video);
         throw new Error("No video URI returned from recording");
@@ -538,11 +733,7 @@ export default function BuddiRecordingScreen() {
     } catch (e: any) {
       console.error("=== RECORDING ERROR ===");
       console.error("Recording error details:", e);
-      console.error("Error message:", e?.message);
-      console.error("Error code:", e?.code);
-      console.error("Error stack:", e?.stack);
 
-      // Enhanced error handling with better user feedback
       let errorMessage = "Failed to record video";
       let alertTitle = "Recording Error";
 
@@ -574,14 +765,12 @@ export default function BuddiRecordingScreen() {
         }
       }
 
-      // Show alert to user with appropriate actions
       const alertButtons: any[] = [
         { text: "OK", style: "default" as const },
         {
           text: "Try Again",
           onPress: () => {
             setError("");
-            // Retry recording after a short delay
             setTimeout(() => {
               startRecording();
             }, 1000);
@@ -589,12 +778,10 @@ export default function BuddiRecordingScreen() {
         },
       ];
 
-      // Show error in UI instead of alert for permission errors
       if (
         errorMessage.includes("permission") ||
         errorMessage.includes("denied")
       ) {
-        // Don't show alert for permission errors, let the UI handle it
         setError(errorMessage);
       } else {
         Alert.alert(alertTitle, errorMessage, alertButtons);
@@ -630,7 +817,9 @@ export default function BuddiRecordingScreen() {
   const handleSubmit = async () => {
     console.log("=== RECORDING SCREEN SUBMIT START ===");
     setSubmitting(true);
-    setError(""); // Clear any previous errors
+    setError("");
+    setUploadProgress(0);
+    setUploadStatus("uploading");
 
     try {
       console.log("[SUBMIT] Checking prerequisites...");
@@ -642,17 +831,18 @@ export default function BuddiRecordingScreen() {
       }
 
       console.log("[SUBMIT] Prerequisites check passed");
-      console.log("[SUBMIT] Video URI:", videoUri);
-      console.log("[SUBMIT] Video URI type:", typeof videoUri);
-      console.log("[SUBMIT] Video URI length:", videoUri.length);
-      console.log("[SUBMIT] Buddi ID:", buddiDetails.id);
-      console.log("[SUBMIT] Buddi ID type:", typeof buddiDetails.id);
-
-      console.log("[SUBMIT] Starting video upload...");
+      console.log("[SUBMIT] Starting optimized video upload...");
       const uploadStartTime = Date.now();
 
-      // Upload the video (no compression in Expo Go)
-      await uploadBuddiProfileVideo(buddiDetails.id, videoUri);
+      // Use the optimized upload function with progress callback
+      await uploadBuddiProfileVideoOptimized(
+        buddiDetails.id,
+        videoUri,
+        (progress) => {
+          setUploadProgress(progress);
+          console.log(`[SUBMIT] Upload progress: ${progress}%`);
+        }
+      );
 
       const uploadEndTime = Date.now();
       console.log(
@@ -661,53 +851,66 @@ export default function BuddiRecordingScreen() {
         "ms"
       );
       console.log("[SUBMIT] Video upload successful!");
-      console.log("=== RECORDING SCREEN SUBMIT END ===");
 
-      router.push("/auth/recording/success");
+      setUploadStatus("success");
+      setUploadProgress(100);
+
+      // Brief delay to show 100% completion
+      setTimeout(() => {
+        router.push("/auth/recording/success");
+      }, 1000);
     } catch (e: any) {
       console.error("=== RECORDING SCREEN SUBMIT ERROR ===");
       console.error("[SUBMIT] Upload error:", e);
-      console.error("[SUBMIT] Error type:", typeof e);
-      console.error("[SUBMIT] Error message:", e?.message);
-      console.error("[SUBMIT] Error stack:", e?.stack);
 
-      // Set user-friendly error message
-      console.log("[SUBMIT] Processing error for user display...");
+      setUploadStatus("error");
+      setUploadProgress(0);
+
+      // Enhanced error messaging
       let errorMessage = "Failed to upload video";
       let alertTitle = "Upload Error";
 
       if (e.message) {
-        console.log("[SUBMIT] Error message:", e.message);
-        if (e.message.includes("Network error")) {
+        if (e.message.includes("too large")) {
           errorMessage =
-            "Network error. Please check your connection and try again.";
-          alertTitle = "Network Error";
-        } else if (e.message.includes("timeout")) {
-          errorMessage = "Upload timed out. Please try again.";
+            "Video file is too large. Please record a shorter video.";
+          alertTitle = "File Too Large";
+        } else if (
+          e.message.includes("Network error") ||
+          e.message.includes("connection")
+        ) {
+          errorMessage =
+            "Network error. Please check your internet connection and try again.";
+          alertTitle = "Connection Error";
+        } else if (
+          e.message.includes("timed out") ||
+          e.message.includes("timeout")
+        ) {
+          errorMessage =
+            "Upload timed out. Please check your connection speed and try again.";
           alertTitle = "Upload Timeout";
-        } else if (e.message.includes("Upload failed:")) {
-          errorMessage = e.message.replace("Upload failed: ", "");
-          alertTitle = "Upload Failed";
-        } else if (e.message.includes("video")) {
-          errorMessage = "Video upload failed. Please try again.";
-          alertTitle = "Video Upload Error";
+        } else if (
+          e.message.includes("server error") ||
+          e.message.includes("Server error")
+        ) {
+          errorMessage = "Server error occurred. Please try again in a moment.";
+          alertTitle = "Server Error";
         } else {
           errorMessage = e.message;
-          alertTitle = "Upload Error";
+          alertTitle = "Upload Failed";
         }
-      } else {
-        console.log("[SUBMIT] No error message found, using default");
       }
 
       console.log("[SUBMIT] Final error message for user:", errorMessage);
 
-      // Show alert to user
+      // Show alert with retry options
       Alert.alert(alertTitle, errorMessage, [
-        { text: "OK", style: "default" },
+        { text: "Cancel", style: "cancel" },
         {
           text: "Retry Upload",
           onPress: () => {
             setError("");
+            setUploadStatus("idle");
             // Retry upload after a short delay
             setTimeout(() => {
               handleSubmit();
@@ -717,24 +920,6 @@ export default function BuddiRecordingScreen() {
       ]);
 
       setError(errorMessage);
-
-      // Log detailed error information
-      console.log("[SUBMIT] Detailed error analysis:");
-      if (e.response) {
-        console.log("[SUBMIT] - Response error:");
-        console.log("[SUBMIT]   - Status:", e.response.status);
-        console.log("[SUBMIT]   - Data:", e.response.data);
-        console.log("[SUBMIT]   - Headers:", e.response.headers);
-      } else if (e.request) {
-        console.log("[SUBMIT] - Request error:");
-        console.log("[SUBMIT]   - Request:", e.request);
-        console.log("[SUBMIT]   - ReadyState:", e.request?.readyState);
-        console.log("[SUBMIT]   - Status:", e.request?.status);
-      } else {
-        console.log("[SUBMIT] - Other error:");
-        console.log("[SUBMIT]   - Error object:", e);
-      }
-      console.error("=== RECORDING SCREEN SUBMIT ERROR END ===");
     } finally {
       setSubmitting(false);
     }
@@ -980,7 +1165,7 @@ export default function BuddiRecordingScreen() {
                   disabled={submitting}
                 >
                   <Ionicons
-                    name={submitting ? "hourglass" : "cloud-upload"}
+                    name={submitting ? "cloud-upload" : "cloud-upload"}
                     size={24}
                     color="#fff"
                   />
@@ -991,21 +1176,69 @@ export default function BuddiRecordingScreen() {
                       marginLeft: 8,
                     }}
                   >
-                    {submitting ? "Processing & Uploading..." : "Submit Video"}
+                    {submitting ? "Uploading..." : "Submit Video"}
                   </Text>
                 </TouchableOpacity>
 
-                {submitting && (
+                {/* Progress Bar */}
+                {submitting && uploadStatus === "uploading" && (
+                  <View style={{ gap: 4 }}>
+                    <View
+                      style={{
+                        height: 4,
+                        backgroundColor: "#E5E7EB",
+                        borderRadius: 2,
+                        overflow: "hidden",
+                      }}
+                    >
+                      <View
+                        style={{
+                          height: 4,
+                          borderRadius: 2,
+                          backgroundColor: PRIMARY_COLOR,
+                          width: `${uploadProgress}%`,
+                        }}
+                      />
+                    </View>
+                    <Text
+                      style={{
+                        color: "#fff",
+                        fontFamily: "Comfortaa-Regular",
+                        fontSize: 12,
+                        textAlign: "center",
+                        opacity: 0.8,
+                      }}
+                    >
+                      Uploading: {uploadProgress}% - Please keep the app open
+                    </Text>
+                  </View>
+                )}
+
+                {/* Success indicator */}
+                {uploadStatus === "success" && (
                   <Text
                     style={{
-                      color: "#fff",
+                      color: "#4CAF50",
                       fontFamily: "Comfortaa-Regular",
                       fontSize: 12,
                       textAlign: "center",
-                      opacity: 0.8,
                     }}
                   >
-                    Uploading video... Please wait.
+                    Upload completed! Redirecting...
+                  </Text>
+                )}
+
+                {/* Error display */}
+                {error && (
+                  <Text
+                    style={{
+                      color: "#d32f2f",
+                      textAlign: "center",
+                      fontFamily: "Comfortaa-Regular",
+                      fontSize: 14,
+                    }}
+                  >
+                    {error}
                   </Text>
                 )}
               </View>

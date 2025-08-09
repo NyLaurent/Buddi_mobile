@@ -1,18 +1,26 @@
 import { Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import { useEffect, useState } from "react";
-import { ActivityIndicator, Text, View } from "react-native";
+import { ActivityIndicator, Text, TextInput, View } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { AuthProvider, useAuth } from "../context/AuthContext";
 import "../global.css";
 import { loadFonts } from "../utils/fonts";
 
-// Set default text color to black
+// Set global default colors to ensure visibility on all devices/themes
+const DEFAULT_TEXT_COLOR = "#23272F"; // Dark color for text visibility
+const DEFAULT_PLACEHOLDER_COLOR = "#8B8B8B"; // Gray color for placeholders
 
-// @ts-ignore
-Text.defaultProps = Text.defaultProps || {};
-// @ts-ignore
-Text.defaultProps.style = [{ color: "#23272F" }, Text.defaultProps.style];
+// Override Text component with default color
+(Text as any).defaultProps = {
+  style: { color: DEFAULT_TEXT_COLOR },
+};
+
+// Override TextInput component with default colors
+(TextInput as any).defaultProps = {
+  style: { color: DEFAULT_TEXT_COLOR },
+  placeholderTextColor: DEFAULT_PLACEHOLDER_COLOR,
+};
 
 // Keep the splash screen visible while we fetch resources
 SplashScreen.preventAutoHideAsync();
