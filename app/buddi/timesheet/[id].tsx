@@ -418,8 +418,8 @@ export default function TimesheetDetailsPage() {
             </Text>
           </TouchableOpacity>
 
-          {/* Submit Button - Only show if not submitted */}
-          {!timesheet.isSubmited && (
+          {/* Submit Button - Show if timesheet is full (complete) and not submitted */}
+          {timesheet.isFull && !timesheet.isSubmited ? (
             <TouchableOpacity
               onPress={() => setShowSubmitModal(true)}
               style={{
@@ -453,6 +453,86 @@ export default function TimesheetDetailsPage() {
                 Submit Timesheet
               </Text>
             </TouchableOpacity>
+          ) : timesheet.isFull && timesheet.isSubmited ? (
+            <View
+              style={{
+                backgroundColor: "#E6FCEB",
+                borderRadius: 12,
+                paddingVertical: 14,
+                paddingHorizontal: 20,
+                borderWidth: 1,
+                borderColor: "#16A34A",
+                alignItems: "center",
+              }}
+            >
+              <Ionicons
+                name="checkmark-circle"
+                size={20}
+                color="#16A34A"
+                style={{ marginBottom: 8 }}
+              />
+              <Text
+                style={{
+                  color: "#16A34A",
+                  fontFamily: "Comfortaa-Bold",
+                  fontSize: 14,
+                  textAlign: "center",
+                }}
+              >
+                Timesheet Submitted
+              </Text>
+              <Text
+                style={{
+                  color: "#059669",
+                  fontFamily: "Comfortaa-Regular",
+                  fontSize: 12,
+                  textAlign: "center",
+                  marginTop: 4,
+                }}
+              >
+                Your timesheet has been submitted successfully
+              </Text>
+            </View>
+          ) : (
+            <View
+              style={{
+                backgroundColor: "#FFF7ED",
+                borderRadius: 12,
+                paddingVertical: 14,
+                paddingHorizontal: 20,
+                borderWidth: 1,
+                borderColor: "#FFD9B3",
+                alignItems: "center",
+              }}
+            >
+              <Ionicons
+                name="time-outline"
+                size={20}
+                color="#FF932E"
+                style={{ marginBottom: 8 }}
+              />
+              <Text
+                style={{
+                  color: "#FF932E",
+                  fontFamily: "Comfortaa-Bold",
+                  fontSize: 14,
+                  textAlign: "center",
+                }}
+              >
+                Wait for your timesheet to be completed
+              </Text>
+              <Text
+                style={{
+                  color: "#A3A3A3",
+                  fontFamily: "Comfortaa-Regular",
+                  fontSize: 12,
+                  textAlign: "center",
+                  marginTop: 4,
+                }}
+              >
+                Complete all pickups before submitting it
+              </Text>
+            </View>
           )}
         </View>
 

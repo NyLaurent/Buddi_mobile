@@ -43,6 +43,13 @@ export default function BuddiHome() {
   // Store the pickup ID from real-time events
   const [currentPickupId, setCurrentPickupId] = useState<number | null>(null);
 
+  // State for weekly pickup summary (completed pickups)
+  const [weeklyPickupSummary, setWeeklyPickupSummary] = useState<any>(null);
+  const [weeklySummaryLoading, setWeeklySummaryLoading] = useState(false);
+  const [weeklySummaryError, setWeeklySummaryError] = useState<string | null>(
+    null
+  );
+
   // Success modal states
   const [successModal, setSuccessModal] = useState({
     visible: false,
@@ -133,6 +140,44 @@ export default function BuddiHome() {
     }
   };
 
+  // Helper to fetch weekly pickup summary
+  const fetchWeeklyPickupSummary = async () => {
+    if (!buddiDetails?.id) return;
+
+    setWeeklySummaryLoading(true);
+    setWeeklySummaryError(null);
+
+    try {
+      const summary = await BuddiService.getWeeklyPickupSummary(
+        buddiDetails.id
+      );
+      console.log("[BUDDI HOME] Weekly pickup summary:", summary);
+      setWeeklyPickupSummary(summary);
+    } catch (err: any) {
+      console.error("[BUDDI HOME] Error fetching weekly pickup summary:", err);
+      setWeeklySummaryError(err.message || "Failed to fetch weekly summary");
+    } finally {
+      setWeeklySummaryLoading(false);
+    }
+  };
+
+  // Helper to check if a pickup is completed for today
+  const isPickupCompletedForToday = (pickup: any) => {
+    if (!weeklyPickupSummary?.completed) return false;
+
+    const todayKey = today as keyof typeof weeklyPickupSummary.completed;
+    const completedToday = weeklyPickupSummary.completed[todayKey];
+
+    if (!completedToday) return false;
+
+    // Check if this pickup matches the completed one
+    // We'll match based on fromLocation and toLocation for now
+    return (
+      completedToday.fromLocation === pickup.fromZone &&
+      completedToday.toLocation === pickup.toZone
+    );
+  };
+
   // Helper to check if matchedCall is for today
   const isPickupToday = (() => {
     if (
@@ -177,8 +222,13 @@ export default function BuddiHome() {
       } catch (err) {
         console.error("Error storing completed trip:", err);
       }
+
+      // Refresh weekly pickup summary after trip completion
+      if (buddiDetails?.id) {
+        await fetchWeeklyPickupSummary();
+      }
     },
-    [activePickup]
+    [activePickup, buddiDetails?.id]
   );
 
   // Enhanced socket connection and room management
@@ -381,6 +431,9 @@ export default function BuddiHome() {
           "trophy",
           "#FFD700"
         );
+
+        // Refresh weekly pickup summary after trip completion
+        fetchWeeklyPickupSummary();
       } else {
         console.log("[BUDDI] ❌ Trip completed not for this buddi");
       }
@@ -605,6 +658,9 @@ export default function BuddiHome() {
           setAvailableCalls(availableForApplication || []);
           // Clear active pickup when fetching new calls
           setActivePickup(null);
+
+          // Fetch weekly pickup summary for completed pickups
+          await fetchWeeklyPickupSummary();
         } else {
           console.log("[BuddiHome] No buddi details available");
           setMatchedCall(null);
@@ -831,10 +887,14 @@ export default function BuddiHome() {
                   ? activePickup.status
                   : matchedCall.status;
 
+                // Check if this pickup is completed for today
+                const isCompleted = isPickupCompletedForToday(matchedCall);
+
                 console.log("[BUDDI] Rendering pickup card with data:", {
                   pickupData,
                   status,
                   isActivePickup: !!activePickup,
+                  isCompleted,
                 });
 
                 return (
@@ -853,7 +913,9 @@ export default function BuddiHome() {
                       matchedCall.toLocation || matchedCall.toZone || "Home"
                     }
                     status={
-                      status === "pickedUp"
+                      isCompleted
+                        ? "completed"
+                        : status === "pickedUp"
                         ? "pickedUp"
                         : status === "enRoute"
                         ? "enRoute"
@@ -879,10 +941,19 @@ export default function BuddiHome() {
                     fare={activePickup?.fare || matchedCall.fare || 0}
                     kidsCount={matchedCall.kidsCount || 0}
                     onButtonPress={
+                      isCompleted ||
                       status === "enRoute" ||
                       status === "pickedUp" ||
                       status === "completed"
-                        ? () => {}
+                        ? () => {
+                            if (isCompleted) {
+                              Alert.alert(
+                                "Pickup Completed",
+                                "This pickup has already been completed for today.",
+                                [{ text: "OK", style: "default" }]
+                              );
+                            }
+                          }
                         : async () => {
                             // Check if we already have an active pickup to prevent duplicate calls
                             if (
@@ -1040,7 +1111,9 @@ export default function BuddiHome() {
                           }
                     }
                     onPickUp={
-                      status === "enRoute"
+                      isCompleted
+                        ? undefined
+                        : status === "enRoute"
                         ? async () => {
                             Alert.alert(
                               "Child Picked Up",
@@ -1085,7 +1158,9 @@ export default function BuddiHome() {
                         : undefined
                     }
                     onClockOut={
-                      status === "pickedUp"
+                      isCompleted
+                        ? undefined
+                        : status === "pickedUp"
                         ? async () => {
                             Alert.alert(
                               "Complete Trip",
@@ -1116,6 +1191,9 @@ export default function BuddiHome() {
                                         "checkmark-circle",
                                         "#16A34A"
                                       );
+
+                                      // Refresh weekly pickup summary after trip completion
+                                      await fetchWeeklyPickupSummary();
                                     } catch (err) {
                                       Alert.alert(
                                         "Error",

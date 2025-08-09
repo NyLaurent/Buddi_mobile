@@ -1734,40 +1734,36 @@ export default function ParentDashboard() {
                 "Saturday",
               ];
               const todayIdx = new Date().getDay();
+              const todayName = daysOfWeek[todayIdx];
               let nextDay = null;
+
               if (pickup.availableDays && pickup.availableDays.length > 0) {
-                // Parse the comma-separated available days string
-                const availableDaysString = pickup.availableDays[0];
-                const availableDays = availableDaysString
-                  .split(",")
-                  .map((day) => day.trim());
+                // Parse the available days - it's an array of strings, each potentially containing comma-separated days
+                const availableDays: string[] = [];
+
+                pickup.availableDays.forEach((dayString: string) => {
+                  if (typeof dayString === "string") {
+                    // Split by comma and trim each day
+                    const days = dayString
+                      .split(",")
+                      .map((day: string) => day.trim());
+                    availableDays.push(...days);
+                  }
+                });
 
                 console.log("🔍 [PICKUP DEBUG] Pickup ID:", pickup.id);
-                console.log(
-                  "🔍 [PICKUP DEBUG] Today's day:",
-                  daysOfWeek[todayIdx]
-                );
+                console.log("🔍 [PICKUP DEBUG] Today's day:", todayName);
                 console.log("🔍 [PICKUP DEBUG] Today's index:", todayIdx);
                 console.log(
-                  "🔍 [PICKUP DEBUG] Available days string:",
-                  availableDaysString
+                  "🔍 [PICKUP DEBUG] Raw availableDays:",
+                  pickup.availableDays
                 );
                 console.log(
                   "🔍 [PICKUP DEBUG] Parsed available days:",
                   availableDays
                 );
-                console.log(
-                  "🔍 [PICKUP DEBUG] Raw availableDays array:",
-                  pickup.availableDays
-                );
 
-                // Try to find today
-                const todayName = daysOfWeek[todayIdx];
-                console.log(
-                  "🔍 [PICKUP DEBUG] Checking if today ('" +
-                    todayName +
-                    "') is in available days"
-                );
+                // First, try to find today
                 if (availableDays.includes(todayName)) {
                   nextDay = todayName;
                   console.log(
@@ -1778,6 +1774,7 @@ export default function ParentDashboard() {
                   console.log(
                     "🔍 [PICKUP DEBUG] Today NOT found in available days, looking for next closest day"
                   );
+
                   // Find the next closest day
                   const sortedDays = availableDays
                     .map((day) => ({
@@ -1793,6 +1790,8 @@ export default function ParentDashboard() {
                   const nextDayAfterToday = sortedDays.find(
                     (d) => d.idx > todayIdx
                   )?.day;
+
+                  // If no day after today, wrap around to the first available day
                   const firstAvailableDay = sortedDays[0]?.day;
                   nextDay = nextDayAfterToday || firstAvailableDay;
 
@@ -1810,12 +1809,14 @@ export default function ParentDashboard() {
                   );
                 }
               }
+
               if (!nextDay) {
                 console.log(
                   "🔍 [PICKUP DEBUG] No next day found, skipping card"
                 );
                 return null;
               }
+
               console.log(
                 "🔍 [PICKUP DEBUG] Rendering KidPickupCard for day:",
                 nextDay
