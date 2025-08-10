@@ -15,6 +15,7 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { NotificationTest } from "../../components/commons/NotificationTest";
 import OnboardingManager from "../../utils/onboarding";
 
 const { width, height } = Dimensions.get("window");
@@ -366,6 +367,11 @@ const Onboarding = () => {
             </TouchableOpacity>
           </View>
         )}
+
+        {/* Notification Test - Remove this after testing */}
+        <View style={{ marginTop: 20, paddingHorizontal: 20 }}>
+          <NotificationTest />
+        </View>
       </Animated.View>
     </SafeAreaView>
   );

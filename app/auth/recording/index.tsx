@@ -256,14 +256,18 @@ export default function BuddiRecordingScreen() {
   useEffect(() => {
     let mounted = true;
     setLoading(true);
+    console.log("=== FETCHING QUESTIONS ===");
     getRandomInterviewQuestions()
       .then((qs) => {
         if (mounted) {
+          console.log("Questions fetched successfully:", qs);
+          console.log("Number of questions:", qs.length);
           setQuestions(qs);
           setLoading(false);
         }
       })
       .catch((e) => {
+        console.error("Failed to load questions:", e);
         setError("Failed to load questions");
         setLoading(false);
       });
@@ -332,13 +336,15 @@ export default function BuddiRecordingScreen() {
     };
   }, [recording]);
 
-  // Add timeout for camera ready state
+  // Add timeout for camera ready state - but don't force it too aggressively
   useEffect(() => {
     if (!cameraReady && permission?.granted) {
       const timeout = setTimeout(() => {
-        console.log("Camera ready timeout - forcing ready state");
+        console.log(
+          "Camera ready timeout - forcing ready state after 15 seconds"
+        );
         setCameraReady(true);
-      }, 10000); // 10 second timeout
+      }, 15000); // 15 second timeout - give camera more time to initialize
 
       return () => clearTimeout(timeout);
     }
@@ -373,16 +379,53 @@ export default function BuddiRecordingScreen() {
   };
 
   // Progress bar based on question navigation
-  const progress = questions.length > 0 ? (current + 1) / questions.length : 0;
-  const question: InterviewQuestion = questions[current] || {
-    id: "",
-    questionDescription: "",
+  const progress =
+    questions && questions.length > 0 ? (current + 1) / questions.length : 0;
+  const question: InterviewQuestion =
+    questions && questions[current]
+      ? questions[current]
+      : {
+          id: "",
+          questionDescription: "",
+        };
+
+  // Debug logging for questions
+  useEffect(() => {
+    console.log("=== QUESTIONS STATE UPDATE ===");
+    console.log("Questions array:", questions);
+    console.log("Current question index:", current);
+    console.log("Current question:", question);
+    console.log("Progress:", progress);
+
+    // Safety check: ensure current index is within bounds
+    if (questions && questions.length > 0 && current >= questions.length) {
+      console.log("Current index out of bounds, resetting to 0");
+      setCurrent(0);
+    }
+  }, [questions, current, question, progress]);
+
+  // Navigation handlers - Allow navigation anytime
+  const handlePrev = () => {
+    console.log("=== HANDLE PREV ===");
+    console.log("Current:", current);
+    console.log("Questions length:", questions.length);
+    console.log("Recording:", recording);
+
+    const newCurrent = Math.max(0, current - 1);
+    console.log("Setting current to:", newCurrent);
+    setCurrent(newCurrent);
   };
 
-  // Navigation handlers
-  const handlePrev = () => setCurrent((c) => Math.max(0, c - 1));
-  const handleNext = () =>
-    setCurrent((c) => Math.min(questions.length - 1, c + 1));
+  const handleNext = () => {
+    console.log("=== HANDLE NEXT ===");
+    console.log("Current:", current);
+    console.log("Questions length:", questions.length);
+    console.log("Recording:", recording);
+
+    const newCurrent = Math.min(questions.length - 1, current + 1);
+    console.log("Setting current to:", newCurrent);
+    setCurrent(newCurrent);
+  };
 
   // Enhanced permission request with settings redirect
   const handlePermissionRequest = async () => {
@@ -435,6 +478,11 @@ export default function BuddiRecordingScreen() {
       !cameraReady
     ) {
       console.error("Prerequisites not met for recording");
+      Alert.alert(
+        "Cannot Start Recording",
+        "Please ensure camera and microphone permissions are granted and camera is ready.",
+        [{ text: "OK" }]
+      );
       return;
     }
 
@@ -443,18 +491,21 @@ export default function BuddiRecordingScreen() {
       return;
     }
 
-    setVideoUri(null);
-    setError("");
-    setRecording(true);
-    setRecordingTime(0);
-
-    // Start recording timer
-    recordingIntervalRef.current = setInterval(() => {
-      setRecordingTime((prev) => prev + 1);
-    }, 1000);
-
     try {
+      console.log("Setting up recording state...");
+      setVideoUri(null);
+      setError("");
+      setRecording(true);
+      setRecordingTime(0);
+
+      // Start recording timer
+      recordingIntervalRef.current = setInterval(() => {
+        setRecordingTime((prev) => prev + 1);
+      }, 1000);
+
       console.log("Starting recording process...");
+      console.log("Camera ref exists:", !!cameraRef.current);
+      console.log("Recording state set to:", true);
 
       // OPTIMIZED RECORDING OPTIONS FOR SMALLER FILE SIZE
       const video = await cameraRef.current.recordAsync({
@@ -467,43 +518,48 @@ export default function BuddiRecordingScreen() {
       console.log("Recording completed:", video);
 
       if (video && video.uri) {
+        console.log("Video recorded successfully:", video.uri);
         setVideoUri(video.uri);
-        console.log("Recording successful:", video.uri);
-
-        // Check file size
-        const sizeInfo = await checkVideoSize(video.uri);
-        if (sizeInfo.sizeWarning) {
-          Alert.alert(
-            "Large Video File",
-            `Video size is ${(sizeInfo.size / (1024 * 1024)).toFixed(
-              2
-            )}MB. Upload may take longer.`,
-            [{ text: "OK" }]
-          );
-        }
+        setError("");
       } else {
-        throw new Error("No video URI returned from recording");
+        console.error("No video URI returned from recording");
+        setError("Recording failed - no video file created");
       }
-    } catch (e: any) {
-      console.error("Recording error:", e);
-      setError(`Recording failed: ${e.message}`);
-      setVideoUri(null);
+    } catch (error) {
+      console.error("Error during recording:", error);
+      setError(
+        `Recording failed: ${
+          error instanceof Error ? error.message : "Unknown error"
+        }`
+      );
     } finally {
+      // Always stop recording state and clear timer
+      console.log("Cleaning up recording state...");
       setRecording(false);
-      // Clear recording timer
       if (recordingIntervalRef.current) {
         clearInterval(recordingIntervalRef.current);
         recordingIntervalRef.current = null;
       }
-      setRecordingTime(0);
     }
   };
 
   const stopRecording = async () => {
     console.log("=== STOP RECORDING ===");
+    console.log("Current recording state:", recording);
+    console.log("Camera ref exists:", !!cameraRef.current);
 
-    if (!cameraRef.current || !recording) {
-      console.log("Cannot stop recording - camera ref null or not recording");
+    if (!recording) {
+      console.log("Not currently recording");
+      return;
+    }
+
+    if (!cameraRef.current) {
+      console.log("No camera ref - forcing recording state to false");
+      setRecording(false);
+      if (recordingIntervalRef.current) {
+        clearInterval(recordingIntervalRef.current);
+        recordingIntervalRef.current = null;
+      }
       return;
     }
 
@@ -513,25 +569,40 @@ export default function BuddiRecordingScreen() {
       console.log("Recording stopped successfully");
     } catch (error) {
       console.error("Error stopping recording:", error);
-      // Even if stop fails, we should update the UI
+      setError(
+        `Failed to stop recording: ${
+          error instanceof Error ? error.message : "Unknown error"
+        }`
+      );
     } finally {
+      // Always stop recording state and clear timer
+      console.log("Cleaning up recording state after stop...");
       setRecording(false);
-      // Clear recording timer
       if (recordingIntervalRef.current) {
         clearInterval(recordingIntervalRef.current);
         recordingIntervalRef.current = null;
       }
-      setRecordingTime(0);
     }
   };
 
-  // FIXED: New recording action handler
   const handleRecordingAction = async () => {
+    console.log("=== RECORDING ACTION ===");
+    console.log("Current recording state:", recording);
+    console.log("Camera ready:", cameraReady);
+    console.log("Permission granted:", permission?.granted);
+    console.log("Audio permission:", audioPermission);
+
     if (recording) {
       // If currently recording, stop it
+      console.log("Stopping recording...");
       await stopRecording();
+      // Force recording state to false after stopping
+      setRecording(false);
+      // Small delay to ensure state update
+      await new Promise((resolve) => setTimeout(resolve, 100));
     } else {
       // If not recording, start it
+      console.log("Starting recording...");
       await startRecording();
     }
   };
@@ -812,36 +883,45 @@ export default function BuddiRecordingScreen() {
             {/* Recording Controls */}
             <View style={{ gap: 12, marginTop: 16, width: "100%" }}>
               {!videoUri && (
-                // Recording button
-                <TouchableOpacity
-                  style={[
-                    styles.recordBtn,
-                    {
-                      backgroundColor: recording
-                        ? "#d32f2f"
+                <>
+                  {/* Recording button */}
+                  <TouchableOpacity
+                    style={[
+                      styles.recordBtn,
+                      {
+                        backgroundColor: recording
+                          ? "#d32f2f"
+                          : cameraReady
+                          ? PRIMARY_COLOR
+                          : "#ccc",
+                      },
+                    ]}
+                    onPress={() => {
+                      console.log("=== RECORDING BUTTON PRESSED ===");
+                      console.log("Camera ready:", cameraReady);
+                      console.log("Permission granted:", permission?.granted);
+                      console.log("Audio permission:", audioPermission);
+                      console.log("Current recording state:", recording);
+                      handleRecordingAction();
+                    }}
+                    disabled={!cameraReady}
+                  >
+                    <Ionicons
+                      name={
+                        recording ? "stop" : cameraReady ? "videocam" : "camera"
+                      }
+                      size={24}
+                      color="#fff"
+                    />
+                    <Text style={styles.recordBtnText}>
+                      {recording
+                        ? "Stop Recording"
                         : cameraReady
-                        ? PRIMARY_COLOR
-                        : "#ccc",
-                    },
-                  ]}
-                  onPress={handleRecordingAction}
-                  disabled={!cameraReady}
-                >
-                  <Ionicons
-                    name={
-                      recording ? "stop" : cameraReady ? "videocam" : "camera"
-                    }
-                    size={24}
-                    color="#fff"
-                  />
-                  <Text style={styles.recordBtnText}>
-                    {recording
-                      ? "Stop Recording"
-                      : cameraReady
-                      ? "Start Recording"
-                      : "Camera Loading..."}
-                  </Text>
-                </TouchableOpacity>
+                        ? "Start Recording"
+                        : "Camera Loading..."}
+                    </Text>
+                  </TouchableOpacity>
+                </>
               )}
 
               {videoUri && (
@@ -913,7 +993,9 @@ export default function BuddiRecordingScreen() {
               source={require("../../../assets/images/logo.png")}
               style={{ width: 68, height: 48, marginBottom: 8 }}
             />
-            <Text style={styles.questionNumber}>Question {current + 1}</Text>
+            <Text style={styles.questionNumber}>
+              Question {current + 1} of {questions.length}
+            </Text>
 
             {loading ? (
               <Text style={styles.loadingText}>Loading questions...</Text>
@@ -927,11 +1009,11 @@ export default function BuddiRecordingScreen() {
             <View style={styles.navigationContainer}>
               <TouchableOpacity
                 onPress={handlePrev}
-                disabled={current === 0 || recording}
+                disabled={current <= 0 || questions.length <= 1}
                 style={[
                   styles.navButton,
                   styles.prevButton,
-                  { opacity: current === 0 || recording ? 0.5 : 1 },
+                  { opacity: current <= 0 || questions.length <= 1 ? 0.5 : 1 },
                 ]}
               >
                 <Text style={styles.prevButtonText}>Previous</Text>
@@ -939,19 +1021,30 @@ export default function BuddiRecordingScreen() {
 
               <TouchableOpacity
                 onPress={handleNext}
-                disabled={current === questions.length - 1 || recording}
+                disabled={
+                  current >= questions.length - 1 || questions.length <= 1
+                }
                 style={[
                   styles.navButton,
                   styles.nextButton,
                   {
                     opacity:
-                      current === questions.length - 1 || recording ? 0.5 : 1,
+                      current >= questions.length - 1 || questions.length <= 1
+                        ? 0.5
+                        : 1,
                   },
                 ]}
               >
                 <Text style={styles.nextButtonText}>Next</Text>
               </TouchableOpacity>
             </View>
+
+            {/* Question Navigation Hint */}
+            {questions.length > 1 && (
+              <Text style={styles.navigationHint}>
+                Tap Previous/Next to switch between questions
+              </Text>
+            )}
 
             {/* Progress Bar */}
             <View style={styles.questionProgressContainer}>
@@ -1195,5 +1288,13 @@ const styles = StyleSheet.create({
     height: 6,
     borderRadius: 3,
     backgroundColor: PRIMARY_COLOR,
+  },
+  navigationHint: {
+    color: "#666",
+    fontSize: 12,
+    textAlign: "center",
+    fontFamily: "Comfortaa-Regular",
+    marginTop: 8,
+    opacity: 0.7,
   },
 });

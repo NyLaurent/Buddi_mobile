@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { ActivityIndicator, Text, TextInput, View } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { AuthProvider, useAuth } from "../context/AuthContext";
+import { NotificationProvider } from "../context/NotificationContext";
 import "../global.css";
 import { loadFonts } from "../utils/fonts";
 
@@ -84,9 +85,11 @@ const RootLayout = () => {
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
-      <AuthProvider>
-        <RootLayoutNav />
-      </AuthProvider>
+      <NotificationProvider>
+        <AuthProvider>
+          <RootLayoutNav />
+        </AuthProvider>
+      </NotificationProvider>
     </GestureHandlerRootView>
   );
 };
