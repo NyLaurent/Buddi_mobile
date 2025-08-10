@@ -173,7 +173,10 @@ export default function BuddiHome() {
       const pickups = await BuddiService.getPickups(buddiDetails.id);
       console.log("[BUDDI] 📋 API response:", pickups);
 
-      // Find the most recent pending pickup for this buddi
+      // Log all pickups for debugging
+      console.log("[BUDDI] 📋 All pickups from API:", pickups);
+
+      // Find the most recent pending pickup for this buddi (status only)
       const pendingPickup = pickups.find(
         (pickup: any) =>
           pickup.buddiId === buddiDetails.id && pickup.status === "pending"
@@ -182,7 +185,9 @@ export default function BuddiHome() {
       if (pendingPickup) {
         console.log(
           "[BUDDI] ✅ Found pending pickup from API:",
-          pendingPickup.id
+          pendingPickup.id,
+          "Status:",
+          pendingPickup.status
         );
         return pendingPickup;
       } else {
