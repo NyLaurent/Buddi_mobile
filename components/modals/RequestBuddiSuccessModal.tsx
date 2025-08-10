@@ -1,5 +1,5 @@
 import { Feather } from "@expo/vector-icons";
-import { Modal, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { Modal, StyleSheet, Text, TouchableOpacity, TouchableWithoutFeedback, View } from "react-native";
 
 interface RequestBuddiSuccessModalProps {
   visible: boolean;
@@ -19,50 +19,44 @@ const RequestBuddiSuccessModal = ({
       statusBarTranslucent={true}
     >
       {/* Overlay with semi-transparent black background */}
-      <View style={styles.overlay}>
-        {/* Modal container with shadow */}
-        <TouchableOpacity
-          style={styles.overlay}
-          activeOpacity={1}
-          onPress={onClose}
-        >
-          <TouchableOpacity
-            activeOpacity={1}
-            onPress={(e) => e.stopPropagation()}
-            style={styles.modalContainer}
-          >
-            <View className="bg-white rounded-3xl p-6 w-full">
-              <Text className="text-2xl font-comfortaa-bold text-center mb-2">
-                Is everything correct?
-              </Text>
-              <Text className="text-[#71727A]Text font-comfortaa text-center mb-6">
-                Please review the information before submitting
-              </Text>
+      <TouchableWithoutFeedback onPress={onClose}>
+        <View style={styles.overlay}>
+          {/* Modal container with shadow */}
+          <TouchableWithoutFeedback onPress={(e) => e.stopPropagation()}>
+            <View style={styles.modalContainer}>
+              <View className="bg-white rounded-3xl p-6 w-full">
+                <Text className="text-2xl font-comfortaa-bold text-center mb-2">
+                  Is everything correct?
+                </Text>
+                <Text className="text-[#71727A]Text font-comfortaa text-center mb-6">
+                  Please review the information before submitting
+                </Text>
 
-              <View className="flex-row justify-between mt-4">
-                <TouchableOpacity style={styles.reviewButton} onPress={onClose}>
-                  <View style={styles.reviewContent}>
-                    <Feather name="corner-up-left" size={20} color="#6B7280" />
-                    <Text style={styles.reviewText}>Review</Text>
-                  </View>
-                </TouchableOpacity>
+                <View className="flex-row justify-between mt-4">
+                  <TouchableOpacity style={styles.reviewButton} onPress={onClose}>
+                    <View style={styles.reviewContent}>
+                      <Feather name="corner-up-left" size={20} color="#6B7280" />
+                      <Text style={styles.reviewText}>Review</Text>
+                    </View>
+                  </TouchableOpacity>
 
-                <TouchableOpacity
-                  className="flex-1 bg-primary py-3 rounded-full ml-2 items-center"
-                  onPress={onClose}
-                >
-                  <View className="flex-row items-center">
-                    <Feather name="check" size={18} color="white" />
-                    <Text className="font-comfortaa-bold text-white ml-2">
-                      Confirm
-                    </Text>
-                  </View>
-                </TouchableOpacity>
+                  <TouchableOpacity
+                    className="flex-1 bg-primary py-3 rounded-full ml-2 items-center"
+                    onPress={onClose}
+                  >
+                    <View className="flex-row items-center">
+                      <Feather name="check" size={18} color="white" />
+                      <Text className="font-comfortaa-bold text-white ml-2">
+                        Confirm
+                      </Text>
+                    </View>
+                  </TouchableOpacity>
+                </View>
               </View>
             </View>
-          </TouchableOpacity>
-        </TouchableOpacity>
-      </View>
+          </TouchableWithoutFeedback>
+        </View>
+      </TouchableWithoutFeedback>
     </Modal>
   );
 };

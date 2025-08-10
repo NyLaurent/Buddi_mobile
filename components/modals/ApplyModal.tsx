@@ -1,8 +1,9 @@
 import { FontAwesome5 } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
-import React, { useState } from "react";
+import { useState } from "react";
 import {
   Alert,
+  Keyboard,
   KeyboardAvoidingView,
   Modal,
   Platform,
@@ -11,6 +12,7 @@ import {
   Text,
   TextInput,
   TouchableOpacity,
+  TouchableWithoutFeedback,
   View,
 } from "react-native";
 import { useAuth } from "../../context/AuthContext";
@@ -52,6 +54,7 @@ export default function ApplyModal({
 
     try {
       setLoading(true);
+      Keyboard.dismiss();
 
       await BuddiService.applyForCall({
         buddiRequestId: callId,
@@ -76,7 +79,7 @@ export default function ApplyModal({
     } catch (error: any) {
       // Handle specific error cases for better user experience
       switch (error.message) {
-        case 'ALREADY_APPLIED':
+        case "ALREADY_APPLIED":
           Alert.alert(
             "Already Applied! 📝",
             "You've already applied to this pickup request. The parent will review your application and get back to you soon!",
@@ -92,79 +95,79 @@ export default function ApplyModal({
             ]
           );
           break;
-          
-        case 'INVALID_REQUEST':
+
+        case "INVALID_REQUEST":
           Alert.alert(
             "Invalid Request ⚠️",
             "There was an issue with your application. Please check your message and try again.",
             [{ text: "OK" }]
           );
           break;
-          
-        case 'UNAUTHORIZED':
+
+        case "UNAUTHORIZED":
           Alert.alert(
             "Session Expired 🔐",
             "Please log in again to submit your application.",
             [{ text: "OK" }]
           );
           break;
-          
-        case 'FORBIDDEN':
+
+        case "FORBIDDEN":
           Alert.alert(
             "Access Denied 🚫",
             "You don't have permission to apply to this pickup request.",
             [{ text: "OK" }]
           );
           break;
-          
-        case 'CALL_NOT_FOUND':
+
+        case "CALL_NOT_FOUND":
           Alert.alert(
             "Call Not Available ❌",
             "This pickup request is no longer available. It may have been removed or already filled.",
             [{ text: "OK" }]
           );
           break;
-          
-        case 'VALIDATION_ERROR':
+
+        case "VALIDATION_ERROR":
           Alert.alert(
             "Invalid Information ⚠️",
             "Please check your application details and try again.",
             [{ text: "OK" }]
           );
           break;
-          
-        case 'SERVER_ERROR':
+
+        case "SERVER_ERROR":
           Alert.alert(
             "Server Error 🔧",
             "Our servers are experiencing issues. Please try again in a few minutes.",
             [{ text: "OK" }]
           );
           break;
-          
-        case 'NETWORK_ERROR':
+
+        case "NETWORK_ERROR":
           Alert.alert(
             "No Internet Connection 📡",
             "Please check your internet connection and try again.",
             [{ text: "OK" }]
           );
           break;
-          
-        case 'TIMEOUT_ERROR':
+
+        case "TIMEOUT_ERROR":
           Alert.alert(
             "Request Timeout ⏰",
             "The request took too long. Please check your connection and try again.",
             [{ text: "OK" }]
           );
           break;
-          
-        case 'CONNECTION_ERROR':
+
+        case "CONNECTION_ERROR":
           Alert.alert(
             "Connection Failed 🔌",
             "Unable to connect to our servers. Please try again later.",
             [{ text: "OK" }]
           );
           break;
-          
+
         default:
           Alert.alert(
             "Application Failed",
@@ -180,6 +183,7 @@ export default function ApplyModal({
 
   const handleClose = () => {
     if (loading) return; // Prevent closing while submitting
+    Keyboard.dismiss();
     setMessage("");
     onClose();
   };
@@ -190,128 +194,152 @@ export default function ApplyModal({
       animationType="slide"
       transparent={true}
       onRequestClose={handleClose}
+      statusBarTranslucent={true}
     >
       <KeyboardAvoidingView
         style={styles.modalOverlay}
         behavior={Platform.OS === "ios" ? "padding" : "height"}
       >
-        <View style={styles.modalContainer}>
-          <LinearGradient
-            colors={["#FF932E", "#FFB86C"]}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
-            style={styles.modalHeader}
-          >
-            <View style={styles.headerContent}>
-              <FontAwesome5 name="hand-holding-heart" size={24} color="#fff" />
-              <Text style={styles.modalTitle}>Apply for Pickup</Text>
-            </View>
-            <TouchableOpacity
-              style={styles.closeButton}
-              onPress={handleClose}
-              disabled={loading}
+        <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+          <View style={styles.modalContainer}>
+            <LinearGradient
+              colors={["#FF932E", "#FFB86C"]}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={styles.modalHeader}
             >
-              <FontAwesome5 name="times" size={20} color="#fff" />
-            </TouchableOpacity>
-          </LinearGradient>
-
-          <ScrollView
-            style={styles.modalBody}
-            showsVerticalScrollIndicator={false}
-          >
-            <View style={styles.contentContainer}>
-              {/* Welcome Message */}
-              <View style={styles.welcomeSection}>
-                <FontAwesome5 name="star" size={20} color="#FF932E" />
-                <Text style={styles.welcomeTitle}>Ready to Help? 🌟</Text>
-                <Text style={styles.welcomeText}>
-                  Tell the parent why you'd be perfect for this pickup request.
-                  Share your experience, availability, or any special skills
-                  that make you the ideal choice!
-                </Text>
-              </View>
-
-              {/* Message Input */}
-              <View style={styles.inputSection}>
-                <Text style={styles.inputLabel}>Your Message to Parent</Text>
-                <TextInput
-                  style={styles.messageInput}
-                  placeholder="Hi! I'd love to help with your pickup request because..."
-                  placeholderTextColor="#999"
-                  value={message}
-                  onChangeText={setMessage}
-                  multiline
-                  numberOfLines={6}
-                  textAlignVertical="top"
-                  maxLength={500}
+              <View style={styles.headerContent}>
+                <FontAwesome5
+                  name="hand-holding-heart"
+                  size={24}
+                  color="#fff"
                 />
-                <Text style={styles.characterCount}>
-                  {message.length}/500 characters
-                </Text>
+                <Text style={styles.modalTitle}>Apply for Pickup</Text>
               </View>
+              <TouchableOpacity
+                style={styles.closeButton}
+                onPress={handleClose}
+                disabled={loading}
+              >
+                <FontAwesome5 name="times" size={20} color="#fff" />
+              </TouchableOpacity>
+            </LinearGradient>
 
-              {/* Tips Section */}
-              <View style={styles.tipsSection}>
-                <Text style={styles.tipsTitle}>
-                  💡 Tips for a great application:
-                </Text>
-                <View style={styles.tipItem}>
-                  <FontAwesome5 name="check-circle" size={12} color="#34C759" />
-                  <Text style={styles.tipText}>
-                    Mention your experience with kids
+            <ScrollView
+              style={styles.modalBody}
+              showsVerticalScrollIndicator={false}
+              keyboardShouldPersistTaps="handled"
+              contentContainerStyle={{ flexGrow: 1 }}
+            >
+              <View style={styles.contentContainer}>
+                {/* Welcome Message */}
+                <View style={styles.welcomeSection}>
+                  <FontAwesome5 name="star" size={20} color="#FF932E" />
+                  <Text style={styles.welcomeTitle}>Ready to Help? 🌟</Text>
+                  <Text style={styles.welcomeText}>
+                    Tell the parent why you&apos;d be perfect for this pickup
+                    request. Share your experience, availability, or any special
+                    skills that make you the ideal choice!
                   </Text>
                 </View>
-                <View style={styles.tipItem}>
-                  <FontAwesome5 name="check-circle" size={12} color="#34C759" />
-                  <Text style={styles.tipText}>
-                    Highlight your reliability and punctuality
+
+                {/* Message Input */}
+                <View style={styles.inputSection}>
+                  <Text style={styles.inputLabel}>Your Message to Parent</Text>
+                  <TextInput
+                    style={styles.messageInput}
+                    placeholder="Hi! I'd love to help with your pickup request because..."
+                    placeholderTextColor="#999"
+                    value={message}
+                    onChangeText={setMessage}
+                    multiline
+                    numberOfLines={6}
+                    textAlignVertical="top"
+                    maxLength={500}
+                    returnKeyType="done"
+                    blurOnSubmit={true}
+                    onSubmitEditing={() => Keyboard.dismiss()}
+                  />
+                  <Text style={styles.characterCount}>
+                    {message.length}/500 characters
                   </Text>
                 </View>
-                <View style={styles.tipItem}>
-                  <FontAwesome5 name="check-circle" size={12} color="#34C759" />
-                  <Text style={styles.tipText}>
-                    Share why you're passionate about helping families
+
+                {/* Tips Section */}
+                <View style={styles.tipsSection}>
+                  <Text style={styles.tipsTitle}>
+                    💡 Tips for a great application:
                   </Text>
+                  <View style={styles.tipItem}>
+                    <FontAwesome5
+                      name="check-circle"
+                      size={12}
+                      color="#34C759"
+                    />
+                    <Text style={styles.tipText}>
+                      Mention your experience with kids
+                    </Text>
+                  </View>
+                  <View style={styles.tipItem}>
+                    <FontAwesome5
+                      name="check-circle"
+                      size={12}
+                      color="#34C759"
+                    />
+                    <Text style={styles.tipText}>
+                      Highlight your reliability and punctuality
+                    </Text>
+                  </View>
+                  <View style={styles.tipItem}>
+                    <FontAwesome5
+                      name="check-circle"
+                      size={12}
+                      color="#34C759"
+                    />
+                    <Text style={styles.tipText}>
+                      Share why you&apos;re passionate about helping families
+                    </Text>
+                  </View>
                 </View>
               </View>
+            </ScrollView>
+
+            {/* Action Buttons */}
+            <View style={styles.modalFooter}>
+              <TouchableOpacity
+                style={[styles.button, styles.cancelButton]}
+                onPress={handleClose}
+                disabled={loading}
+              >
+                <Text style={styles.cancelButtonText}>Cancel</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[
+                  styles.button,
+                  styles.submitButton,
+                  loading && styles.submitButtonDisabled,
+                ]}
+                onPress={handleSubmit}
+                disabled={loading}
+              >
+                {loading ? (
+                  <View style={styles.loadingContainer}>
+                    <FontAwesome5 name="spinner" size={14} color="#fff" />
+                    <Text style={styles.submitButtonText}>Submitting...</Text>
+                  </View>
+                ) : (
+                  <>
+                    <FontAwesome5 name="paper-plane" size={14} color="#fff" />
+                    <Text style={styles.submitButtonText}>
+                      Submit Application
+                    </Text>
+                  </>
+                )}
+              </TouchableOpacity>
             </View>
-          </ScrollView>
-
-          {/* Action Buttons */}
-          <View style={styles.modalFooter}>
-            <TouchableOpacity
-              style={[styles.button, styles.cancelButton]}
-              onPress={handleClose}
-              disabled={loading}
-            >
-              <Text style={styles.cancelButtonText}>Cancel</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={[
-                styles.button,
-                styles.submitButton,
-                loading && styles.submitButtonDisabled,
-              ]}
-              onPress={handleSubmit}
-              disabled={loading}
-            >
-              {loading ? (
-                <View style={styles.loadingContainer}>
-                  <FontAwesome5 name="spinner" size={14} color="#fff" />
-                  <Text style={styles.submitButtonText}>Submitting...</Text>
-                </View>
-              ) : (
-                <>
-                  <FontAwesome5 name="paper-plane" size={14} color="#fff" />
-                  <Text style={styles.submitButtonText}>
-                    Submit Application
-                  </Text>
-                </>
-              )}
-            </TouchableOpacity>
           </View>
-        </View>
+        </TouchableWithoutFeedback>
       </KeyboardAvoidingView>
     </Modal>
   );

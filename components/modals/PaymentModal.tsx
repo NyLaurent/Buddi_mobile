@@ -5,6 +5,7 @@ import {
   StyleSheet,
   Text,
   TouchableOpacity,
+  TouchableWithoutFeedback,
   View,
 } from "react-native";
 
@@ -50,57 +51,51 @@ const PaymentModal = ({
       statusBarTranslucent={true}
     >
       {/* Overlay with semi-transparent black background */}
-      <View style={styles.overlay}>
-        {/* Modal container with shadow */}
-        <TouchableOpacity
-          style={styles.overlay}
-          activeOpacity={1}
-          onPress={onClose}
-        >
-          <TouchableOpacity
-            activeOpacity={1}
-            onPress={(e) => e.stopPropagation()}
-            style={styles.modalContainer}
-          >
-            <View style={styles.modalContent}>
-              {/* Close Button */}
-              <TouchableOpacity style={styles.closeButton} onPress={onClose}>
-                <Ionicons name="close" size={24} color="#6B7280" />
-              </TouchableOpacity>
+      <TouchableWithoutFeedback onPress={onClose}>
+        <View style={styles.overlay}>
+          {/* Modal container with shadow */}
+          <TouchableWithoutFeedback onPress={(e) => e.stopPropagation()}>
+            <View style={styles.modalContainer}>
+              <View style={styles.modalContent}>
+                {/* Close Button */}
+                <TouchableOpacity style={styles.closeButton} onPress={onClose}>
+                  <Ionicons name="close" size={24} color="#6B7280" />
+                </TouchableOpacity>
 
-              {/* Header */}
-              <View style={styles.header}>
-                <Ionicons name="card-outline" size={32} color="#FF932E" />
-                <Text style={styles.title}>Process Payment</Text>
-              </View>
+                {/* Header */}
+                <View style={styles.header}>
+                  <Ionicons name="card-outline" size={32} color="#FF932E" />
+                  <Text style={styles.title}>Process Payment</Text>
+                </View>
 
-              {/* Content */}
-              <View style={styles.content}>
-                <Text style={styles.description}>
-                  You will be redirected to our web app portal to complete the
-                  payment securely.
-                </Text>
-                <Text style={styles.webAppText}>
-                  Web App: app.pickupbuddi.com
-                </Text>
-              </View>
-
-              {/* Continue Button */}
-              <TouchableOpacity
-                style={styles.confirmButton}
-                onPress={handleConfirm}
-              >
-                <View style={styles.confirmButtonContent}>
-                  <Ionicons name="open-outline" size={18} color="#fff" />
-                  <Text style={styles.confirmButtonText}>
-                    Continue to Payment
+                {/* Content */}
+                <View style={styles.content}>
+                  <Text style={styles.description}>
+                    You will be redirected to our web app portal to complete the
+                    payment securely.
+                  </Text>
+                  <Text style={styles.webAppText}>
+                    Web App: app.pickupbuddi.com
                   </Text>
                 </View>
-              </TouchableOpacity>
+
+                {/* Continue Button */}
+                <TouchableOpacity
+                  style={styles.confirmButton}
+                  onPress={handleConfirm}
+                >
+                  <View style={styles.confirmButtonContent}>
+                    <Ionicons name="open-outline" size={18} color="#fff" />
+                    <Text style={styles.confirmButtonText}>
+                      Continue to Payment
+                    </Text>
+                  </View>
+                </TouchableOpacity>
+              </View>
             </View>
-          </TouchableOpacity>
-        </TouchableOpacity>
-      </View>
+          </TouchableWithoutFeedback>
+        </View>
+      </TouchableWithoutFeedback>
     </Modal>
   );
 };

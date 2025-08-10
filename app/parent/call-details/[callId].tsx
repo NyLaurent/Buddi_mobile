@@ -143,7 +143,7 @@ export default function CallDetailsPage() {
         }}
       >
         <Text style={{ fontFamily: "Comfortaa-Regular", color: "#6B7280" }}>
-          Loading call details...
+          Loading pickup request details...
         </Text>
       </View>
     );
@@ -187,7 +187,7 @@ export default function CallDetailsPage() {
               marginBottom: 8,
             }}
           >
-            Call Not Found
+            Pickup Request Not Found
           </Text>
           <Text
             style={{
@@ -198,7 +198,7 @@ export default function CallDetailsPage() {
               lineHeight: 24,
             }}
           >
-            {error || "Unable to load call details. Please try again."}
+            {error || "Unable to load pickup request details. Please try again."}
           </Text>
         </View>
         <TouchableOpacity
@@ -248,7 +248,7 @@ export default function CallDetailsPage() {
             color: "#FF932E",
           }}
         >
-          Call Details
+          Pickup Request Details
         </Text>
       </View>
 

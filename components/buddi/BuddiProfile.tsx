@@ -1,9 +1,12 @@
 import Header from "@/components/commons/Header";
 import { Ionicons } from "@expo/vector-icons";
+import * as FileSystem from "expo-file-system";
 import { useRouter } from "expo-router";
+import * as Sharing from "expo-sharing";
 import { useEffect, useState } from "react";
 import {
   ActivityIndicator,
+  Alert,
   Platform,
   ScrollView,
   StatusBar,
@@ -122,6 +125,77 @@ const BuddiProfile = () => {
     return result;
   })();
 
+  // Get resume URL from buddi details
+  const resumeUrl = (() => {
+    const result =
+      profileData?.user?.Buddi?.resume || buddiDetails?.resume || null;
+    console.log("BuddiProfile: Resume URL:", result);
+    return result;
+  })();
+
+  // Handle resume download using FileSystem and Sharing
+  const handleResumeDownload = async () => {
+    if (!resumeUrl) {
+      Alert.alert("No Resume", "No resume available for download.");
+      return;
+    }
+
+    try {
+      Alert.alert("Download Resume", "Do you want to download the resume?", [
+        {
+          text: "Cancel",
+          style: "cancel",
+        },
+        {
+          text: "Download",
+          onPress: async () => {
+            try {
+              // Get the filename from the URL
+              const fileName = resumeUrl.split("/").pop() || "resume.pdf";
+
+              // Create a local file path
+              const localUri = `${FileSystem.documentDirectory}${fileName}`;
+
+              // Download the file
+              const downloadResult = await FileSystem.downloadAsync(
+                resumeUrl,
+                localUri
+              );
+
+              if (downloadResult.status === 200) {
+                // Share the downloaded file
+                if (await Sharing.isAvailableAsync()) {
+                  await Sharing.shareAsync(localUri, {
+                    mimeType: "application/pdf",
+                    dialogTitle: "Resume",
+                  });
+                } else {
+                  Alert.alert(
+                    "Download Complete",
+                    `Resume downloaded to: ${localUri}`,
+                    [{ text: "OK" }]
+                  );
+                }
+              } else {
+                Alert.alert("Error", "Failed to download resume", [
+                  { text: "OK" },
+                ]);
+              }
+            } catch (error) {
+              console.error("Download error:", error);
+              Alert.alert("Error", "Failed to download resume", [
+                { text: "OK" },
+              ]);
+            }
+          },
+        },
+      ]);
+    } catch (error) {
+      console.error("Download error:", error);
+      Alert.alert("Error", "Failed to download resume", [{ text: "OK" }]);
+    }
+  };
+
   // Get rating from buddi details
   // const rating = (() => {
   //   const rawRating =
@@ -166,12 +240,7 @@ const BuddiProfile = () => {
           }),
         }}
       >
-        <Header
-          name={fullName}
-          email={email}
-          profileImage={profileImage}
-          
-        />
+        <Header name={fullName} email={email} profileImage={profileImage} />
 
         {/* Toggler Tabs */}
         <View
@@ -265,18 +334,65 @@ const BuddiProfile = () => {
         )}
         {activeTab === "Documents" && (
           <View className="px-4 pt-4">
-            {/* Empty Documents State */}
-            <View className="flex-1 justify-center items-center py-20">
-              <View className="bg-[#F8F9FE] rounded-full w-20 h-20 items-center justify-center mb-4">
-                <Ionicons name="document-outline" size={32} color="#BDBDBD" />
+            {/* Resume Section */}
+            {resumeUrl ? (
+              <View className="mb-6">
+                <Text className="font-comfortaa-bold text-base mb-3">
+                  Resume
+                </Text>
+                <View className="bg-white rounded-2xl border border-[#E6E6E6] p-4">
+                  <View className="flex-row items-center justify-between">
+                    <View className="flex-row items-center flex-1">
+                      <View className="bg-[#FF932E] rounded-full w-12 h-12 items-center justify-center mr-3">
+                        <Ionicons name="document" size={24} color="#fff" />
+                      </View>
+                      <View className="flex-1">
+                        <Text className="font-comfortaa-bold text-base text-[#222]">
+                          Resume
+                        </Text>
+                        <Text className="text-[#71727A] font-comfortaa text-sm">
+                          Click to download your resume
+                        </Text>
+                      </View>
+                    </View>
+                    <TouchableOpacity
+                      onPress={handleResumeDownload}
+                      className="bg-[#FF932E] px-4 py-2 rounded-xl flex-row items-center gap-2"
+                    >
+                      <Ionicons name="download" size={16} color="#fff" />
+                      <Text className="text-white font-comfortaa-bold text-sm">
+                        Download
+                      </Text>
+                    </TouchableOpacity>
+                  </View>
+                </View>
               </View>
-              <Text className="font-comfortaa-bold text-lg text-[#222] mb-2">
-                No Documents Yet
-              </Text>
-              <Text className="text-[#71727A] text-center font-comfortaa">
-                Your documents will appear here once uploaded
-              </Text>
-            </View>
+            ) : (
+              <View className="mb-6">
+                <Text className="font-comfortaa-bold text-base mb-3">
+                  Resume
+                </Text>
+                <View className="bg-white rounded-2xl border border-[#E6E6E6] p-4">
+                  <View className="flex-row items-center">
+                    <View className="bg-[#F8F9FE] rounded-full w-12 h-12 items-center justify-center mr-3">
+                      <Ionicons
+                        name="document-outline"
+                        size={24}
+                        color="#BDBDBD"
+                      />
+                    </View>
+                    <View className="flex-1">
+                      <Text className="font-comfortaa-bold text-base text-[#222]">
+                        No Resume Uploaded
+                      </Text>
+                      <Text className="text-[#71727A] font-comfortaa text-sm">
+                        Upload your resume to complete your profile
+                      </Text>
+                    </View>
+                  </View>
+                </View>
+              </View>
+            )}
           </View>
         )}
       </ScrollView>

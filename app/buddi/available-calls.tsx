@@ -49,7 +49,7 @@ export default function AvailableCallsScreen() {
       setTotalPages(response.totalPages);
       setTotalRecords(response.totalRecords);
     } catch (err: any) {
-      setError(err.message || "Failed to fetch available calls");
+      setError(err.message || "Failed to fetch pickup requests");
       console.error("Error fetching calls:", err);
     } finally {
       setLoading(false);
@@ -109,7 +109,7 @@ export default function AvailableCallsScreen() {
         <Ionicons name="arrow-back" size={24} color="#333" />
       </TouchableOpacity>
       <View style={styles.headerContent}>
-        <Text style={styles.headerTitle}>Available Calls</Text>
+        <Text style={styles.headerTitle}>Available Pickup Requests</Text>
         <Text style={styles.headerSubtitle}>
           {totalRecords} requests available • Page {currentPage} of {totalPages}
         </Text>
@@ -125,7 +125,7 @@ export default function AvailableCallsScreen() {
       return (
         <View style={styles.centerContainer}>
           <ActivityIndicator size="large" color="#FF932E" />
-          <Text style={styles.loadingText}>Loading available calls...</Text>
+          <Text style={styles.loadingText}>Loading available pickup requests...</Text>
         </View>
       );
     }
@@ -150,7 +150,7 @@ export default function AvailableCallsScreen() {
       return (
         <View style={styles.centerContainer}>
           <FontAwesome5 name="hand-holding-heart" size={48} color="#FF932E" />
-          <Text style={styles.emptyTitle}>No Calls Available</Text>
+          <Text style={styles.emptyTitle}>No Pickup Request Available</Text>
           <Text style={styles.emptyText}>
             There are currently no pickup requests available. Check back later!
           </Text>

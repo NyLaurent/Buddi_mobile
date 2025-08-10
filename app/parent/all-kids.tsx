@@ -1,14 +1,17 @@
 import { Ionicons } from "@expo/vector-icons";
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
+  Keyboard,
+  KeyboardAvoidingView,
   Modal,
-  Pressable,
+  Platform,
   ScrollView,
   Text,
   TextInput,
   TouchableOpacity,
+  TouchableWithoutFeedback,
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -71,6 +74,7 @@ export default function AllKidsPage() {
     setUpdateLoading(true);
     setUpdateError(null);
     try {
+      Keyboard.dismiss();
       await ChildrenService.updateChild(
         updatingKid.id,
         parentDetails.id.toString(),
@@ -384,207 +388,235 @@ export default function AllKidsPage() {
         animationType="slide"
         transparent
         onRequestClose={() => setUpdateModalVisible(false)}
+        statusBarTranslucent={true}
       >
-        <View
-          style={{
-            flex: 1,
-            backgroundColor: "rgba(44,44,84,0.18)",
-            justifyContent: "center",
-            alignItems: "center",
-          }}
+        <KeyboardAvoidingView
+          style={{ flex: 1 }}
+          behavior={Platform.OS === "ios" ? "padding" : "height"}
         >
-          <View
-            style={{
-              width: "88%",
-              backgroundColor: "#fff",
-              borderRadius: 22,
-              padding: 24,
-              shadowColor: "#FB8500",
-              shadowOpacity: 0.1,
-              shadowRadius: 16,
-              shadowOffset: { width: 0, height: 4 },
-              elevation: 6,
-            }}
-          >
-            <Pressable
-              style={{ position: "absolute", top: 16, right: 16, zIndex: 2 }}
-              onPress={() => setUpdateModalVisible(false)}
-              hitSlop={12}
-            >
-              <Ionicons name="close" size={26} color="#FB8500" />
-            </Pressable>
-            <Text
+          <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+            <View
               style={{
-                fontFamily: "Comfortaa-Bold",
-                fontSize: 20,
-                color: "#232B3A",
-                textAlign: "center",
-                marginBottom: 18,
-                marginTop: 2,
-              }}
-            >
-              Update Kid
-            </Text>
-            {/* Name */}
-            <Text
-              style={{
-                fontFamily: "Comfortaa-Medium",
-                fontSize: 15,
-                color: "#232B3A",
-                marginBottom: 6,
-              }}
-            >
-              Name
-            </Text>
-            <TextInput
-              value={updateForm.name}
-              onChangeText={(v) => setUpdateForm((f) => ({ ...f, name: v }))}
-              placeholder="e.g. Keza"
-              placeholderTextColor="#BDBDBD"
-              style={{
-                borderWidth: 1,
-                borderColor: "#E0E0E0",
-                borderRadius: 12,
-                padding: 12,
-                marginBottom: 14,
-                backgroundColor: "#F9FAFB",
-                fontFamily: "Comfortaa-Regular",
-                fontSize: 15,
-                color: "#232B3A",
-              }}
-            />
-            {/* Age */}
-            <Text
-              style={{
-                fontFamily: "Comfortaa-Medium",
-                fontSize: 15,
-                color: "#232B3A",
-                marginBottom: 6,
-              }}
-            >
-              Age
-            </Text>
-            <TextInput
-              value={updateForm.age}
-              onChangeText={(v) => setUpdateForm((f) => ({ ...f, age: v }))}
-              placeholder="e.g. 7"
-              placeholderTextColor="#BDBDBD"
-              keyboardType="numeric"
-              style={{
-                borderWidth: 1,
-                borderColor: "#E0E0E0",
-                borderRadius: 12,
-                padding: 12,
-                marginBottom: 14,
-                backgroundColor: "#F9FAFB",
-                fontFamily: "Comfortaa-Regular",
-                fontSize: 15,
-                color: "#232B3A",
-              }}
-            />
-            {/* School Name */}
-            <Text
-              style={{
-                fontFamily: "Comfortaa-Medium",
-                fontSize: 15,
-                color: "#232B3A",
-                marginBottom: 6,
-              }}
-            >
-              School Name
-            </Text>
-            <TextInput
-              value={updateForm.schoolName}
-              onChangeText={(v) =>
-                setUpdateForm((f) => ({ ...f, schoolName: v }))
-              }
-              placeholder="e.g. ABC Primary School"
-              placeholderTextColor="#BDBDBD"
-              style={{
-                borderWidth: 1,
-                borderColor: "#E0E0E0",
-                borderRadius: 12,
-                padding: 12,
-                marginBottom: 14,
-                backgroundColor: "#F9FAFB",
-                fontFamily: "Comfortaa-Regular",
-                fontSize: 15,
-                color: "#232B3A",
-              }}
-            />
-            {/* Pickup Address */}
-            <Text
-              style={{
-                fontFamily: "Comfortaa-Medium",
-                fontSize: 15,
-                color: "#232B3A",
-                marginBottom: 6,
-              }}
-            >
-              Pickup Address
-            </Text>
-            <TextInput
-              value={updateForm.pickupAddress}
-              onChangeText={(v) =>
-                setUpdateForm((f) => ({ ...f, pickupAddress: v }))
-              }
-              placeholder="e.g. 123 School Road"
-              placeholderTextColor="#BDBDBD"
-              style={{
-                borderWidth: 1,
-                borderColor: "#E0E0E0",
-                borderRadius: 12,
-                padding: 12,
-                marginBottom: 18,
-                backgroundColor: "#F9FAFB",
-                fontFamily: "Comfortaa-Regular",
-                fontSize: 15,
-                color: "#232B3A",
-              }}
-            />
-            {/* Error */}
-            {updateError ? (
-              <Text
-                style={{
-                  color: "red",
-                  fontSize: 13,
-                  marginBottom: 8,
-                  textAlign: "center",
-                }}
-              >
-                {updateError}
-              </Text>
-            ) : null}
-            {/* Save Button */}
-            <TouchableOpacity
-              style={{
-                backgroundColor: updateLoading ? "#FBBF24" : "#FB8500",
-                paddingVertical: 14,
-                borderRadius: 12,
+                flex: 1,
+                backgroundColor: "rgba(44,44,84,0.18)",
+                justifyContent: "center",
                 alignItems: "center",
-                marginTop: 2,
-                shadowColor: "#FB8500",
-                shadowOpacity: 0.12,
-                shadowRadius: 6,
-                shadowOffset: { width: 0, height: 2 },
-                opacity: updateLoading ? 0.7 : 1,
               }}
-              onPress={handleUpdate}
-              activeOpacity={0.85}
-              disabled={updateLoading}
             >
-              <Text
-                style={{
-                  color: "#fff",
-                  fontFamily: "Comfortaa-Medium",
-                  fontSize: 16,
-                }}
-              >
-                {updateLoading ? "Updating..." : "Save Changes"}
-              </Text>
-            </TouchableOpacity>
-          </View>
-        </View>
+              <TouchableWithoutFeedback onPress={() => {}}>
+                <View
+                  style={{
+                    width: "88%",
+                    backgroundColor: "#fff",
+                    borderRadius: 22,
+                    padding: 24,
+                    shadowColor: "#FB8500",
+                    shadowOpacity: 0.1,
+                    shadowRadius: 16,
+                    shadowOffset: { width: 0, height: 4 },
+                    elevation: 6,
+                    maxHeight: "80%",
+                  }}
+                >
+                  <TouchableOpacity
+                    style={{
+                      position: "absolute",
+                      top: 16,
+                      right: 16,
+                      zIndex: 2,
+                    }}
+                    onPress={() => {
+                      setUpdateModalVisible(false);
+                      Keyboard.dismiss();
+                    }}
+                    hitSlop={12}
+                  >
+                    <Ionicons name="close" size={26} color="#FB8500" />
+                  </TouchableOpacity>
+
+                  <ScrollView
+                    showsVerticalScrollIndicator={false}
+                    keyboardShouldPersistTaps="handled"
+                    contentContainerStyle={{ flexGrow: 1 }}
+                  >
+                    <Text
+                      style={{
+                        fontFamily: "Comfortaa-Bold",
+                        fontSize: 20,
+                        color: "#232B3A",
+                        textAlign: "center",
+                        marginBottom: 18,
+                        marginTop: 2,
+                      }}
+                    >
+                      Update Kid
+                    </Text>
+
+                    {/* Name */}
+                    <Text
+                      style={{
+                        fontFamily: "Comfortaa-Medium",
+                        fontSize: 15,
+                        color: "#232B3A",
+                        marginBottom: 6,
+                      }}
+                    >
+                      Name
+                    </Text>
+                    <TextInput
+                      value={updateForm.name}
+                      onChangeText={(v) =>
+                        setUpdateForm((f) => ({ ...f, name: v }))
+                      }
+                      placeholder="e.g. Keza"
+                      placeholderTextColor="#BDBDBD"
+                      style={{
+                        borderWidth: 1,
+                        borderColor: "#E0E0E0",
+                        borderRadius: 12,
+                        padding: 12,
+                        marginBottom: 14,
+                        backgroundColor: "#F9FAFB",
+                        fontFamily: "Comfortaa-Regular",
+                        fontSize: 15,
+                        color: "#232B3A",
+                      }}
+                      returnKeyType="next"
+                      blurOnSubmit={false}
+                    />
+
+                    {/* Age */}
+                    <Text
+                      style={{
+                        fontFamily: "Comfortaa-Medium",
+                        fontSize: 15,
+                        color: "#232B3A",
+                        marginBottom: 6,
+                      }}
+                    >
+                      Age
+                    </Text>
+                    <TextInput
+                      value={updateForm.age}
+                      onChangeText={(v) =>
+                        setUpdateForm((f) => ({ ...f, age: v }))
+                      }
+                      placeholder="e.g. 7"
+                      placeholderTextColor="#BDBDBD"
+                      keyboardType="numeric"
+                      style={{
+                        borderWidth: 1,
+                        borderColor: "#E0E0E0",
+                        borderRadius: 12,
+                        padding: 12,
+                        marginBottom: 14,
+                        backgroundColor: "#F9FAFB",
+                        fontFamily: "Comfortaa-Regular",
+                        fontSize: 15,
+                        color: "#232B3A",
+                      }}
+                      returnKeyType="next"
+                      blurOnSubmit={false}
+                    />
+
+                    {/* School Name */}
+                    <Text
+                      style={{
+                        fontFamily: "Comfortaa-Medium",
+                        fontSize: 15,
+                        color: "#232B3A",
+                        marginBottom: 6,
+                      }}
+                    >
+                      School Name
+                    </Text>
+                    <TextInput
+                      value={updateForm.schoolName}
+                      onChangeText={(v) =>
+                        setUpdateForm((f) => ({ ...f, schoolName: v }))
+                      }
+                      placeholder="e.g. ABC Primary School"
+                      placeholderTextColor="#BDBDBD"
+                      style={{
+                        borderWidth: 1,
+                        borderColor: "#E0E0E0",
+                        borderRadius: 12,
+                        padding: 12,
+                        marginBottom: 14,
+                        backgroundColor: "#F9FAFB",
+                        fontFamily: "Comfortaa-Regular",
+                        fontSize: 15,
+                        color: "#232B3A",
+                      }}
+                      returnKeyType="next"
+                      blurOnSubmit={false}
+                    />
+
+                    {/* Pickup Address */}
+                    <Text
+                      style={{
+                        fontFamily: "Comfortaa-Medium",
+                        fontSize: 15,
+                        color: "#232B3A",
+                        marginBottom: 6,
+                      }}
+                    >
+                      Pickup Address
+                    </Text>
+                    <TextInput
+                      value={updateForm.pickupAddress}
+                      onChangeText={(v) =>
+                        setUpdateForm((f) => ({ ...f, pickupAddress: v }))
+                      }
+                      placeholder="e.g. 123 School Road"
+                      placeholderTextColor="#BDBDBD"
+                      style={{
+                        borderWidth: 1,
+                        borderColor: "#E0E0E0",
+                        borderRadius: 12,
+                        padding: 12,
+                        marginBottom: 18,
+                        backgroundColor: "#F9FAFB",
+                        fontFamily: "Comfortaa-Regular",
+                        fontSize: 15,
+                        color: "#232B3A",
+                      }}
+                      returnKeyType="done"
+                      blurOnSubmit={true}
+                      onSubmitEditing={() => Keyboard.dismiss()}
+                    />
+
+                    {/* Update Button */}
+                    <TouchableOpacity
+                      style={{
+                        backgroundColor: "#FB8500",
+                        paddingVertical: 14,
+                        borderRadius: 12,
+                        alignItems: "center",
+                        shadowColor: "#FB8500",
+                        shadowOpacity: 0.12,
+                        shadowRadius: 6,
+                        shadowOffset: { width: 0, height: 2 },
+                      }}
+                      onPress={handleUpdate}
+                      activeOpacity={0.85}
+                    >
+                      <Text
+                        style={{
+                          color: "#fff",
+                          fontFamily: "Comfortaa-Medium",
+                          fontSize: 16,
+                        }}
+                      >
+                        Update Kid
+                      </Text>
+                    </TouchableOpacity>
+                  </ScrollView>
+                </View>
+              </TouchableWithoutFeedback>
+            </View>
+          </TouchableWithoutFeedback>
+        </KeyboardAvoidingView>
       </Modal>
     </SafeAreaView>
   );

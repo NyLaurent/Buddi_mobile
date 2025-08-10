@@ -14,6 +14,9 @@ import {
   TextInput,
   TouchableOpacity,
   View,
+  Keyboard,
+  KeyboardAvoidingView,
+  TouchableWithoutFeedback,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import PageHeader from "../../components/commons/PageHeader";
@@ -73,6 +76,7 @@ export default function CallPage() {
     }
     setKidLoading(true);
     try {
+      Keyboard.dismiss();
       await ChildrenService.registerChild({
         parentId: parentDetails.id.toString(),
         name: kidName,
@@ -253,203 +257,240 @@ export default function CallPage() {
         animationType="slide"
         transparent
         onRequestClose={() => setShowKidModal(false)}
+        statusBarTranslucent={true}
       >
-        <View
-          style={{
-            
-            backgroundColor: "rgba(44, 44, 84, 0.18)",
-            justifyContent: "center",
-            alignItems: "center",
-          }}
+        <KeyboardAvoidingView
+          style={{ flex: 1 }}
+          behavior={Platform.OS === "ios" ? "padding" : "height"}
         >
-          <View
-            style={{
-              width: "88%",
-              backgroundColor: "#fff",
-              borderRadius: 22,
-              padding: 24,
-              shadowColor: "#FB8500",
-              shadowOpacity: 0.1,
-              shadowRadius: 16,
-              shadowOffset: { width: 0, height: 4 },
-              elevation: 6,
-            }}
-          >
-            {/* Close Icon */}
-            <Pressable
-              style={{ position: "absolute", top: 16, right: 16, zIndex: 2 }}
-              onPress={() => setShowKidModal(false)}
-              hitSlop={12}
-            >
-              <Ionicons name="close" size={26} color="#FB8500" />
-            </Pressable>
-            <Text
+          <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+            <View
               style={{
-                fontFamily: "Comfortaa-Bold",
-                fontSize: 20,
-                color: "#232B3A",
-                textAlign: "center",
-                marginBottom: 18,
-                marginTop: 2,
-              }}
-            >
-              Register a Kid
-            </Text>
-            {/* Kid Name */}
-            <Text
-              style={{
-                fontFamily: "Comfortaa-Medium",
-                fontSize: 15,
-                color: "#232B3A",
-                marginBottom: 6,
-              }}
-            >
-              Name
-            </Text>
-            <TextInput
-              value={kidName}
-              onChangeText={setKidName}
-              placeholder="e.g. Keza"
-              placeholderTextColor="#BDBDBD"
-              style={{
-                borderWidth: 1,
-                borderColor: "#E0E0E0",
-                borderRadius: 12,
-                padding: 12,
-                marginBottom: 14,
-                backgroundColor: "#F9FAFB",
-                fontFamily: "Comfortaa-Regular",
-                fontSize: 15,
-                color: "#232B3A",
-              }}
-            />
-            {/* Kid Age */}
-            <Text
-              style={{
-                fontFamily: "Comfortaa-Medium",
-                fontSize: 15,
-                color: "#232B3A",
-                marginBottom: 6,
-              }}
-            >
-              Age
-            </Text>
-            <TextInput
-              value={kidAge}
-              onChangeText={setKidAge}
-              placeholder="e.g. 7"
-              placeholderTextColor="#BDBDBD"
-              keyboardType="numeric"
-              style={{
-                borderWidth: 1,
-                borderColor: "#E0E0E0",
-                borderRadius: 12,
-                padding: 12,
-                marginBottom: 14,
-                backgroundColor: "#F9FAFB",
-                fontFamily: "Comfortaa-Regular",
-                fontSize: 15,
-                color: "#232B3A",
-              }}
-            />
-            {/* School Name */}
-            <Text
-              style={{
-                fontFamily: "Comfortaa-Medium",
-                fontSize: 15,
-                color: "#232B3A",
-                marginBottom: 6,
-              }}
-            >
-              School Name
-            </Text>
-            <TextInput
-              value={kidSchool}
-              onChangeText={setKidSchool}
-              placeholder="e.g. ABC Primary School"
-              placeholderTextColor="#BDBDBD"
-              style={{
-                borderWidth: 1,
-                borderColor: "#E0E0E0",
-                borderRadius: 12,
-                padding: 12,
-                marginBottom: 14,
-                backgroundColor: "#F9FAFB",
-                fontFamily: "Comfortaa-Regular",
-                fontSize: 15,
-                color: "#232B3A",
-              }}
-            />
-            {/* Pickup Address */}
-            <Text
-              style={{
-                fontFamily: "Comfortaa-Medium",
-                fontSize: 15,
-                color: "#232B3A",
-                marginBottom: 6,
-              }}
-            >
-              Pickup Address
-            </Text>
-            <TextInput
-              value={kidPickupAddress}
-              onChangeText={setKidPickupAddress}
-              placeholder="e.g. 123 School Road"
-              placeholderTextColor="#BDBDBD"
-              style={{
-                borderWidth: 1,
-                borderColor: "#E0E0E0",
-                borderRadius: 12,
-                padding: 12,
-                marginBottom: 18,
-                backgroundColor: "#F9FAFB",
-                fontFamily: "Comfortaa-Regular",
-                fontSize: 15,
-                color: "#232B3A",
-              }}
-            />
-            {/* Save Button */}
-            {kidError ? (
-              <Text
-                style={{
-                  color: "red",
-                  fontSize: 13,
-                  marginBottom: 8,
-                  textAlign: "center",
-                }}
-              >
-                {kidError}
-              </Text>
-            ) : null}
-            <TouchableOpacity
-              style={{
-                backgroundColor: kidLoading ? "#FBBF24" : "#FB8500",
-                paddingVertical: 14,
-                borderRadius: 12,
+                flex: 1,
+                backgroundColor: "rgba(44, 44, 84, 0.18)",
+                justifyContent: "center",
                 alignItems: "center",
-                marginTop: 2,
-                shadowColor: "#FB8500",
-                shadowOpacity: 0.12,
-                shadowRadius: 6,
-                shadowOffset: { width: 0, height: 2 },
-                opacity: kidLoading ? 0.7 : 1,
               }}
-              onPress={handleSaveKid}
-              activeOpacity={0.85}
-              disabled={kidLoading}
             >
-              <Text
-                style={{
-                  color: "#fff",
-                  fontFamily: "Comfortaa-Medium",
-                  fontSize: 16,
-                }}
-              >
-                {kidLoading ? "Registering..." : "Save"}
-              </Text>
-            </TouchableOpacity>
-          </View>
-        </View>
+              <TouchableWithoutFeedback onPress={() => {}}>
+                <View
+                  style={{
+                    width: "88%",
+                    backgroundColor: "#fff",
+                    borderRadius: 22,
+                    padding: 24,
+                    shadowColor: "#FB8500",
+                    shadowOpacity: 0.1,
+                    shadowRadius: 16,
+                    shadowOffset: { width: 0, height: 4 },
+                    elevation: 6,
+                    maxHeight: "80%",
+                  }}
+                >
+                  {/* Close Icon */}
+                  <TouchableOpacity
+                    style={{ position: "absolute", top: 16, right: 16, zIndex: 2 }}
+                    onPress={() => {
+                      setShowKidModal(false);
+                      Keyboard.dismiss();
+                    }}
+                    hitSlop={12}
+                  >
+                    <Ionicons name="close" size={26} color="#FB8500" />
+                  </TouchableOpacity>
+                  
+                  <ScrollView
+                    showsVerticalScrollIndicator={false}
+                    keyboardShouldPersistTaps="handled"
+                    contentContainerStyle={{ flexGrow: 1 }}
+                  >
+                    <Text
+                      style={{
+                        fontFamily: "Comfortaa-Bold",
+                        fontSize: 20,
+                        color: "#232B3A",
+                        textAlign: "center",
+                        marginBottom: 18,
+                        marginTop: 2,
+                      }}
+                    >
+                      Register a Kid
+                    </Text>
+                    
+                    {/* Kid Name */}
+                    <Text
+                      style={{
+                        fontFamily: "Comfortaa-Medium",
+                        fontSize: 15,
+                        color: "#232B3A",
+                        marginBottom: 6,
+                      }}
+                    >
+                      Name
+                    </Text>
+                    <TextInput
+                      value={kidName}
+                      onChangeText={setKidName}
+                      placeholder="e.g. Keza"
+                      placeholderTextColor="#BDBDBD"
+                      style={{
+                        borderWidth: 1,
+                        borderColor: "#E0E0E0",
+                        borderRadius: 12,
+                        padding: 12,
+                        marginBottom: 14,
+                        backgroundColor: "#F9FAFB",
+                        fontFamily: "Comfortaa-Regular",
+                        fontSize: 15,
+                        color: "#232B3A",
+                      }}
+                      returnKeyType="next"
+                      blurOnSubmit={false}
+                    />
+                    
+                    {/* Kid Age */}
+                    <Text
+                      style={{
+                        fontFamily: "Comfortaa-Medium",
+                        fontSize: 15,
+                        color: "#232B3A",
+                        marginBottom: 6,
+                      }}
+                    >
+                      Age
+                    </Text>
+                    <TextInput
+                      value={kidAge}
+                      onChangeText={setKidAge}
+                      placeholder="e.g. 7"
+                      placeholderTextColor="#BDBDBD"
+                      keyboardType="numeric"
+                      style={{
+                        borderWidth: 1,
+                        borderColor: "#E0E0E0",
+                        borderRadius: 12,
+                        padding: 12,
+                        marginBottom: 14,
+                        backgroundColor: "#F9FAFB",
+                        fontFamily: "Comfortaa-Regular",
+                        fontSize: 15,
+                        color: "#232B3A",
+                      }}
+                      returnKeyType="next"
+                      blurOnSubmit={false}
+                    />
+                    
+                    {/* School Name */}
+                    <Text
+                      style={{
+                        fontFamily: "Comfortaa-Medium",
+                        fontSize: 15,
+                        color: "#232B3A",
+                        marginBottom: 6,
+                      }}
+                    >
+                      School Name
+                    </Text>
+                    <TextInput
+                      value={kidSchool}
+                      onChangeText={setKidSchool}
+                      placeholder="e.g. ABC Primary School"
+                      placeholderTextColor="#BDBDBD"
+                      style={{
+                        borderWidth: 1,
+                        borderColor: "#E0E0E0",
+                        borderRadius: 12,
+                        padding: 12,
+                        marginBottom: 14,
+                        backgroundColor: "#F9FAFB",
+                        fontFamily: "Comfortaa-Regular",
+                        fontSize: 15,
+                        color: "#232B3A",
+                      }}
+                      returnKeyType="next"
+                      blurOnSubmit={false}
+                    />
+                    
+                    {/* Pickup Address */}
+                    <Text
+                      style={{
+                        fontFamily: "Comfortaa-Medium",
+                        fontSize: 15,
+                        color: "#232B3A",
+                        marginBottom: 6,
+                      }}
+                    >
+                      Pickup Address
+                    </Text>
+                    <TextInput
+                      value={kidPickupAddress}
+                      onChangeText={setKidPickupAddress}
+                      placeholder="e.g. 123 School Road"
+                      placeholderTextColor="#BDBDBD"
+                      style={{
+                        borderWidth: 1,
+                        borderColor: "#E0E0E0",
+                        borderRadius: 12,
+                        padding: 12,
+                        marginBottom: 18,
+                        backgroundColor: "#F9FAFB",
+                        fontFamily: "Comfortaa-Regular",
+                        fontSize: 15,
+                        color: "#232B3A",
+                      }}
+                      returnKeyType="done"
+                      blurOnSubmit={true}
+                      onSubmitEditing={() => Keyboard.dismiss()}
+                    />
+                    
+                    {/* Error Message */}
+                    {kidError ? (
+                      <Text
+                        style={{
+                          color: "red",
+                          fontSize: 13,
+                          marginBottom: 8,
+                          textAlign: "center",
+                        }}
+                      >
+                        {kidError}
+                      </Text>
+                    ) : null}
+                    
+                    {/* Save Button */}
+                    <TouchableOpacity
+                      style={{
+                        backgroundColor: kidLoading ? "#FBBF24" : "#FB8500",
+                        paddingVertical: 14,
+                        borderRadius: 12,
+                        alignItems: "center",
+                        marginTop: 2,
+                        shadowColor: "#FB8500",
+                        shadowOpacity: 0.12,
+                        shadowRadius: 6,
+                        shadowOffset: { width: 0, height: 2 },
+                        opacity: kidLoading ? 0.7 : 1,
+                      }}
+                      onPress={handleSaveKid}
+                      activeOpacity={0.85}
+                      disabled={kidLoading}
+                    >
+                      <Text
+                        style={{
+                          color: "#fff",
+                          fontFamily: "Comfortaa-Medium",
+                          fontSize: 16,
+                        }}
+                      >
+                        {kidLoading ? "Registering..." : "Save"}
+                      </Text>
+                    </TouchableOpacity>
+                  </ScrollView>
+                </View>
+              </TouchableWithoutFeedback>
+            </View>
+          </TouchableWithoutFeedback>
+        </KeyboardAvoidingView>
       </Modal>
       {/* Success Modal */}
       <Modal
@@ -1235,12 +1276,12 @@ export default function CallPage() {
               marginBottom: 8,
             }}
           >
-            From Zone
+            From Address
           </Text>
           <TextInput
             value={fromZone}
             onChangeText={setFromZone}
-            placeholder="Enter pickup zone"
+            placeholder="Enter pickup address"
             placeholderTextColor="#BDBDBD"
             style={{
               borderWidth: 1,
@@ -1263,12 +1304,12 @@ export default function CallPage() {
               marginBottom: 8,
             }}
           >
-            To Zone
+            To Address
           </Text>
           <TextInput
             value={toZone}
             onChangeText={setToZone}
-            placeholder="Enter drop-off zone"
+            placeholder="Enter drop-off address"
             placeholderTextColor="#BDBDBD"
             style={{
               borderWidth: 1,

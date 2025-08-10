@@ -953,7 +953,7 @@ export default function ParentBuddiProfilePage() {
                       textAlign: "center",
                     }}
                   >
-                    {buddiData.resume.split("/").pop() || "resume.pdf"}
+                    { "resume.pdf"}
                   </Text>
                 )}
               </View>

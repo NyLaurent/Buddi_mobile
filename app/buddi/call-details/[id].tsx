@@ -54,10 +54,11 @@ export default function CallDetailsScreen() {
 
       const response = await BuddiService.getCallDetails(Number(id));
       setCallDetails({
-        callPickupTime: response.data.pickupTime ?? null,
-        callDropTime: null,
-        isBuddiRecommended: false,
         ...response.data,
+        callPickupTime:
+          response.data.pickupTime ?? response.data.callPickupTime ?? null,
+        callDropTime: response.data.callDropTime ?? null,
+        isBuddiRecommended: response.data.isBuddiRecommended ?? false,
       });
     } catch (err: any) {
       setError(err.message || "Failed to fetch call details");
@@ -84,10 +85,53 @@ export default function CallDetailsScreen() {
     router.back();
   };
 
-  const formatTime = (time: string) => {
-    if (typeof time === "string" && time.includes(":")) {
+  const formatTime = (time: string | null) => {
+    if (!time) return "-";
+
+    // If time is already in 12-hour format (contains AM/PM), return as is
+    if (
+      typeof time === "string" &&
+      (time.includes("AM") || time.includes("PM"))
+    ) {
       return time;
     }
+
+    // Handle 24-hour format conversion
+    if (typeof time === "string" && time.includes(":")) {
+      try {
+        // Split the time into hours and minutes
+        const [hours, minutes] = time.split(":").map(Number);
+
+        if (isNaN(hours) || isNaN(minutes)) {
+          return time; // Return original if parsing fails
+        }
+
+        // Convert to 12-hour format
+        let period = "AM";
+        let displayHours = hours;
+
+        if (hours >= 12) {
+          period = "PM";
+          if (hours > 12) {
+            displayHours = hours - 12;
+          }
+        }
+
+        // Handle midnight (00:00)
+        if (hours === 0) {
+          displayHours = 12;
+        }
+
+        // Format with leading zeros for minutes
+        const formattedMinutes = minutes.toString().padStart(2, "0");
+
+        return `${displayHours}:${formattedMinutes} ${period}`;
+      } catch (error) {
+        console.error("Error formatting time:", error);
+        return time; // Return original if conversion fails
+      }
+    }
+
     return time;
   };
 
@@ -135,7 +179,7 @@ export default function CallDetailsScreen() {
         <Ionicons name="arrow-back" size={24} color="#333" />
       </TouchableOpacity>
       <View style={styles.headerContent}>
-        <Text style={styles.headerTitle}>Call Details</Text>
+        <Text style={styles.headerTitle}>Pickup Request Details</Text>
         <Text style={styles.headerSubtitle}>Pickup Request #{id}</Text>
       </View>
       <View style={styles.headerSpacer} />
@@ -215,7 +259,7 @@ export default function CallDetailsScreen() {
           <View style={styles.detailCard}>
             <FontAwesome5 name="clock" size={24} color="#FF932E" />
             <Text style={styles.detailValue}>
-              {formatTime(callDetails.callPickupTime || "-")}
+              {formatTime(callDetails.callPickupTime)}
             </Text>
             <Text style={styles.detailLabel}>Pickup Time</Text>
           </View>
@@ -224,7 +268,7 @@ export default function CallDetailsScreen() {
           <View style={styles.detailCard}>
             <FontAwesome5 name="clock" size={24} color="#3B82F6" />
             <Text style={styles.detailValue}>
-              {formatTime(callDetails.callDropTime || "-")}
+              {formatTime(callDetails.callDropTime)}
             </Text>
             <Text style={styles.detailLabel}>Drop-off Time</Text>
           </View>

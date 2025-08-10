@@ -26,14 +26,11 @@ export default function AvailableCallsCard({
   useEffect(() => {
     const fetchAnalytics = async () => {
       try {
-        const response = await BuddiService.getAvailableCalls(1, 5);
-        const calls = response.data;
+        const statusCounts = await BuddiService.getBuddiRequestStatusCounts();
         setAnalytics({
-          totalCalls: response.totalRecords,
-          availableCalls: calls.filter((call) => call.status === "pending")
-            .length,
-          matchedCalls: calls.filter((call) => call.status === "matched")
-            .length,
+          totalCalls: statusCounts.pending + statusCounts.matched,
+          availableCalls: statusCounts.pending,
+          matchedCalls: statusCounts.matched,
         });
       } catch (error) {
         console.error("Error fetching analytics:", error);

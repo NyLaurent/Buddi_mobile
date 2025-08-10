@@ -4,11 +4,15 @@ import { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
+  Keyboard,
+  KeyboardAvoidingView,
   Modal,
+  Platform,
   ScrollView,
   Text,
   TextInput,
   TouchableOpacity,
+  TouchableWithoutFeedback,
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -153,6 +157,7 @@ export default function TimesheetDetailsPage() {
 
       setShowFlagModal(false);
       setFlagMessage("");
+      Keyboard.dismiss();
 
       Alert.alert(
         "Timesheet Flagged! 🚩",
@@ -726,7 +731,10 @@ export default function TimesheetDetailsPage() {
               flexDirection: "row",
               justifyContent: "center",
             }}
-            onPress={() => setShowFlagModal(true)}
+            onPress={() => {
+              Keyboard.dismiss();
+              setShowFlagModal(true);
+            }}
           >
             <Ionicons
               name="flag-outline"
@@ -859,132 +867,183 @@ export default function TimesheetDetailsPage() {
         animationType="fade"
         onRequestClose={() => setShowFlagModal(false)}
       >
-        <View
-          style={{
-            flex: 1,
-            backgroundColor: "rgba(0,0,0,0.5)",
-            justifyContent: "center",
-            alignItems: "center",
-            paddingHorizontal: 20,
-          }}
+        <KeyboardAvoidingView
+          style={{ flex: 1 }}
+          behavior={Platform.OS === "ios" ? "padding" : "height"}
         >
-          <View
-            style={{
-              backgroundColor: "#fff",
-              borderRadius: 16,
-              padding: 24,
-              width: "100%",
-              maxWidth: 400,
-            }}
-          >
-            <View style={{ alignItems: "center", marginBottom: 20 }}>
-              <Ionicons name="flag" size={48} color="#EF4444" />
-              <Text
-                style={{
-                  fontFamily: "Comfortaa-Bold",
-                  fontSize: 18,
-                  color: "#232B3A",
-                  textAlign: "center",
-                  marginTop: 12,
-                }}
-              >
-                Flag Timesheet
-              </Text>
-            </View>
-
-            <Text
+          <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+            <View
               style={{
-                fontFamily: "Comfortaa-Regular",
-                fontSize: 15,
-                color: "#666",
-                textAlign: "center",
-                marginBottom: 20,
-                lineHeight: 22,
+                flex: 1,
+                backgroundColor: "rgba(0,0,0,0.5)",
+                justifyContent: "center",
+                alignItems: "center",
+                paddingHorizontal: 20,
               }}
             >
-              Please describe the issue with this timesheet. The buddi will be
-              notified and can make corrections.
-            </Text>
-
-            <TextInput
-              value={flagMessage}
-              onChangeText={setFlagMessage}
-              placeholder="Describe the issue (e.g., incorrect hours, wrong pickup count...)"
-              multiline={true}
-              numberOfLines={4}
-              textAlignVertical="top"
-              style={{
-                borderWidth: 2,
-                borderColor: "#E5E7EB",
-                borderRadius: 12,
-                paddingHorizontal: 16,
-                paddingVertical: 12,
-                fontSize: 15,
-                fontFamily: "Comfortaa-Regular",
-                marginBottom: 24,
-                minHeight: 100,
-              }}
-            />
-
-            <View style={{ flexDirection: "row", gap: 12 }}>
-              <TouchableOpacity
-                onPress={() => {
-                  setShowFlagModal(false);
-                  setFlagMessage("");
-                }}
-                style={{
-                  flex: 1,
-                  backgroundColor: "#E5E7EB",
-                  borderRadius: 12,
-                  paddingVertical: 14,
-                  alignItems: "center",
-                }}
-              >
-                <Text
+              <TouchableWithoutFeedback onPress={() => {}}>
+                <View
                   style={{
-                    fontFamily: "Comfortaa-Bold",
-                    fontSize: 16,
-                    color: "#374151",
+                    backgroundColor: "#fff",
+                    borderRadius: 16,
+                    padding: 24,
+                    width: "100%",
+                    maxWidth: 400,
+                    maxHeight: "80%",
                   }}
                 >
-                  Cancel
-                </Text>
-              </TouchableOpacity>
+                  {/* Header with close button */}
+                  <View
+                    style={{
+                      flexDirection: "row",
+                      justifyContent: "space-between",
+                      alignItems: "center",
+                      marginBottom: 16,
+                    }}
+                  >
+                    <View style={{ flex: 1 }} />
+                    <Text
+                      style={{
+                        fontFamily: "Comfortaa-Bold",
+                        fontSize: 18,
+                        color: "#232B3A",
+                        textAlign: "center",
+                        flex: 1,
+                      }}
+                    >
+                      Flag Timesheet
+                    </Text>
+                    <TouchableOpacity
+                      onPress={() => {
+                        setShowFlagModal(false);
+                        setFlagMessage("");
+                        Keyboard.dismiss();
+                      }}
+                      style={{
+                        backgroundColor: "#F3F4F6",
+                        borderRadius: 20,
+                        width: 32,
+                        height: 32,
+                        justifyContent: "center",
+                        alignItems: "center",
+                      }}
+                    >
+                      <Ionicons name="close" size={20} color="#6B7280" />
+                    </TouchableOpacity>
+                  </View>
 
-              <TouchableOpacity
-                onPress={handleFlagTimesheet}
-                disabled={isReporting || !flagMessage.trim()}
-                style={{
-                  flex: 1,
-                  backgroundColor:
-                    isReporting || !flagMessage.trim() ? "#9CA3AF" : "#EF4444",
-                  borderRadius: 12,
-                  paddingVertical: 14,
-                  alignItems: "center",
-                  flexDirection: "row",
-                  justifyContent: "center",
-                }}
-              >
-                {isReporting && (
-                  <ActivityIndicator
-                    size="small"
-                    color="#fff"
-                    style={{ marginRight: 8 }}
-                  />
-                )}
-                <Text
-                  style={{
-                    fontFamily: "Comfortaa-Bold",
-                    fontSize: 16,
-                    color: "#fff",
-                  }}
-                >
-                  {isReporting ? "Flagging..." : "Flag Timesheet"}
-                </Text>
-              </TouchableOpacity>
+                  <ScrollView
+                    showsVerticalScrollIndicator={false}
+                    contentContainerStyle={{ flexGrow: 1 }}
+                  >
+                    <View style={{ alignItems: "center", marginBottom: 20 }}>
+                      <Ionicons name="flag" size={48} color="#EF4444" />
+                    </View>
+
+                    <Text
+                      style={{
+                        fontFamily: "Comfortaa-Regular",
+                        fontSize: 15,
+                        color: "#666",
+                        textAlign: "center",
+                        marginBottom: 20,
+                        lineHeight: 22,
+                      }}
+                    >
+                      Please describe the issue with this timesheet. The buddi
+                      will be notified and can make corrections.
+                    </Text>
+
+                    <TextInput
+                      value={flagMessage}
+                      onChangeText={setFlagMessage}
+                      placeholder="Describe the issue (e.g., incorrect hours, wrong pickup count...)"
+                      multiline={true}
+                      numberOfLines={4}
+                      textAlignVertical="top"
+                      style={{
+                        borderWidth: 2,
+                        borderColor: "#E5E7EB",
+                        borderRadius: 12,
+                        paddingHorizontal: 16,
+                        paddingVertical: 12,
+                        fontSize: 15,
+                        fontFamily: "Comfortaa-Regular",
+                        marginBottom: 24,
+                        minHeight: 100,
+                        maxHeight: 200,
+                      }}
+                      returnKeyType="done"
+                      blurOnSubmit={true}
+                      onSubmitEditing={() => Keyboard.dismiss()}
+                    />
+
+                    <View style={{ flexDirection: "row", gap: 12 }}>
+                      <TouchableOpacity
+                        onPress={() => {
+                          setShowFlagModal(false);
+                          setFlagMessage("");
+                          Keyboard.dismiss();
+                        }}
+                        style={{
+                          flex: 1,
+                          backgroundColor: "#E5E7EB",
+                          borderRadius: 12,
+                          paddingVertical: 14,
+                          alignItems: "center",
+                        }}
+                      >
+                        <Text
+                          style={{
+                            fontFamily: "Comfortaa-Bold",
+                            fontSize: 16,
+                            color: "#374151",
+                          }}
+                        >
+                          Cancel
+                        </Text>
+                      </TouchableOpacity>
+
+                      <TouchableOpacity
+                        onPress={handleFlagTimesheet}
+                        disabled={isReporting || !flagMessage.trim()}
+                        style={{
+                          flex: 1,
+                          backgroundColor:
+                            isReporting || !flagMessage.trim()
+                              ? "#9CA3AF"
+                              : "#EF4444",
+                          borderRadius: 12,
+                          paddingVertical: 14,
+                          alignItems: "center",
+                          flexDirection: "row",
+                          justifyContent: "center",
+                        }}
+                      >
+                        {isReporting && (
+                          <ActivityIndicator
+                            size="small"
+                            color="#fff"
+                            style={{ marginRight: 8 }}
+                          />
+                        )}
+                        <Text
+                          style={{
+                            fontFamily: "Comfortaa-Bold",
+                            fontSize: 16,
+                            color: "#fff",
+                          }}
+                        >
+                          {isReporting ? "Flagging..." : "Flag Timesheet"}
+                        </Text>
+                      </TouchableOpacity>
+                    </View>
+                  </ScrollView>
+                </View>
+              </TouchableWithoutFeedback>
             </View>
-          </View>
-        </View>
+          </TouchableWithoutFeedback>
+        </KeyboardAvoidingView>
       </Modal>
     </SafeAreaView>
   );

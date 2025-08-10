@@ -5,6 +5,7 @@ import {
   ActivityIndicator,
   Alert,
   Dimensions,
+  Keyboard,
   KeyboardAvoidingView,
   Modal,
   Platform,
@@ -12,6 +13,7 @@ import {
   Text,
   TextInput,
   TouchableOpacity,
+  TouchableWithoutFeedback,
   View,
 } from "react-native";
 import { useAuth } from "../../context/AuthContext";
@@ -71,6 +73,7 @@ const ProfileEditModal: React.FC<ProfileEditModalProps> = ({
   const handleSave = async () => {
     try {
       setIsLoading(true);
+      Keyboard.dismiss();
 
       // Filter out empty password field if not provided
       const updateData = { ...formData };
@@ -96,6 +99,7 @@ const ProfileEditModal: React.FC<ProfileEditModalProps> = ({
   };
 
   const handleCancel = () => {
+    Keyboard.dismiss();
     onClose();
   };
 
@@ -133,6 +137,9 @@ const ProfileEditModal: React.FC<ProfileEditModalProps> = ({
           multiline={multiline}
           numberOfLines={numberOfLines}
           textAlignVertical={multiline ? "top" : "center"}
+          returnKeyType="done"
+          blurOnSubmit={true}
+          onSubmitEditing={() => Keyboard.dismiss()}
         />
         <View className="absolute right-4 top-4">
           <Ionicons name="create-outline" size={20} color="#D1D5DB" />
@@ -147,103 +154,91 @@ const ProfileEditModal: React.FC<ProfileEditModalProps> = ({
       animationType="slide"
       presentationStyle="pageSheet"
       statusBarTranslucent
+      onRequestClose={handleCancel}
     >
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : "height"}
         className="flex-1"
       >
-        <View className="flex-1 bg-white">
-          {/* Header with Gradient */}
-          <LinearGradient
-            colors={["#FF932E", "#FF7A00"]}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 0 }}
-            className="pt-12 pb-6 px-6"
-          >
-            <View className="flex-row items-center justify-between">
-              <TouchableOpacity
-                onPress={handleCancel}
-                className="w-10 h-10 bg-white/20 rounded-full items-center justify-center"
-              >
-                <Ionicons name="close" size={24} color="white" />
-              </TouchableOpacity>
-              <Text className="font-comfortaa-bold text-xl text-white">
-                Edit Profile
-              </Text>
-              <TouchableOpacity
-                onPress={handleSave}
-                disabled={isLoading}
-                className="bg-white/20 px-6 py-2 rounded-full"
-              >
-                {isLoading ? (
-                  <ActivityIndicator size="small" color="white" />
-                ) : (
-                  <Text className="text-white font-comfortaa-bold">Save</Text>
-                )}
-              </TouchableOpacity>
-            </View>
-          </LinearGradient>
-
-          {/* Profile Avatar Section */}
-          <View className="items-center py-6 bg-gray-50">
-            <View className="relative">
-              <View className="w-20 h-20 bg-gradient-to-br from-[#FF932E] to-[#FF7A00] rounded-full items-center justify-center">
-                <Text className="text-white font-comfortaa-bold text-2xl">
-                  {user?.firstName?.charAt(0) || "U"}
+        <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+          <View className="flex-1 bg-white">
+            {/* Header with Gradient */}
+            <LinearGradient
+              colors={["#FF932E", "#FF7A00"]}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 0 }}
+              className="pt-12 pb-6 px-6"
+            >
+              <View className="flex-row items-center justify-between">
+                <TouchableOpacity
+                  onPress={handleCancel}
+                  className="w-10 h-10 bg-white/20 rounded-full items-center justify-center"
+                >
+                  <Ionicons name="close" size={24} color="white" />
+                </TouchableOpacity>
+                <Text className="font-comfortaa-bold text-xl text-white">
+                  Edit Profile
                 </Text>
+                <TouchableOpacity
+                  onPress={handleSave}
+                  disabled={isLoading}
+                  className="bg-white/20 px-6 py-2 rounded-full"
+                >
+                  {isLoading ? (
+                    <ActivityIndicator size="small" color="white" />
+                  ) : (
+                    <Text className="text-white font-comfortaa-bold">Save</Text>
+                  )}
+                </TouchableOpacity>
               </View>
-              <View className="absolute -bottom-1 -right-1 w-6 h-6 bg-[#FF932E] rounded-full items-center justify-center border-2 border-white">
-                <Ionicons name="camera" size={12} color="white" />
-              </View>
-            </View>
-            <Text className="font-comfortaa-bold text-lg text-black mt-3">
-              {user?.firstName} {user?.lastName}
-            </Text>
-            <Text className="text-[#71727A] font-comfortaa text-sm">
-              {user?.role
-                ? user.role.charAt(0).toUpperCase() + user.role.slice(1)
-                : "User"}
-            </Text>
-          </View>
+            </LinearGradient>
 
-          {/* Form Content */}
-          <ScrollView
-            className="flex-1 px-6"
-            showsVerticalScrollIndicator={false}
-            contentContainerStyle={{ paddingBottom: 40 }}
-          >
-            <View className="bg-white rounded-3xl p-6 shadow-sm border border-gray-100">
-              <Text className="font-comfortaa-bold text-lg text-black mb-6">
-                Personal Information
+            {/* Profile Avatar Section */}
+            <View className="items-center py-6 bg-gray-50">
+              <View className="relative">
+                <View className="w-20 h-20 bg-gradient-to-br from-[#FF932E] to-[#FF7A00] rounded-full items-center justify-center">
+                  <Text className="text-white font-comfortaa-bold text-2xl">
+                    {user?.firstName?.charAt(0) || "U"}
+                  </Text>
+                </View>
+                <View className="absolute -bottom-1 -right-1 w-6 h-6 bg-[#FF932E] rounded-full items-center justify-center border-2 border-white">
+                  <Ionicons name="camera" size={12} color="white" />
+                </View>
+              </View>
+              <Text className="font-comfortaa-bold text-lg text-black mt-3">
+                {user?.firstName} {user?.lastName}
               </Text>
+            </View>
 
+            {/* Form Fields */}
+            <ScrollView
+              className="flex-1 px-6"
+              showsVerticalScrollIndicator={false}
+              keyboardShouldPersistTaps="handled"
+            >
               <InputField
                 label="First Name"
                 value={formData.firstName}
-                onChangeText={(value: string) =>
-                  handleInputChange("firstName", value)
-                }
+                onChangeText={(value: string) => handleInputChange("firstName", value)}
                 placeholder="Enter your first name"
                 icon="person-outline"
+                autoCapitalize="words"
               />
 
               <InputField
                 label="Last Name"
                 value={formData.lastName}
-                onChangeText={(value: string) =>
-                  handleInputChange("lastName", value)
-                }
+                onChangeText={(value: string) => handleInputChange("lastName", value)}
                 placeholder="Enter your last name"
                 icon="person-outline"
+                autoCapitalize="words"
               />
 
               <InputField
-                label="Email Address"
+                label="Email"
                 value={formData.email}
-                onChangeText={(value: string) =>
-                  handleInputChange("email", value)
-                }
-                placeholder="Enter your email address"
+                onChangeText={(value: string) => handleInputChange("email", value)}
+                placeholder="Enter your email"
                 icon="mail-outline"
                 keyboardType="email-address"
                 autoCapitalize="none"
@@ -252,9 +247,7 @@ const ProfileEditModal: React.FC<ProfileEditModalProps> = ({
               <InputField
                 label="Phone Number"
                 value={formData.phoneNumber}
-                onChangeText={(value: string) =>
-                  handleInputChange("phoneNumber", value)
-                }
+                onChangeText={(value: string) => handleInputChange("phoneNumber", value)}
                 placeholder="Enter your phone number"
                 icon="call-outline"
                 keyboardType="phone-pad"
@@ -263,43 +256,28 @@ const ProfileEditModal: React.FC<ProfileEditModalProps> = ({
               <InputField
                 label="Home Address"
                 value={formData.homeAddress}
-                onChangeText={(value: string) =>
-                  handleInputChange("homeAddress", value)
-                }
+                onChangeText={(value: string) => handleInputChange("homeAddress", value)}
                 placeholder="Enter your home address"
-                icon="location-outline"
-                multiline
+                icon="home-outline"
+                multiline={true}
                 numberOfLines={3}
               />
 
               <InputField
-                label="New Password"
+                label="New Password (Optional)"
                 value={formData.password}
-                onChangeText={(value: string) =>
-                  handleInputChange("password", value)
-                }
-                placeholder="Enter new password (optional)"
+                onChangeText={(value: string) => handleInputChange("password", value)}
+                placeholder="Enter new password (leave blank to keep current)"
                 icon="lock-closed-outline"
-                secureTextEntry
+                secureTextEntry={true}
                 autoCapitalize="none"
               />
 
-              <View className="bg-blue-50 border border-blue-200 rounded-2xl p-4 mt-6">
-                <View className="flex-row items-start">
-                  <Ionicons
-                    name="information-circle"
-                    size={20}
-                    color="#3B82F6"
-                  />
-                  <Text className="text-blue-800 font-comfortaa text-sm ml-2 flex-1">
-                    Leave the password field blank if you don&apos;t want to
-                    change it. All other fields will be updated immediately.
-                  </Text>
-                </View>
-              </View>
-            </View>
-          </ScrollView>
-        </View>
+              {/* Spacer for bottom padding */}
+              <View className="h-8" />
+            </ScrollView>
+          </View>
+        </TouchableWithoutFeedback>
       </KeyboardAvoidingView>
     </Modal>
   );

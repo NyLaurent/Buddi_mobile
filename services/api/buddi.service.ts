@@ -394,7 +394,7 @@ const BuddiService = {
       const response = await authorizedApi.get(`/parent/requests/all?page=${page}&limit=${limit}`);
       return response.data;
     } catch (err: any) {
-      let message = 'Failed to fetch available calls.';
+      let message = 'Failed to fetch available pickup requests.';
       if (err?.response?.data?.message) {
         message = err.response.data.message;
       } else if (err?.message) {
@@ -417,7 +417,7 @@ const BuddiService = {
       const response = await authorizedApi.get(`/coverage/buddi-request/${callId}`);
       return response.data;
     } catch (err: any) {
-      let message = 'Failed to fetch call details.';
+      let message = 'Failed to fetch pickup request details.';
       if (err?.response?.data?.message) {
         message = err.response.data.message;
       } else if (err?.message) {
@@ -590,6 +590,53 @@ const BuddiService = {
       return response.data;
     } catch (err: any) {
       let message = 'Failed to fetch weekly pickup summary.';
+      if (err?.response?.data?.message) {
+        message = err.response.data.message;
+      } else if (err?.message) {
+        if (err.message.includes('Network')) {
+          message = 'Network error. Please check your connection and try again.';
+        } else if (err.message.includes('timeout')) {
+          message = 'Request timed out. Please try again.';
+        } else {
+          message = err.message;
+        }
+      } else if (typeof err === 'string') {
+        message = err;
+      }
+      throw new Error(message);
+    }
+  },
+
+  async getBuddiRequestStatusCounts(): Promise<{ pending: number; matched: number }> {
+    try {
+      const [pendingResponse, matchedResponse] = await Promise.all([
+        authorizedApi.get('/parent-payments/buddi-requests/status-count?status=pending'),
+        authorizedApi.get('/parent-payments/buddi-requests/status-count?status=matched')
+      ]);
+      
+      // Handle different possible response structures
+      const getCount = (response: any) => {
+        if (response.data?.count !== undefined) {
+          return response.data.count;
+        }
+        if (response.data?.data?.count !== undefined) {
+          return response.data.data.count;
+        }
+        if (typeof response.data === 'number') {
+          return response.data;
+        }
+        if (response.data?.total !== undefined) {
+          return response.data.total;
+        }
+        return 0;
+      };
+      
+      return {
+        pending: getCount(pendingResponse),
+        matched: getCount(matchedResponse)
+      };
+    } catch (err: any) {
+      let message = 'Failed to fetch status counts.';
       if (err?.response?.data?.message) {
         message = err.response.data.message;
       } else if (err?.message) {

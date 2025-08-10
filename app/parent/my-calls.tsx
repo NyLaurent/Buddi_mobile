@@ -129,12 +129,12 @@ export default function MyCallsPage() {
             color: "#FF932E",
           }}
         >
-          My Calls
+          My Pickup Requests
         </Text>
       </View>
       {loading ? (
         <Text style={{ textAlign: "center", marginTop: 40 }}>
-          Loading your calls...
+          Loading your pickup requests...
         </Text>
       ) : error ? (
         <Text style={{ color: "red", textAlign: "center", marginTop: 40 }}>
@@ -142,7 +142,7 @@ export default function MyCallsPage() {
         </Text>
       ) : pickupRequests.length === 0 ? (
         <Text style={{ textAlign: "center", marginTop: 40 }}>
-          You have not created any calls yet.
+          You have not created any pickup requests yet.
         </Text>
       ) : (
         <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 40 }}>
