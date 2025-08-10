@@ -1281,8 +1281,8 @@ export default function ParentDashboard() {
                       }}
                     >
                       {pickupRequests[0].status === "pending"
-                        ? "Your call is being processed. We will notify you once a Buddi is matched!"
-                        : "Your call is being processed."}
+                        ? "Your pickup request is being processed. We will notify you once a Buddi is matched!"
+                        : "Your pickup request is being processed."}
                     </Text>
                   </>
                 )}
@@ -1477,7 +1477,7 @@ export default function ParentDashboard() {
                       />
                     </TouchableOpacity>
                     {/* Create Another Call Button */}
-                    <TouchableOpacity
+                    {/* <TouchableOpacity
                       style={{
                         backgroundColor: "#fff",
                         borderRadius: 999,
@@ -1511,7 +1511,7 @@ export default function ParentDashboard() {
                         size={18}
                         color="#FF932E"
                       />
-                    </TouchableOpacity>
+                    </TouchableOpacity> */}
                   </>
                 )}
               </View>
@@ -1831,8 +1831,10 @@ export default function ParentDashboard() {
                   buddiEmail={buddiEmail}
                   buddiAvatar={buddiAvatar}
                   buddiStatus={buddiStatus}
-                  schoolName={child?.school || pickup.fromZone || "School"}
-                  destination={pickup.toZone || "Home"}
+                  schoolName={
+                    child?.school || pickup.fromZone || "From Address"
+                  }
+                  destination={pickup.toZone || "To Address"}
                   callPickupTime={pickup.callPickupTime}
                   callDropTime={pickup.callDropTime}
                   mainAction={
@@ -1988,21 +1990,12 @@ export default function ParentDashboard() {
                                       pickupDataToSend
                                     );
 
-                                    // Emit a direct event to the buddi to ensure they get the update
-                                    // Re-get socket in case it reconnected
-                                    socket = SocketService.getSocket();
-                                    if (socket && pickup.matchedBuddiId) {
-                                      console.log(
-                                        "[PARENT] 📡 Emitting pickup-requested event to buddi:",
-                                        pickup.matchedBuddiId
-                                      );
-                                      socket.emit("pickup-requested", {
-                                        pickupData: pickupDataToSend,
-                                        buddiId: pickup.matchedBuddiId,
-                                        parentId: parentDetails!.id,
-                                        timestamp: new Date().toISOString(),
-                                      });
-                                    }
+                                    // NOTE: Manual pickup requests are no longer needed
+                                    // The backend automatically sends pickup-requested events 30 minutes before scheduled time
+                                    // This ensures buddi is always ready to receive automatic pickup assignments
+                                    console.log(
+                                      "[PARENT] ✅ Pickup trip started - backend will automatically notify buddi"
+                                    );
 
                                     // Refresh pickups to get updated status
                                     await refreshPickups();

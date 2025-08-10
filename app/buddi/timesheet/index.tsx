@@ -1,6 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
-import { useRouter } from "expo-router";
-import { useEffect, useState } from "react";
+import { useFocusEffect, useRouter } from "expo-router";
+import { useCallback, useEffect, useState } from "react";
 import {
   Platform,
   ScrollView,
@@ -54,37 +54,42 @@ export default function TimesheetPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    const fetchTimesheets = async () => {
-      if (!buddiDetails?.id) {
-        console.log("No buddiDetails.id found:", buddiDetails);
-        return;
-      }
-      console.log("Fetching timesheets for buddi ID:", buddiDetails.id);
-      setLoading(true);
-      setError(null);
-      try {
-        const response = await authorizedApi.get(
-          `/timesheets/buddi/${buddiDetails.id}?page=1&limit=10`
-        );
-        console.log(
-          "Full API response:",
-          JSON.stringify(response.data, null, 2)
-        );
-        console.log("Timesheets data:", response.data.data);
-        console.log("Number of timesheets:", response.data.data?.length || 0);
+  const fetchTimesheets = useCallback(async () => {
+    if (!buddiDetails?.id) {
+      console.log("No buddiDetails.id found:", buddiDetails);
+      return;
+    }
+    console.log("Fetching timesheets for buddi ID:", buddiDetails.id);
+    setLoading(true);
+    setError(null);
+    try {
+      const response = await authorizedApi.get(
+        `/timesheets/buddi/${buddiDetails.id}?page=1&limit=10`
+      );
+      console.log("Full API response:", JSON.stringify(response.data, null, 2));
+      console.log("Timesheets data:", response.data.data);
+      console.log("Number of timesheets:", response.data.data?.length || 0);
 
-        setTimesheets(response.data.data || []);
-      } catch (err: any) {
-        console.error("Error fetching timesheets:", err);
-        console.error("Error message:", err.message);
-        setError("Failed to fetch timesheets.");
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchTimesheets();
+      setTimesheets(response.data.data || []);
+    } catch (err: any) {
+      console.error("Error fetching timesheets:", err);
+      console.error("Error message:", err.message);
+      setError("Failed to fetch timesheets.");
+    } finally {
+      setLoading(false);
+    }
   }, [buddiDetails?.id]);
+
+  useEffect(() => {
+    fetchTimesheets();
+  }, [fetchTimesheets]);
+
+  // Refresh timesheets when returning to this page
+  useFocusEffect(
+    useCallback(() => {
+      fetchTimesheets();
+    }, [fetchTimesheets])
+  );
 
   const formatDate = (iso: string) => {
     const d = new Date(iso);

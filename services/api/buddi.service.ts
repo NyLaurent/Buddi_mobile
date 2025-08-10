@@ -74,21 +74,29 @@ export interface AvailableCall {
   status: string;
   matchedBuddiId: number | null;
   isBuddiRecommended: boolean;
+  type: string; // "repetitive" or "varying"
+  startDate: string | null; // Only for "varying" type
+  endDate: string | null; // Only for "varying" type
   createdAt: string;
   updatedAt: string;
 }
 
 export interface AvailableCallsResponse {
-  message: string;
-  currentPage: number;
+  totalItems: number;
   totalPages: number;
-  totalRecords: number;
+  currentPage: number;
+  pageSize: number;
   data: AvailableCall[];
 }
 
 export interface CallDetailsResponse {
   message: string;
   data: AvailableCall;
+}
+
+export interface MatchedRequestsResponse {
+  message: string;
+  data: AvailableCall[];
 }
 
 export interface ApplyForCallRequest {
@@ -331,7 +339,7 @@ export async function uploadBuddiProfileIntroVideo(buddiId: number, videoUri: st
 }
 
 const BuddiService = {
-  async getMatchedRequests(buddiId: number): Promise<AvailableCallsResponse> {
+  async getMatchedRequests(buddiId: number): Promise<MatchedRequestsResponse> {
     try {
       const response = await authorizedApi.get(`/buddi/${buddiId}/matched-requests`);
       return response.data;
@@ -389,9 +397,11 @@ const BuddiService = {
     }
   },
 
-  async getAvailableCalls(page: number = 1, limit: number = 5): Promise<AvailableCallsResponse> {
+  async getAvailableCalls(page: number = 0, limit: number = 5): Promise<AvailableCallsResponse> {
     try {
-      const response = await authorizedApi.get(`/parent/requests/all?page=${page}&limit=${limit}`);
+      // API uses 1-based indexing, so add 1 to page
+      const apiPage = page + 1;
+      const response = await authorizedApi.get(`/coverage/buddi-requests/status?status=pending&page=${apiPage}&limit=${limit}`);
       return response.data;
     } catch (err: any) {
       let message = 'Failed to fetch available pickup requests.';
@@ -653,6 +663,31 @@ const BuddiService = {
       throw new Error(message);
     }
   },
+
+  async getPickups(buddiId: number): Promise<any> {
+    try {
+      const response = await authorizedApi.get(`/pickups/all-pickups/${buddiId}`);
+      console.log("[BUDDI SERVICE] Pickups response:", response.data);
+      return response.data;
+    } catch (err: any) {
+      let message = 'Failed to fetch pickups.';
+      if (err?.response?.data?.message) {
+        message = err.response.data.message;
+      } else if (err?.message) {
+        if (err.message.includes('Network')) {
+          message = 'Network error. Please check your connection and try again.';
+        } else if (err.message.includes('timeout')) {
+          message = 'Request timed out. Please try again.';
+        } else {
+          message = err.message;
+        }
+      } else if (typeof err === 'string') {
+        message = err;
+      }
+      throw new Error(message);
+    }
+  },
+
   startTrip,
   startPickupTrip,
   completePickupTrip,

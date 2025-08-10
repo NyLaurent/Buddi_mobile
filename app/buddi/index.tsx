@@ -161,6 +161,40 @@ export default function BuddiHome() {
     }
   };
 
+  // New function to fetch pickup data from API as alternative to socket events
+  const fetchPickupFromAPI = async () => {
+    try {
+      if (!buddiDetails?.id) {
+        console.log("[BUDDI] No buddi details available for API fetch");
+        return null;
+      }
+
+      console.log("[BUDDI] 🔍 Fetching pickup data from API as alternative...");
+      const pickups = await BuddiService.getPickups(buddiDetails.id);
+      console.log("[BUDDI] 📋 API response:", pickups);
+
+      // Find the most recent pending pickup for this buddi
+      const pendingPickup = pickups.find(
+        (pickup: any) =>
+          pickup.buddiId === buddiDetails.id && pickup.status === "pending"
+      );
+
+      if (pendingPickup) {
+        console.log(
+          "[BUDDI] ✅ Found pending pickup from API:",
+          pendingPickup.id
+        );
+        return pendingPickup;
+      } else {
+        console.log("[BUDDI] ❌ No pending pickups found from API");
+        return null;
+      }
+    } catch (error) {
+      console.error("[BUDDI] Error fetching pickup from API:", error);
+      return null;
+    }
+  };
+
   // Helper to check if a pickup is completed for today
   const isPickupCompletedForToday = (pickup: any) => {
     if (!weeklyPickupSummary?.completed) return false;
@@ -228,8 +262,54 @@ export default function BuddiHome() {
         await fetchWeeklyPickupSummary();
       }
     },
-    [activePickup, buddiDetails?.id]
+    [activePickup, buddiDetails?.id, fetchWeeklyPickupSummary]
   );
+
+  // Check for any locally stored pickup requests that might have been missed
+  const checkLocalPickupRequests = React.useCallback(async () => {
+    try {
+      console.log(
+        "[BUDDI] 🔍 Checking local storage for missed pickup requests..."
+      );
+      const stored = await AsyncStorage.getItem("buddiPickupRequests");
+      if (stored) {
+        const localRequests = JSON.parse(stored);
+        console.log("[BUDDI] 📋 Found local pickup requests:", localRequests);
+
+        // Check if any of these are for this buddi and still relevant
+        const relevantRequests = localRequests.filter(
+          (req: any) =>
+            req.buddiId === buddiDetails?.id &&
+            req.status !== "completed" &&
+            req.status !== "cancelled"
+        );
+
+        if (relevantRequests.length > 0) {
+          console.log(
+            "[BUDDI] ✅ Found relevant local pickup requests:",
+            relevantRequests
+          );
+
+          // Set the most recent one as active pickup
+          const mostRecent = relevantRequests.sort(
+            (a: any, b: any) =>
+              new Date(b.scheduledTime || b.createdAt || 0).getTime() -
+              new Date(a.scheduledTime || a.createdAt || 0).getTime()
+          )[0];
+
+          setActivePickup(mostRecent);
+          setCurrentPickupId(mostRecent.id);
+
+          console.log(
+            "[BUDDI] 🎯 Set most recent local pickup as active:",
+            mostRecent.id
+          );
+        }
+      }
+    } catch (error) {
+      console.error("[BUDDI] ❌ Error checking local pickup requests:", error);
+    }
+  }, [buddiDetails?.id]);
 
   // Enhanced socket connection and room management
   useEffect(() => {
@@ -316,12 +396,20 @@ export default function BuddiHome() {
     // Initial connection
     connectAndJoinRoom();
 
+    // Check for any locally stored pickup requests that might have been missed
+    console.log(
+      "[BUDDI] 🔍 Checking for any missed pickup requests from earlier..."
+    );
+    checkLocalPickupRequests();
+
     // Reconnect on socket reconnection
     const socket = SocketService.getSocket();
     if (socket) {
       socket.on("connect", () => {
         console.log("[BUDDI] 🔄 Socket reconnected, rejoining room");
         connectAndJoinRoom();
+        // Re-check local pickup requests after reconnection
+        checkLocalPickupRequests();
       });
 
       socket.on("disconnect", (reason) => {
@@ -331,6 +419,7 @@ export default function BuddiHome() {
 
     // Enhanced handlers for all trip events matching your server's event names
     const handlePickupRequested = (pickupData: any) => {
+      console.log("🎯 [BUDDI] ===== PICKUP-REQUESTED EVENT RECEIVED =====");
       console.log("[BUDDI] 📋 Received pickup-requested event:", pickupData);
       console.log(
         "[BUDDI] 📋 Pickup data structure:",
@@ -343,6 +432,8 @@ export default function BuddiHome() {
         thisBuddiId: buddiDetails?.id,
         pickupStatus: pickupData.status,
         buddiIdsMatch: pickupData.buddiId === buddiDetails?.id,
+        scheduledTime: pickupData.scheduledTime,
+        currentTime: new Date().toISOString(),
       });
 
       if (pickupData.buddiId === buddiDetails?.id) {
@@ -357,17 +448,105 @@ export default function BuddiHome() {
           pickupData.toLocation
         );
 
+        // Log timing information
+        const now = new Date();
+        const pickupScheduledTime = pickupData.scheduledTime
+          ? new Date(pickupData.scheduledTime)
+          : null;
+        console.log("[BUDDI] ⏰ Current time:", now.toISOString());
+        console.log(
+          "[BUDDI] ⏰ Scheduled pickup time:",
+          pickupScheduledTime?.toISOString() || "Not specified"
+        );
+        if (pickupScheduledTime) {
+          const timeDiff = pickupScheduledTime.getTime() - now.getTime();
+          const minutesUntilPickup = Math.floor(timeDiff / (1000 * 60));
+          console.log("[BUDDI] ⏰ Minutes until pickup:", minutesUntilPickup);
+        }
+
         // Store the pickup ID from the event to use directly
         console.log("[BUDDI] ✅ Storing pickup ID from event:", pickupData.id);
         setCurrentPickupId(pickupData.id);
 
-        // Show immediate notification with success modal
+        // Enhanced notification with more details
+        const scheduledTime = pickupData.scheduledTime
+          ? new Date(pickupData.scheduledTime)
+          : null;
+        const timeUntilPickup = scheduledTime
+          ? Math.max(
+              0,
+              Math.floor((scheduledTime.getTime() - Date.now()) / (1000 * 60))
+            )
+          : null;
+
+        let notificationMessage = `🚨 New Pickup Request!\n\n`;
+        notificationMessage += `📍 From: ${pickupData.fromLocation}\n`;
+        notificationMessage += `🎯 To: ${pickupData.toLocation}\n`;
+
+        if (scheduledTime && timeUntilPickup !== null) {
+          if (timeUntilPickup > 0) {
+            notificationMessage += `⏰ Pickup in: ${timeUntilPickup} minutes\n`;
+          } else {
+            notificationMessage += `⏰ Pickup time: ${scheduledTime.toLocaleTimeString()}\n`;
+          }
+        }
+
+        notificationMessage += `\n✅ You're now assigned to this pickup!\n`;
+        notificationMessage += `🚗 Get ready to start the trip when it's time.`;
+
+        // Show immediate notification with enhanced success modal
+        console.log("🎉 [BUDDI] SUCCESSFULLY ASSIGNED TO PICKUP! 🎉");
+        console.log("[BUDDI] ✅ Pickup ID:", pickupData.id);
+        console.log("[BUDDI] ✅ Status: Assigned");
+        console.log("[BUDDI] ✅ Ready to start trip when scheduled");
+
         showSuccessModal(
-          "🚨 New Pickup Request!",
-          `You have a new pickup request!\nFrom: ${pickupData.fromLocation}\nTo: ${pickupData.toLocation}\n\nYou can now start the trip!`,
+          "🚨 New Pickup Assignment!",
+          notificationMessage,
           "notifications",
           "#FF932E"
         );
+
+        // Also update any existing pickup requests to show this new assignment
+        // This ensures the buddi sees the pickup even if they missed the initial event
+        if (pickupData.id) {
+          setActivePickup((prev: any) => {
+            if (prev && prev.id === pickupData.id) {
+              return { ...prev, ...pickupData };
+            }
+            return pickupData;
+          });
+        }
+
+        // Store this pickup request locally for persistence
+        try {
+          AsyncStorage.getItem("buddiPickupRequests").then((stored) => {
+            const requests = stored ? JSON.parse(stored) : [];
+            const existingIndex = requests.findIndex(
+              (r: any) => r.id === pickupData.id
+            );
+
+            if (existingIndex !== -1) {
+              requests[existingIndex] = {
+                ...requests[existingIndex],
+                ...pickupData,
+              };
+            } else {
+              requests.push(pickupData);
+            }
+
+            AsyncStorage.setItem(
+              "buddiPickupRequests",
+              JSON.stringify(requests)
+            );
+            console.log("[BUDDI] 💾 Stored pickup request locally");
+          });
+        } catch (error) {
+          console.error(
+            "[BUDDI] ❌ Error storing pickup request locally:",
+            error
+          );
+        }
       } else {
         console.log("[BUDDI] 📋 Pickup not for this buddi:", {
           pickupBuddiId: pickupData.buddiId,
@@ -450,12 +629,16 @@ export default function BuddiHome() {
         "[BUDDI] 📝 Received timesheet-updated event:",
         timesheetData
       );
-      // Update timesheet display if needed
+      // Update timesheet display if neededf
       // You can add timesheet state management here if needed
     };
 
     // Register all event listeners matching your server's event names
     console.log("[BUDDI] 👂 Registering real-time event listeners...");
+    console.log("[BUDDI] 🎯 READY TO RECEIVE AUTOMATIC PICKUP REQUESTS!");
+    console.log(
+      "[BUDDI] 🎯 Listening for: pickup-requested, pickup-started, child-picked-up, trip-completed"
+    );
     SocketService.on("pickup-requested", handlePickupRequested);
     SocketService.on("pickup-started", handlePickupStarted);
     SocketService.on("child-picked-up", handleChildPickedUp);
@@ -503,7 +686,7 @@ export default function BuddiHome() {
     handleTripCompleted,
   ]); // Include all dependencies
 
-  // Periodic room check to ensure we stay connected
+  // Periodic room check to ensure we stay connected and ready for pickup requests
   React.useEffect(() => {
     if (!buddiDetails?.id || !user?.userId) return;
 
@@ -517,6 +700,10 @@ export default function BuddiHome() {
         console.log("[BUDDI] 🔄 Re-emitting join-buddi-room...");
         socket.emit("join-buddi-room", buddiDetails.id);
         console.log("[BUDDI] ✅ Periodic join-buddi-room event emitted");
+
+        // Also check for any missed pickup requests periodically
+        // This ensures we catch any automatic pickup requests that were sent earlier
+        checkLocalPickupRequests();
       } else {
         console.log(
           "[BUDDI] 🚨 Socket disconnected during periodic check, reconnecting..."
@@ -526,7 +713,7 @@ export default function BuddiHome() {
     }, 30000); // Check every 30 seconds
 
     return () => clearInterval(intervalId);
-  }, [buddiDetails?.id, user?.userId]);
+  }, [buddiDetails?.id, user?.userId, checkLocalPickupRequests]);
 
   // Check socket connection status periodically
   useEffect(() => {
@@ -940,6 +1127,11 @@ export default function BuddiHome() {
                     }
                     fare={activePickup?.fare || matchedCall.fare || 0}
                     kidsCount={matchedCall.kidsCount || 0}
+                    callType={matchedCall.type}
+                    startDate={matchedCall.startDate}
+                    endDate={matchedCall.endDate}
+                    fromZone={matchedCall.fromZone}
+                    toZone={matchedCall.toZone}
                     onButtonPress={
                       isCompleted ||
                       status === "enRoute" ||
@@ -993,16 +1185,39 @@ export default function BuddiHome() {
                                       );
 
                                       // Check if we have the actual pickup ID from the pickup-requested event
-                                      if (!currentPickupId) {
+                                      let pickupIdToUse: number | null =
+                                        currentPickupId;
+
+                                      if (!pickupIdToUse) {
+                                        // Fallback to fetching from API if currentPickupId is not available
+                                        const apiPickup =
+                                          await fetchPickupFromAPI();
+                                        if (apiPickup && apiPickup.id) {
+                                          console.log(
+                                            "[BUDDI] Using API pickup ID for trip start:",
+                                            apiPickup.id
+                                          );
+                                          pickupIdToUse = apiPickup.id;
+                                          setCurrentPickupId(apiPickup.id);
+                                        } else {
+                                          Alert.alert(
+                                            "Trip Not Ready",
+                                            "No pickup request found. Please wait for the parent to request a pickup.",
+                                            [{ text: "OK", style: "default" }]
+                                          );
+                                          return;
+                                        }
+                                      }
+
+                                      // Ensure we have a valid pickup ID before proceeding
+                                      if (!pickupIdToUse) {
                                         Alert.alert(
                                           "Trip Not Ready",
-                                          "The pickup hasn't been requested by the parent yet. Please wait for the parent to request a pickup before starting the trip.",
+                                          "Unable to get pickup ID. Please try again.",
                                           [{ text: "OK", style: "default" }]
                                         );
                                         return;
                                       }
-
-                                      const pickupIdToUse = currentPickupId;
                                       console.log(
                                         "[BUDDI] Using pickup ID for trip start:",
                                         pickupIdToUse

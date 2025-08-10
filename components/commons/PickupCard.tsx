@@ -20,6 +20,12 @@ interface PickupCardProps {
   dropoffTime?: string;
   fare?: number | null;
   kidsCount?: number;
+  // New fields from updated API
+  callType?: string;
+  startDate?: string | null;
+  endDate?: string | null;
+  fromZone?: string;
+  toZone?: string;
 }
 
 const PickupCard = ({
@@ -39,6 +45,11 @@ const PickupCard = ({
   dropoffTime,
   fare,
   kidsCount,
+  callType,
+  startDate,
+  endDate,
+  fromZone,
+  toZone,
 }: PickupCardProps) => {
   const router = useRouter();
 
@@ -77,11 +88,64 @@ const PickupCard = ({
     statusLabel = "Trip Completed";
   }
 
-  // Helper to format ISO date/time
+  // Helper to format ISO date/time with timezone
   const formatTime = (iso?: string) => {
     if (!iso) return "-";
-    const d = new Date(iso);
-    return d.toLocaleString();
+    try {
+      const d = new Date(iso);
+      const timeString = d.toLocaleTimeString("en-US", {
+        hour: "2-digit",
+        minute: "2-digit",
+        hour12: true,
+      });
+
+      // Get timezone abbreviation
+      const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+      const timezoneAbbr =
+        timezone.split("/").pop()?.substring(0, 3).toUpperCase() || "UTC";
+
+      const dateString = d.toLocaleDateString("en-US", {
+        month: "short",
+        day: "numeric",
+        year: "numeric",
+      });
+      return `${timeString} ${timezoneAbbr} • ${dateString}`;
+    } catch (error) {
+      return iso;
+    }
+  };
+
+  // Helper to format date range for varying calls
+  const formatDateRange = (start?: string | null, end?: string | null) => {
+    if (!start || !end) return null;
+    try {
+      const startDate = new Date(start);
+      const endDate = new Date(end);
+      const startFormatted = startDate.toLocaleDateString("en-US", {
+        month: "short",
+        day: "numeric",
+        year: "numeric",
+      });
+      const endFormatted = endDate.toLocaleDateString("en-US", {
+        month: "short",
+        day: "numeric",
+        year: "numeric",
+      });
+      return `${startFormatted} - ${endFormatted}`;
+    } catch (error) {
+      return `${start} - ${end}`;
+    }
+  };
+
+  // Helper to get call type display text and color
+  const getTypeDisplayText = (type?: string) => {
+    if (!type) return "One-time";
+    return type === "repetitive" ? "Ongoing" : "One-time";
+  };
+
+  const getTypeColor = (type?: string) => {
+    if (!type) return "#7C3AED";
+    return type === "repetitive" ? "#059669" : "#7C3AED";
   };
 
   return (
@@ -95,37 +159,53 @@ const PickupCard = ({
         borderColor: "#E8E8E8",
       }}
     >
-      <View className="flex-row justify-between items-center mb-3">
+      {/* Header with Call Type Badge */}
+      <View className="flex-row justify-between items-start mb-3">
         <Text
-          className="text-base font-comfortaa-bold"
+          className="text-base font-comfortaa-bold flex-1 mr-3"
           style={{ color: textColor }}
         >
           {name}
         </Text>
+        {callType && (
+          <View
+            className="px-3 py-1 rounded-xl"
+            style={{ backgroundColor: getTypeColor(callType) + "20" }}
+          >
+            <Text
+              className="font-comfortaa-bold text-xs"
+              style={{ color: getTypeColor(callType) }}
+            >
+              {getTypeDisplayText(callType)}
+            </Text>
+          </View>
+        )}
       </View>
 
-      <View className="flex-row items-center mb-3">
-        <Text
-          className="font-comfortaa-bold text-base mr-3"
-          style={{ color: "#2563EB" }}
-        >
-          {time}
-        </Text>
-        <View
-          className="px-3 py-1 rounded-xl"
-          style={{ backgroundColor: "#F5F5F5" }}
-        >
+      {/* Time and Days Section */}
+      <View className="mb-4">
+        <View className="flex-row items-center mb-2">
+          <Ionicons name="time-outline" size={16} color={"#2563EB"} />
           <Text
-            className="font-comfortaa text-sm"
-            style={{ color: subTextColor }}
+            className="ml-2 font-comfortaa-bold text-base"
+            style={{ color: "#2563EB" }}
           >
-            {days}
+            Pickup: {formatTime(time)}
           </Text>
         </View>
-      </View>
 
-      {/* Available Days Information */}
-      <View className="mb-3">
+        {/* Drop-off time below pickup time */}
+        <View className="flex-row items-center mb-3">
+          <Ionicons name="time-outline" size={16} color={"#059669"} />
+          <Text
+            className="ml-2 font-comfortaa text-sm"
+            style={{ color: "#059669" }}
+          >
+            Drop-off: {formatTime(dropoffTime)}
+          </Text>
+        </View>
+
+        {/* Available Days */}
         <View className="flex-row items-center mb-2">
           <Ionicons name="calendar-outline" size={16} color={"#666"} />
           <Text
@@ -135,7 +215,7 @@ const PickupCard = ({
             Available Days:
           </Text>
         </View>
-        <View className="flex-row flex-wrap gap-1">
+        <View className="flex-row flex-wrap gap-1 mb-3">
           {days.split(",").map((day, index) => (
             <View
               key={index}
@@ -151,8 +231,30 @@ const PickupCard = ({
             </View>
           ))}
         </View>
+
+        {/* Date Range for Varying Calls */}
+        {callType === "varying" && startDate && endDate && (
+          <View className="mb-3">
+            <View className="flex-row items-center mb-2">
+              <Ionicons name="calendar" size={16} color={"#7C3AED"} />
+              <Text
+                className="ml-2 font-comfortaa-bold text-sm"
+                style={{ color: "#7C3AED" }}
+              >
+                Date Range:
+              </Text>
+            </View>
+            <Text
+              className="ml-6 font-comfortaa text-sm"
+              style={{ color: "#7C3AED" }}
+            >
+              {formatDateRange(startDate, endDate)}
+            </Text>
+          </View>
+        )}
       </View>
 
+      {/* Location and Kids Information */}
       <View className="mb-4">
         <View className="flex-row items-center mb-2">
           <Ionicons name="school" size={16} color={"#666"} />
@@ -160,7 +262,7 @@ const PickupCard = ({
             className="ml-2 font-comfortaa text-sm"
             style={{ color: subTextColor }}
           >
-            {school}
+            From: {fromZone || school}
           </Text>
         </View>
         <View className="flex-row items-center mb-2">
@@ -169,16 +271,7 @@ const PickupCard = ({
             className="ml-2 font-comfortaa text-sm"
             style={{ color: subTextColor }}
           >
-            {home}
-          </Text>
-        </View>
-        <View className="flex-row items-center mb-2">
-          <Ionicons name="time-outline" size={16} color={"#666"} />
-          <Text
-            className="ml-2 font-comfortaa text-sm"
-            style={{ color: subTextColor }}
-          >
-            Drop-off: {dropoffTime || "Not set"}
+            To: {toZone || home}
           </Text>
         </View>
         <View className="flex-row items-center">
@@ -187,7 +280,7 @@ const PickupCard = ({
             className="ml-2 font-comfortaa text-sm"
             style={{ color: subTextColor }}
           >
-            Kids: {kidsCount}
+            Kids: {kidsCount || 0}
           </Text>
         </View>
       </View>

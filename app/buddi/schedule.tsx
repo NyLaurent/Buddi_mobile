@@ -1,8 +1,8 @@
 import AnalyticsCard from "@/components/commons/AnalyticsCard";
 import PageHeader from "@/components/commons/PageHeader";
+import PickupCard from "@/components/commons/PickupCard";
 import CoverageRequestModal from "@/components/modals/CoverageRequestModal";
 import CoverageRequestCard from "@/components/parent/CoverageRequestCard";
-import KidPickupCard from "@/components/parent/KidPickupCard";
 import { useAuth } from "@/context/AuthContext";
 import BuddiService from "@/services/api/buddi.service";
 import ChildrenService from "@/services/api/children.service";
@@ -94,6 +94,9 @@ const SchedulePage = () => {
     string | null
   >(null);
 
+  // State for active pickup tracking
+  const [activePickup, setActivePickup] = React.useState<any>(null);
+
   // Helper to get today's day as a string (e.g., 'Monday')
   const today = new Date().toLocaleDateString("en-US", { weekday: "long" });
 
@@ -151,6 +154,118 @@ const SchedulePage = () => {
       completedToday.fromLocation === pickup.fromZone &&
       completedToday.toLocation === pickup.toZone
     );
+  };
+
+  // Helper to get current pickup status
+  const getCurrentPickupStatus = (pickupId: number) => {
+    // Check if this pickup is the active one
+    if (activePickup && activePickup.id === pickupId) {
+      return activePickup.status || "enRoute";
+    }
+    return "notStarted";
+  };
+
+  // Helper to emit pickup events to parent's room
+  const emitPickupEvent = (eventName: string, pickupData: any) => {
+    const socket = SocketService.getSocket ? SocketService.getSocket() : null;
+    const targetParentId = pickupData?.parentId;
+
+    if (socket && targetParentId) {
+      const parentRoomId = `parent-${targetParentId}`;
+      console.log(
+        `[SCHEDULE] 📡 Emitting ${eventName} to parent room:`,
+        parentRoomId
+      );
+      console.log(`[SCHEDULE] 📦 Pickup data:`, pickupData);
+      socket.emit(eventName, pickupData);
+    }
+  };
+
+  // Handle pickup started (clock in)
+  const handlePickupStarted = async (pickup: any) => {
+    try {
+      console.log("[SCHEDULE] 🚀 Starting pickup:", pickup.id);
+
+      // Update local state
+      setActivePickup({
+        ...pickup,
+        status: "enRoute",
+        tripStartTime: new Date().toISOString(),
+      });
+
+      // Emit event to parent
+      emitPickupEvent("pickup-started", {
+        ...pickup,
+        buddiId: buddiDetails?.id,
+        status: "enRoute",
+        tripStartTime: new Date().toISOString(),
+      });
+
+      // Show success feedback
+      console.log("[SCHEDULE] ✅ Pickup started successfully");
+    } catch (error) {
+      console.error("[SCHEDULE] ❌ Error starting pickup:", error);
+    }
+  };
+
+  // Handle child picked up
+  const handleChildPickedUp = async (pickup: any) => {
+    try {
+      console.log("[SCHEDULE] 👶 Child picked up:", pickup.id);
+
+      // Update local state
+      setActivePickup({
+        ...pickup,
+        status: "pickedUp",
+        pickupTime: new Date().toISOString(),
+      });
+
+      // Emit event to parent
+      emitPickupEvent("child-picked-up", {
+        ...pickup,
+        buddiId: buddiDetails?.id,
+        status: "pickedUp",
+        pickupTime: new Date().toISOString(),
+      });
+
+      // Show success feedback
+      console.log("[SCHEDULE] ✅ Child picked up successfully");
+    } catch (error) {
+      console.error("[SCHEDULE] ❌ Error picking up child:", error);
+    }
+  };
+
+  // Handle trip completed (clock out)
+  const handleTripCompleted = async (pickup: any) => {
+    try {
+      console.log("[SCHEDULE] ✅ Completing trip:", pickup.id);
+
+      // Update local state
+      setActivePickup({
+        ...pickup,
+        status: "completed",
+        dropoffTime: new Date().toISOString(),
+      });
+
+      // Emit event to parent
+      emitPickupEvent("trip-completed", {
+        ...pickup,
+        buddiId: buddiDetails?.id,
+        status: "completed",
+        dropoffTime: new Date().toISOString(),
+      });
+
+      // Clear active pickup
+      setActivePickup(null);
+
+      // Refresh weekly summary to show completed pickup
+      await fetchWeeklyPickupSummary();
+
+      // Show success feedback
+      console.log("[SCHEDULE] ✅ Trip completed successfully");
+    } catch (error) {
+      console.error("[SCHEDULE] ❌ Error completing trip:", error);
+    }
   };
 
   // Filter pickups for today
@@ -794,6 +909,7 @@ const SchedulePage = () => {
 
                     // Check if this pickup is completed for today
                     const isCompleted = isPickupCompletedForToday(pickup);
+                    
 
                     // Parse the available days string and show only today's day
                     let todaysDays: string[] = [];
@@ -844,75 +960,56 @@ const SchedulePage = () => {
                               key={`${pickup.id}-${day}`}
                               style={{ width: 338, marginRight: 12 }}
                             >
-                              <KidPickupCard
-                                childName={child?.name || "Child"}
-                                remaining={pickup.pickupTime || "-"}
-                                schedule={day}
-                                buddiName={buddiName}
-                                buddiEmail={buddiEmail}
-                                buddiAvatar={buddiAvatar}
-                                buddiStatus={buddiStatus}
-                                schoolName={
-                                  child?.school || pickup.fromZone || "School"
-                                }
-                                destination={pickup.toZone || "Home"}
-                                mainAction={
+                              <PickupCard
+                                id={pickup.id.toString()}
+                                name={pickup.description || "Pickup Request"}
+                                time={pickup.callPickupTime || "-"}
+                                days={day}
+                                school={pickup.fromZone || "School"}
+                                home={pickup.toZone || "Home"}
+                                dropoffTime={pickup.callDropTime || "-"}
+                                kidsCount={pickup.kidsCount || 0}
+                                status={
                                   isCompleted
-                                    ? "Completed"
-                                    : false
-                                    ? "Starting Trip..."
-                                    : currentPickupStatus === "pending"
-                                    ? "Trip Started"
-                                    : currentPickupStatus === "enRoute"
-                                    ? "En Route"
-                                    : currentPickupStatus === "pickedUp"
-                                    ? "Child Picked Up"
-                                    : currentPickupStatus === "completed"
-                                    ? "Trip Completed"
-                                    : pickup.status === "matched"
-                                    ? parentDetails?.approvalStage === "pending"
-                                      ? "Background Check Required"
-                                      : "Trip Not Yet Started"
-                                    : "Pending"
+                                    ? "completed"
+                                    : getCurrentPickupStatus(pickup.id)
                                 }
-                                mainActionColor={
-                                  isCompleted
-                                    ? "#16A34A"
-                                    : currentPickupStatus === "pending"
-                                    ? "#FF932E"
-                                    : currentPickupStatus === "enRoute"
-                                    ? "#3B82F6"
-                                    : currentPickupStatus === "pickedUp"
-                                    ? "#7C3AED"
-                                    : currentPickupStatus === "completed"
-                                    ? "#16A34A"
-                                    : pickup.status === "matched" &&
-                                      parentDetails?.approvalStage === "pending"
-                                    ? "#EF4444"
-                                    : undefined
-                                }
-                                disabled={
-                                  isCompleted ||
-                                  currentPickupStatus === "pending" ||
-                                  currentPickupStatus === "enRoute" ||
-                                  currentPickupStatus === "pickedUp" ||
-                                  currentPickupStatus === "completed" ||
-                                  false ||
-                                  (pickup.status === "matched" &&
-                                    parentDetails?.approvalStage === "pending")
-                                }
-                                // onMainAction={() => {
-                                //   // If the main action is disabled, show coverage request option
-                                //   if (
-                                //     pickup.status === "matched" &&
-                                //     !currentPickupStatus
-                                //   ) {
-                                //     openCoverageRequestModal(
-                                //       pickup.matchedBuddiId!,
-                                //       buddiName
-                                //     );
-                                //   }
-                                // }}
+                                callType={pickup.type}
+                                startDate={pickup.startDate}
+                                endDate={pickup.endDate}
+                                fromZone={pickup.fromZone}
+                                toZone={pickup.toZone}
+                                onButtonPress={() => {
+                                  // Don't allow navigation if pickup is completed
+                                  if (isCompleted) {
+                                    return;
+                                  }
+                                  // Handle pickup action based on status
+                                  const currentStatus = getCurrentPickupStatus(
+                                    pickup.id
+                                  );
+                                  if (currentStatus === "notStarted") {
+                                    handlePickupStarted(pickup);
+                                  }
+                                }}
+                                onPickUp={() => {
+                                  if (!isCompleted) {
+                                    const currentStatus =
+                                      getCurrentPickupStatus(pickup.id);
+                                    if (currentStatus === "enRoute") {
+                                      handleChildPickedUp(pickup);
+                                    }
+                                  }
+                                }}
+                                onClockOut={() => {
+                                  if (!isCompleted) {
+                                    const currentStatus =
+                                      getCurrentPickupStatus(pickup.id);
+                                    if (currentStatus === "pickedUp") {
+                                      handleTripCompleted(pickup);
+                                    }
+                                  }
+                                }}
                               />
                             </View>
                           ))}

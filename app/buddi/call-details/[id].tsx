@@ -29,6 +29,9 @@ interface CallDetails {
   status: string;
   matchedBuddiId: number | null;
   isBuddiRecommended: boolean;
+  type: string; // "repetitive" or "varying"
+  startDate: string | null; // Only for "varying" type
+  endDate: string | null; // Only for "varying" type
   createdAt: string;
   updatedAt: string;
 }
@@ -59,6 +62,9 @@ export default function CallDetailsScreen() {
           response.data.pickupTime ?? response.data.callPickupTime ?? null,
         callDropTime: response.data.callDropTime ?? null,
         isBuddiRecommended: response.data.isBuddiRecommended ?? false,
+        type: response.data.type || "repetitive",
+        startDate: response.data.startDate || null,
+        endDate: response.data.endDate || null,
       });
     } catch (err: any) {
       setError(err.message || "Failed to fetch call details");
@@ -88,63 +94,66 @@ export default function CallDetailsScreen() {
   const formatTime = (time: string | null) => {
     if (!time) return "-";
 
-    // If time is already in 12-hour format (contains AM/PM), return as is
-    if (
-      typeof time === "string" &&
-      (time.includes("AM") || time.includes("PM"))
-    ) {
+    try {
+      // Handle ISO 8601 timestamp with timezone
+      if (time.includes("T") && time.includes("Z")) {
+        const date = new Date(time);
+        return date.toLocaleTimeString("en-US", {
+          hour: "numeric",
+          minute: "2-digit",
+          hour12: true,
+          timeZoneName: "short",
+        });
+      }
+
+      // Handle HH:mm format
+      if (typeof time === "string" && time.includes(":")) {
+        const [hours, minutes] = time.split(":").map(Number);
+        const period = hours >= 12 ? "PM" : "AM";
+        const displayHours = hours === 0 ? 12 : hours > 12 ? hours - 12 : hours;
+        const displayMinutes = minutes.toString().padStart(2, "0");
+        return `${displayHours}:${displayMinutes} ${period}`;
+      }
+
+      return time;
+    } catch (error) {
+      console.error("Error formatting time:", error);
       return time;
     }
-
-    // Handle 24-hour format conversion
-    if (typeof time === "string" && time.includes(":")) {
-      try {
-        // Split the time into hours and minutes
-        const [hours, minutes] = time.split(":").map(Number);
-
-        if (isNaN(hours) || isNaN(minutes)) {
-          return time; // Return original if parsing fails
-        }
-
-        // Convert to 12-hour format
-        let period = "AM";
-        let displayHours = hours;
-
-        if (hours >= 12) {
-          period = "PM";
-          if (hours > 12) {
-            displayHours = hours - 12;
-          }
-        }
-
-        // Handle midnight (00:00)
-        if (hours === 0) {
-          displayHours = 12;
-        }
-
-        // Format with leading zeros for minutes
-        const formattedMinutes = minutes.toString().padStart(2, "0");
-
-        return `${displayHours}:${formattedMinutes} ${period}`;
-      } catch (error) {
-        console.error("Error formatting time:", error);
-        return time; // Return original if conversion fails
-      }
-    }
-
-    return time;
   };
 
   const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString("en-US", {
-      weekday: "long",
-      year: "numeric",
-      month: "long",
-      day: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-    });
+    try {
+      const date = new Date(dateString);
+      return date.toLocaleDateString("en-US", {
+        weekday: "long",
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+      });
+    } catch (error) {
+      console.error("Error formatting date:", error);
+      return dateString;
+    }
+  };
+
+  const formatDateTime = (dateString: string) => {
+    try {
+      const date = new Date(dateString);
+      return date.toLocaleString("en-US", {
+        weekday: "short",
+        year: "numeric",
+        month: "short",
+        day: "numeric",
+        hour: "numeric",
+        minute: "2-digit",
+        hour12: true,
+        timeZoneName: "short",
+      });
+    } catch (error) {
+      console.error("Error formatting date time:", error);
+      return dateString;
+    }
   };
 
   const getStatusColor = (status: string) => {
@@ -170,6 +179,28 @@ export default function CallDetailsScreen() {
         return "Completed";
       default:
         return "Available";
+    }
+  };
+
+  const getTypeDisplayText = (type: string) => {
+    switch (type) {
+      case "repetitive":
+        return "Ongoing";
+      case "varying":
+        return "One-time";
+      default:
+        return type || "Not specified";
+    }
+  };
+
+  const getTypeColor = (type: string) => {
+    switch (type) {
+      case "repetitive":
+        return "#4f46e5"; // Indigo
+      case "varying":
+        return "#10b981"; // Emerald
+      default:
+        return "#6b7280"; // Gray
     }
   };
 
@@ -223,22 +254,24 @@ export default function CallDetailsScreen() {
             <View style={styles.statusContent}>
               <FontAwesome5 name="hand-holding-heart" size={32} color="#fff" />
               <Text style={styles.statusTitle}>Pickup Request</Text>
-              <View
-                style={[
-                  styles.statusBadge,
-                  {
-                    backgroundColor: getStatusColor(callDetails.status) + "20",
-                  },
-                ]}
-              >
-                <Text
+              <View style={styles.badgesContainer}>
+                <View
                   style={[
-                    styles.statusText,
-                    { color: getStatusColor(callDetails.status) },
+                    styles.typeBadge,
+                    {
+                      backgroundColor: getTypeColor(callDetails.type) + "20",
+                    },
                   ]}
                 >
-                  {getStatusText(callDetails.status)}
-                </Text>
+                  <Text
+                    style={[
+                      styles.typeText,
+                      { color: getTypeColor(callDetails.type) },
+                    ]}
+                  >
+                    {getTypeDisplayText(callDetails.type)}
+                  </Text>
+                </View>
               </View>
             </View>
           </LinearGradient>
@@ -258,35 +291,43 @@ export default function CallDetailsScreen() {
           {/* Pickup Time */}
           <View style={styles.detailCard}>
             <FontAwesome5 name="clock" size={24} color="#FF932E" />
-            <Text style={styles.detailValue}>
-              {formatTime(callDetails.callPickupTime)}
-            </Text>
-            <Text style={styles.detailLabel}>Pickup Time</Text>
+            <View style={styles.detailContent}>
+              <Text style={styles.detailValue}>
+                {formatTime(callDetails.callPickupTime)}
+              </Text>
+              <Text style={styles.detailLabel}>Pickup Time</Text>
+            </View>
           </View>
 
           {/* Drop-off Time */}
           <View style={styles.detailCard}>
             <FontAwesome5 name="clock" size={24} color="#3B82F6" />
-            <Text style={styles.detailValue}>
-              {formatTime(callDetails.callDropTime)}
-            </Text>
-            <Text style={styles.detailLabel}>Drop-off Time</Text>
+            <View style={styles.detailContent}>
+              <Text style={styles.detailValue}>
+                {formatTime(callDetails.callDropTime)}
+              </Text>
+              <Text style={styles.detailLabel}>Drop-off Time</Text>
+            </View>
           </View>
 
           {/* Kids Count */}
           <View style={styles.detailCard}>
             <FontAwesome5 name="child" size={24} color="#FF932E" />
-            <Text style={styles.detailValue}>{callDetails.kidsCount}</Text>
-            <Text style={styles.detailLabel}>Kids</Text>
+            <View style={styles.detailContent}>
+              <Text style={styles.detailValue}>{callDetails.kidsCount}</Text>
+              <Text style={styles.detailLabel}>Kids</Text>
+            </View>
           </View>
 
           {/* Days */}
           <View style={styles.detailCard}>
             <FontAwesome5 name="calendar-alt" size={24} color="#FF932E" />
-            <Text style={styles.detailValue}>
-              {callDetails.availableDays.length}
-            </Text>
-            <Text style={styles.detailLabel}>Days</Text>
+            <View style={styles.detailContent}>
+              <Text style={styles.detailValue}>
+                {callDetails.availableDays.length}
+              </Text>
+              <Text style={styles.detailLabel}>Days</Text>
+            </View>
           </View>
         </View>
 
@@ -325,6 +366,34 @@ export default function CallDetailsScreen() {
           </View>
         </View>
 
+        {/* Date Range Card - Only for Varying Type */}
+        {callDetails.type === "varying" &&
+          callDetails.startDate &&
+          callDetails.endDate && (
+            <View style={styles.card}>
+              <View style={styles.cardHeader}>
+                <FontAwesome5 name="calendar-alt" size={20} color="#10b981" />
+                <Text style={styles.cardTitle}>Date Range</Text>
+              </View>
+              <View style={styles.dateRangeContainer}>
+                <View style={styles.dateRangeItem}>
+                  <FontAwesome5 name="play" size={16} color="#10b981" />
+                  <Text style={styles.dateRangeLabel}>Start Date:</Text>
+                  <Text style={styles.dateRangeValue}>
+                    {formatDate(callDetails.startDate)}
+                  </Text>
+                </View>
+                <View style={styles.dateRangeItem}>
+                  <FontAwesome5 name="stop" size={16} color="#ef4444" />
+                  <Text style={styles.dateRangeLabel}>End Date:</Text>
+                  <Text style={styles.dateRangeValue}>
+                    {formatDate(callDetails.endDate)}
+                  </Text>
+                </View>
+              </View>
+            </View>
+          )}
+
         {/* Created Date Card */}
         <View style={styles.card}>
           <View style={styles.cardHeader}>
@@ -334,7 +403,7 @@ export default function CallDetailsScreen() {
           <View style={styles.dateContainer}>
             <Text style={styles.dateLabel}>Created:</Text>
             <Text style={styles.dateText}>
-              {formatDate(callDetails.createdAt)}
+              {formatDateTime(callDetails.createdAt)}
             </Text>
           </View>
         </View>
@@ -509,12 +578,27 @@ const styles = {
     marginTop: 12,
     marginBottom: 16,
   },
+  badgesContainer: {
+    flexDirection: "row" as const,
+    gap: 12,
+    justifyContent: "center" as const,
+    alignItems: "center" as const,
+  },
   statusBadge: {
     borderRadius: 20,
     paddingHorizontal: 16,
     paddingVertical: 8,
   },
   statusText: {
+    fontFamily: "Comfortaa-Bold",
+    fontSize: 14,
+  },
+  typeBadge: {
+    borderRadius: 20,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+  },
+  typeText: {
     fontFamily: "Comfortaa-Bold",
     fontSize: 14,
   },
@@ -544,29 +628,31 @@ const styles = {
     lineHeight: 24,
   },
   detailsGrid: {
-    flexDirection: "row" as const,
-    justifyContent: "space-between" as const,
+    flexDirection: "column" as const,
+    gap: 16,
     marginBottom: 16,
   },
   detailCard: {
-    flex: 1,
+    flexDirection: "row" as const,
     backgroundColor: "#fff",
     borderRadius: 12,
     padding: 16,
     alignItems: "center" as const,
-    marginHorizontal: 4,
     borderWidth: 1,
     borderColor: "#E6E6E6",
   },
+  detailContent: {
+    flex: 1,
+    marginLeft: 12,
+  },
   detailValue: {
     fontFamily: "Comfortaa-Bold",
-    fontSize: 20,
+    fontSize: 18,
     color: "#333",
-    marginTop: 8,
   },
   detailLabel: {
     fontFamily: "Comfortaa-Regular",
-    fontSize: 12,
+    fontSize: 14,
     color: "#666",
     marginTop: 4,
   },
@@ -592,15 +678,15 @@ const styles = {
     flex: 1,
   },
   daysContainer: {
-    flexDirection: "row" as const,
-    flexWrap: "wrap" as const,
+    flexDirection: "column" as const,
     gap: 8,
   },
   dayTag: {
     backgroundColor: "#FF932E",
     paddingHorizontal: 12,
-    paddingVertical: 6,
+    paddingVertical: 8,
     borderRadius: 16,
+    alignSelf: "flex-start" as const,
   },
   dayText: {
     fontFamily: "Comfortaa-Bold",
@@ -608,16 +694,34 @@ const styles = {
     color: "#fff",
   },
   dateContainer: {
-    flexDirection: "row" as const,
-    alignItems: "center" as const,
+    flexDirection: "column" as const,
+    gap: 8,
   },
   dateLabel: {
     fontFamily: "Comfortaa-Bold",
     fontSize: 14,
     color: "#666",
-    marginRight: 8,
   },
   dateText: {
+    fontFamily: "Comfortaa-Regular",
+    fontSize: 14,
+    color: "#333",
+  },
+  dateRangeContainer: {
+    gap: 16,
+  },
+  dateRangeItem: {
+    flexDirection: "row" as const,
+    alignItems: "center" as const,
+    gap: 8,
+  },
+  dateRangeLabel: {
+    fontFamily: "Comfortaa-Bold",
+    fontSize: 14,
+    color: "#666",
+    minWidth: 80,
+  },
+  dateRangeValue: {
     fontFamily: "Comfortaa-Regular",
     fontSize: 14,
     color: "#333",

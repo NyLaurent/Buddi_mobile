@@ -6,6 +6,7 @@ import {
   Alert,
   Modal,
   Platform,
+  RefreshControl,
   ScrollView,
   StatusBar,
   Text,
@@ -62,6 +63,46 @@ export default function TimesheetDetailsPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
   const [updatedHours, setUpdatedHours] = useState<string>("");
+  const [refreshing, setRefreshing] = useState(false);
+
+  // Function to refresh timesheet data
+  const refreshTimesheet = async () => {
+    if (!id || !buddiDetails?.id) return;
+    setLoading(true);
+    setError(null);
+    try {
+      const response = await authorizedApi.get(
+        `/timesheets/buddi/${buddiDetails.id}/sheet/${id}`
+      );
+      setTimesheet(response.data);
+    } catch (error: any) {
+      console.error("Error refreshing timesheet:", error);
+
+      // Handle specific error cases
+      if (error?.response?.status === 404) {
+        setError(
+          "Timesheet not found. It might have been deleted or doesn't exist."
+        );
+      } else if (error?.response?.status === 401) {
+        setError("Access denied. Please check your authentication.");
+      } else if (error?.response?.status >= 500) {
+        setError("Server error. Please try again later.");
+      } else {
+        setError(
+          "Failed to refresh timesheet details. Please check your connection."
+        );
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Function to handle pull-to-refresh
+  const onRefresh = async () => {
+    setRefreshing(true);
+    await refreshTimesheet();
+    setRefreshing(false);
+  };
 
   useEffect(() => {
     const fetchTimesheet = async () => {
@@ -75,7 +116,21 @@ export default function TimesheetDetailsPage() {
         setTimesheet(response.data);
       } catch (error: any) {
         console.error("Error fetching timesheet:", error);
-        setError("Failed to fetch timesheet details.");
+
+        // Handle specific error cases
+        if (error?.response?.status === 404) {
+          setError(
+            "Timesheet not found. It might have been deleted or doesn't exist."
+          );
+        } else if (error?.response?.status === 401) {
+          setError("Access denied. Please check your authentication.");
+        } else if (error?.response?.status >= 500) {
+          setError("Server error. Please try again later.");
+        } else {
+          setError(
+            "Failed to fetch timesheet details. Please check your connection."
+          );
+        }
       } finally {
         setLoading(false);
       }
@@ -93,13 +148,15 @@ export default function TimesheetDetailsPage() {
         buddiId: buddiDetails.id,
       });
 
-      // Update local state
-      setTimesheet((prev) => (prev ? { ...prev, isSubmited: true } : null));
+      // Refresh the timesheet data to get updated values
+      await refreshTimesheet();
       setShowSubmitModal(false);
 
       Alert.alert(
         "Success! 🎉",
-        "Your timesheet has been submitted successfully! It will be reviewed by the parent.",
+        timesheet?.isSubmited
+          ? "Your timesheet has been resubmitted successfully! It will be reviewed by the parent."
+          : "Your timesheet has been submitted successfully! It will be reviewed by the parent.",
         [{ text: "OK", style: "default" }]
       );
     } catch (error: any) {
@@ -132,8 +189,8 @@ export default function TimesheetDetailsPage() {
         buddiId: buddiDetails.id,
       });
 
-      // Update local state
-      setTimesheet((prev) => (prev ? { ...prev, totalHours: hours } : null));
+      // Refresh the timesheet data to get updated values including fares, total earnings, etc.
+      await refreshTimesheet();
       setShowUpdateModal(false);
       setUpdatedHours("");
 
@@ -185,9 +242,73 @@ export default function TimesheetDetailsPage() {
           backgroundColor="transparent"
           translucent={true}
         />
-        <Text style={{ color: "red", textAlign: "center", marginTop: 48 }}>
-          {error || "No data found."}
-        </Text>
+        <View
+          style={{
+            flex: 1,
+            justifyContent: "center",
+            alignItems: "center",
+            paddingHorizontal: 24,
+          }}
+        >
+          <Ionicons
+            name="alert-circle-outline"
+            size={64}
+            color={error?.includes("not found") ? "#FF6B6B" : "#FF932E"}
+            style={{ marginBottom: 16 }}
+          />
+          <Text
+            style={{
+              fontFamily: "Comfortaa-Bold",
+              fontSize: 18,
+              color: "#232B3A",
+              textAlign: "center",
+              marginBottom: 8,
+            }}
+          >
+            {error?.includes("not found")
+              ? "Timesheet Not Found"
+              : "Something Went Wrong"}
+          </Text>
+          <Text
+            style={{
+              fontFamily: "Comfortaa-Regular",
+              fontSize: 14,
+              color: "#6B7280",
+              textAlign: "center",
+              marginBottom: 24,
+              lineHeight: 20,
+            }}
+          >
+            {error || "No data found."}
+          </Text>
+          <TouchableOpacity
+            onPress={() => router.back()}
+            style={{
+              backgroundColor: "#FF932E",
+              paddingHorizontal: 24,
+              paddingVertical: 12,
+              borderRadius: 8,
+              flexDirection: "row",
+              alignItems: "center",
+            }}
+          >
+            <Ionicons
+              name="arrow-back"
+              size={16}
+              color="#fff"
+              style={{ marginRight: 8 }}
+            />
+            <Text
+              style={{
+                fontFamily: "Comfortaa-Bold",
+                fontSize: 14,
+                color: "#fff",
+              }}
+            >
+              Go Back
+            </Text>
+          </TouchableOpacity>
+        </View>
       </SafeAreaView>
     );
   }
@@ -217,11 +338,20 @@ export default function TimesheetDetailsPage() {
           paddingHorizontal: 16,
         }}
         showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            colors={["#FF932E"]}
+            tintColor="#FF932E"
+          />
+        }
       >
         <View
           style={{
             flexDirection: "row",
             alignItems: "center",
+            justifyContent: "space-between",
             marginTop: 24,
             marginBottom: 18,
           }}
@@ -241,6 +371,9 @@ export default function TimesheetDetailsPage() {
           >
             Timesheet Details
           </Text>
+          <TouchableOpacity onPress={refreshTimesheet} style={{ padding: 8 }}>
+            <Ionicons name="refresh" size={24} color="#FF932E" />
+          </TouchableOpacity>
         </View>
         {/* Summary Card */}
         <TimesheetSummaryCard
@@ -418,8 +551,8 @@ export default function TimesheetDetailsPage() {
             </Text>
           </TouchableOpacity>
 
-          {/* Submit Button - Show if timesheet is full (complete) and not submitted */}
-          {timesheet.isFull && !timesheet.isSubmited ? (
+          {/* Submit Button - Always show when timesheet is full (complete) to allow resubmissions */}
+          {timesheet.isFull && (
             <TouchableOpacity
               onPress={() => setShowSubmitModal(true)}
               style={{
@@ -430,6 +563,7 @@ export default function TimesheetDetailsPage() {
                 flexDirection: "row",
                 alignItems: "center",
                 justifyContent: "center",
+                marginBottom: 12,
                 shadowColor: "#16A34A",
                 shadowOffset: { width: 0, height: 2 },
                 shadowOpacity: 0.1,
@@ -450,10 +584,13 @@ export default function TimesheetDetailsPage() {
                   fontSize: 16,
                 }}
               >
-                Submit Timesheet
+                {timesheet.isSubmited
+                  ? "Resubmit Timesheet"
+                  : "Submit Timesheet"}
               </Text>
             </TouchableOpacity>
-          ) : timesheet.isFull && timesheet.isSubmited ? (
+          )}
+          {timesheet.isFull && timesheet.isSubmited && (
             <View
               style={{
                 backgroundColor: "#E6FCEB",
@@ -493,7 +630,8 @@ export default function TimesheetDetailsPage() {
                 Your timesheet has been submitted successfully
               </Text>
             </View>
-          ) : (
+          )}
+          {!timesheet.isFull && (
             <View
               style={{
                 backgroundColor: "#FFF7ED",
@@ -646,7 +784,9 @@ export default function TimesheetDetailsPage() {
                   marginTop: 12,
                 }}
               >
-                Submit Timesheet
+                {timesheet?.isSubmited
+                  ? "Resubmit Timesheet"
+                  : "Submit Timesheet"}
               </Text>
             </View>
 
@@ -660,8 +800,9 @@ export default function TimesheetDetailsPage() {
                 lineHeight: 22,
               }}
             >
-              Please review your timesheet carefully before submitting. Once
-              submitted, you cannot make changes unless flagged by the parent.
+              {timesheet?.isSubmited
+                ? "Please review your updated timesheet carefully before resubmitting. You can resubmit multiple times if needed."
+                : "Please review your timesheet carefully before submitting. Once submitted, you can still make updates and resubmit if needed."}
               {"\n\n"}Make sure all hours and details are accurate to avoid
               being flagged.
             </Text>
@@ -715,7 +856,13 @@ export default function TimesheetDetailsPage() {
                     color: "#fff",
                   }}
                 >
-                  {isSubmitting ? "Submitting..." : "Submit"}
+                  {isSubmitting
+                    ? timesheet?.isSubmited
+                      ? "Resubmitting..."
+                      : "Submitting..."
+                    : timesheet?.isSubmited
+                    ? "Resubmit"
+                    : "Submit"}
                 </Text>
               </TouchableOpacity>
             </View>

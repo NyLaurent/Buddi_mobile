@@ -45,6 +45,81 @@ const getAvatarColor = (name?: string): string => {
   return colors[Math.abs(hash) % colors.length];
 };
 
+// Helper to format ISO date/time with timezone
+const formatTime = (iso?: string) => {
+  if (!iso) return "-";
+  try {
+    const d = new Date(iso);
+    const timeString = d.toLocaleTimeString("en-US", {
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: true,
+    });
+
+    // Get timezone abbreviation
+    const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    const timezoneAbbr =
+      timezone.split("/").pop()?.substring(0, 3).toUpperCase() || "UTC";
+
+    const dateString = d.toLocaleDateString("en-US", {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+    });
+    return `${timeString} ${timezoneAbbr} • ${dateString}`;
+  } catch (error) {
+    return iso;
+  }
+};
+
+// Helper to format date range for varying calls
+const formatDateRange = (startDate?: string, endDate?: string) => {
+  if (!startDate || !endDate) return null;
+  try {
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+
+    const startStr = start.toLocaleDateString("en-US", {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+    });
+    const endStr = end.toLocaleDateString("en-US", {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+    });
+
+    return `${startStr} - ${endStr}`;
+  } catch (error) {
+    return `${startDate} - ${endDate}`;
+  }
+};
+
+// Helper to get user-friendly call type display
+const getTypeDisplayText = (type?: string) => {
+  switch (type) {
+    case "repetitive":
+      return "Ongoing";
+    case "varying":
+      return "One-time";
+    default:
+      return type || "Unknown";
+  }
+};
+
+// Helper to get call type color
+const getTypeColor = (type?: string) => {
+  switch (type) {
+    case "repetitive":
+      return "#10B981"; // Green
+    case "varying":
+      return "#3B82F6"; // Blue
+    default:
+      return "#6B7280"; // Gray
+  }
+};
+
 // Avatar component that displays initials
 const AvatarWithInitials = ({
   name,
@@ -117,6 +192,12 @@ interface KidPickupCardProps {
   disabled?: boolean;
   callPickupTime?: string;
   callDropTime?: string;
+  // New props for updated API
+  type?: string;
+  startDate?: string;
+  endDate?: string;
+  fromZone?: string;
+  toZone?: string;
 }
 
 const KidPickupCard = ({
@@ -141,6 +222,12 @@ const KidPickupCard = ({
   disabled = false,
   callPickupTime,
   callDropTime,
+  // New props
+  type,
+  startDate,
+  endDate,
+  fromZone,
+  toZone,
 }: KidPickupCardProps) => {
   const badgeBg =
     badgeColor || (variant === "coverage" ? "#3B82F6" : "#FF9100");
@@ -192,6 +279,54 @@ const KidPickupCard = ({
             {childName}
           </Text>
         </View>
+
+        {/* Call Type Badge */}
+        {type && (
+          <View
+            style={{
+              alignSelf: "flex-start",
+              backgroundColor: getTypeColor(type),
+              borderRadius: 6,
+              paddingHorizontal: 9,
+              paddingVertical: 3,
+              marginBottom: 8,
+            }}
+          >
+            <Text
+              style={{
+                color: "#fff",
+                fontFamily: "Comfortaa-Bold",
+                fontSize: 12,
+              }}
+            >
+              {getTypeDisplayText(type)}
+            </Text>
+          </View>
+        )}
+
+        {/* Date Range for Varying Calls */}
+        {type === "varying" && startDate && endDate && (
+          <View
+            style={{
+              backgroundColor: "#F3F4F6",
+              borderRadius: 6,
+              paddingHorizontal: 9,
+              paddingVertical: 3,
+              marginBottom: 8,
+            }}
+          >
+            <Text
+              style={{
+                color: "#6B7280",
+                fontFamily: "Comfortaa-Regular",
+                fontSize: 12,
+              }}
+            >
+              {formatDateRange(startDate, endDate)}
+            </Text>
+          </View>
+        )}
+
         {/* Timer & Schedule */}
         <View
           style={{
@@ -226,7 +361,7 @@ const KidPickupCard = ({
                 fontSize: 13,
               }}
             >
-              {callPickupTime ? `Pickup: ${callPickupTime}` : remaining}
+              Pickup: {formatTime(callPickupTime)}
             </Text>
           </View>
           {callDropTime && (
@@ -255,7 +390,7 @@ const KidPickupCard = ({
                   fontSize: 13,
                 }}
               >
-                Drop: {callDropTime}
+                Drop: {formatTime(callDropTime)}
               </Text>
             </View>
           )}
@@ -279,6 +414,7 @@ const KidPickupCard = ({
             </Text>
           </View>
         </View>
+
         {/* Default Buddi */}
         {defaultBuddi && (
           <View style={{ marginBottom: 8 }}>
@@ -369,6 +505,7 @@ const KidPickupCard = ({
             </View>
           </View>
         )}
+
         {/* Coverage Buddi */}
         {coverageBuddi && (
           <View style={{ marginBottom: 12 }}>
@@ -454,6 +591,7 @@ const KidPickupCard = ({
             </View>
           </View>
         )}
+
         {/* Route Row */}
         <View
           style={{
@@ -478,7 +616,7 @@ const KidPickupCard = ({
                   fontSize: 11,
                 }}
               >
-                School
+                From Address
               </Text>
               <Text
                 style={{
@@ -487,7 +625,7 @@ const KidPickupCard = ({
                   fontSize: 13,
                 }}
               >
-                {schoolName}
+                {fromZone || schoolName}
               </Text>
             </View>
           </View>
@@ -520,7 +658,7 @@ const KidPickupCard = ({
                   fontSize: 11,
                 }}
               >
-                Home
+                To Address
               </Text>
               <Text
                 style={{
@@ -529,42 +667,35 @@ const KidPickupCard = ({
                   fontSize: 13,
                 }}
               >
-                {destination}
+                {toZone || destination}
               </Text>
             </View>
           </View>
         </View>
-        {/* Main Action Button */}
-        <TouchableOpacity
-          onPress={disabled ? undefined : onMainAction}
+
+        {/* Status Display - Read Only */}
+        <View
           style={{
-            backgroundColor: disabled
-              ? "#A0A0A0"
-              : mainAction === "Trip Not Yet Started"
-              ? "#FF932E"
-              : "#0A77FF",
-            borderRadius: 24,
-            paddingVertical: 13,
+            backgroundColor: "#F3F4F6",
+            borderRadius: 12,
+            paddingVertical: 12,
+            paddingHorizontal: 16,
             alignItems: "center",
-            flexDirection: "row",
-            justifyContent: "center",
-            opacity: disabled ? 0.6 : 1,
+            borderWidth: 1,
+            borderColor: "#E5E7EB",
           }}
-          activeOpacity={disabled ? 1 : 0.85}
-          disabled={disabled}
         >
           <Text
             style={{
-              color: "#fff",
-              fontFamily: "Comfortaa-Bold",
-              fontSize: 17,
-              marginRight: 10,
+              color: "#6B7280",
+              fontFamily: "Comfortaa-Regular",
+              fontSize: 14,
+              textAlign: "center",
             }}
           >
             {mainAction}
           </Text>
-          <MaterialIcons name="check-box" size={20} color="#fff" />
-        </TouchableOpacity>
+        </View>
       </View>
     );
   }
@@ -607,6 +738,54 @@ const KidPickupCard = ({
           {childName}
         </Text>
       </View>
+
+      {/* Call Type Badge */}
+      {type && (
+        <View
+          style={{
+            alignSelf: "flex-start",
+            backgroundColor: getTypeColor(type),
+            borderRadius: 6,
+            paddingHorizontal: 7,
+            paddingVertical: 2,
+            marginBottom: 6,
+          }}
+        >
+          <Text
+            style={{
+              color: "#fff",
+              fontFamily: "Comfortaa-Bold",
+              fontSize: 11,
+            }}
+          >
+            {getTypeDisplayText(type)}
+          </Text>
+        </View>
+      )}
+
+      {/* Date Range for Varying Calls */}
+      {type === "varying" && startDate && endDate && (
+        <View
+          style={{
+            backgroundColor: "#F3F4F6",
+            borderRadius: 6,
+            paddingHorizontal: 7,
+            paddingVertical: 2,
+            marginBottom: 6,
+          }}
+        >
+          <Text
+            style={{
+              color: "#6B7280",
+              fontFamily: "Comfortaa-Regular",
+              fontSize: 10,
+            }}
+          >
+            {formatDateRange(startDate, endDate)}
+          </Text>
+        </View>
+      )}
+
       {/* Remaining & Schedule */}
       <View
         style={{
@@ -641,7 +820,7 @@ const KidPickupCard = ({
               fontSize: 11,
             }}
           >
-            {callPickupTime ? `${callPickupTime}` : remaining}
+            {formatTime(callPickupTime)}
           </Text>
         </View>
         {callDropTime && (
@@ -670,7 +849,7 @@ const KidPickupCard = ({
                 fontSize: 11,
               }}
             >
-              {callDropTime}
+              {formatTime(callDropTime)}
             </Text>
           </View>
         )}
@@ -694,6 +873,7 @@ const KidPickupCard = ({
           </Text>
         </View>
       </View>
+
       {/* Buddi Label */}
       <Text
         style={{
@@ -705,6 +885,7 @@ const KidPickupCard = ({
       >
         Buddi
       </Text>
+
       {/* Buddi Info */}
       <View
         style={{ flexDirection: "row", alignItems: "center", marginBottom: 8 }}
@@ -773,6 +954,7 @@ const KidPickupCard = ({
           </TouchableOpacity>
         </View>
       </View>
+
       {/* Route Row */}
       <View
         style={{
@@ -797,7 +979,7 @@ const KidPickupCard = ({
                 fontSize: 10,
               }}
             >
-              School
+              From Address
             </Text>
             <Text
               style={{
@@ -806,7 +988,7 @@ const KidPickupCard = ({
                 fontSize: 12,
               }}
             >
-              {schoolName}
+              {fromZone || schoolName}
             </Text>
           </View>
         </View>
@@ -839,7 +1021,7 @@ const KidPickupCard = ({
                 fontSize: 10,
               }}
             >
-              Home
+              To Address
             </Text>
             <Text
               style={{
@@ -848,42 +1030,35 @@ const KidPickupCard = ({
                 fontSize: 12,
               }}
             >
-              {destination}
+              {toZone || destination}
             </Text>
           </View>
         </View>
       </View>
-      {/* Main Action Button */}
-      <TouchableOpacity
-        onPress={disabled ? undefined : onMainAction}
+
+      {/* Status Display - Read Only */}
+      <View
         style={{
-          backgroundColor: disabled
-            ? "#A0A0A0"
-            : mainAction === "Trip Not Yet Started"
-            ? "#FF932E"
-            : "#0A77FF",
-          borderRadius: 20,
+          backgroundColor: "#F3F4F6",
+          borderRadius: 16,
           paddingVertical: 10,
+          paddingHorizontal: 16,
           alignItems: "center",
-          flexDirection: "row",
-          justifyContent: "center",
-          opacity: disabled ? 0.6 : 1,
+          borderWidth: 1,
+          borderColor: "#E5E7EB",
         }}
-        activeOpacity={disabled ? 1 : 0.85}
-        disabled={disabled}
       >
         <Text
           style={{
-            color: "#fff",
+            color: "#6B7280",
             fontFamily: "Comfortaa-Regular",
-            fontSize: 15,
-            marginRight: 7,
+            fontSize: 14,
+            textAlign: "center",
           }}
         >
           {mainAction}
         </Text>
-        <MaterialIcons name="history" size={16} color="#fff" />
-      </TouchableOpacity>
+      </View>
     </View>
   );
 };

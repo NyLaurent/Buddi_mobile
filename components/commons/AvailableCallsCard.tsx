@@ -298,7 +298,7 @@ export default function AvailableCallsCard({
                     opacity: 0.9,
                   }}
                 >
-                  Total Calls
+                  Total Requests
                 </Text>
               </View>
               <View

@@ -140,10 +140,14 @@ class SocketService {
     });
 
     this.socket.on('pickup-requested', (data: string) => {
-      console.log('[SocketService] 📋 Pickup requested:', data);
+      console.log('[SocketService] 📋 Pickup requested event received from server!');
+      console.log('[SocketService] 📋 Raw data:', data);
       try {
         const pickupData: PickupData = JSON.parse(data);
+        console.log('[SocketService] 📋 Parsed pickup data:', pickupData);
+        console.log('[SocketService] 🔄 Triggering local event for pickup-requested');
         this.triggerEvent('pickup-requested', pickupData);
+        console.log('[SocketService] ✅ Local event triggered successfully');
       } catch (error) {
         console.error('[SocketService] ❌ Error parsing pickup-requested data:', error);
       }
@@ -493,6 +497,8 @@ class SocketService {
     }
     this.eventListeners.get(eventName)!.push(callback);
     console.log(`[SocketService] 👂 Added listener for event: ${eventName}`);
+    console.log(`[SocketService] 📊 Total listeners for ${eventName}: ${this.eventListeners.get(eventName)!.length}`);
+    console.log(`[SocketService] 📋 All registered events:`, Array.from(this.eventListeners.keys()));
   }
 
   // Remove event listener
@@ -514,15 +520,25 @@ class SocketService {
 
   // Trigger event for all listeners
   private triggerEvent(eventName: string, data?: any) {
+    console.log(`[SocketService] 🔄 triggerEvent called for: ${eventName}`);
+    console.log(`[SocketService] 🔍 Looking for listeners for: ${eventName}`);
+    console.log(`[SocketService] 📊 Total registered events:`, Array.from(this.eventListeners.keys()));
+    
     const listeners = this.eventListeners.get(eventName);
     if (listeners) {
-      listeners.forEach(callback => {
+      console.log(`[SocketService] ✅ Found ${listeners.length} listener(s) for ${eventName}`);
+      listeners.forEach((callback, index) => {
         try {
+          console.log(`[SocketService] 🔄 Calling listener ${index + 1} for ${eventName}`);
           callback(data);
+          console.log(`[SocketService] ✅ Listener ${index + 1} executed successfully`);
         } catch (error) {
           console.error(`[SocketService] ❌ Error in event listener for ${eventName}:`, error);
         }
       });
+    } else {
+      console.log(`[SocketService] ❌ No listeners found for event: ${eventName}`);
+      console.log(`[SocketService] 📋 Available events:`, Array.from(this.eventListeners.keys()));
     }
   }
 

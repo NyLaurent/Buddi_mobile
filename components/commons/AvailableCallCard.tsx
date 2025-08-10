@@ -15,10 +15,33 @@ export default function AvailableCallCard({
 }: AvailableCallCardProps) {
   const formatTime = (time: string | null) => {
     if (!time) return "Not set";
-    if (typeof time === "string" && time.includes(":")) {
+
+    try {
+      // Handle ISO 8601 timestamp with timezone
+      if (time.includes("T") && time.includes("Z")) {
+        const date = new Date(time);
+        return date.toLocaleTimeString("en-US", {
+          hour: "numeric",
+          minute: "2-digit",
+          hour12: true,
+          timeZoneName: "short",
+        });
+      }
+
+      // Handle HH:mm format
+      if (typeof time === "string" && time.includes(":")) {
+        const [hours, minutes] = time.split(":").map(Number);
+        const period = hours >= 12 ? "PM" : "AM";
+        const displayHours = hours === 0 ? 12 : hours > 12 ? hours - 12 : hours;
+        const displayMinutes = minutes.toString().padStart(2, "0");
+        return `${displayHours}:${displayMinutes} ${period}`;
+      }
+
+      return time;
+    } catch (error) {
+      console.error("Error formatting time:", error);
       return time;
     }
-    return time;
   };
 
   const formatDays = (days: string[]) => {
@@ -26,29 +49,25 @@ export default function AvailableCallCard({
     return days.join(", ");
   };
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case "pending":
-        return "#FF932E";
-      case "matched":
-        return "#34C759";
-      case "completed":
-        return "#0A77FF";
+  const getTypeDisplayText = (type: string) => {
+    switch (type) {
+      case "repetitive":
+        return "Ongoing";
+      case "varying":
+        return "One-time";
       default:
-        return "#FF932E";
+        return type || "Not specified";
     }
   };
 
-  const getStatusText = (status: string) => {
-    switch (status) {
-      case "pending":
-        return "Available";
-      case "matched":
-        return "Matched";
-      case "completed":
-        return "Completed";
+  const getTypeColor = (type: string) => {
+    switch (type) {
+      case "repetitive":
+        return "#4f46e5"; // Indigo
+      case "varying":
+        return "#10b981"; // Emerald
       default:
-        return "Available";
+        return "#6b7280"; // Gray
     }
   };
 
@@ -71,17 +90,15 @@ export default function AvailableCallCard({
           <Text style={styles.dateText}>{formatDate(call.createdAt)}</Text>
         </View>
 
-        {/* Status Badge */}
+        {/* Type Badge */}
         <View
           style={[
-            styles.statusBadge,
-            { backgroundColor: getStatusColor(call.status) + "20" },
+            styles.typeBadge,
+            { backgroundColor: getTypeColor(call.type) + "20" },
           ]}
         >
-          <Text
-            style={[styles.statusText, { color: getStatusColor(call.status) }]}
-          >
-            {getStatusText(call.status)}
+          <Text style={[styles.typeText, { color: getTypeColor(call.type) }]}>
+            {getTypeDisplayText(call.type)}
           </Text>
         </View>
 
@@ -141,6 +158,17 @@ export default function AvailableCallCard({
               {formatDays(call.availableDays)}
             </Text>
           </View>
+
+          {/* Date Range for Varying Type */}
+          {call.type === "varying" && call.startDate && call.endDate && (
+            <View style={styles.dateRangeContainer}>
+              <Ionicons name="calendar" size={16} color="#666" />
+              <Text style={styles.dateRangeLabel}>Date Range:</Text>
+              <Text style={styles.dateRangeValue}>
+                {formatDate(call.startDate)} - {formatDate(call.endDate)}
+              </Text>
+            </View>
+          )}
         </View>
 
         {/* Buttons Row */}
@@ -197,11 +225,6 @@ const styles = StyleSheet.create({
     marginVertical: 8,
     borderWidth: 1,
     borderColor: "#F2F2F2",
-    shadowColor: "#23272F",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.08,
-    shadowRadius: 12,
-    elevation: 4,
     overflow: "hidden",
   },
   topHalf: {
@@ -227,15 +250,16 @@ const styles = StyleSheet.create({
     color: "#FF932E",
     fontFamily: "Comfortaa-Regular",
   },
-  statusBadge: {
+
+  typeBadge: {
     position: "absolute",
     top: 16,
-    left: 16,
+    left: 16, // Position it on the left since we removed status badge
     borderRadius: 8,
     paddingHorizontal: 12,
     paddingVertical: 6,
   },
-  statusText: {
+  typeText: {
     fontSize: 12,
     fontWeight: "600",
     fontFamily: "Comfortaa-Regular",
@@ -295,6 +319,21 @@ const styles = StyleSheet.create({
     color: "#8A8A8A",
     fontFamily: "Comfortaa-Regular",
   },
+  dateRangeContainer: {
+    marginTop: 12,
+  },
+  dateRangeLabel: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: "#23272F",
+    marginBottom: 8,
+    fontFamily: "Comfortaa-Regular",
+  },
+  dateRangeValue: {
+    fontSize: 14,
+    color: "#8A8A8A",
+    fontFamily: "Comfortaa-Regular",
+  },
   buttonsRow: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -339,14 +378,13 @@ const styles = StyleSheet.create({
     fontFamily: "Comfortaa-Regular",
   },
   timeContainer: {
-    flexDirection: "row",
-    justifyContent: "space-between",
+    flexDirection: "column",
     marginBottom: 12,
   },
   timeItem: {
     flexDirection: "row",
     alignItems: "center",
-    marginRight: 20,
+    marginBottom: 8,
   },
   timeLabel: {
     fontSize: 14,

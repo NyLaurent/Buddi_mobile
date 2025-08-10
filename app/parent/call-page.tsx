@@ -6,17 +6,16 @@ import { useCallback, useEffect, useState } from "react";
 import {
   Alert,
   Image,
+  Keyboard,
+  KeyboardAvoidingView,
   Modal,
   Platform,
-  Pressable,
   ScrollView,
   Text,
   TextInput,
   TouchableOpacity,
-  View,
-  Keyboard,
-  KeyboardAvoidingView,
   TouchableWithoutFeedback,
+  View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import PageHeader from "../../components/commons/PageHeader";
@@ -31,6 +30,11 @@ export default function CallPage() {
   const [kidsCount, setKidsCount] = useState("");
   const [fromZone, setFromZone] = useState("");
   const [toZone, setToZone] = useState("");
+  const [callType, setCallType] = useState<"repetitive" | "varying">(
+    "repetitive"
+  );
+  const [startDate, setStartDate] = useState("");
+  const [endDate, setEndDate] = useState("");
 
   // Modal state
   const [showKidModal, setShowKidModal] = useState(false);
@@ -57,11 +61,46 @@ export default function CallPage() {
   const [showTimePicker, setShowTimePicker] = useState(false);
   const [showDropTimePicker, setShowDropTimePicker] = useState(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [showStartDatePicker, setShowStartDatePicker] = useState(false);
+  const [showEndDatePicker, setShowEndDatePicker] = useState(false);
 
   const toggleDay = (day: string) => {
     setAvailableDays((prev) =>
       prev.includes(day) ? prev.filter((d) => d !== day) : [...prev, day]
     );
+  };
+
+  // Helper function to convert 24-hour time to 12-hour format with AM/PM
+  const formatTime12Hour = (time24: string): string => {
+    if (!time24) return "";
+    const [hours, minutes] = time24.split(":").map(Number);
+    const period = hours >= 12 ? "PM" : "AM";
+    const displayHours = hours === 0 ? 12 : hours > 12 ? hours - 12 : hours;
+    const displayMinutes = minutes.toString().padStart(2, "0");
+    return `${displayHours}:${displayMinutes} ${period}`;
+  };
+
+  const handleCallTypeChange = (type: "repetitive" | "varying") => {
+    setCallType(type);
+    // Clear date fields when switching to repetitive
+    if (type === "repetitive") {
+      setStartDate("");
+      setEndDate("");
+    }
+  };
+
+  const resetForm = () => {
+    setDescription("");
+    setAvailableDays([]);
+    setPickupTime("");
+    setDropTime("");
+    setKidsCount("");
+    setFromZone("");
+    setToZone("");
+    setSelectedChildId("");
+    setCallType("repetitive");
+    setStartDate("");
+    setEndDate("");
   };
 
   const handleSaveKid = async () => {
@@ -136,30 +175,60 @@ export default function CallPage() {
       setPickupError("Please fill all required fields.");
       return;
     }
+
+    // Validate dates for varying calls
+    if (callType === "varying") {
+      if (!startDate || !endDate) {
+        setPickupError(
+          "Please select both start and end dates for one-time pickup requests."
+        );
+        return;
+      }
+      if (new Date(startDate) >= new Date(endDate)) {
+        setPickupError("End date must be after start date.");
+        return;
+      }
+    }
+
     setPickupLoading(true);
     try {
-      const pickupResponse = await CoverageService.createPickupRequest({
+      // Create full timestamps with zones
+      const today = new Date();
+      const [pickupHours, pickupMinutes] = pickupTime.split(":").map(Number);
+      const [dropHours, dropMinutes] = dropTime.split(":").map(Number);
+
+      const pickupTimestamp = new Date(today);
+      pickupTimestamp.setHours(pickupHours, pickupMinutes, 0, 0);
+
+      const dropTimestamp = new Date(today);
+      dropTimestamp.setHours(dropHours, dropMinutes, 0, 0);
+
+      const pickupData: any = {
         parentId: parentDetails.id.toString(),
         childId: selectedChildId,
         description,
         availableDays,
-        callPickupTime: pickupTime,
-        callDropTime: dropTime,
+        callPickupTime: pickupTimestamp.toISOString(),
+        callDropTime: dropTimestamp.toISOString(),
         kidsCount: Number(kidsCount),
         fromZone,
         toZone,
-      });
+        type: callType,
+      };
+
+      // Add dates only for varying calls
+      if (callType === "varying") {
+        pickupData.startDate = startDate;
+        pickupData.endDate = endDate;
+      }
+
+      const pickupResponse = await CoverageService.createPickupRequest(
+        pickupData
+      );
 
       setPickupSuccess("Pickup request created successfully!");
       setShowSuccessModal(true);
-      setDescription("");
-      setAvailableDays([]);
-      setPickupTime("");
-      setDropTime("");
-      setKidsCount("");
-      setFromZone("");
-      setToZone("");
-      setSelectedChildId("");
+      resetForm();
     } catch (err: any) {
       let message = "Failed to create pickup request.";
       if (err?.response?.data?.message) {
@@ -221,12 +290,17 @@ export default function CallPage() {
   // For time picker, use a simple text input for now (can be replaced with a picker later)
   // Time picker handler
   const handleTimeChange = (event: any, selectedDate?: Date | undefined) => {
-    setShowTimePicker(Platform.OS === "ios");
+    if (Platform.OS === "android") {
+      setShowTimePicker(false);
+    }
     if (selectedDate) {
       // Format to HH:mm
       const hours = selectedDate.getHours().toString().padStart(2, "0");
       const minutes = selectedDate.getMinutes().toString().padStart(2, "0");
       setPickupTime(`${hours}:${minutes}`);
+      if (Platform.OS === "ios") {
+        setShowTimePicker(false);
+      }
     }
   };
 
@@ -235,12 +309,54 @@ export default function CallPage() {
     event: any,
     selectedDate?: Date | undefined
   ) => {
-    setShowDropTimePicker(Platform.OS === "ios");
+    if (Platform.OS === "android") {
+      setShowDropTimePicker(false);
+    }
     if (selectedDate) {
       // Format to HH:mm
       const hours = selectedDate.getHours().toString().padStart(2, "0");
       const minutes = selectedDate.getMinutes().toString().padStart(2, "0");
       setDropTime(`${hours}:${minutes}`);
+      if (Platform.OS === "ios") {
+        setShowDropTimePicker(false);
+      }
+    }
+  };
+
+  // Start date picker handler
+  const handleStartDateChange = (
+    event: any,
+    selectedDate?: Date | undefined
+  ) => {
+    if (Platform.OS === "android") {
+      setShowStartDatePicker(false);
+    }
+    if (selectedDate) {
+      // Format to YYYY-MM-DD
+      const year = selectedDate.getFullYear();
+      const month = (selectedDate.getMonth() + 1).toString().padStart(2, "0");
+      const day = selectedDate.getDate().toString().padStart(2, "0");
+      setStartDate(`${year}-${month}-${day}`);
+      if (Platform.OS === "ios") {
+        setShowStartDatePicker(false);
+      }
+    }
+  };
+
+  // End date picker handler
+  const handleEndDateChange = (event: any, selectedDate?: Date | undefined) => {
+    if (Platform.OS === "android") {
+      setShowEndDatePicker(false);
+    }
+    if (selectedDate) {
+      // Format to YYYY-MM-DD
+      const year = selectedDate.getFullYear();
+      const month = (selectedDate.getMonth() + 1).toString().padStart(2, "0");
+      const day = selectedDate.getDate().toString().padStart(2, "0");
+      setEndDate(`${year}-${month}-${day}`);
+      if (Platform.OS === "ios") {
+        setShowEndDatePicker(false);
+      }
     }
   };
 
@@ -266,16 +382,18 @@ export default function CallPage() {
           <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
             <View
               style={{
-               
+                flex: 1,
                 backgroundColor: "rgba(44, 44, 84, 0.18)",
                 justifyContent: "center",
                 alignItems: "center",
+                paddingHorizontal: 20,
               }}
             >
               <TouchableWithoutFeedback onPress={() => {}}>
                 <View
                   style={{
-                    width: "88%",
+                    width: "100%",
+                    maxWidth: 400,
                     backgroundColor: "#fff",
                     borderRadius: 22,
                     padding: 24,
@@ -284,12 +402,17 @@ export default function CallPage() {
                     shadowRadius: 16,
                     shadowOffset: { width: 0, height: 4 },
                     elevation: 6,
-                    maxHeight: "80%",
+                    maxHeight: "85%",
                   }}
                 >
                   {/* Close Icon */}
                   <TouchableOpacity
-                    style={{ position: "absolute", top: 16, right: 16, zIndex: 2 }}
+                    style={{
+                      position: "absolute",
+                      top: 16,
+                      right: 16,
+                      zIndex: 2,
+                    }}
                     onPress={() => {
                       setShowKidModal(false);
                       Keyboard.dismiss();
@@ -298,7 +421,7 @@ export default function CallPage() {
                   >
                     <Ionicons name="close" size={26} color="#FB8500" />
                   </TouchableOpacity>
-                  
+
                   <ScrollView
                     showsVerticalScrollIndicator={false}
                     keyboardShouldPersistTaps="handled"
@@ -316,7 +439,7 @@ export default function CallPage() {
                     >
                       Register a Kid
                     </Text>
-                    
+
                     {/* Kid Name */}
                     <Text
                       style={{
@@ -347,7 +470,7 @@ export default function CallPage() {
                       returnKeyType="next"
                       blurOnSubmit={false}
                     />
-                    
+
                     {/* Kid Age */}
                     <Text
                       style={{
@@ -379,7 +502,7 @@ export default function CallPage() {
                       returnKeyType="next"
                       blurOnSubmit={false}
                     />
-                    
+
                     {/* School Name */}
                     <Text
                       style={{
@@ -410,7 +533,7 @@ export default function CallPage() {
                       returnKeyType="next"
                       blurOnSubmit={false}
                     />
-                    
+
                     {/* Pickup Address */}
                     <Text
                       style={{
@@ -442,7 +565,7 @@ export default function CallPage() {
                       blurOnSubmit={true}
                       onSubmitEditing={() => Keyboard.dismiss()}
                     />
-                    
+
                     {/* Error Message */}
                     {kidError ? (
                       <Text
@@ -456,7 +579,7 @@ export default function CallPage() {
                         {kidError}
                       </Text>
                     ) : null}
-                    
+
                     {/* Save Button */}
                     <TouchableOpacity
                       style={{
@@ -498,6 +621,7 @@ export default function CallPage() {
         animationType="slide"
         transparent
         onRequestClose={() => setShowSuccessModal(false)}
+        statusBarTranslucent={true}
       >
         <View
           style={{
@@ -505,11 +629,13 @@ export default function CallPage() {
             backgroundColor: "rgba(44, 44, 84, 0.18)",
             justifyContent: "center",
             alignItems: "center",
+            paddingHorizontal: 20,
           }}
         >
           <View
             style={{
-              width: "88%",
+              width: "100%",
+              maxWidth: 400,
               backgroundColor: "#fff",
               borderRadius: 22,
               padding: 24,
@@ -992,6 +1118,8 @@ export default function CallPage() {
               </Text>
             )}
           </View>
+          {/* Form Header */}
+         
           {/* Description */}
           <Text
             style={{
@@ -1078,6 +1206,118 @@ export default function CallPage() {
               </TouchableOpacity>
             ))}
           </View>
+          {/* Call Type */}
+          <Text
+            style={{
+              fontFamily: "Comfortaa-Bold",
+              fontSize: 16,
+              color: "#232B3A",
+              marginBottom: 8,
+            }}
+          >
+            Pickup Request Type
+          </Text>
+          <View style={{ flexDirection: "row", marginBottom: 18 }}>
+            <TouchableOpacity
+              onPress={() => handleCallTypeChange("repetitive")}
+              style={{
+                paddingVertical: 12,
+                paddingHorizontal: 20,
+                borderRadius: 12,
+                backgroundColor:
+                  callType === "repetitive" ? "#4f46e5" : "#F3F4F6",
+                marginRight: 12,
+                borderWidth: callType === "repetitive" ? 0 : 1,
+                borderColor: "#E0E0E0",
+                shadowColor:
+                  callType === "repetitive" ? "#4f46e5" : "transparent",
+                shadowOpacity: callType === "repetitive" ? 0.12 : 0,
+                shadowRadius: 4,
+                shadowOffset: { width: 0, height: 2 },
+                flex: 1,
+              }}
+              activeOpacity={0.85}
+            >
+              <Text
+                style={{
+                  fontFamily: "Comfortaa-Medium",
+                  color: callType === "repetitive" ? "#fff" : "#232B3A",
+                  fontSize: 14,
+                  textAlign: "center",
+                }}
+              >
+                Ongoing
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={() => handleCallTypeChange("varying")}
+              style={{
+                paddingVertical: 12,
+                paddingHorizontal: 20,
+                borderRadius: 12,
+                backgroundColor: callType === "varying" ? "#4f46e5" : "#F3F4F6",
+                borderWidth: callType === "varying" ? 0 : 1,
+                borderColor: "#E0E0E0",
+                shadowColor: callType === "varying" ? "#4f46e5" : "transparent",
+                shadowOpacity: callType === "varying" ? 0.12 : 0,
+                shadowRadius: 4,
+                shadowOffset: { width: 0, height: 2 },
+                flex: 1,
+              }}
+              activeOpacity={0.85}
+            >
+              <Text
+                style={{
+                  fontFamily: "Comfortaa-Medium",
+                  color: callType === "varying" ? "#fff" : "#232B3A",
+                  fontSize: 14,
+                  textAlign: "center",
+                }}
+              >
+                One-time
+              </Text>
+            </TouchableOpacity>
+          </View>
+
+          <View
+            style={{
+              backgroundColor:
+                callType === "repetitive" ? "#E0F2FE" : "#FEF3C7",
+              padding: 16,
+              borderRadius: 12,
+              marginBottom: 20,
+              borderLeftWidth: 4,
+              borderLeftColor:
+                callType === "repetitive" ? "#0288D1" : "#F59E0B",
+            }}
+          >
+            <Text
+              style={{
+                fontFamily: "Comfortaa-Bold",
+                fontSize: 16,
+                color: callType === "repetitive" ? "#0277BD" : "#D97706",
+                marginBottom: 4,
+              }}
+            >
+              {callType === "repetitive"
+                ? "🔄 Ongoing Pickup Request"
+                : "📅 One-time Pickup Request"}
+            </Text>
+            <Text
+              style={{
+                fontFamily: "Comfortaa-Regular",
+                fontSize: 13,
+                color: callType === "repetitive" ? "#0288D1" : "#D97706",
+                lineHeight: 18,
+              }}
+            >
+              {callType === "repetitive"
+                ? "This pickup request will continue every week on the selected days"
+                : "This pickup request is for a specific time period with start and end dates"}
+            </Text>
+          </View>
+          {/* Call Type Explanation */}
+
           {/* Pickup Time */}
           <Text
             style={{
@@ -1124,7 +1364,9 @@ export default function CallPage() {
                 }}
               >
                 {pickupTime
-                  ? `Selected Time: ${pickupTime}`
+                  ? `Selected Time: ${pickupTime} (${formatTime12Hour(
+                      pickupTime
+                    )})`
                   : "Select Pickup Time"}
               </Text>
             </TouchableOpacity>
@@ -1145,7 +1387,7 @@ export default function CallPage() {
                     : new Date()
                 }
                 mode="time"
-                is24Hour={true}
+                is24Hour={false}
                 display="default"
                 onChange={handleTimeChange}
               />
@@ -1197,7 +1439,7 @@ export default function CallPage() {
                 }}
               >
                 {dropTime
-                  ? `Selected Time: ${dropTime}`
+                  ? `Selected Time: ${dropTime} (${formatTime12Hour(dropTime)})`
                   : "Select Drop-off Time"}
               </Text>
             </TouchableOpacity>
@@ -1218,12 +1460,158 @@ export default function CallPage() {
                     : new Date()
                 }
                 mode="time"
-                is24Hour={true}
+                is24Hour={false}
                 display="default"
                 onChange={handleDropTimeChange}
               />
             )}
           </View>
+          {/* Date Fields - Only show for varying calls */}
+          {callType === "varying" && (
+            <>
+              {/* Start Date */}
+              <Text
+                style={{
+                  fontFamily: "Comfortaa-Bold",
+                  fontSize: 16,
+                  color: "#232B3A",
+                  marginBottom: 8,
+                }}
+              >
+                Start Date
+              </Text>
+              <View
+                style={{
+                  flexDirection: "row",
+                  alignItems: "center",
+                  marginBottom: 18,
+                }}
+              >
+                <MaterialIcons
+                  name="event"
+                  size={20}
+                  color="#4f46e5"
+                  style={{ marginRight: 8 }}
+                />
+                <TouchableOpacity
+                  onPress={() => setShowStartDatePicker(true)}
+                  style={{
+                    borderWidth: 1,
+                    borderColor: "#E0E0E0",
+                    borderRadius: 12,
+                    padding: 12,
+                    backgroundColor: "#F9FAFB",
+                    flex: 1,
+                    flexDirection: "row",
+                    alignItems: "center",
+                  }}
+                  activeOpacity={0.85}
+                >
+                  <Text
+                    style={{
+                      fontFamily: "Comfortaa-Regular",
+                      fontSize: 15,
+                      color: startDate ? "#232B3A" : "#BDBDBD",
+                    }}
+                  >
+                    {startDate
+                      ? `Start Date: ${startDate}`
+                      : "Select Start Date"}
+                  </Text>
+                </TouchableOpacity>
+                {showStartDatePicker && (
+                  <DateTimePicker
+                    testID="startDatePicker"
+                    value={startDate ? new Date(startDate) : new Date()}
+                    mode="date"
+                    display="default"
+                    onChange={handleStartDateChange}
+                    minimumDate={new Date()}
+                  />
+                )}
+              </View>
+              {/* End Date */}
+              <Text
+                style={{
+                  fontFamily: "Comfortaa-Bold",
+                  fontSize: 16,
+                  color: "#232B3A",
+                  marginBottom: 8,
+                }}
+              >
+                End Date
+              </Text>
+              <View
+                style={{
+                  flexDirection: "row",
+                  alignItems: "center",
+                  marginBottom: 18,
+                }}
+              >
+                <MaterialIcons
+                  name="event"
+                  size={20}
+                  color="#4f46e5"
+                  style={{ marginRight: 8 }}
+                />
+                <TouchableOpacity
+                  onPress={() => setShowEndDatePicker(true)}
+                  style={{
+                    borderWidth: 1,
+                    borderColor: "#E0E0E0",
+                    borderRadius: 12,
+                    padding: 12,
+                    backgroundColor: "#F9FAFB",
+                    flex: 1,
+                    flexDirection: "row",
+                    alignItems: "center",
+                  }}
+                  activeOpacity={0.85}
+                >
+                  <Text
+                    style={{
+                      fontFamily: "Comfortaa-Regular",
+                      fontSize: 15,
+                      color: endDate ? "#232B3A" : "#BDBDBD",
+                    }}
+                  >
+                    {endDate ? `End Date: ${endDate}` : "Select End Date"}
+                  </Text>
+                </TouchableOpacity>
+                {showEndDatePicker && (
+                  <DateTimePicker
+                    testID="endDatePicker"
+                    value={
+                      endDate
+                        ? new Date(endDate)
+                        : startDate
+                        ? new Date(startDate)
+                        : new Date()
+                    }
+                    mode="date"
+                    display="default"
+                    onChange={handleEndDateChange}
+                    minimumDate={startDate ? new Date(startDate) : new Date()}
+                  />
+                )}
+              </View>
+              {/* Date Validation Message */}
+              {callType === "varying" && (!startDate || !endDate) && (
+                <Text
+                  style={{
+                    fontFamily: "Comfortaa-Regular",
+                    fontSize: 12,
+                    color: "#EF4444",
+                    marginBottom: 18,
+                    fontStyle: "italic",
+                  }}
+                >
+                  ⚠️ Both start and end dates are required for one-time pickup
+                  requests
+                </Text>
+              )}
+            </>
+          )}
           {/* Kids Count */}
           <Text
             style={{

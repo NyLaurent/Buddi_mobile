@@ -1,3 +1,6 @@
+import PickupCard from "@/components/commons/PickupCard";
+import { useAuth } from "@/context/AuthContext";
+import BuddiService from "@/services/api/buddi.service";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import React from "react";
@@ -13,9 +16,6 @@ import {
   SafeAreaView,
   useSafeAreaInsets,
 } from "react-native-safe-area-context";
-import PickupCard from "../../components/commons/PickupCard";
-import { useAuth } from "../../context/AuthContext";
-import BuddiService from "../../services/api/buddi.service";
 
 export default function AllPickupsPage() {
   const router = useRouter();
@@ -193,15 +193,17 @@ export default function AllPickupsPage() {
                     dropoffTime={pickup.callDropTime || "-"}
                     kidsCount={pickup.kidsCount || 0}
                     status={isCompleted ? "completed" : "notStarted"}
+                    callType={pickup.type}
+                    startDate={pickup.startDate}
+                    endDate={pickup.endDate}
+                    fromZone={pickup.fromZone}
+                    toZone={pickup.toZone}
                     onButtonPress={() => {
                       // Don't allow navigation if pickup is completed
                       if (isCompleted) {
                         return;
                       }
-                      router.push({
-                        pathname: "/buddi/pickup/[id]",
-                        params: { id: pickup.id.toString() },
-                      });
+                      router.push(`/buddi`);
                     }}
                   />
                 </View>

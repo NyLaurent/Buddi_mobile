@@ -21,16 +21,17 @@ export default function AvailableCallsScreen() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [currentPage, setCurrentPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
   const [totalRecords, setTotalRecords] = useState(0);
+  const [currentPage, setCurrentPage] = useState(0);
+  const [totalPages, setTotalPages] = useState(0);
+  const [limit] = useState(5); // This matches the API's pageSize
   const [showApplyModal, setShowApplyModal] = useState(false);
   const [selectedCallId, setSelectedCallId] = useState<number | null>(null);
 
   const router = useRouter();
   const { user } = useAuth();
 
-  const fetchCalls = async (page: number = 1, isRefresh: boolean = false) => {
+  const fetchCalls = async (page: number = 0, isRefresh: boolean = false) => {
     try {
       if (isRefresh) {
         setRefreshing(true);
@@ -39,15 +40,12 @@ export default function AvailableCallsScreen() {
       }
       setError(null);
 
-      const response = await BuddiService.getAvailableCalls(page, 4);
+      const response = await BuddiService.getAvailableCalls(page, limit);
 
-      // Only show calls that are not matched
-      setCalls(
-        response.data.filter((call: AvailableCall) => call.status !== "matched")
-      );
-      setCurrentPage(response.currentPage);
+      setCalls(response.data);
+      setTotalRecords(response.totalItems);
+      setCurrentPage(response.currentPage - 1); // Convert 1-based to 0-based for UI
       setTotalPages(response.totalPages);
-      setTotalRecords(response.totalRecords);
     } catch (err: any) {
       setError(err.message || "Failed to fetch pickup requests");
       console.error("Error fetching calls:", err);
@@ -58,23 +56,11 @@ export default function AvailableCallsScreen() {
   };
 
   useEffect(() => {
-    fetchCalls(1);
+    fetchCalls(0);
   }, []);
 
   const handleRefresh = () => {
-    fetchCalls(1, true);
-  };
-
-  const handleNextPage = () => {
-    if (currentPage < totalPages && !loading) {
-      fetchCalls(currentPage + 1);
-    }
-  };
-
-  const handlePreviousPage = () => {
-    if (currentPage > 1 && !loading) {
-      fetchCalls(currentPage - 1);
-    }
+    fetchCalls(currentPage, true);
   };
 
   const handleApplyPress = (callId: number) => {
@@ -90,6 +76,18 @@ export default function AvailableCallsScreen() {
   const handleApplicationSuccess = () => {
     // Optionally refresh the calls list
     fetchCalls(currentPage, true);
+  };
+
+  const handleNextPage = () => {
+    if (currentPage < totalPages - 1) {
+      fetchCalls(currentPage + 1);
+    }
+  };
+
+  const handlePreviousPage = () => {
+    if (currentPage > 0) {
+      fetchCalls(currentPage - 1);
+    }
   };
 
   const handleViewDetails = (callId: number) => {
@@ -111,7 +109,8 @@ export default function AvailableCallsScreen() {
       <View style={styles.headerContent}>
         <Text style={styles.headerTitle}>Available Pickup Requests</Text>
         <Text style={styles.headerSubtitle}>
-          {totalRecords} requests available • Page {currentPage} of {totalPages}
+          {totalRecords} pending requests available • Page {currentPage + 1} of{" "}
+          {totalPages}
         </Text>
       </View>
       <TouchableOpacity style={styles.filterButton}>
@@ -125,7 +124,9 @@ export default function AvailableCallsScreen() {
       return (
         <View style={styles.centerContainer}>
           <ActivityIndicator size="large" color="#FF932E" />
-          <Text style={styles.loadingText}>Loading available pickup requests...</Text>
+          <Text style={styles.loadingText}>
+            Loading available pickup requests...
+          </Text>
         </View>
       );
     }
@@ -138,7 +139,7 @@ export default function AvailableCallsScreen() {
           <Text style={styles.errorText}>{error}</Text>
           <TouchableOpacity
             style={styles.retryButton}
-            onPress={() => fetchCalls(1)}
+            onPress={() => fetchCalls(0)}
           >
             <Text style={styles.retryButtonText}>Try Again</Text>
           </TouchableOpacity>
@@ -150,9 +151,10 @@ export default function AvailableCallsScreen() {
       return (
         <View style={styles.centerContainer}>
           <FontAwesome5 name="hand-holding-heart" size={48} color="#FF932E" />
-          <Text style={styles.emptyTitle}>No Pickup Request Available</Text>
+          <Text style={styles.emptyTitle}>No Pending Pickup Requests</Text>
           <Text style={styles.emptyText}>
-            There are currently no pickup requests available. Check back later!
+            There are currently no pending pickup requests available. Check back
+            later!
           </Text>
         </View>
       );
@@ -174,65 +176,69 @@ export default function AvailableCallsScreen() {
             onViewDetails={handleViewDetails}
           />
         ))}
-
-        {/* Pagination Controls */}
-        {totalPages > 1 && (
-          <View style={styles.paginationContainer}>
-            <TouchableOpacity
-              style={[
-                styles.paginationButton,
-                currentPage === 1 && styles.paginationButtonDisabled,
-              ]}
-              onPress={handlePreviousPage}
-              disabled={currentPage === 1 || loading}
-            >
-              <FontAwesome5
-                name="chevron-left"
-                size={16}
-                color={currentPage === 1 ? "#ccc" : "#FF932E"}
-              />
-              <Text
-                style={[
-                  styles.paginationButtonText,
-                  currentPage === 1 && styles.paginationButtonTextDisabled,
-                ]}
-              >
-                Previous
-              </Text>
-            </TouchableOpacity>
-
-            <View style={styles.pageInfo}>
-              <Text style={styles.pageInfoText}>
-                Page {currentPage} of {totalPages}
-              </Text>
-            </View>
-
-            <TouchableOpacity
-              style={[
-                styles.paginationButton,
-                currentPage === totalPages && styles.paginationButtonDisabled,
-              ]}
-              onPress={handleNextPage}
-              disabled={currentPage === totalPages || loading}
-            >
-              <Text
-                style={[
-                  styles.paginationButtonText,
-                  currentPage === totalPages &&
-                    styles.paginationButtonTextDisabled,
-                ]}
-              >
-                Next
-              </Text>
-              <FontAwesome5
-                name="chevron-right"
-                size={16}
-                color={currentPage === totalPages ? "#ccc" : "#FF932E"}
-              />
-            </TouchableOpacity>
-          </View>
-        )}
       </ScrollView>
+    );
+  };
+
+  const renderPagination = () => {
+    if (totalPages <= 1) return null;
+
+    return (
+      <View style={styles.paginationContainer}>
+        <TouchableOpacity
+          style={[
+            styles.paginationButton,
+            currentPage === 0 && styles.paginationButtonDisabled,
+          ]}
+          onPress={handlePreviousPage}
+          disabled={currentPage === 0}
+        >
+          <Ionicons
+            name="chevron-back"
+            size={16}
+            color={currentPage === 0 ? "#ccc" : "#FF932E"}
+          />
+          <Text
+            style={[
+              styles.paginationButtonText,
+              currentPage === 0 && styles.paginationButtonTextDisabled,
+            ]}
+          >
+            Previous
+          </Text>
+        </TouchableOpacity>
+
+        <View style={styles.pageInfo}>
+          <Text style={styles.pageInfoText}>
+            Page {currentPage + 1} of {totalPages}
+          </Text>
+          
+        </View>
+
+        <TouchableOpacity
+          style={[
+            styles.paginationButton,
+            currentPage === totalPages - 1 && styles.paginationButtonDisabled,
+          ]}
+          onPress={handleNextPage}
+          disabled={currentPage === totalPages - 1}
+        >
+          <Text
+            style={[
+              styles.paginationButtonText,
+              currentPage === totalPages - 1 &&
+                styles.paginationButtonTextDisabled,
+            ]}
+          >
+            Next
+          </Text>
+          <Ionicons
+            name="chevron-forward"
+            size={16}
+            color={currentPage === totalPages - 1 ? "#ccc" : "#FF932E"}
+          />
+        </TouchableOpacity>
+      </View>
     );
   };
 
@@ -241,6 +247,7 @@ export default function AvailableCallsScreen() {
       <StatusBar barStyle="dark-content" backgroundColor="#fff" />
       {renderHeader()}
       {renderContent()}
+      {renderPagination()}
 
       <ApplyModal
         visible={showApplyModal}
