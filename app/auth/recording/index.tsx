@@ -247,6 +247,12 @@ export default function BuddiRecordingScreen() {
     "idle" | "uploading" | "success" | "error"
   >("idle");
 
+  // Recording timer state
+  const [recordingTime, setRecordingTime] = useState(0);
+  const recordingIntervalRef = useRef<ReturnType<typeof setInterval> | null>(
+    null
+  );
+
   useEffect(() => {
     let mounted = true;
     setLoading(true);
@@ -310,6 +316,11 @@ export default function BuddiRecordingScreen() {
   // Cleanup camera when component unmounts
   useEffect(() => {
     return () => {
+      // Clear recording timer
+      if (recordingIntervalRef.current) {
+        clearInterval(recordingIntervalRef.current);
+      }
+
       // Ensure recording is stopped when component unmounts
       if (recording && cameraRef.current) {
         try {
@@ -413,6 +424,196 @@ export default function BuddiRecordingScreen() {
     }
   };
 
+  // FIXED: Separate start and stop recording functions
+  const startRecording = async () => {
+    console.log("=== START RECORDING ===");
+
+    if (
+      !cameraRef.current ||
+      !permission?.granted ||
+      !audioPermission ||
+      !cameraReady
+    ) {
+      console.error("Prerequisites not met for recording");
+      return;
+    }
+
+    if (recording) {
+      console.log("Recording already in progress");
+      return;
+    }
+
+    setVideoUri(null);
+    setError("");
+    setRecording(true);
+    setRecordingTime(0);
+
+    // Start recording timer
+    recordingIntervalRef.current = setInterval(() => {
+      setRecordingTime((prev) => prev + 1);
+    }, 1000);
+
+    try {
+      console.log("Starting recording process...");
+
+      // OPTIMIZED RECORDING OPTIONS FOR SMALLER FILE SIZE
+      const video = await cameraRef.current.recordAsync({
+        maxDuration: 300, // 5 minutes max
+        maxFileSize: 50 * 1024 * 1024, // 50MB max file size
+        // Note: quality, videoBitrate, audioBitrate may not be available in all Expo versions
+        // The maxFileSize should help limit the file size
+      });
+
+      console.log("Recording completed:", video);
+
+      if (video && video.uri) {
+        setVideoUri(video.uri);
+        console.log("Recording successful:", video.uri);
+
+        // Check file size
+        const sizeInfo = await checkVideoSize(video.uri);
+        if (sizeInfo.sizeWarning) {
+          Alert.alert(
+            "Large Video File",
+            `Video size is ${(sizeInfo.size / (1024 * 1024)).toFixed(
+              2
+            )}MB. Upload may take longer.`,
+            [{ text: "OK" }]
+          );
+        }
+      } else {
+        throw new Error("No video URI returned from recording");
+      }
+    } catch (e: any) {
+      console.error("Recording error:", e);
+      setError(`Recording failed: ${e.message}`);
+      setVideoUri(null);
+    } finally {
+      setRecording(false);
+      // Clear recording timer
+      if (recordingIntervalRef.current) {
+        clearInterval(recordingIntervalRef.current);
+        recordingIntervalRef.current = null;
+      }
+      setRecordingTime(0);
+    }
+  };
+
+  const stopRecording = async () => {
+    console.log("=== STOP RECORDING ===");
+
+    if (!cameraRef.current || !recording) {
+      console.log("Cannot stop recording - camera ref null or not recording");
+      return;
+    }
+
+    try {
+      console.log("Stopping recording...");
+      await cameraRef.current.stopRecording();
+      console.log("Recording stopped successfully");
+    } catch (error) {
+      console.error("Error stopping recording:", error);
+      // Even if stop fails, we should update the UI
+    } finally {
+      setRecording(false);
+      // Clear recording timer
+      if (recordingIntervalRef.current) {
+        clearInterval(recordingIntervalRef.current);
+        recordingIntervalRef.current = null;
+      }
+      setRecordingTime(0);
+    }
+  };
+
+  // FIXED: New recording action handler
+  const handleRecordingAction = async () => {
+    if (recording) {
+      // If currently recording, stop it
+      await stopRecording();
+    } else {
+      // If not recording, start it
+      await startRecording();
+    }
+  };
+
+  const handleSubmit = async () => {
+    console.log("=== SUBMIT VIDEO ===");
+    setSubmitting(true);
+    setError("");
+    setUploadProgress(0);
+    setUploadStatus("uploading");
+
+    try {
+      if (!videoUri || !buddiDetails?.id) {
+        throw new Error("Missing video or Buddi ID");
+      }
+
+      console.log("Starting video upload...");
+
+      // Use the optimized upload function with progress tracking
+      await uploadBuddiProfileVideoOptimized(
+        buddiDetails.id,
+        videoUri,
+        (progress) => {
+          setUploadProgress(progress);
+          console.log(`[SUBMIT] Upload progress: ${progress}%`);
+        }
+      );
+
+      console.log("Upload successful!");
+      setUploadStatus("success");
+      setUploadProgress(100);
+
+      setTimeout(() => {
+        router.push("/auth/recording/success");
+      }, 1000);
+    } catch (e: any) {
+      console.error("Upload error:", e);
+      setUploadStatus("error");
+      setUploadProgress(0);
+
+      let errorMessage = "Failed to upload video";
+      if (e.message?.includes("timeout")) {
+        errorMessage =
+          "Upload timed out. Please check your connection and try again.";
+      } else if (e.message?.includes("Network")) {
+        errorMessage = "Network error. Please check your connection.";
+      } else if (e.message) {
+        errorMessage = e.message;
+      }
+
+      Alert.alert("Upload Error", errorMessage, [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Retry",
+          onPress: () => {
+            setError("");
+            setUploadStatus("idle");
+            setTimeout(handleSubmit, 1000);
+          },
+        },
+      ]);
+
+      setError(errorMessage);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const retakeVideo = () => {
+    setVideoUri(null);
+    setError("");
+    setUploadStatus("idle");
+    setUploadProgress(0);
+  };
+
+  // Format recording time for display
+  const formatTime = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}:${secs.toString().padStart(2, "0")}`;
+  };
+
   // Camera logic
   if (!permissionChecked) {
     return (
@@ -423,45 +624,17 @@ export default function BuddiRecordingScreen() {
       >
         <SafeAreaView style={{ flex: 1 }}>
           <View style={styles.centeredContainer}>
-            <View
-              style={{
-                backgroundColor: "#fff",
-                borderRadius: 24,
-                padding: 32,
-                margin: 20,
-                alignItems: "center",
-                shadowColor: "#000",
-                shadowOpacity: 0.1,
-                shadowRadius: 10,
-                elevation: 5,
-              }}
-            >
+            <View style={styles.permissionCard}>
               <Ionicons
                 name="hourglass"
                 size={64}
                 color={PRIMARY_COLOR}
                 style={{ marginBottom: 16 }}
               />
-              <Text
-                style={{
-                  fontSize: 20,
-                  fontFamily: "Comfortaa-Bold",
-                  color: "#333",
-                  textAlign: "center",
-                  marginBottom: 12,
-                }}
-              >
+              <Text style={styles.permissionTitle}>
                 Checking Permissions...
               </Text>
-              <Text
-                style={{
-                  fontSize: 16,
-                  fontFamily: "Comfortaa-Regular",
-                  color: "#666",
-                  textAlign: "center",
-                  lineHeight: 22,
-                }}
-              >
+              <Text style={styles.permissionText}>
                 Please wait while we check camera permissions.
               </Text>
             </View>
@@ -480,70 +653,26 @@ export default function BuddiRecordingScreen() {
       >
         <SafeAreaView style={{ flex: 1 }}>
           <View style={styles.centeredContainer}>
-            <View
-              style={{
-                backgroundColor: "#fff",
-                borderRadius: 24,
-                padding: 32,
-                margin: 20,
-                alignItems: "center",
-                shadowColor: "#000",
-                shadowOpacity: 0.1,
-                shadowRadius: 10,
-                elevation: 5,
-              }}
-            >
+            <View style={styles.permissionCard}>
               <Ionicons
                 name="camera"
                 size={64}
                 color={PRIMARY_COLOR}
                 style={{ marginBottom: 16 }}
               />
-              <Text
-                style={{
-                  fontSize: 20,
-                  fontFamily: "Comfortaa-Bold",
-                  color: "#333",
-                  textAlign: "center",
-                  marginBottom: 12,
-                }}
-              >
+              <Text style={styles.permissionTitle}>
                 Camera & Microphone Access Required
               </Text>
-              <Text
-                style={{
-                  fontSize: 16,
-                  fontFamily: "Comfortaa-Regular",
-                  color: "#666",
-                  textAlign: "center",
-                  marginBottom: 24,
-                  lineHeight: 22,
-                }}
-              >
+              <Text style={styles.permissionText}>
                 To record your interview video, we need access to your camera
                 and microphone. This helps us capture your responses for the
                 interview process.
               </Text>
               <TouchableOpacity
-                style={{
-                  backgroundColor: PRIMARY_COLOR,
-                  paddingVertical: 16,
-                  paddingHorizontal: 32,
-                  borderRadius: 12,
-                  width: "100%",
-                  alignItems: "center",
-                  marginBottom: 12,
-                }}
+                style={styles.permissionButton}
                 onPress={handlePermissionRequest}
               >
-                <Text
-                  style={{
-                    color: "#fff",
-                    fontFamily: "Comfortaa-Bold",
-                    fontSize: 16,
-                    textAlign: "center",
-                  }}
-                >
+                <Text style={styles.permissionButtonText}>
                   {permission?.canAskAgain
                     ? "Grant Permissions"
                     : "Open Settings"}
@@ -586,346 +715,7 @@ export default function BuddiRecordingScreen() {
     );
   }
 
-  const startRecording = async () => {
-    console.log("=== START RECORDING ===");
-    console.log("Camera ref exists:", !!cameraRef.current);
-    console.log("Permission granted:", permission?.granted);
-    console.log("Camera ready:", cameraReady);
-    console.log("Currently recording:", recording);
-
-    // Enhanced validation with better error messages
-    if (!cameraRef.current) {
-      console.error("Camera ref is null");
-      const errorMsg =
-        "Camera is not ready. Please wait for camera to initialize or restart the app.";
-      Alert.alert("Camera Not Ready", errorMsg, [
-        { text: "OK", style: "default" },
-        {
-          text: "Restart App",
-          onPress: () => {
-            setError("");
-            setCameraReady(false);
-            setTimeout(() => {
-              setCameraReady(true);
-            }, 2000);
-          },
-        },
-      ]);
-      setError(errorMsg);
-      return;
-    }
-
-    if (!permission?.granted || !audioPermission) {
-      console.error("Camera or microphone permission not granted");
-      const errorMsg =
-        "Camera and microphone permissions are required. Please grant these permissions in settings.";
-      setError(errorMsg);
-      return;
-    }
-
-    if (!cameraReady) {
-      console.error("Camera not ready");
-      const errorMsg =
-        "Camera is still initializing. Please wait a moment and try again.";
-      Alert.alert("Camera Initializing", errorMsg, [
-        { text: "OK", style: "default" },
-      ]);
-      setError(errorMsg);
-      return;
-    }
-
-    if (recording) {
-      console.log("Recording already in progress, ignoring start request");
-      return;
-    }
-
-    setVideoUri(null);
-    setError("");
-    setRecording(true);
-
-    try {
-      console.log("Starting recording process...");
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-
-      let video: any;
-      let recordingAttempts = 0;
-      const maxAttempts = 3;
-
-      while (recordingAttempts < maxAttempts) {
-        try {
-          console.log(
-            `Recording attempt ${recordingAttempts + 1}/${maxAttempts}`
-          );
-
-          if (!cameraRef.current) {
-            throw new Error("Camera reference lost during recording");
-          }
-
-          // OPTIMIZED RECORDING OPTIONS FOR SMALLER FILE SIZE
-          video = await cameraRef.current.recordAsync({
-            maxDuration: 300, // 5 minutes max
-            maxFileSize: 50 * 1024 * 1024, // 50MB max file size
-          });
-
-          console.log(
-            "Recording completed successfully on attempt",
-            recordingAttempts + 1
-          );
-          break;
-        } catch (recordingError: any) {
-          recordingAttempts++;
-          console.log(
-            `Recording attempt ${recordingAttempts} failed:`,
-            recordingError
-          );
-
-          if (recordingAttempts >= maxAttempts) {
-            throw recordingError;
-          }
-
-          if (
-            recordingError.message &&
-            (recordingError.message.includes("already in progress") ||
-              recordingError.message.includes("recording"))
-          ) {
-            console.log("Attempting to stop existing recording and restart...");
-            try {
-              if (cameraRef.current) {
-                await cameraRef.current.stopRecording();
-              }
-              await new Promise((resolve) => setTimeout(resolve, 2000));
-            } catch (stopError) {
-              console.log("Error stopping recording:", stopError);
-            }
-          } else {
-            await new Promise((resolve) => setTimeout(resolve, 1000));
-          }
-        }
-      }
-
-      console.log("Recording process completed, video object:", video);
-
-      if (video && video.uri) {
-        setVideoUri(video.uri);
-        console.log("Recording successful:", video.uri);
-        console.log("Video duration:", video.duration);
-        console.log("Video size:", video.size);
-
-        // Log file size information
-        if (video.size) {
-          const sizeInMB = (video.size / (1024 * 1024)).toFixed(2);
-          console.log(`Video file size: ${sizeInMB} MB`);
-
-          // Warn if file is still large
-          if (video.size > 25 * 1024 * 1024) {
-            // 25MB
-            Alert.alert(
-              "Large Video File",
-              `Video size is ${sizeInMB}MB. Upload may take longer on slow connections.`,
-              [{ text: "OK" }]
-            );
-          }
-        }
-      } else {
-        console.error("No video URI in response:", video);
-        throw new Error("No video URI returned from recording");
-      }
-    } catch (e: any) {
-      console.error("=== RECORDING ERROR ===");
-      console.error("Recording error details:", e);
-
-      let errorMessage = "Failed to record video";
-      let alertTitle = "Recording Error";
-
-      if (e?.message) {
-        if (e.message.includes("permission") || e.message.includes("denied")) {
-          errorMessage =
-            "Camera permission denied. Please grant camera access in settings.";
-          alertTitle = "Camera Permission Required";
-        } else if (e.message.includes("already in progress")) {
-          errorMessage = "Recording is already in progress. Please wait.";
-          alertTitle = "Recording in Progress";
-        } else if (
-          e.message.includes("not ready") ||
-          e.message.includes("initializing")
-        ) {
-          errorMessage =
-            "Camera is not ready. Please wait for camera to initialize.";
-          alertTitle = "Camera Not Ready";
-        } else if (e.message.includes("timeout")) {
-          errorMessage = "Recording timed out. Please try again.";
-          alertTitle = "Recording Timeout";
-        } else if (e.message.includes("camera")) {
-          errorMessage =
-            "Camera error occurred. Please restart the app and try again.";
-          alertTitle = "Camera Error";
-        } else {
-          errorMessage = `Recording failed: ${e.message}`;
-          alertTitle = "Recording Failed";
-        }
-      }
-
-      const alertButtons: any[] = [
-        { text: "OK", style: "default" as const },
-        {
-          text: "Try Again",
-          onPress: () => {
-            setError("");
-            setTimeout(() => {
-              startRecording();
-            }, 1000);
-          },
-        },
-      ];
-
-      if (
-        errorMessage.includes("permission") ||
-        errorMessage.includes("denied")
-      ) {
-        setError(errorMessage);
-      } else {
-        Alert.alert(alertTitle, errorMessage, alertButtons);
-      }
-
-      setError(errorMessage);
-    } finally {
-      setRecording(false);
-      console.log("=== RECORDING END ===");
-    }
-  };
-
-  const stopRecording = async () => {
-    console.log("stopRecording called");
-
-    if (!cameraRef.current) {
-      console.log("Camera ref is null, cannot stop recording");
-      setRecording(false);
-      return;
-    }
-
-    try {
-      console.log("Stopping recording...");
-      await cameraRef.current.stopRecording();
-      console.log("Recording stopped successfully");
-    } catch (error) {
-      console.error("Error stopping recording:", error);
-    } finally {
-      setRecording(false);
-    }
-  };
-
-  const handleSubmit = async () => {
-    console.log("=== RECORDING SCREEN SUBMIT START ===");
-    setSubmitting(true);
-    setError("");
-    setUploadProgress(0);
-    setUploadStatus("uploading");
-
-    try {
-      console.log("[SUBMIT] Checking prerequisites...");
-      if (!videoUri || !buddiDetails?.id) {
-        console.error("[SUBMIT] Missing prerequisites:");
-        console.error("[SUBMIT] - videoUri:", videoUri);
-        console.error("[SUBMIT] - buddiDetails?.id:", buddiDetails?.id);
-        throw new Error("Missing video or Buddi ID");
-      }
-
-      console.log("[SUBMIT] Prerequisites check passed");
-      console.log("[SUBMIT] Starting optimized video upload...");
-      const uploadStartTime = Date.now();
-
-      // Use the optimized upload function with progress callback
-      await uploadBuddiProfileVideoOptimized(
-        buddiDetails.id,
-        videoUri,
-        (progress) => {
-          setUploadProgress(progress);
-          console.log(`[SUBMIT] Upload progress: ${progress}%`);
-        }
-      );
-
-      const uploadEndTime = Date.now();
-      console.log(
-        "[SUBMIT] Upload completed in:",
-        uploadEndTime - uploadStartTime,
-        "ms"
-      );
-      console.log("[SUBMIT] Video upload successful!");
-
-      setUploadStatus("success");
-      setUploadProgress(100);
-
-      // Brief delay to show 100% completion
-      setTimeout(() => {
-        router.push("/auth/recording/success");
-      }, 1000);
-    } catch (e: any) {
-      console.error("=== RECORDING SCREEN SUBMIT ERROR ===");
-      console.error("[SUBMIT] Upload error:", e);
-
-      setUploadStatus("error");
-      setUploadProgress(0);
-
-      // Enhanced error messaging
-      let errorMessage = "Failed to upload video";
-      let alertTitle = "Upload Error";
-
-      if (e.message) {
-        if (e.message.includes("too large")) {
-          errorMessage =
-            "Video file is too large. Please record a shorter video.";
-          alertTitle = "File Too Large";
-        } else if (
-          e.message.includes("Network error") ||
-          e.message.includes("connection")
-        ) {
-          errorMessage =
-            "Network error. Please check your internet connection and try again.";
-          alertTitle = "Connection Error";
-        } else if (
-          e.message.includes("timed out") ||
-          e.message.includes("timeout")
-        ) {
-          errorMessage =
-            "Upload timed out. Please check your connection speed and try again.";
-          alertTitle = "Upload Timeout";
-        } else if (
-          e.message.includes("server error") ||
-          e.message.includes("Server error")
-        ) {
-          errorMessage = "Server error occurred. Please try again in a moment.";
-          alertTitle = "Server Error";
-        } else {
-          errorMessage = e.message;
-          alertTitle = "Upload Failed";
-        }
-      }
-
-      console.log("[SUBMIT] Final error message for user:", errorMessage);
-
-      // Show alert with retry options
-      Alert.alert(alertTitle, errorMessage, [
-        { text: "Cancel", style: "cancel" },
-        {
-          text: "Retry Upload",
-          onPress: () => {
-            setError("");
-            setUploadStatus("idle");
-            // Retry upload after a short delay
-            setTimeout(() => {
-              handleSubmit();
-            }, 1000);
-          },
-        },
-      ]);
-
-      setError(errorMessage);
-    } finally {
-      setSubmitting(false);
-    }
-  };
-
-  // UI rendering
+  // Main UI
   return (
     <ImageBackground
       source={require("../../../assets/images/auth/video_bg.jpg")}
@@ -934,45 +724,19 @@ export default function BuddiRecordingScreen() {
     >
       <SafeAreaView style={{ flex: 1, paddingTop: 16 }}>
         {/* Header */}
-        <View
-          style={{
-            flexDirection: "row",
-            justifyContent: "space-between",
-            alignItems: "center",
-            paddingHorizontal: 16,
-            paddingTop: 8,
-          }}
-        >
+        <View style={styles.header}>
           <TouchableOpacity
-            style={{ backgroundColor: "#fff", borderRadius: 999, padding: 8 }}
+            style={styles.headerButton}
             onPress={() => router.back()}
           >
             <Ionicons name="chevron-back" size={24} color="#555" />
           </TouchableOpacity>
           <View style={{ alignItems: "center" }}>
-            <Text
-              style={{
-                color: "#fff",
-                fontSize: 18,
-                textAlign: "center",
-                fontFamily: "Comfortaa-Bold",
-              }}
-            >
-              Record Your Buddi
-            </Text>
-            <Text
-              style={{
-                color: "#fff",
-                fontSize: 18,
-                textAlign: "center",
-                fontFamily: "Comfortaa-Bold",
-              }}
-            >
-              Interview
-            </Text>
+            <Text style={styles.headerTitle}>Record Your Buddi</Text>
+            <Text style={styles.headerTitle}>Interview</Text>
           </View>
           <TouchableOpacity
-            style={{ backgroundColor: "#fff", borderRadius: 999, padding: 8 }}
+            style={styles.headerButton}
             onPress={debugCameraStatus}
           >
             <Ionicons name="ellipsis-vertical" size={20} color="#555" />
@@ -980,30 +744,14 @@ export default function BuddiRecordingScreen() {
         </View>
 
         <ScrollView
-          contentContainerStyle={{
-            flexGrow: 1,
-            paddingHorizontal: 16,
-            paddingTop: 16,
-            paddingBottom: 20,
-          }}
+          contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
         >
-          {/* Video Preview/Camera */}
+          {/* Video Preview/Camera Section */}
           <View style={{ alignItems: "center", marginBottom: 24 }}>
-            {videoUri ? (
-              <View
-                style={{
-                  width: "100%",
-                  maxWidth: 400,
-                  aspectRatio: 4 / 3,
-                  borderRadius: 16,
-                  overflow: "hidden",
-                  backgroundColor: "#eee",
-                  justifyContent: "center",
-                  alignItems: "center",
-                  position: "relative",
-                }}
-              >
+            <View style={styles.cameraContainer}>
+              {videoUri ? (
+                // Video Preview
                 <Video
                   source={{ uri: videoUri }}
                   style={{ width: "100%", height: "100%" }}
@@ -1011,21 +759,8 @@ export default function BuddiRecordingScreen() {
                   resizeMode={ResizeMode.COVER}
                   isLooping
                 />
-              </View>
-            ) : (
-              <View
-                style={{
-                  width: "100%",
-                  maxWidth: 400,
-                  aspectRatio: 4 / 3,
-                  borderRadius: 16,
-                  overflow: "hidden",
-                  backgroundColor: "#eee",
-                  justifyContent: "center",
-                  alignItems: "center",
-                  position: "relative",
-                }}
-              >
+              ) : (
+                // Live Camera
                 <CameraView
                   ref={cameraRef}
                   style={{ width: "100%", height: "100%" }}
@@ -1033,415 +768,198 @@ export default function BuddiRecordingScreen() {
                   mode="video"
                   mute={false}
                   onCameraReady={() => {
-                    console.log("Camera ready callback triggered");
+                    console.log("Camera ready!");
                     setCameraReady(true);
                   }}
                   onMountError={(error) => {
                     console.error("Camera mount error:", error);
-                    console.error("Mount error details:", {
-                      message: error?.message,
-                      error: error,
-                    });
-
-                    let errorMessage =
-                      "Failed to initialize camera. Please restart the app and try again.";
-
-                    if (error?.message) {
-                      if (error.message.includes("permission")) {
-                        errorMessage =
-                          "Camera permission denied. Please grant camera access in settings.";
-                      } else if (error.message.includes("not available")) {
-                        errorMessage =
-                          "Camera is not available on this device.";
-                      } else if (error.message.includes("in use")) {
-                        errorMessage =
-                          "Camera is currently in use by another app. Please close other camera apps and try again.";
-                      }
-                    }
-
-                    Alert.alert("Camera Error", errorMessage, [
-                      { text: "OK", style: "default" },
-                      {
-                        text: "Retry",
-                        onPress: () => {
-                          setError("");
-                          reinitializeCamera();
-                        },
-                      },
-                      {
-                        text: "Open Settings",
-                        onPress: handlePermissionRequest,
-                      },
-                    ]);
-                    setError(errorMessage);
+                    setError(
+                      "Camera failed to initialize. Please restart the app."
+                    );
                   }}
                 >
-                  {/* Camera controls overlay */}
+                  {/* Camera overlay controls */}
                   <View style={styles.cameraOverlay}>
-                    <TouchableOpacity
-                      onPress={() =>
-                        setFacing(facing === "front" ? "back" : "front")
-                      }
-                      style={{
-                        backgroundColor: "#fff",
-                        borderRadius: 999,
-                        padding: 6,
-                      }}
-                    >
-                      <Ionicons
-                        name="camera-reverse"
-                        size={20}
-                        color={PRIMARY_COLOR}
-                      />
-                    </TouchableOpacity>
+                    {!recording && (
+                      <TouchableOpacity
+                        onPress={() =>
+                          setFacing(facing === "front" ? "back" : "front")
+                        }
+                        style={styles.cameraFlipButton}
+                      >
+                        <Ionicons
+                          name="camera-reverse"
+                          size={20}
+                          color={PRIMARY_COLOR}
+                        />
+                      </TouchableOpacity>
+                    )}
+
+                    {/* Recording indicator */}
+                    {recording && (
+                      <View style={styles.recordingIndicator}>
+                        <View style={styles.recordingDot} />
+                        <Text style={styles.recordingText}>
+                          REC {formatTime(recordingTime)}
+                        </Text>
+                      </View>
+                    )}
                   </View>
                 </CameraView>
-              </View>
-            )}
-            {/* Recording controls */}
-            {!recording && !videoUri && !cameraReady && (
-              <View style={[styles.recordBtn, { backgroundColor: "#ccc" }]}>
-                <Ionicons name="camera" size={24} color="#666" />
-                <Text
-                  style={{
-                    color: "#666",
-                    fontFamily: "Comfortaa-Bold",
-                    marginLeft: 8,
-                  }}
-                >
-                  Camera Loading...
-                </Text>
-              </View>
-            )}
-            {!recording && !videoUri && cameraReady && (
-              <TouchableOpacity
-                style={styles.recordBtn}
-                onPress={startRecording}
-              >
-                <Ionicons name="videocam" size={24} color="#fff" />
-                <Text
-                  style={{
-                    color: "#fff",
-                    fontFamily: "Comfortaa-Bold",
-                    marginLeft: 8,
-                  }}
-                >
-                  Start Recording
-                </Text>
-              </TouchableOpacity>
-            )}
-            {recording && (
-              <TouchableOpacity
-                style={[styles.recordBtn, { backgroundColor: "#d32f2f" }]}
-                onPress={
-                  current === questions.length - 1 ? stopRecording : handleNext
-                }
-              >
-                <Ionicons name="stop" size={24} color="#fff" />
-                <Text
-                  style={{
-                    color: "#fff",
-                    fontFamily: "Comfortaa-Bold",
-                    marginLeft: 8,
-                  }}
-                >
-                  {current === questions.length - 1
-                    ? "Stop Recording & Submit"
-                    : "Next Question"}
-                </Text>
-              </TouchableOpacity>
-            )}
-            {videoUri && (
-              <View style={{ gap: 8 }}>
+              )}
+            </View>
+
+            {/* Recording Controls */}
+            <View style={{ gap: 12, marginTop: 16, width: "100%" }}>
+              {!videoUri && (
+                // Recording button
                 <TouchableOpacity
                   style={[
                     styles.recordBtn,
                     {
-                      backgroundColor: submitting ? "#ccc" : PRIMARY_COLOR,
-                      opacity: submitting ? 0.7 : 1,
+                      backgroundColor: recording
+                        ? "#d32f2f"
+                        : cameraReady
+                        ? PRIMARY_COLOR
+                        : "#ccc",
                     },
                   ]}
-                  onPress={handleSubmit}
-                  disabled={submitting}
+                  onPress={handleRecordingAction}
+                  disabled={!cameraReady}
                 >
                   <Ionicons
-                    name={submitting ? "cloud-upload" : "cloud-upload"}
+                    name={
+                      recording ? "stop" : cameraReady ? "videocam" : "camera"
+                    }
                     size={24}
                     color="#fff"
                   />
-                  <Text
-                    style={{
-                      color: "#fff",
-                      fontFamily: "Comfortaa-Bold",
-                      marginLeft: 8,
-                    }}
-                  >
-                    {submitting ? "Uploading..." : "Submit Video"}
+                  <Text style={styles.recordBtnText}>
+                    {recording
+                      ? "Stop Recording"
+                      : cameraReady
+                      ? "Start Recording"
+                      : "Camera Loading..."}
                   </Text>
                 </TouchableOpacity>
+              )}
 
-                {/* Progress Bar */}
-                {submitting && uploadStatus === "uploading" && (
-                  <View style={{ gap: 4 }}>
-                    <View
-                      style={{
-                        height: 4,
-                        backgroundColor: "#E5E7EB",
-                        borderRadius: 2,
-                        overflow: "hidden",
-                      }}
-                    >
-                      <View
-                        style={{
-                          height: 4,
-                          borderRadius: 2,
-                          backgroundColor: PRIMARY_COLOR,
-                          width: `${uploadProgress}%`,
-                        }}
-                      />
-                    </View>
-                    <Text
-                      style={{
-                        color: "#fff",
-                        fontFamily: "Comfortaa-Regular",
-                        fontSize: 12,
-                        textAlign: "center",
-                        opacity: 0.8,
-                      }}
-                    >
-                      Uploading: {uploadProgress}% - Please keep the app open
-                    </Text>
-                  </View>
-                )}
-
-                {/* Success indicator */}
-                {uploadStatus === "success" && (
-                  <Text
-                    style={{
-                      color: "#4CAF50",
-                      fontFamily: "Comfortaa-Regular",
-                      fontSize: 12,
-                      textAlign: "center",
-                    }}
-                  >
-                    Upload completed! Redirecting...
-                  </Text>
-                )}
-
-                {/* Error display */}
-                {error && (
-                  <Text
-                    style={{
-                      color: "#d32f2f",
-                      textAlign: "center",
-                      fontFamily: "Comfortaa-Regular",
-                      fontSize: 14,
-                    }}
-                  >
-                    {error}
-                  </Text>
-                )}
-              </View>
-            )}
-            {error && (
-              <View style={{ gap: 8, marginTop: 12 }}>
-                <Text
-                  style={{
-                    color: "#d32f2f",
-                    textAlign: "center",
-                    fontFamily: "Comfortaa-Regular",
-                    fontSize: 14,
-                  }}
-                >
-                  {error}
-                </Text>
-                <View
-                  style={{
-                    flexDirection: "row",
-                    gap: 8,
-                    justifyContent: "center",
-                  }}
-                >
+              {videoUri && (
+                // Video recorded - show submit and retake options
+                <View style={{ gap: 8 }}>
                   <TouchableOpacity
                     style={[
                       styles.recordBtn,
                       {
-                        backgroundColor: "#d32f2f",
-                        flex: 1,
-                        maxWidth: 150,
+                        backgroundColor: submitting ? "#ccc" : "#4CAF50",
+                        opacity: submitting ? 0.7 : 1,
                       },
                     ]}
                     onPress={handleSubmit}
                     disabled={submitting}
                   >
-                    <Ionicons name="refresh" size={20} color="#fff" />
-                    <Text
-                      style={{
-                        color: "#fff",
-                        fontFamily: "Comfortaa-Bold",
-                        marginLeft: 8,
-                      }}
-                    >
-                      Retry Upload
+                    <Ionicons
+                      name={submitting ? "cloud-upload" : "checkmark-circle"}
+                      size={24}
+                      color="#fff"
+                    />
+                    <Text style={styles.recordBtnText}>
+                      {submitting ? "Uploading..." : "Submit Video"}
                     </Text>
                   </TouchableOpacity>
+
                   <TouchableOpacity
-                    style={[
-                      styles.recordBtn,
-                      {
-                        backgroundColor: "#2196F3",
-                        flex: 1,
-                        maxWidth: 150,
-                      },
-                    ]}
-                    onPress={reinitializeCamera}
+                    style={[styles.recordBtn, { backgroundColor: "#666" }]}
+                    onPress={retakeVideo}
                     disabled={submitting}
                   >
-                    <Ionicons name="camera" size={20} color="#fff" />
-                    <Text
-                      style={{
-                        color: "#fff",
-                        fontFamily: "Comfortaa-Bold",
-                        marginLeft: 8,
-                      }}
-                    >
-                      Reinitialize Camera
-                    </Text>
+                    <Ionicons name="refresh" size={24} color="#fff" />
+                    <Text style={styles.recordBtnText}>Retake Video</Text>
                   </TouchableOpacity>
+
+                  {/* Upload Progress Bar */}
+                  {submitting && uploadStatus === "uploading" && (
+                    <View style={{ gap: 4 }}>
+                      <View style={styles.progressBarContainer}>
+                        <View
+                          style={[
+                            styles.progressBar,
+                            { width: `${uploadProgress}%` },
+                          ]}
+                        />
+                      </View>
+                      <Text style={styles.progressText}>
+                        Uploading: {uploadProgress}% - Please keep the app open
+                      </Text>
+                    </View>
+                  )}
+
+                  {/* Upload Status Messages */}
+                  {uploadStatus === "success" && (
+                    <Text style={styles.successText}>
+                      Upload completed! Redirecting...
+                    </Text>
+                  )}
+
+                  {error && <Text style={styles.errorText}>{error}</Text>}
                 </View>
-              </View>
-            )}
+              )}
+            </View>
           </View>
 
           {/* Question Card */}
-          <View
-            style={{
-              backgroundColor: "#fff",
-              borderRadius: 32,
-              padding: 24,
-              marginTop: 8,
-              alignItems: "center",
-              shadowColor: "#000",
-              shadowOpacity: 0.08,
-              shadowRadius: 4,
-              elevation: 2,
-            }}
-          >
+          <View style={styles.questionCard}>
             <Image
               source={require("../../../assets/images/logo.png")}
               style={{ width: 68, height: 48, marginBottom: 8 }}
             />
-            <Text
-              style={{
-                fontSize: 18,
-                marginBottom: 8,
-                fontFamily: "Comfortaa-Bold",
-              }}
-            >
-              Question {current + 1}
-            </Text>
+            <Text style={styles.questionNumber}>Question {current + 1}</Text>
+
             {loading ? (
-              <Text
-                style={{
-                  color: PRIMARY_COLOR,
-                  fontFamily: "Comfortaa-Regular",
-                  marginBottom: 24,
-                }}
-              >
-                Loading questions...
-              </Text>
-            ) : error ? (
-              <Text
-                style={{
-                  color: "red",
-                  fontFamily: "Comfortaa-Regular",
-                  marginBottom: 24,
-                }}
-              >
-                {error}
-              </Text>
+              <Text style={styles.loadingText}>Loading questions...</Text>
             ) : (
-              <Text
-                style={{
-                  color: "#71727A",
-                  fontSize: 16,
-                  textAlign: "center",
-                  marginBottom: 24,
-                  fontFamily: "Comfortaa-Regular",
-                }}
-              >
+              <Text style={styles.questionText}>
                 {question.questionDescription}
               </Text>
             )}
-            <View
-              style={{
-                flexDirection: "row",
-                width: "100%",
-                justifyContent: "space-between",
-                marginTop: 8,
-              }}
-            >
+
+            {/* Question Navigation */}
+            <View style={styles.navigationContainer}>
               <TouchableOpacity
                 onPress={handlePrev}
                 disabled={current === 0 || recording}
-                style={{
-                  backgroundColor: "#fff",
-                  borderColor: PRIMARY_COLOR,
-                  borderWidth: 1,
-                  borderRadius: 999,
-                  paddingVertical: 10,
-                  paddingHorizontal: 24,
-                  opacity: current === 0 || recording ? 0.5 : 1,
-                }}
+                style={[
+                  styles.navButton,
+                  styles.prevButton,
+                  { opacity: current === 0 || recording ? 0.5 : 1 },
+                ]}
               >
-                <Text
-                  style={{
-                    color: PRIMARY_COLOR,
-                    fontFamily: "Comfortaa-Bold",
-                  }}
-                >
-                  Previous
-                </Text>
+                <Text style={styles.prevButtonText}>Previous</Text>
               </TouchableOpacity>
+
               <TouchableOpacity
                 onPress={handleNext}
                 disabled={current === questions.length - 1 || recording}
-                style={{
-                  backgroundColor: PRIMARY_COLOR,
-                  borderRadius: 999,
-                  paddingVertical: 10,
-                  paddingHorizontal: 32,
-                  opacity:
-                    current === questions.length - 1 || recording ? 0.5 : 1,
-                }}
+                style={[
+                  styles.navButton,
+                  styles.nextButton,
+                  {
+                    opacity:
+                      current === questions.length - 1 || recording ? 0.5 : 1,
+                  },
+                ]}
               >
-                <Text
-                  style={{
-                    color: "#fff",
-                    fontFamily: "Comfortaa-Bold",
-                  }}
-                >
-                  Next
-                </Text>
+                <Text style={styles.nextButtonText}>Next</Text>
               </TouchableOpacity>
             </View>
+
             {/* Progress Bar */}
-            <View
-              style={{
-                height: 6,
-                backgroundColor: "#E5E7EB",
-                borderRadius: 3,
-                width: "100%",
-                marginTop: 24,
-              }}
-            >
+            <View style={styles.questionProgressContainer}>
               <View
-                style={{
-                  height: 6,
-                  borderRadius: 3,
-                  backgroundColor: PRIMARY_COLOR,
-                  width: `${progress * 100}%`,
-                }}
+                style={[
+                  styles.questionProgressBar,
+                  { width: `${progress * 100}%` },
+                ]}
               />
             </View>
           </View>
@@ -1454,19 +972,117 @@ export default function BuddiRecordingScreen() {
 const styles = StyleSheet.create({
   centeredContainer: {
     flex: 1,
-    backgroundColor: "#fff",
     alignItems: "center",
     justifyContent: "center",
   },
-  cameraOverlay: {
-    position: "absolute",
-    bottom: 16,
-    left: 0,
+  permissionCard: {
+    backgroundColor: "#fff",
+    borderRadius: 24,
+    padding: 32,
+    margin: 20,
+    alignItems: "center",
+    shadowColor: "#000",
+    shadowOpacity: 0.1,
+    shadowRadius: 10,
+    elevation: 5,
+  },
+  permissionTitle: {
+    fontSize: 20,
+    fontFamily: "Comfortaa-Bold",
+    color: "#333",
+    textAlign: "center",
+    marginBottom: 12,
+  },
+  permissionText: {
+    fontSize: 16,
+    fontFamily: "Comfortaa-Regular",
+    color: "#666",
+    textAlign: "center",
+    lineHeight: 22,
+    marginBottom: 24,
+  },
+  permissionButton: {
+    backgroundColor: PRIMARY_COLOR,
+    paddingVertical: 16,
+    paddingHorizontal: 32,
+    borderRadius: 12,
     width: "100%",
+    alignItems: "center",
+  },
+  permissionButtonText: {
+    color: "#fff",
+    fontFamily: "Comfortaa-Bold",
+    fontSize: 16,
+  },
+  header: {
     flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingHorizontal: 16,
+    paddingTop: 8,
+  },
+  headerButton: {
+    backgroundColor: "#fff",
+    borderRadius: 999,
+    padding: 8,
+  },
+  headerTitle: {
+    color: "#fff",
+    fontSize: 18,
+    textAlign: "center",
+    fontFamily: "Comfortaa-Bold",
+  },
+  scrollContent: {
+    flexGrow: 1,
+    paddingHorizontal: 16,
+    paddingTop: 16,
+    paddingBottom: 20,
+  },
+  cameraContainer: {
+    width: "100%",
+    maxWidth: 400,
+    aspectRatio: 4 / 3,
+    borderRadius: 16,
+    overflow: "hidden",
+    backgroundColor: "#eee",
     justifyContent: "center",
     alignItems: "center",
+    position: "relative",
+  },
+  cameraOverlay: {
+    position: "absolute",
+    top: 16,
+    left: 16,
+    right: 16,
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     zIndex: 2,
+  },
+  cameraFlipButton: {
+    backgroundColor: "#fff",
+    borderRadius: 999,
+    padding: 8,
+  },
+  recordingIndicator: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "rgba(0,0,0,0.7)",
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 20,
+  },
+  recordingDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: "#ff4444",
+    marginRight: 8,
+  },
+  recordingText: {
+    color: "#fff",
+    fontFamily: "Comfortaa-Bold",
+    fontSize: 14,
   },
   recordBtn: {
     flexDirection: "row",
@@ -1475,6 +1091,109 @@ const styles = StyleSheet.create({
     borderRadius: 999,
     paddingVertical: 12,
     paddingHorizontal: 24,
-    marginTop: 16,
+    justifyContent: "center",
+  },
+  recordBtnText: {
+    color: "#fff",
+    fontFamily: "Comfortaa-Bold",
+    marginLeft: 8,
+  },
+  progressBarContainer: {
+    height: 4,
+    backgroundColor: "#E5E7EB",
+    borderRadius: 2,
+    overflow: "hidden",
+  },
+  progressBar: {
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: PRIMARY_COLOR,
+  },
+  progressText: {
+    color: "#fff",
+    fontFamily: "Comfortaa-Regular",
+    fontSize: 12,
+    textAlign: "center",
+    opacity: 0.8,
+  },
+  successText: {
+    color: "#4CAF50",
+    fontFamily: "Comfortaa-Regular",
+    fontSize: 12,
+    textAlign: "center",
+  },
+  errorText: {
+    color: "#d32f2f",
+    textAlign: "center",
+    fontFamily: "Comfortaa-Regular",
+    fontSize: 14,
+  },
+  questionCard: {
+    backgroundColor: "#fff",
+    borderRadius: 32,
+    padding: 24,
+    marginTop: 8,
+    alignItems: "center",
+    shadowColor: "#000",
+    shadowOpacity: 0.08,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  questionNumber: {
+    fontSize: 18,
+    marginBottom: 8,
+    fontFamily: "Comfortaa-Bold",
+  },
+  loadingText: {
+    color: PRIMARY_COLOR,
+    fontFamily: "Comfortaa-Regular",
+    marginBottom: 24,
+  },
+  questionText: {
+    color: "#71727A",
+    fontSize: 16,
+    textAlign: "center",
+    marginBottom: 24,
+    fontFamily: "Comfortaa-Regular",
+  },
+  navigationContainer: {
+    flexDirection: "row",
+    width: "100%",
+    justifyContent: "space-between",
+    marginTop: 8,
+  },
+  navButton: {
+    borderRadius: 999,
+    paddingVertical: 10,
+    paddingHorizontal: 24,
+  },
+  prevButton: {
+    backgroundColor: "#fff",
+    borderColor: PRIMARY_COLOR,
+    borderWidth: 1,
+  },
+  nextButton: {
+    backgroundColor: PRIMARY_COLOR,
+    paddingHorizontal: 32,
+  },
+  prevButtonText: {
+    color: PRIMARY_COLOR,
+    fontFamily: "Comfortaa-Bold",
+  },
+  nextButtonText: {
+    color: "#fff",
+    fontFamily: "Comfortaa-Bold",
+  },
+  questionProgressContainer: {
+    height: 6,
+    backgroundColor: "#E5E7EB",
+    borderRadius: 3,
+    width: "100%",
+    marginTop: 24,
+  },
+  questionProgressBar: {
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: PRIMARY_COLOR,
   },
 });
