@@ -266,7 +266,7 @@ export default function CallPage() {
           <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
             <View
               style={{
-                flex: 1,
+               
                 backgroundColor: "rgba(44, 44, 84, 0.18)",
                 justifyContent: "center",
                 alignItems: "center",

@@ -1,3 +1,5 @@
+
+
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import React, { useEffect, useRef, useState } from "react";
@@ -30,6 +32,8 @@ interface Message {
   senderType: "Parent" | "Buddi";
   timestamp: string;
   isMe: boolean;
+  status?: 'sending' | 'sent' | 'delivered' | 'read' | 'failed';
+  messageId?: string; // For tracking delivery status
 }
 
 interface ChatScreenProps {
@@ -52,6 +56,8 @@ const ChatScreen: React.FC<ChatScreenProps> = ({
   const [lastConnectionTime, setLastConnectionTime] = useState<number | null>(
     null
   );
+  const [isOtherUserTyping, setIsOtherUserTyping] = useState(false);
+  const [typingTimeout, setTypingTimeout] = useState<ReturnType<typeof setTimeout> | null>(null);
   const flatListRef = useRef<FlatList>(null);
   const connectionTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(
     null
@@ -61,6 +67,7 @@ const ChatScreen: React.FC<ChatScreenProps> = ({
   );
   const messageQueueRef = useRef<Message[]>([]);
   const isTypingRef = useRef(false);
+  const typingDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { user } = useAuth();
@@ -69,6 +76,7 @@ const ChatScreen: React.FC<ChatScreenProps> = ({
   const MAX_CONNECTION_ATTEMPTS = 3;
   const CONNECTION_TIMEOUT = 8000; // Reduced from 10s to 8s
   const RECONNECT_DELAY = 2000; // 2 seconds
+  const TYPING_DEBOUNCE = 1000; // 1 second typing debounce
 
   // Initialize socket connection with optimized settings
   useEffect(() => {
@@ -213,7 +221,7 @@ const ChatScreen: React.FC<ChatScreenProps> = ({
       SocketService.getSocket()?.on("connect_error", handleConnectError);
     }
 
-    // Listen for room joined confirmation
+    // Enhanced chat event listeners
     SocketService.on("room-joined", (data: any) => {
       console.log("[ChatScreen] 🏠 Room joined successfully:", data);
       setIsConnected(true);
@@ -227,13 +235,13 @@ const ChatScreen: React.FC<ChatScreenProps> = ({
       }
     });
 
-    // Listen for incoming messages with optimized handling
+    // Listen for incoming messages with enhanced handling
     SocketService.on("receive-message", (data: any) => {
       console.log("[ChatScreen] 💬 Message received:", data);
       // Only add if message is valid and not sent by the current user
       if (data.message && data.senderId !== userId) {
         const newMessage: Message = {
-          id: Date.now().toString(),
+          id: data.messageId || Date.now().toString(),
           text: data.message,
           senderId: data.senderId,
           senderType: data.senderType,
@@ -242,12 +250,80 @@ const ChatScreen: React.FC<ChatScreenProps> = ({
             minute: "2-digit",
           }),
           isMe: false,
+          status: 'delivered',
+          messageId: data.messageId,
         };
+        
         // Add message immediately if connected, otherwise queue it
         if (isConnected) {
           setMessages((prev) => [...prev, newMessage]);
+          
+          // Mark message as read automatically
+          if (data.messageId) {
+            SocketService.markMessageAsRead(chatRoomId, data.messageId, userId, userType);
+          }
         } else {
           messageQueueRef.current.push(newMessage);
+        }
+      }
+    });
+
+    // Message delivery confirmation
+    SocketService.on("message-delivered", (data: any) => {
+      console.log("[ChatScreen] ✅ Message delivered:", data);
+      if (data.messageId) {
+        setMessages((prev) =>
+          prev.map((msg) =>
+            msg.messageId === data.messageId
+              ? { ...msg, status: 'delivered' as const }
+              : msg
+          )
+        );
+      }
+    });
+
+    // Message read confirmation
+    SocketService.on("message-read", (data: any) => {
+      console.log("[ChatScreen] 👁️ Message read:", data);
+      if (data.messageId) {
+        setMessages((prev) =>
+          prev.map((msg) =>
+            msg.messageId === data.messageId
+              ? { ...msg, status: 'read' as const }
+              : msg
+          )
+        );
+      }
+    });
+
+    // Typing indicators
+    SocketService.on("user-typing", (data: any) => {
+      if (data.senderId !== userId && data.chatRoomId === chatRoomId) {
+        console.log("[ChatScreen] ⌨️ Other user is typing");
+        setIsOtherUserTyping(true);
+        
+        // Clear existing typing timeout
+        if (typingTimeout) {
+          clearTimeout(typingTimeout);
+        }
+        
+        // Set timeout to stop typing indicator
+        const timeout = setTimeout(() => {
+          setIsOtherUserTyping(false);
+        }, 3000); // Stop typing indicator after 3 seconds
+        
+        setTypingTimeout(timeout);
+      }
+    });
+
+    SocketService.on("user-stopped-typing", (data: any) => {
+      if (data.senderId !== userId && data.chatRoomId === chatRoomId) {
+        console.log("[ChatScreen] 🛑 Other user stopped typing");
+        setIsOtherUserTyping(false);
+        
+        if (typingTimeout) {
+          clearTimeout(typingTimeout);
+          setTypingTimeout(null);
         }
       }
     });
@@ -273,6 +349,12 @@ const ChatScreen: React.FC<ChatScreenProps> = ({
       if (reconnectTimeoutRef.current) {
         clearTimeout(reconnectTimeoutRef.current);
       }
+      if (typingTimeout) {
+        clearTimeout(typingTimeout);
+      }
+      if (typingDebounceRef.current) {
+        clearTimeout(typingDebounceRef.current);
+      }
 
       // Leave chat room
       SocketService.leaveChatRoom(chatRoomId);
@@ -288,6 +370,10 @@ const ChatScreen: React.FC<ChatScreenProps> = ({
       SocketService.off("room-joined");
       SocketService.off("receive-message");
       SocketService.off("chat-room-error");
+      SocketService.off("message-delivered");
+      SocketService.off("message-read");
+      SocketService.off("user-typing");
+      SocketService.off("user-stopped-typing");
     };
   }, [chatRoomId, user?.userId]);
 
@@ -363,7 +449,34 @@ const ChatScreen: React.FC<ChatScreenProps> = ({
     }
   }, [messages]);
 
-  // Handle sending message with optimized feedback
+  // Handle typing indicator
+  const handleTyping = (text: string) => {
+    setInputMessage(text);
+    
+    if (!isConnected || !user) return;
+    
+    const userType = user.role === "parent" ? "Parent" : "Buddi";
+    const userId = user.userId || "";
+    
+    // Clear existing typing debounce
+    if (typingDebounceRef.current) {
+      clearTimeout(typingDebounceRef.current);
+    }
+    
+    // Send typing indicator
+    if (!isTypingRef.current) {
+      isTypingRef.current = true;
+      SocketService.sendTypingIndicator(chatRoomId, userId, userType, true);
+    }
+    
+    // Set debounce to stop typing indicator
+    typingDebounceRef.current = setTimeout(() => {
+      isTypingRef.current = false;
+      SocketService.sendTypingIndicator(chatRoomId, userId, userType, false);
+    }, TYPING_DEBOUNCE);
+  };
+
+  // Handle sending message with enhanced features
   const handleSendMessage = async () => {
     if (!inputMessage.trim() || !user) {
       Alert.alert("Error", "Please enter a message.");
@@ -380,10 +493,17 @@ const ChatScreen: React.FC<ChatScreenProps> = ({
 
     const userType = user.role === "parent" ? "Parent" : "Buddi";
     const userId = user.userId || "";
+    const messageId = `msg_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+
+    // Stop typing indicator
+    if (isTypingRef.current) {
+      isTypingRef.current = false;
+      SocketService.sendTypingIndicator(chatRoomId, userId, userType, false);
+    }
 
     // Add message to local state immediately for better UX
     const newMessage: Message = {
-      id: Date.now().toString(),
+      id: messageId,
       text: inputMessage.trim(),
       senderId: userId,
       senderType: userType,
@@ -392,25 +512,28 @@ const ChatScreen: React.FC<ChatScreenProps> = ({
         minute: "2-digit",
       }),
       isMe: true,
+      status: 'sending',
+      messageId,
     };
 
     setMessages((prev) => [...prev, newMessage]);
 
     try {
-      // Send message via socket with timeout
-      const sendPromise = SocketService.sendMessage(
+      // Send message via socket with enhanced tracking
+      const sentMessageId = SocketService.sendMessage(
         chatRoomId,
         inputMessage.trim(),
         userId,
-        userType
+        userType,
+        messageId
       );
 
-      // Add timeout for message sending (5 seconds)
-      const timeoutPromise = new Promise((_, reject) =>
-        setTimeout(() => reject(new Error("Message send timeout")), 5000)
+      // Update message status to sent
+      setMessages((prev) =>
+        prev.map((msg) =>
+          msg.messageId === messageId ? { ...msg, status: 'sent' as const } : msg
+        )
       );
-
-      await Promise.race([sendPromise, timeoutPromise]);
 
       // Clear input only on success
       setInputMessage("");
@@ -418,8 +541,12 @@ const ChatScreen: React.FC<ChatScreenProps> = ({
       console.error("[ChatScreen] Error sending message:", error);
       Alert.alert("Error", "Failed to send message. Please try again.");
 
-      // Remove the message from local state if sending failed
-      setMessages((prev) => prev.filter((msg) => msg.id !== newMessage.id));
+      // Update message status to failed
+      setMessages((prev) =>
+        prev.map((msg) =>
+          msg.messageId === messageId ? { ...msg, status: 'failed' as const } : msg
+        )
+      );
     }
   };
 
@@ -475,7 +602,62 @@ const ChatScreen: React.FC<ChatScreenProps> = ({
     );
   };
 
-  // Render individual message
+  // Render typing indicator
+  const renderTypingIndicator = () => {
+    if (!isOtherUserTyping) return null;
+    
+    return (
+      <View style={styles.typingIndicator}>
+        <View style={styles.typingBubble}>
+          <Text style={styles.typingText}>{otherUserName} is typing...</Text>
+          <View style={styles.typingDots}>
+            <View style={[styles.typingDot, styles.typingDot1]} />
+            <View style={[styles.typingDot, styles.typingDot2]} />
+            <View style={[styles.typingDot, styles.typingDot3]} />
+          </View>
+        </View>
+      </View>
+    );
+  };
+
+  // Render message status indicator
+  const renderMessageStatus = (message: Message) => {
+    if (!message.isMe || !message.status) return null;
+    
+    let statusIcon = null;
+    let statusColor = '#999';
+    
+    switch (message.status) {
+      case 'sending':
+        statusIcon = '⏳';
+        statusColor = '#FFA500';
+        break;
+      case 'sent':
+        statusIcon = '✓';
+        statusColor = '#999';
+        break;
+      case 'delivered':
+        statusIcon = '✓✓';
+        statusColor = '#4CAF50';
+        break;
+      case 'read':
+        statusIcon = '✓✓';
+        statusColor = '#2196F3';
+        break;
+      case 'failed':
+        statusIcon = '❌';
+        statusColor = '#F44336';
+        break;
+    }
+    
+    return (
+      <Text style={[styles.messageStatus, { color: statusColor }]}>
+        {statusIcon}
+      </Text>
+    );
+  };
+
+  // Render individual message with enhanced features
   const renderMessage = ({ item }: { item: Message }) => (
     <View style={item.isMe ? styles.myMsgWrap : styles.otherMsgWrap}>
       {!item.isMe && renderAvatar(otherUserName, false)}
@@ -486,6 +668,7 @@ const ChatScreen: React.FC<ChatScreenProps> = ({
         <Text style={item.isMe ? styles.myMsgText : styles.otherMsgText}>
           {item.text}
         </Text>
+        {renderMessageStatus(item)}
       </View>
       {item.isMe && renderAvatar(user?.firstName || "You", true)}
       {item.timestamp && <Text style={styles.msgTime}>{item.timestamp}</Text>}
@@ -619,6 +802,9 @@ const ChatScreen: React.FC<ChatScreenProps> = ({
               windowSize={10}
             />
 
+            {/* Typing Indicator */}
+            {renderTypingIndicator()}
+
             {/* Input Bar - always at the bottom */}
             <View
               style={[
@@ -645,7 +831,7 @@ const ChatScreen: React.FC<ChatScreenProps> = ({
                   placeholder="Type a message..."
                   placeholderTextColor="#BDBDBD"
                   value={inputMessage}
-                  onChangeText={setInputMessage}
+                  onChangeText={handleTyping}
                   multiline
                   maxLength={500}
                   editable={isConnected}
@@ -934,6 +1120,51 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: "bold",
     fontFamily: "Comfortaa-Bold",
+  },
+  typingIndicator: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    backgroundColor: 'transparent',
+  },
+  typingBubble: {
+    backgroundColor: '#f0f0f0',
+    borderRadius: 15,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    alignSelf: 'flex-start',
+    maxWidth: '70%',
+  },
+  typingText: {
+    fontSize: 12,
+    color: '#666',
+    fontFamily: 'Comfortaa-Regular',
+    marginBottom: 4,
+  },
+  typingDots: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+  },
+  typingDot: {
+    width: 4,
+    height: 4,
+    borderRadius: 2,
+    marginHorizontal: 1,
+    backgroundColor: '#999',
+  },
+  typingDot1: {
+    opacity: 0.4,
+  },
+  typingDot2: {
+    opacity: 0.7,
+  },
+  typingDot3: {
+    opacity: 1,
+  },
+  messageStatus: {
+    fontSize: 10,
+    marginTop: 2,
+    fontFamily: 'Comfortaa-Regular',
+    textAlign: 'right',
   },
 });
 

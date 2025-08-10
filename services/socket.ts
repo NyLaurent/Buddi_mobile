@@ -23,6 +23,29 @@ interface ChatMessage {
   senderId: string;
   senderType: 'Parent' | 'Buddi';
   timestamp: string;
+  messageId?: string; // For tracking message delivery
+  status?: 'sending' | 'sent' | 'delivered' | 'read' | 'failed';
+}
+
+interface ChatRoomData {
+  chatRoomId: string;
+  userId: string;
+  userType: 'Parent' | 'Buddi';
+}
+
+interface MessageData {
+  chatRoomId: string;
+  message: string;
+  senderId: string;
+  senderType: 'Parent' | 'Buddi';
+  messageId?: string;
+}
+
+interface TypingData {
+  chatRoomId: string;
+  userId: string;
+  userType: 'Parent' | 'Buddi';
+  isTyping: boolean;
 }
 
 class SocketService {
@@ -188,7 +211,7 @@ class SocketService {
       this.triggerEvent('availability-status-changed', data);
     });
 
-    // Chat events
+    // Enhanced Chat Events with real-time features
     this.socket.on('receive-message', (data: string) => {
       console.log('[SocketService] 💬 Message received:', data);
       try {
@@ -199,7 +222,40 @@ class SocketService {
       }
     });
 
-    // Room joined confirmation
+    // Message delivery confirmation
+    this.socket.on('message-delivered', (data: any) => {
+      console.log('[SocketService] ✅ Message delivered:', data);
+      this.triggerEvent('message-delivered', data);
+    });
+
+    // Message read confirmation
+    this.socket.on('message-read', (data: any) => {
+      console.log('[SocketService] 👁️ Message read:', data);
+      this.triggerEvent('message-read', data);
+    });
+
+    // Typing indicators
+    this.socket.on('user-typing', (data: string) => {
+      console.log('[SocketService] ⌨️ User typing:', data);
+      try {
+        const typingData: TypingData = JSON.parse(data);
+        this.triggerEvent('user-typing', typingData);
+      } catch (error) {
+        console.error('[SocketService] ❌ Error parsing user-typing data:', error);
+      }
+    });
+
+    this.socket.on('user-stopped-typing', (data: string) => {
+      console.log('[SocketService] 🛑 User stopped typing:', data);
+      try {
+        const typingData: TypingData = JSON.parse(data);
+        this.triggerEvent('user-stopped-typing', typingData);
+      } catch (error) {
+        console.error('[SocketService] ❌ Error parsing user-stopped-typing data:', error);
+      }
+    });
+
+    // Room joined confirmation with enhanced data
     this.socket.on('room-joined', (data: any) => {
       console.log('[SocketService] 🏠 Room joined confirmation:', data);
       this.triggerEvent('room-joined', data);
@@ -211,10 +267,16 @@ class SocketService {
       this.triggerEvent('room-left', data);
     });
 
-    // Chat room error
+    // Chat room error with detailed information
     this.socket.on('chat-room-error', (data: any) => {
       console.error('[SocketService] ❌ Chat room error:', data);
       this.triggerEvent('chat-room-error', data);
+    });
+
+    // Chat room status updates
+    this.socket.on('chat-room-status', (data: any) => {
+      console.log('[SocketService] 📊 Chat room status update:', data);
+      this.triggerEvent('chat-room-status', data);
     });
 
     // Pickup updates
@@ -300,38 +362,78 @@ class SocketService {
     this.socket.emit(eventName, this.userId);
   }
 
-  // Join a chat room (for parent-buddi communication)
+  // Enhanced Join Chat Room with better error handling
   joinChatRoom(chatRoomId: string, userId: string, userType: 'Parent' | 'Buddi') {
     if (!this.socket || !this.isConnected) {
       console.warn('[SocketService] ⚠️ Socket not connected, cannot join chat room');
       return;
     }
 
-    console.log(`[SocketService] 💬 Joining chat room: ${chatRoomId}`);
-    this.socket.emit('join-chat-room', {
+    const roomData: ChatRoomData = {
       chatRoomId,
       userId,
       userType,
-    });
+    };
+
+    console.log(`[SocketService] 💬 Joining chat room:`, roomData);
+    this.socket.emit('join-chat-room', roomData);
   }
 
-  // Send a message in chat room
-  sendMessage(chatRoomId: string, message: string, senderId: string, senderType: 'Parent' | 'Buddi') {
+  // Enhanced Send Message with message ID and delivery tracking
+  sendMessage(chatRoomId: string, message: string, senderId: string, senderType: 'Parent' | 'Buddi', messageId?: string) {
     if (!this.socket || !this.isConnected) {
       console.error('[SocketService] ❌ Socket not connected, cannot send message');
       return;
     }
 
-    console.log(`[SocketService] 💬 Sending message to room ${chatRoomId}:`, message);
-    this.socket.emit('send-message', {
+    const messageData: MessageData = {
       chatRoomId,
       message,
       senderId,
       senderType,
+      messageId: messageId || `msg_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+    };
+
+    console.log(`[SocketService] 💬 Sending message to room ${chatRoomId}:`, messageData);
+    this.socket.emit('send-message', messageData);
+    
+    // Return message ID for tracking
+    return messageData.messageId;
+  }
+
+  // Send typing indicator
+  sendTypingIndicator(chatRoomId: string, userId: string, userType: 'Parent' | 'Buddi', isTyping: boolean) {
+    if (!this.socket || !this.isConnected) {
+      return;
+    }
+
+    const typingData: TypingData = {
+      chatRoomId,
+      userId,
+      userType,
+      isTyping,
+    };
+
+    console.log(`[SocketService] ⌨️ Sending typing indicator:`, typingData);
+    this.socket.emit(isTyping ? 'user-typing' : 'user-stopped-typing', typingData);
+  }
+
+  // Mark message as read
+  markMessageAsRead(chatRoomId: string, messageId: string, userId: string, userType: 'Parent' | 'Buddi') {
+    if (!this.socket || !this.isConnected) {
+      return;
+    }
+
+    console.log(`[SocketService] 👁️ Marking message as read:`, { chatRoomId, messageId, userId, userType });
+    this.socket.emit('mark-message-read', {
+      chatRoomId,
+      messageId,
+      userId,
+      userType,
     });
   }
 
-  // Leave a chat room
+  // Enhanced Leave Chat Room
   leaveChatRoom(chatRoomId: string) {
     if (!this.socket || !this.isConnected) {
       console.warn('[SocketService] ⚠️ Socket not connected, cannot leave chat room');
@@ -350,6 +452,27 @@ class SocketService {
   // Listen for incoming messages
   onReceiveMessage(callback: (data: any) => void) {
     this.on('receive-message', callback);
+  }
+
+  // Enhanced event listeners for chat
+  onMessageDelivered(callback: (data: any) => void) {
+    this.on('message-delivered', callback);
+  }
+
+  onMessageRead(callback: (data: any) => void) {
+    this.on('message-read', callback);
+  }
+
+  onUserTyping(callback: (data: TypingData) => void) {
+    this.on('user-typing', callback);
+  }
+
+  onUserStoppedTyping(callback: (data: TypingData) => void) {
+    this.on('user-stopped-typing', callback);
+  }
+
+  onChatRoomStatus(callback: (data: any) => void) {
+    this.on('chat-room-status', callback);
   }
 
   // Emit custom events

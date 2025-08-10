@@ -146,7 +146,7 @@ export default function ParentMessagesScreen() {
       <Text style={styles.emptyTitle}>No Messages Yet</Text>
       <Text style={styles.emptyText}>
         You&apos;ll see your chat conversations here once you have matched
-        calls.
+        buddi
       </Text>
     </View>
   );

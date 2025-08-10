@@ -44,7 +44,8 @@ export default function BuddiMessagesScreen() {
       setLoading(true);
       setError(null);
 
-      // Fetch matched calls using the new API
+      // Fetch 
+      //  using the new API
       const response = await BuddiService.getMatchedRequests(buddiDetails.id);
       const matchedCalls = response.data || [];
 
