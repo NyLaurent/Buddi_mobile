@@ -76,7 +76,15 @@
         }
       ],
       "expo-secure-store",
-      "expo-build-properties"
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "enableProguardInReleaseBuilds": true,
+            "proguardMinifyEnabled": true
+          }
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true
