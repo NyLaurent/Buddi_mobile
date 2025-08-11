@@ -7,6 +7,7 @@ import { useAuth } from "@/context/AuthContext";
 import BuddiService from "@/services/api/buddi.service";
 import ChildrenService from "@/services/api/children.service";
 import ParentService from "@/services/api/parent.service";
+import notificationService from "@/services/notifications/notification.service";
 import SocketService from "@/services/socket";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
@@ -22,7 +23,6 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-// const pickupData = [
 //   {
 //     name: "Bryan Smith",
 //     time: "2:23:04",
@@ -45,8 +45,6 @@ import { SafeAreaView } from "react-native-safe-area-context";
 //     home: "Westside",
 //   },
 // ];
-
-
 
 const SchedulePage = () => {
   const router = useRouter();
@@ -140,6 +138,19 @@ const SchedulePage = () => {
         ...prev,
         [pickupData.id]: "enRoute",
       }));
+
+      // Send notification to parent that Buddi is en route
+      try {
+        notificationService.sendImmediateNotification({
+          title: "🚗 Buddi is En Route!",
+          body: `Your Buddi has started the trip and is on the way to pick up your child.`,
+          data: { type: "pickup_started", pickupId: pickupData.id },
+          priority: "high",
+          sound: "default",
+        });
+      } catch (error) {
+        console.log("Failed to send notification:", error);
+      }
     });
 
     SocketService.on("child-picked-up", (pickupData: any) => {
@@ -149,6 +160,19 @@ const SchedulePage = () => {
         ...prev,
         [pickupData.id]: "pickedUp",
       }));
+
+      // Send notification to parent that child has been picked up
+      try {
+        notificationService.sendImmediateNotification({
+          title: "👶 Child Picked Up!",
+          body: `Great news! Your child has been picked up and is on the way to the destination.`,
+          data: { type: "child_picked_up", pickupId: pickupData.id },
+          priority: "high",
+          sound: "default",
+        });
+      } catch (error) {
+        console.log("Failed to send notification:", error);
+      }
     });
 
     SocketService.on("trip-completed", (pickupData: any) => {
@@ -158,6 +182,19 @@ const SchedulePage = () => {
         ...prev,
         [pickupData.id]: "completed",
       }));
+
+      // Send notification to parent that trip is completed
+      try {
+        notificationService.sendImmediateNotification({
+          title: "✅ Trip Completed!",
+          body: `Your child has arrived safely at the destination. The trip has been completed successfully.`,
+          data: { type: "trip_completed", pickupId: pickupData.id },
+          priority: "high",
+          sound: "default",
+        });
+      } catch (error) {
+        console.log("Failed to send notification:", error);
+      }
     });
 
     SocketService.on("trip-cancelled", (pickupData: any) => {
@@ -167,6 +204,19 @@ const SchedulePage = () => {
         ...prev,
         [pickupData.id]: "cancelled",
       }));
+
+      // Send notification to parent that trip was cancelled
+      try {
+        notificationService.sendImmediateNotification({
+          title: "❌ Trip Cancelled",
+          body: `Your pickup request has been cancelled. Please check the app for details or contact support.`,
+          data: { type: "trip_cancelled", pickupId: pickupData.id },
+          priority: "high",
+          sound: "default",
+        });
+      } catch (error) {
+        console.log("Failed to send notification:", error);
+      }
     });
 
     // Cleanup listeners on unmount
@@ -206,6 +256,16 @@ const SchedulePage = () => {
         buddiId: selectedBuddiId,
         reason: reason,
       });
+
+      // Send system notification for successful coverage request
+      try {
+        await notificationService.sendCoverageRequestNotification(
+          selectedBuddiName || "Buddi",
+          new Date().toLocaleTimeString()
+        );
+      } catch (error) {
+        console.log("Failed to send notification:", error);
+      }
 
       Alert.alert(
         "Success",
@@ -589,7 +649,10 @@ const SchedulePage = () => {
                                 }
                                 onMainAction={() => {
                                   // Handle pickup action - coverage requests are handled in coverage tab
-                                  console.log("Pickup action triggered for pickup:", pickup.id);
+                                  console.log(
+                                    "Pickup action triggered for pickup:",
+                                    pickup.id
+                                  );
                                 }}
                               />
                             </View>

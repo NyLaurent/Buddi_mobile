@@ -19,6 +19,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import CountryPickerHeader from "../../../../components/commons/CountryPickerHeader";
 import SuccessScreen from "../../../../components/commons/SuccessScreen";
 import authService from "../../../../services/api/auth.service";
+import notificationService from "../../../../services/notifications/notification.service";
 
 const PRIMARY_COLOR = "#FF932E";
 const STEPS = [
@@ -1608,6 +1609,16 @@ export default function BuddiSignup() {
         const response = await authService.registerBuddi(registrationData);
 
         console.log("Registration successful:", response);
+
+        // Send system notification for successful signup
+        try {
+          await notificationService.sendSignupSuccessNotification(
+            "buddi",
+            formData.firstName
+          );
+        } catch (error) {
+          console.log("Failed to send notification:", error);
+        }
 
         // Show success screen for 3 seconds then redirect to login
         setShowSuccess(true);

@@ -14,6 +14,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import CountryPickerHeader from "../../../../components/commons/CountryPickerHeader";
 import SuccessScreen from "../../../../components/commons/SuccessScreen";
 import authService from "../../../../services/api/auth.service";
+import notificationService from "../../../../services/notifications/notification.service";
 
 const PRIMARY_COLOR = "#FF932E";
 const STEPS = ["Registration", "School Details"];
@@ -587,6 +588,14 @@ const HeadTeacherSignup = () => {
           position: form.position,
         };
         await authService.registerReferralTeacher(payload);
+        
+        // Send system notification for successful signup
+        try {
+          await notificationService.sendSignupSuccessNotification('head-teacher', form.firstName);
+        } catch (error) {
+          console.log('Failed to send notification:', error);
+        }
+        
         setCompleted(true);
       } catch (e: any) {
         setErrors({ api: e.message || "Registration failed" });

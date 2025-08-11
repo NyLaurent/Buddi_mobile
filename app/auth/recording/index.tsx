@@ -21,6 +21,7 @@ import {
   getRandomInterviewQuestions,
   uploadBuddiProfileVideo,
 } from "../../../services/api/buddi.service";
+import notificationService from "../../../services/notifications/notification.service";
 
 type InterviewQuestion = { id: string; questionDescription: string };
 
@@ -634,6 +635,15 @@ export default function BuddiRecordingScreen() {
       console.log("Upload successful!");
       setUploadStatus("success");
       setUploadProgress(100);
+
+      // Send system notification for successful recording submission
+      try {
+        await notificationService.sendRecordingSubmittedNotification(
+          buddiDetails?.firstName || "Buddi"
+        );
+      } catch (error) {
+        console.log("Failed to send notification:", error);
+      }
 
       setTimeout(() => {
         router.push("/auth/recording/success");

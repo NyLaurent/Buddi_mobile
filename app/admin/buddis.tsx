@@ -1,7 +1,6 @@
 import { AdminBuddiApplicationCard } from "@/components/admin/AdminBuddiApplicationCard";
 import AdminVideosInterviewsContainer from "@/components/admin/AdminVideosInterviewsContainer";
 import BuddisTable from "@/components/admin/BuddisTable";
-import CoverageAlertCard from "@/components/admin/CoverageAlertCard";
 import FeedbackReportsContainer from "@/components/admin/FeedbackReportsCard";
 import AnalyticsCard from "@/components/commons/AnalyticsCard";
 import PageHeader from "@/components/commons/PageHeader";
@@ -24,6 +23,7 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import notificationService from "../../services/notifications/notification.service";
 
 const tabs = [
   { id: "all", label: "All Buddis" },
@@ -133,6 +133,17 @@ export default function AdminBuddisPage() {
     setActionLoading(id + "-approve");
     try {
       await BuddiService.approveBuddi(id, currentStatus);
+
+      // Send notification for successful approval
+      try {
+        await notificationService.sendAccountApprovedNotification(
+          "Buddi", // You might want to get the actual name from the buddi data
+          "Buddi"
+        );
+      } catch (error) {
+        console.log("Failed to send notification:", error);
+      }
+
       Alert.alert("Success", "Buddi approved successfully.");
       fetchBuddies();
     } catch (err: any) {
@@ -197,6 +208,19 @@ export default function AdminBuddisPage() {
         newStatus,
         cardReason
       );
+
+      // Send notification for successful approval/rejection
+      if (cardActionType === "approve") {
+        try {
+          await notificationService.sendAccountApprovedNotification(
+            "Buddi", // You might want to get the actual name from the buddi data
+            "Buddi"
+          );
+        } catch (error) {
+          console.log("Failed to send notification:", error);
+        }
+      }
+
       Alert.alert("Success", `Buddi ${cardActionType}d successfully.`);
       closeCardModal();
       fetchPendingBuddies(); // Refresh the cards

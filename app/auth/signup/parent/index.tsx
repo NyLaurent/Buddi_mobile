@@ -18,6 +18,7 @@ import CountryPickerHeader from "../../../../components/commons/CountryPickerHea
 import SuccessScreen from "../../../../components/commons/SuccessScreen";
 import authService from "../../../../services/api/auth.service";
 import { ParentRegistrationRequest } from "../../../../services/api/types";
+import notificationService from "../../../../services/notifications/notification.service";
 
 const PRIMARY_COLOR = "#FF932E";
 const STEPS = ["Registration", "Payment"];
@@ -686,7 +687,7 @@ export default function ParentSignup() {
       Alert.alert(
         "Validation Error",
         firstErrorMsg ||
-        "Please complete all required fields before proceeding."
+          "Please complete all required fields before proceeding."
       );
       return;
     }
@@ -709,6 +710,17 @@ export default function ParentSignup() {
         };
         const response = await authService.registerParent(registrationData);
         console.log("Registration successful:", response);
+
+        // Send system notification for successful signup
+        try {
+          await notificationService.sendSignupSuccessNotification(
+            "parent",
+            formData.firstName
+          );
+        } catch (error) {
+          console.log("Failed to send notification:", error);
+        }
+
         // Show success screen for 3 seconds then navigate to login
         setShowSuccess(true);
         setTimeout(() => {
@@ -722,10 +734,10 @@ export default function ParentSignup() {
         if (backendMsg) {
           Alert.alert("Registration Failed", backendMsg);
         } else {
-        Alert.alert(
-          "Registration Failed",
+          Alert.alert(
+            "Registration Failed",
             "An error occurred during registration. Please try again."
-        );
+          );
         }
       } finally {
         setIsLoading(false);

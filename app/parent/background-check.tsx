@@ -14,6 +14,7 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useAuth } from "../../context/AuthContext";
 import BackgroundCheckService from "../../services/api/background-check.service";
+import notificationService from "../../services/notifications/notification.service";
 
 export default function BackgroundCheck() {
   const router = useRouter();
@@ -100,6 +101,14 @@ export default function BackgroundCheck() {
           );
 
           // Redirect immediately to Checkr invitation URL
+          
+          // Send system notification for successful background check submission
+          try {
+            await notificationService.sendBackgroundCheckSubmittedNotification(user?.firstName || 'User');
+          } catch (error) {
+            console.log('Failed to send notification:', error);
+          }
+          
           try {
             const supported = await Linking.canOpenURL(response.invitationUrl);
             if (supported) {
@@ -131,6 +140,14 @@ export default function BackgroundCheck() {
           }
         } else {
           // Fallback to original success message if no invitation URL
+          
+          // Send system notification for successful background check submission
+          try {
+            await notificationService.sendBackgroundCheckSubmittedNotification(user?.firstName || 'User');
+          } catch (error) {
+            console.log('Failed to send notification:', error);
+          }
+          
           Alert.alert(
             "Background Check Submitted",
             "Your background check information has been submitted successfully. Our team will review and contact you within 2-3 business days.",

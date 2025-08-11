@@ -60,12 +60,37 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({
 
     // Configure notification channel for Android
     if (Platform.OS === "android") {
+      // Default channel for general notifications
       Notifications.setNotificationChannelAsync("default", {
         name: "default",
         importance: Notifications.AndroidImportance.MAX,
         vibrationPattern: [0, 250, 250, 250],
         lightColor: "#FF231F7C",
         sound: "default",
+        // Enhanced visibility settings
+        enableVibrate: true,
+        enableLights: true,
+        lockscreenVisibility:
+          Notifications.AndroidNotificationVisibility.PUBLIC,
+        bypassDnd: true, // Bypass Do Not Disturb
+        showBadge: true,
+      });
+
+      // High-priority channel for trip-related notifications
+      Notifications.setNotificationChannelAsync("trips", {
+        name: "Trip Updates",
+        description:
+          "Important updates about your child's pickup and trip status",
+        importance: Notifications.AndroidImportance.MAX,
+        vibrationPattern: [0, 500, 250, 500],
+        lightColor: "#FF6B35",
+        sound: "default",
+        enableVibrate: true,
+        enableLights: true,
+        lockscreenVisibility:
+          Notifications.AndroidNotificationVisibility.PUBLIC,
+        bypassDnd: true,
+        showBadge: true,
       });
     }
     registerForPushNotificationsAsync().then(

@@ -21,6 +21,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import PageHeader from "../../components/commons/PageHeader";
 import { useAuth } from "../../context/AuthContext";
 import { ChildrenService, CoverageService } from "../../services/api";
+import notificationService from "../../services/notifications/notification.service";
 
 export default function CallPage() {
   const [description, setDescription] = useState("");
@@ -43,7 +44,7 @@ export default function CallPage() {
   const [kidSchool, setKidSchool] = useState("");
   const [kidPickupAddress, setKidPickupAddress] = useState("");
 
-  const { parentDetails } = useAuth();
+  const { parentDetails, user } = useAuth();
   const [registeredKids, setRegisteredKids] = useState<
     import("../../services/api/children.service").Child[]
   >([]);
@@ -225,6 +226,13 @@ export default function CallPage() {
       const pickupResponse = await CoverageService.createPickupRequest(
         pickupData
       );
+
+      // Send system notification for successful pickup request creation
+      try {
+        await notificationService.sendPickupRequestSuccessNotification(user?.firstName || 'User');
+      } catch (error) {
+        console.log('Failed to send notification:', error);
+      }
 
       setPickupSuccess("Pickup request created successfully!");
       setShowSuccessModal(true);

@@ -550,7 +550,37 @@ export default function ParentDashboard() {
       // Refresh pickup requests when updated
       if (parentDetails?.id) {
         ParentService.getMyPickupRequests(parentDetails.id.toString())
-          .then((res) => setPickupRequests(res.data || []))
+          .then((res) => {
+            const newRequests = res.data || [];
+            const oldRequests = pickupRequests;
+
+            // Check for new Buddi assignments
+            newRequests.forEach((newRequest: any) => {
+              const oldRequest = oldRequests.find(
+                (old: any) => old.id === newRequest.id
+              );
+              if (
+                oldRequest &&
+                !oldRequest.matchedBuddiId &&
+                newRequest.matchedBuddiId
+              ) {
+                // New Buddi assigned!
+                try {
+                  notificationService.sendImmediateNotification({
+                    title: "🎉 Buddi Assigned!",
+                    body: `Great news! A Buddi has been assigned to your pickup request. Check the app for details.`,
+                    data: { type: "buddi_assigned", pickupId: newRequest.id },
+                    priority: "high",
+                    sound: "default",
+                  });
+                } catch (error) {
+                  console.log("Failed to send notification:", error);
+                }
+              }
+            });
+
+            setPickupRequests(newRequests);
+          })
           .catch((err) =>
             console.error("Failed to refresh pickup requests:", err)
           );

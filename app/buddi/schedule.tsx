@@ -8,6 +8,7 @@ import BuddiService from "@/services/api/buddi.service";
 import ChildrenService from "@/services/api/children.service";
 import CoverageService from "@/services/api/coverage.service";
 import ParentService from "@/services/api/parent.service";
+import notificationService from "@/services/notifications/notification.service";
 import SocketService from "@/services/socket";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
@@ -201,6 +202,19 @@ const SchedulePage = () => {
         tripStartTime: new Date().toISOString(),
       });
 
+      // Send system notification for trip started
+      try {
+        await notificationService.sendImmediateNotification({
+          title: "🚗 Trip Started!",
+          body: `You're now en route to pick up your passenger. Drive safely!`,
+          data: { type: "trip_started", pickupId: pickup.id },
+          priority: "high",
+          sound: "default",
+        });
+      } catch (error) {
+        console.log("Failed to send notification:", error);
+      }
+
       // Show success feedback
       console.log("[SCHEDULE] ✅ Pickup started successfully");
     } catch (error) {
@@ -227,6 +241,19 @@ const SchedulePage = () => {
         status: "pickedUp",
         pickupTime: new Date().toISOString(),
       });
+
+      // Send system notification for child picked up
+      try {
+        await notificationService.sendImmediateNotification({
+          title: "👶 Child Picked Up!",
+          body: `Great! You've successfully picked up your passenger. Now head to the destination.`,
+          data: { type: "child_picked_up", pickupId: pickup.id },
+          priority: "high",
+          sound: "default",
+        });
+      } catch (error) {
+        console.log("Failed to send notification:", error);
+      }
 
       // Show success feedback
       console.log("[SCHEDULE] ✅ Child picked up successfully");
@@ -260,6 +287,17 @@ const SchedulePage = () => {
 
       // Refresh weekly summary to show completed pickup
       await fetchWeeklyPickupSummary();
+
+      // Send system notification for successful trip completion
+      try {
+        await notificationService.sendTripCompletedNotification(
+          pickup.kidName || "Child",
+          25, // Default fare - you might want to get this from actual data
+          "30 min" // Default duration - you might want to calculate this
+        );
+      } catch (error) {
+        console.log("Failed to send notification:", error);
+      }
 
       // Show success feedback
       console.log("[SCHEDULE] ✅ Trip completed successfully");
@@ -427,6 +465,19 @@ const SchedulePage = () => {
           reason: reason,
         });
 
+        // Send system notification for successful coverage request
+        try {
+          await notificationService.sendImmediateNotification({
+            title: "🆘 Coverage Request Sent!",
+            body: `Your coverage request has been sent successfully. We'll notify you when someone responds.`,
+            data: { type: "coverage_request_sent", reason },
+            priority: "high",
+            sound: "default",
+          });
+        } catch (error) {
+          console.log("Failed to send notification:", error);
+        }
+
         Alert.alert(
           "Success",
           "Coverage request sent successfully! The parent will be notified.",
@@ -460,6 +511,16 @@ const SchedulePage = () => {
           buddiId: selectedBuddiId,
           reason: reason,
         });
+
+        // Send system notification for successful coverage request
+        try {
+          await notificationService.sendCoverageRequestNotification(
+            selectedBuddiName || "Buddi",
+            new Date().toLocaleTimeString()
+          );
+        } catch (error) {
+          console.log("Failed to send notification:", error);
+        }
 
         Alert.alert(
           "Success",
@@ -909,7 +970,6 @@ const SchedulePage = () => {
 
                     // Check if this pickup is completed for today
                     const isCompleted = isPickupCompletedForToday(pickup);
-                    
 
                     // Parse the available days string and show only today's day
                     let todaysDays: string[] = [];

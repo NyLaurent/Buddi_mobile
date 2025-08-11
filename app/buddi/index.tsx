@@ -24,6 +24,7 @@ import PickupCard from "../../components/commons/PickupCard";
 import SuccessModal from "../../components/modals/SuccessModal";
 import { useAuth } from "../../context/AuthContext";
 import BuddiService from "../../services/api/buddi.service";
+import notificationService from "../../services/notifications/notification.service";
 import SocketService from "../../services/socket";
 // import ChildrenService from "../../services/api/children.service";
 
@@ -423,7 +424,7 @@ export default function BuddiHome() {
     }
 
     // Enhanced handlers for all trip events matching your server's event names
-    const handlePickupRequested = (pickupData: any) => {
+    const handlePickupRequested = async (pickupData: any) => {
       console.log("🎯 [BUDDI] ===== PICKUP-REQUESTED EVENT RECEIVED =====");
       console.log("[BUDDI] 📋 Received pickup-requested event:", pickupData);
       console.log(
@@ -504,6 +505,19 @@ export default function BuddiHome() {
         console.log("[BUDDI] ✅ Pickup ID:", pickupData.id);
         console.log("[BUDDI] ✅ Status: Assigned");
         console.log("[BUDDI] ✅ Ready to start trip when scheduled");
+
+        // Send system notification for new pickup assignment
+        try {
+          await notificationService.sendNewPickupAssignmentNotification(
+            pickupData.kidName || "Child",
+            pickupData.scheduledTime
+              ? new Date(pickupData.scheduledTime).toLocaleTimeString()
+              : "Now",
+            pickupData.fromLocation || "Pickup Location"
+          );
+        } catch (error) {
+          console.log("Failed to send notification:", error);
+        }
 
         showSuccessModal(
           "🚨 New Pickup Assignment!",
