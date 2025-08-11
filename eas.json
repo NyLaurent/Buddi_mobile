@@ -16,14 +16,14 @@
       "android": {
         "buildType": "apk"
       },
-      "ios": {
-        
-      }
+      "ios": {}
     },
     "production": {
       "autoIncrement": true,
       "android": {
-        "buildType": "app-bundle"
+        "buildType": "app-bundle",
+        "uploadSymbols": true
+      
       }
     }
   },
