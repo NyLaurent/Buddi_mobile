@@ -21,9 +21,9 @@
     "production": {
       "autoIncrement": true,
       "android": {
-        "buildType": "app-bundle",
-        "uploadSymbols": true
-      
+        "buildType": "app-bundle"
+       
+       
       }
     }
   },
