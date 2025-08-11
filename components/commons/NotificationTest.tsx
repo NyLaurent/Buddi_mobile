@@ -2,6 +2,7 @@ import { useNotification } from "@/context/NotificationContext";
 import * as Notifications from "expo-notifications";
 import React from "react";
 import { Alert, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import notificationService from "../../services/notifications/notification.service";
 
 export const NotificationTest: React.FC = () => {
   const { expoPushToken, notification, error } = useNotification();
@@ -66,6 +67,30 @@ export const NotificationTest: React.FC = () => {
     }
   };
 
+  const testNotificationService = async () => {
+    try {
+      await notificationService.sendImmediateNotification({
+        title: "🚨 System Notification Test!",
+        body: "This should appear as a system notification even when app is closed!",
+        data: { type: "test_system_notification" },
+        priority: "high",
+        sound: "default",
+      });
+      Alert.alert("Success", "System notification sent via service!");
+    } catch (err) {
+      Alert.alert("Error", "Failed to send system notification");
+    }
+  };
+
+  const clearAllNotifications = async () => {
+    try {
+      await notificationService.clearAllCurrentNotifications();
+      Alert.alert("Success", "All notifications cleared!");
+    } catch (err) {
+      Alert.alert("Error", "Failed to clear notifications");
+    }
+  };
+
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Push Notifications Test</Text>
@@ -116,6 +141,20 @@ export const NotificationTest: React.FC = () => {
           onPress={sendImmediateNotification}
         >
           <Text style={styles.buttonText}>Send Immediate Notification</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={styles.button}
+          onPress={testNotificationService}
+        >
+          <Text style={styles.buttonText}>Test Service Notification</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[styles.button, { backgroundColor: "#dc3545" }]}
+          onPress={clearAllNotifications}
+        >
+          <Text style={styles.buttonText}>Clear All Notifications</Text>
         </TouchableOpacity>
       </View>
     </View>

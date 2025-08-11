@@ -24,13 +24,19 @@ const VideoGuidelinesScreen = () => {
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [isTransitioning, setIsTransitioning] = useState(false);
 
-  type GuidelineKey = "guideline1" | "guideline2" | "guideline3" | "guideline4";
+  type GuidelineKey =
+    | "guideline1"
+    | "guideline2"
+    | "guideline3"
+    | "guideline4"
+    | "guideline5";
 
   const [guidelinesRead, setGuidelinesRead] = useState({
     guideline1: false,
     guideline2: false,
     guideline3: false,
     guideline4: false,
+    guideline5: false,
   });
 
   const allGuidelinesRead = Object.values(guidelinesRead).every(
@@ -105,10 +111,10 @@ const VideoGuidelinesScreen = () => {
 
             <View className="items-center">
               <Text className="text-white text-lg font-comfortaa-bold text-center">
-                Record Your Buddi
+                Upload Your Buddi
               </Text>
               <Text className="text-white text-lg font-comfortaa-bold text-center">
-                Interview
+                Interview Video
               </Text>
             </View>
 
@@ -206,12 +212,12 @@ const VideoGuidelinesScreen = () => {
                   />
                   <View className="flex-1">
                     <Text className="font-comfortaa-bold text-black">
-                      Camera Position & Lighting
+                      Video Requirements
                     </Text>
                     <Text className="font-comfortaa text-xs text-[#71727A] mb-1">
-                      Ensure you are well-lit and facing the camera directly.
-                      Your face should be clearly visible and centered in the
-                      frame.
+                      Your video must be 60 seconds or shorter, maximum 5MB in
+                      size, and in MP4, MOV, or AVI format. Record in a quiet,
+                      well-lit environment.
                     </Text>
                   </View>
                   <TouchableOpacity
@@ -237,12 +243,12 @@ const VideoGuidelinesScreen = () => {
                   />
                   <View className="flex-1">
                     <Text className="font-comfortaa-bold text-black">
-                      No External Assistance
+                      Camera Position & Lighting
                     </Text>
                     <Text className="font-comfortaa text-xs text-[#71727A] mb-1">
-                      Do not use AI tools, chat assistants, or any external help
-                      during the interview. Your answers must be genuine and
-                      original.
+                      Ensure you are well-lit and facing the camera directly.
+                      Your face should be clearly visible and centered in the
+                      frame.
                     </Text>
                   </View>
                   <TouchableOpacity
@@ -268,11 +274,12 @@ const VideoGuidelinesScreen = () => {
                   />
                   <View className="flex-1">
                     <Text className="font-comfortaa-bold text-black">
-                      Clear Communication
+                      No External Assistance
                     </Text>
                     <Text className="font-comfortaa text-xs text-[#71727A] mb-1">
-                      Speak clearly and maintain a professional demeanor. Take
-                      your time to think before answering each question.
+                      Do not use AI tools, chat assistants, or any external help
+                      during the interview. Your answers must be genuine and
+                      original.
                     </Text>
                   </View>
                   <TouchableOpacity
@@ -298,6 +305,36 @@ const VideoGuidelinesScreen = () => {
                   />
                   <View className="flex-1">
                     <Text className="font-comfortaa-bold text-black">
+                      Clear Communication
+                    </Text>
+                    <Text className="font-comfortaa text-xs text-[#71727A] mb-1">
+                      Speak clearly and maintain a professional demeanor. Take
+                      your time to think before answering each question.
+                    </Text>
+                  </View>
+                  <TouchableOpacity
+                    className={`border rounded h-5 w-5 mt-1 ${
+                      guidelinesRead.guideline4
+                        ? "bg-[#0066FF] border-[#0066FF]"
+                        : "border-gray-300"
+                    }`}
+                    onPress={() => toggleGuideline("guideline4")}
+                  />
+                </View>
+
+                {/* Guideline Item 5 */}
+                <View className="flex-row mb-4">
+                  <View
+                    className="mr-3 mt-1"
+                    style={{
+                      backgroundColor: "#0066FF",
+                      borderRadius: 10,
+                      height: 16,
+                      width: 4,
+                    }}
+                  />
+                  <View className="flex-1">
+                    <Text className="font-comfortaa-bold text-black">
                       Quiet Environment
                     </Text>
                     <Text className="font-comfortaa text-xs text-[#71727A] mb-1">
@@ -308,11 +345,11 @@ const VideoGuidelinesScreen = () => {
                   </View>
                   <TouchableOpacity
                     className={`border rounded h-5 w-5 mt-1 ${
-                      guidelinesRead.guideline4
+                      guidelinesRead.guideline5
                         ? "bg-[#0066FF] border-[#0066FF]"
                         : "border-gray-300"
                     }`}
-                    onPress={() => toggleGuideline("guideline4")}
+                    onPress={() => toggleGuideline("guideline5")}
                   />
                 </View>
               </View>
@@ -325,9 +362,9 @@ const VideoGuidelinesScreen = () => {
                 onPress={handleStartPress}
               >
                 <Text className="font-comfortaa-bold text-white text-base mr-2">
-                  Start Interview
+                  Upload Interview Video
                 </Text>
-                <Ionicons name="videocam" size={18} color="white" />
+                <Ionicons name="cloud-upload" size={18} color="white" />
               </TouchableOpacity>
             </View>
             {/* Return to Login Button */}
@@ -357,11 +394,12 @@ const VideoGuidelinesScreen = () => {
         <View className="flex-1 justify-center items-center bg-black/50">
           <View className="bg-white rounded-3xl p-6 m-4 w-[90%] max-w-[400px]">
             <Text className="text-xl font-comfortaa-bold text-black mb-4 text-center">
-              Ready to Begin?
+              Ready to Upload?
             </Text>
             <Text className="font-comfortaa text-[#71727A] mb-6 text-center">
               Please confirm that you have read and understood all the interview
-              guidelines. Once you start, you cannot pause the interview.
+              guidelines. You will be able to select and upload your
+              pre-recorded video.
             </Text>
             <View className="flex-row justify-center space-x-4">
               <TouchableOpacity

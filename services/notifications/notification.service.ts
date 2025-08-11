@@ -52,9 +52,9 @@ export class NotificationService {
           sound: notification.sound || 'default',
           priority: notification.priority || 'high',
           badge: notification.badge,
-          // Ensure notification is visible and persistent
-          autoDismiss: false, // Don't auto-dismiss
-          sticky: true, // Make it sticky so user must manually dismiss
+          // Ensure notification is visible but dismissible
+          autoDismiss: true,
+          sticky: false,
         },
         trigger: null, // null trigger means immediate
       });
@@ -289,6 +289,27 @@ export class NotificationService {
       return notifications;
     } catch (error) {
       console.error('❌ Failed to get scheduled notifications:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Clear all current notifications from the notification tray
+   * This removes notifications that are currently displayed
+   */
+  async clearAllCurrentNotifications(): Promise<void> {
+    try {
+      // On Android, we can clear the notification badge
+      if (Platform.OS === 'android') {
+        await Notifications.setBadgeCountAsync(0);
+      }
+      
+      // Cancel all scheduled notifications
+      await this.cancelAllNotifications();
+      
+      console.log('🔔 All current notifications cleared');
+    } catch (error) {
+      console.error('❌ Failed to clear current notifications:', error);
       throw error;
     }
   }

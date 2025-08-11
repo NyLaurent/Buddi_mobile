@@ -72,8 +72,8 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({
         enableLights: true,
         lockscreenVisibility:
           Notifications.AndroidNotificationVisibility.PUBLIC,
-        bypassDnd: true, // Bypass Do Not Disturb
-        showBadge: true,
+        bypassDnd: false, // Don't bypass Do Not Disturb
+        showBadge: false,
       });
 
       // High-priority channel for trip-related notifications
@@ -89,8 +89,8 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({
         enableLights: true,
         lockscreenVisibility:
           Notifications.AndroidNotificationVisibility.PUBLIC,
-        bypassDnd: true,
-        showBadge: true,
+        bypassDnd: false,
+        showBadge: false,
       });
     }
     registerForPushNotificationsAsync().then(
