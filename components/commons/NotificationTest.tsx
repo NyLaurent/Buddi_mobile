@@ -28,9 +28,11 @@ export const NotificationTest: React.FC = () => {
     try {
       await Notifications.scheduleNotificationAsync({
         content: {
-          title: "Test Local Notification",
+          title: "🔔 Test Notification",
           body: "This is a local notification from your app!",
           data: { data: "goes here" },
+          sound: "default",
+          priority: "high",
         },
         trigger: {
           type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL,
@@ -43,6 +45,24 @@ export const NotificationTest: React.FC = () => {
       );
     } catch (err) {
       Alert.alert("Error", "Failed to schedule local notification");
+    }
+  };
+
+  const sendImmediateNotification = async () => {
+    try {
+      await Notifications.scheduleNotificationAsync({
+        content: {
+          title: "🚨 Immediate Notification!",
+          body: "This notification should appear immediately as a system notification!",
+          data: { data: "immediate" },
+          sound: "default",
+          priority: "high",
+        },
+        trigger: null, // null trigger means immediate
+      });
+      Alert.alert("Success", "Immediate notification sent!");
+    } catch (err) {
+      Alert.alert("Error", "Failed to send immediate notification");
     }
   };
 
@@ -89,6 +109,13 @@ export const NotificationTest: React.FC = () => {
           onPress={scheduleLocalNotification}
         >
           <Text style={styles.buttonText}>Test Local Notification</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={styles.button}
+          onPress={sendImmediateNotification}
+        >
+          <Text style={styles.buttonText}>Send Immediate Notification</Text>
         </TouchableOpacity>
       </View>
     </View>

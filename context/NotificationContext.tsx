@@ -9,6 +9,7 @@ import React, {
   useRef,
   useState,
 } from "react";
+import { Platform } from "react-native";
 
 interface NotificationContextType {
   expoPushToken: string | null;
@@ -46,6 +47,27 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({
   const responseListener = useRef<Subscription | null>(null);
 
   useEffect(() => {
+    // Configure notification behavior
+    Notifications.setNotificationHandler({
+      handleNotification: async () => ({
+        shouldShowAlert: true,
+        shouldPlaySound: true,
+        shouldSetBadge: false,
+        shouldShowBanner: true,
+        shouldShowList: true,
+      }),
+    });
+
+    // Configure notification channel for Android
+    if (Platform.OS === "android") {
+      Notifications.setNotificationChannelAsync("default", {
+        name: "default",
+        importance: Notifications.AndroidImportance.MAX,
+        vibrationPattern: [0, 250, 250, 250],
+        lightColor: "#FF231F7C",
+        sound: "default",
+      });
+    }
     registerForPushNotificationsAsync().then(
       (token) => setExpoPushToken(token),
       (error) => setError(error)
