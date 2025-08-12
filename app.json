@@ -75,7 +75,13 @@
           "locationPermission": "Allow $(PRODUCT_NAME) to use your location"
         }
       ],
-      "expo-secure-store"
+      "expo-secure-store",
+      [
+        "@stripe/stripe-react-native",
+        {
+          "enableGooglePay": true
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true
