@@ -81,7 +81,8 @@
         {
           "android": {
             "enableProguardInReleaseBuilds": true,
-            "proguardMinifyEnabled": true
+            "proguardMinifyEnabled": true,
+            "proguardFiles": ["proguard-rules.pro"]
           }
         }
       ]
