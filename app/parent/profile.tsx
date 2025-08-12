@@ -15,6 +15,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import ProfileEditModal from "../../components/commons/ProfileEditModal";
 import { useAuth } from "../../context/AuthContext";
 import authService from "../../services/api/auth.service";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 interface ProfileData {
   user: {
@@ -45,7 +46,7 @@ export default function ParentProfile() {
   const [showProfileEdit, setShowProfileEdit] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const router = useRouter();
-  const { user, parentDetails, refreshUserData } = useAuth();
+  const { user, parentDetails, refreshUserData, logout } = useAuth();
 
   const fetchProfileData = async () => {
     try {
@@ -111,6 +112,57 @@ export default function ParentProfile() {
       default:
         return "Unknown";
     }
+  };
+
+  const handleDeleteAccount = async () => {
+    Alert.alert(
+      "Delete Account",
+      "Are you sure you want to delete your account? This action cannot be undone.",
+      [
+        { 
+          text: "Cancel", 
+          style: "cancel" 
+        },
+        { 
+          text: "Delete", 
+          style: "destructive",
+          onPress: async () => {
+            try {
+              await authService.deleteAccount();
+              Alert.alert(
+                "Account Deleted", 
+                "Your account has been deleted successfully. You will be logged out.",
+                [
+                  {
+                    text: "OK",
+                    onPress: async () => {
+                      // Clear stored data and logout
+                      await AsyncStorage.removeItem("parentPickups");
+                      await logout();
+                      router.replace("/auth/login");
+                    }
+                  }
+                ]
+              );
+            } catch (error: any) {
+              console.error("Error deleting account:", error);
+              let errorMessage = "Failed to delete account. Please try again.";
+              
+              // Check if user has active pickup requests
+              if (error?.response?.data?.error?.includes("foreign key constraint")) {
+                errorMessage = `Cannot delete account: ${user?.firstName || 'You'} have active pickup requests. Please cancel all requests first, then try again.`;
+              } else if (error?.response?.data?.message) {
+                errorMessage = error.response.data.message;
+              } else if (error?.message) {
+                errorMessage = error.message;
+              }
+              
+              Alert.alert("Error", errorMessage);
+            }
+          }
+        },
+      ]
+    );
   };
 
   if (isLoading) {
@@ -569,34 +621,39 @@ export default function ParentProfile() {
             </Text>
           </TouchableOpacity>
 
-          {/* <TouchableOpacity
-            style={{
-              backgroundColor: "#FEF2F2",
-              paddingVertical: 16,
-              borderRadius: 12,
-              alignItems: "center",
-            }}
-            onPress={() => {
-              Alert.alert(
-                "Delete Account",
-                "Are you sure you want to delete your account? This action cannot be undone.",
-                [
-                  { text: "Cancel", style: "cancel" },
-                  { text: "Delete", style: "destructive" },
-                ]
-              );
-            }}
-          >
+          {/* Delete Account Section */}
+          <View style={{ marginBottom: 12 }}>
             <Text
               style={{
-                color: "#EF4444",
-                fontSize: 16,
-                fontFamily: "Comfortaa-Bold",
+                fontSize: 14,
+                fontFamily: "Comfortaa-Regular",
+                color: "#6B7280",
+                marginBottom: 12,
+                textAlign: "center",
               }}
             >
-              Delete Account
+              Have you read well the policies of deleting account?
             </Text>
-          </TouchableOpacity> */}
+            <TouchableOpacity
+              style={{
+                backgroundColor: "#FEF2F2",
+                paddingVertical: 16,
+                borderRadius: 12,
+                alignItems: "center",
+              }}
+              onPress={handleDeleteAccount}
+            >
+              <Text
+                style={{
+                  color: "#EF4444",
+                  fontSize: 16,
+                  fontFamily: "Comfortaa-Bold",
+                }}
+              >
+                Delete Account
+              </Text>
+            </TouchableOpacity>
+          </View>
         </View>
       </ScrollView>
 

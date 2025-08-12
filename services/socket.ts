@@ -1,7 +1,7 @@
 import { io, Socket } from 'socket.io-client';
 
 // Socket server URL from your configuration
-const SOCKET_SERVER_URL = process.env.API_BASE_URL?.replace('/api/v1', '') || 'https://backend-service-ybxcr.sevalla.app/';
+const SOCKET_SERVER_URL = process.env.API_BASE_URL?.replace('/api/v1', '') || 'https://backend-service-ybxcr.sevalla.app';
 
 interface PickupData {
   id: number;
