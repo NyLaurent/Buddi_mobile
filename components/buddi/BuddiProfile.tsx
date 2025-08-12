@@ -196,26 +196,82 @@ const BuddiProfile = () => {
     }
   };
 
-  // Get rating from buddi details
-  // const rating = (() => {
-  //   const rawRating =
-  //     profileData?.user?.Buddi?.rating || buddiDetails?.rating || 5;
-  //   console.log("BuddiProfile: Raw rating:", rawRating, typeof rawRating);
-  //   // Ensure rating is a valid number and within reasonable bounds
-  //   if (
-  //     typeof rawRating === "number" &&
-  //     !isNaN(rawRating) &&
-  //     isFinite(rawRating) &&
-  //     rawRating >= 0 &&
-  //     rawRating <= 5
-  //   ) {
-  //     const result = Math.floor(rawRating);
-  //     console.log("BuddiProfile: Valid rating:", result);
-  //     return result;
-  //   }
-  //   console.log("BuddiProfile: Using default rating: 5");
-  //   return 5; // Default fallback
-  // })();
+  // Delete Account Section Component
+  const DeleteAccountSection = () => {
+    const { logout } = useAuth();
+    const router = useRouter();
+
+    const handleDeleteAccount = async () => {
+      Alert.alert(
+        "Delete Account",
+        "Are you sure you want to delete your account? This action cannot be undone.",
+        [
+          { text: "Cancel", style: "cancel" },
+          { 
+            text: "Delete", 
+            style: "destructive",
+            onPress: async () => {
+              try {
+                await AuthService.deleteAccount();
+                Alert.alert(
+                  "Account Deleted", 
+                  "Your account has been deleted successfully. You will be logged out.",
+                  [
+                    {
+                      text: "OK",
+                      onPress: async () => {
+                        // Clear stored data and logout
+                        await logout();
+                        router.replace("/auth/login");
+                      }
+                    }
+                  ]
+                );
+              } catch (error: any) {
+                console.error("Error deleting account:", error);
+                let errorMessage = "Failed to delete account. Please try again.";
+                
+                // Handle specific foreign key constraint error
+                if (error?.response?.data?.error?.includes("foreign key constraint")) {
+                  errorMessage = `Cannot delete account: ${fullName || 'You'} have active pickup requests. Please cancel all requests first, then try again.`;
+                } else if (error?.response?.status === 500) {
+                  // Handle internal server errors gracefully
+                  errorMessage = "Unable to delete account at this time. Please try again later or contact support if the issue persists.";
+                } else if (error?.response?.data?.message) {
+                  errorMessage = error.response.data.message;
+                } else if (error?.message) {
+                  errorMessage = error.message;
+                }
+                
+                Alert.alert("Error", errorMessage);
+              }
+            }
+          },
+        ]
+      );
+    };
+
+    return (
+      <View className="mb-6 px-4">
+        <Text className="font-comfortaa-bold px-2 pt-2 text-base mb-3">
+          Account Management
+        </Text>
+        <View className="bg-white rounded-2xl border border-[#E6E6E6] p-4">
+          <Text className="text-[#71727A] font-comfortaa text-sm mb-4 text-center">
+            Have you read well the policies of deleting account?
+          </Text>
+          <TouchableOpacity
+            className="bg-[#FEF2F2] py-4 rounded-xl items-center"
+            onPress={handleDeleteAccount}
+          >
+            <Text className="text-[#EF4444] text-base font-comfortaa-bold">
+              Delete Account
+            </Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    );
+  };
 
   if (isLoading) {
     return (
@@ -276,9 +332,9 @@ const BuddiProfile = () => {
             </Text>
           </TouchableOpacity>
         </View>
+
         {activeTab === "General" && (
           <View>
-            {/* <CongratulationsCard /> */}
             <View className="px-4 pt-4">
               {/* Personal Details */}
               <View className="flex-row justify-between items-center mb-2">
@@ -330,69 +386,80 @@ const BuddiProfile = () => {
                 </View>
               </View>
             </View>
+
+            {/* Delete Account Section */}
+            <DeleteAccountSection />
           </View>
         )}
+
         {activeTab === "Documents" && (
-          <View className="px-4 pt-4">
-            {/* Resume Section */}
-            {resumeUrl ? (
-              <View className="mb-6">
-                <Text className="font-comfortaa-bold text-base mb-3">
-                  Resume
-                </Text>
-                <View className="bg-white rounded-2xl border border-[#E6E6E6] p-4">
-                  <View className="flex-row items-center justify-between">
-                    <View className="flex-row items-center flex-1">
-                      <View className="bg-[#FF932E] rounded-full w-12 h-12 items-center justify-center mr-3">
-                        <Ionicons name="document" size={24} color="#fff" />
+          <View>
+            <View className="px-4 pt-4">
+              {/* Resume Section */}
+              {resumeUrl ? (
+                <View className="mb-6">
+                  <Text className="font-comfortaa-bold text-base mb-3">
+                    Resume
+                  </Text>
+                  <View className="bg-white rounded-2xl border border-[#E6E6E6] p-4">
+                    <View className="flex-row items-center justify-between">
+                      <View className="flex-row items-center flex-1">
+                        <View className="bg-[#FF932E] rounded-full w-12 h-12 items-center justify-center mr-3">
+                          <Ionicons name="document" size={24} color="#fff" />
+                        </View>
+                        <View className="flex-1">
+                          <Text className="font-comfortaa-bold text-base text-[#222]">
+                            Resume
+                          </Text>
+                          <Text className="text-[#71727A] font-comfortaa text-sm">
+                            Click to download your resume
+                          </Text>
+                        </View>
+                      </View>
+                      <TouchableOpacity
+                        onPress={handleResumeDownload}
+                        className="bg-[#FF932E] px-4 py-2 rounded-xl flex-row items-center gap-2"
+                      >
+                        <Ionicons name="download" size={16} color="#fff" />
+                        <Text className="text-white font-comfortaa-bold text-sm">
+                          Download
+                        </Text>
+                      </TouchableOpacity>
+                    </View>
+                  </View>
+                </View>
+              ) : (
+                <View className="mb-6">
+                  <Text className="font-comfortaa-bold text-base mb-3">
+                    Resume
+                  </Text>
+                  <View className="bg-white rounded-2xl border border-[#E6E6E6] p-4">
+                    <View className="flex-row items-center">
+                      <View className="bg-[#F8F9FE] rounded-full w-12 h-12 items-center justify-center mr-3">
+                        <Ionicons
+                          name="document-outline"
+                          size={24}
+                          color="#BDBDBD"
+                        />
                       </View>
                       <View className="flex-1">
                         <Text className="font-comfortaa-bold text-base text-[#222]">
-                          Resume
+                          No Resume Uploaded
                         </Text>
                         <Text className="text-[#71727A] font-comfortaa text-sm">
-                          Click to download your resume
+                          Upload your resume to complete your profile
                         </Text>
                       </View>
                     </View>
-                    <TouchableOpacity
-                      onPress={handleResumeDownload}
-                      className="bg-[#FF932E] px-4 py-2 rounded-xl flex-row items-center gap-2"
-                    >
-                      <Ionicons name="download" size={16} color="#fff" />
-                      <Text className="text-white font-comfortaa-bold text-sm">
-                        Download
-                      </Text>
-                    </TouchableOpacity>
                   </View>
                 </View>
-              </View>
-            ) : (
-              <View className="mb-6">
-                <Text className="font-comfortaa-bold text-base mb-3">
-                  Resume
-                </Text>
-                <View className="bg-white rounded-2xl border border-[#E6E6E6] p-4">
-                  <View className="flex-row items-center">
-                    <View className="bg-[#F8F9FE] rounded-full w-12 h-12 items-center justify-center mr-3">
-                      <Ionicons
-                        name="document-outline"
-                        size={24}
-                        color="#BDBDBD"
-                      />
-                    </View>
-                    <View className="flex-1">
-                      <Text className="font-comfortaa-bold text-base text-[#222]">
-                        No Resume Uploaded
-                      </Text>
-                      <Text className="text-[#71727A] font-comfortaa text-sm">
-                        Upload your resume to complete your profile
-                      </Text>
-                    </View>
-                  </View>
-                </View>
-              </View>
-            )}
+              )}
+            </View>
+
+            {/* Delete Account Section */}
+            <View className="pt-4 px-2">
+            <DeleteAccountSection />
+            </View>
           </View>
         )}
       </ScrollView>

@@ -408,6 +408,28 @@ class AuthService {
     }
   }
 
+
+   // Delete account
+    async deleteAccount(): Promise<any> {
+    try {
+      const token = await AsyncStorage.getItem(STORAGE_KEYS.ACCESS_TOKEN);
+      if (!token) {
+        throw new Error('No authentication token found');
+      }
+
+      const response = await authorizedApi.delete('/auth/account', {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      return response.data;
+    } catch (error: any) {
+      console.error('Delete account error:', error);
+      throw error;
+    }
+  }
+
   /**
    * Reset password with new password
    */
@@ -424,5 +446,8 @@ class AuthService {
     }
   }
 }
+
+
+
 
 export default new AuthService(); 

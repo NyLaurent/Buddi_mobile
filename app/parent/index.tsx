@@ -21,6 +21,7 @@ import KidPickupCard from "../../components/parent/KidPickupCard";
 import { useAuth } from "../../context/AuthContext";
 import BuddiService from "../../services/api/buddi.service";
 import ChildrenService from "../../services/api/children.service";
+import notificationService from "../../services/notifications/notification.service";
 import ParentService, {
   ParentPickupRequest,
   Pickup,
