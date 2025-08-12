@@ -2,7 +2,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios, { AxiosInstance, AxiosResponse, InternalAxiosRequestConfig } from 'axios';
 
 // API Configuration
-const API_BASE_URL = process.env.API_BASE_URL || 'https://backend-service-hw1rh.kinsta.app/api/v1';
+const API_BASE_URL = process.env.API_BASE_URL || 'https://backend-service-ybxcr.sevalla.app/api/v1';
 const API_TIMEOUT = parseInt(process.env.API_TIMEOUT || '30000');
 
 // Storage keys

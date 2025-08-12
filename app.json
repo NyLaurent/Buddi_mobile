@@ -77,9 +77,13 @@
       ],
       "expo-secure-store",
       [
-        "@stripe/stripe-react-native",
+        "expo-build-properties",
         {
-          "enableGooglePay": true
+          "android": {
+            "enableProguardInReleaseBuilds": true,
+            "proguardMinifyEnabled": true,
+            "proguardFiles": ["proguard-rules.pro"]
+          }
         }
       ]
     ],
