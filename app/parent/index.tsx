@@ -21,11 +21,11 @@ import KidPickupCard from "../../components/parent/KidPickupCard";
 import { useAuth } from "../../context/AuthContext";
 import BuddiService from "../../services/api/buddi.service";
 import ChildrenService from "../../services/api/children.service";
-import notificationService from "../../services/notifications/notification.service";
 import ParentService, {
   ParentPickupRequest,
   Pickup,
 } from "../../services/api/parent.service";
+import notificationService from "../../services/notifications/notification.service";
 import SocketService from "../../services/socket";
 
 export default function ParentDashboard() {
@@ -448,6 +448,19 @@ export default function ParentDashboard() {
             : req
         )
       );
+
+      // Send local notification
+      try {
+        notificationService.sendImmediateNotification({
+          title: "Trip Started 🚗",
+          body: "Your pickup trip has just started.",
+          data: { type: "trip_started", pickupId: pickupData?.id },
+          priority: "high",
+          sound: "default",
+        });
+      } catch (e) {
+        console.log("[PARENT] Failed to send trip_started notification", e);
+      }
     };
 
     const handleChildPickedUp = (pickupData: any) => {
@@ -475,6 +488,19 @@ export default function ParentDashboard() {
             : req
         )
       );
+
+      // Send local notification
+      try {
+        notificationService.sendImmediateNotification({
+          title: "Child Picked Up 👶",
+          body: "Your child has been picked up by the Buddi.",
+          data: { type: "child_picked_up", pickupId: pickupData?.id },
+          priority: "high",
+          sound: "default",
+        });
+      } catch (e) {
+        console.log("[PARENT] Failed to send child_picked_up notification", e);
+      }
     };
 
     const handleTripCompleted = (pickupData: any) => {
@@ -510,6 +536,19 @@ export default function ParentDashboard() {
         "trophy",
         "#FFD700"
       );
+
+      // Send local notification
+      try {
+        notificationService.sendImmediateNotification({
+          title: "Trip Completed 🎉",
+          body: "Your pickup trip has been completed successfully.",
+          data: { type: "trip_completed", pickupId: pickupData?.id },
+          priority: "high",
+          sound: "default",
+        });
+      } catch (e) {
+        console.log("[PARENT] Failed to send trip_completed notification", e);
+      }
     };
 
     const handleTripCancelled = (pickupData: any) => {
@@ -542,6 +581,19 @@ export default function ParentDashboard() {
         "Your pickup trip has been cancelled. Please contact support if you need assistance.",
         [{ text: "OK", style: "default" }]
       );
+
+      // Send local notification
+      try {
+        notificationService.sendImmediateNotification({
+          title: "Trip Cancelled ❌",
+          body: "Your pickup trip has been cancelled.",
+          data: { type: "trip_cancelled", pickupId: pickupData?.id },
+          priority: "high",
+          sound: "default",
+        });
+      } catch (e) {
+        console.log("[PARENT] Failed to send trip_cancelled notification", e);
+      }
     };
 
     // Register listeners for all trip events matching your server's event names

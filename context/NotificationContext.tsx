@@ -10,6 +10,8 @@ import React, {
   useState,
 } from "react";
 import { Platform } from "react-native";
+import notificationService from "../services/notifications/notification.service";
+import SocketService from "../services/socket";
 
 interface NotificationContextType {
   expoPushToken: string | null;
@@ -123,6 +125,37 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({
       if (responseListener.current) {
         Notifications.removeNotificationSubscription(responseListener.current);
       }
+    };
+  }, []);
+
+  // Global chat notification listener: show local notification on receive-message
+  useEffect(() => {
+    const handleReceiveMessage = (data: any) => {
+      try {
+        if (!data || !data.message) return;
+        const senderLabel = data.senderType === "Parent" ? "Parent" : "Buddi";
+        notificationService.sendImmediateNotification({
+          title: `New message from ${senderLabel}`,
+          body: String(data.message).slice(0, 120),
+          data: {
+            type: "chat_message",
+            chatRoomId: data.chatRoomId,
+            senderId: data.senderId,
+            senderType: data.senderType,
+            messageId: data.messageId,
+          },
+          priority: "high",
+          sound: "default",
+        });
+      } catch (e) {
+        // swallow notification errors to avoid breaking app flow
+        console.log("[Notifications] Failed to display chat notification", e);
+      }
+    };
+
+    SocketService.on("receive-message", handleReceiveMessage);
+    return () => {
+      SocketService.off("receive-message", handleReceiveMessage);
     };
   }, []);
 
