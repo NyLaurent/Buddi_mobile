@@ -2,7 +2,7 @@ import { Ionicons, MaterialIcons } from "@expo/vector-icons";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { LinearGradient } from "expo-linear-gradient";
 import { useFocusEffect, useRouter } from "expo-router";
-import { useCallback, useEffect, useState } from "react";
+import React, { useState } from "react";
 import {
   Alert,
   Image,
@@ -26,11 +26,16 @@ import notificationService from "../../services/notifications/notification.servi
 export default function CallPage() {
   const [description, setDescription] = useState("");
   const [availableDays, setAvailableDays] = useState<string[]>([]);
-  const [pickupTime, setPickupTime] = useState("");
-  const [dropTime, setDropTime] = useState("");
+  // New slot-based structure
+  const [slots, setSlots] = useState<
+    {
+      fromLocation: string;
+      toLocation: string;
+      slotStartTime: string;
+      slotEndTime: string;
+    }[]
+  >([]);
   const [kidsCount, setKidsCount] = useState("");
-  const [fromZone, setFromZone] = useState("");
-  const [toZone, setToZone] = useState("");
   const [callType, setCallType] = useState<"repetitive" | "varying">(
     "repetitive"
   );
@@ -59,26 +64,19 @@ export default function CallPage() {
   const [pickupSuccess, setPickupSuccess] = useState<string | null>(null);
 
   const [selectedChildId, setSelectedChildId] = useState("");
-  const [showTimePicker, setShowTimePicker] = useState(false);
-  const [showDropTimePicker, setShowDropTimePicker] = useState(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [showStartDatePicker, setShowStartDatePicker] = useState(false);
   const [showEndDatePicker, setShowEndDatePicker] = useState(false);
+
+  // Slot time picker states
+  const [activeSlotIndex, setActiveSlotIndex] = useState<number | null>(null);
+  const [showSlotStartTimePicker, setShowSlotStartTimePicker] = useState(false);
+  const [showSlotEndTimePicker, setShowSlotEndTimePicker] = useState(false);
 
   const toggleDay = (day: string) => {
     setAvailableDays((prev) =>
       prev.includes(day) ? prev.filter((d) => d !== day) : [...prev, day]
     );
-  };
-
-  // Helper function to convert 24-hour time to 12-hour format with AM/PM
-  const formatTime12Hour = (time24: string): string => {
-    if (!time24) return "";
-    const [hours, minutes] = time24.split(":").map(Number);
-    const period = hours >= 12 ? "PM" : "AM";
-    const displayHours = hours === 0 ? 12 : hours > 12 ? hours - 12 : hours;
-    const displayMinutes = minutes.toString().padStart(2, "0");
-    return `${displayHours}:${displayMinutes} ${period}`;
   };
 
   const handleCallTypeChange = (type: "repetitive" | "varying") => {
@@ -93,15 +91,37 @@ export default function CallPage() {
   const resetForm = () => {
     setDescription("");
     setAvailableDays([]);
-    setPickupTime("");
-    setDropTime("");
+    setSlots([]);
     setKidsCount("");
-    setFromZone("");
-    setToZone("");
     setSelectedChildId("");
     setCallType("repetitive");
     setStartDate("");
     setEndDate("");
+  };
+
+  // Add new slot
+  const addSlot = () => {
+    setSlots((prev) => [
+      ...prev,
+      {
+        fromLocation: "",
+        toLocation: "",
+        slotStartTime: "",
+        slotEndTime: "",
+      },
+    ]);
+  };
+
+  // Remove slot
+  const removeSlot = (index: number) => {
+    setSlots((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  // Update slot
+  const updateSlot = (index: number, field: string, value: string) => {
+    setSlots((prev) =>
+      prev.map((slot, i) => (i === index ? { ...slot, [field]: value } : slot))
+    );
   };
 
   const handleSaveKid = async () => {
@@ -167,14 +187,35 @@ export default function CallPage() {
     if (
       !description ||
       !availableDays.length ||
-      !pickupTime ||
-      !dropTime ||
       !kidsCount ||
-      !fromZone ||
-      !toZone
+      slots.length === 0
     ) {
-      setPickupError("Please fill all required fields.");
+      setPickupError(
+        "Please fill all required fields and add at least one time slot."
+      );
       return;
+    }
+
+    // Validate slots
+    for (let i = 0; i < slots.length; i++) {
+      const slot = slots[i];
+      if (
+        !slot.fromLocation ||
+        !slot.toLocation ||
+        !slot.slotStartTime ||
+        !slot.slotEndTime
+      ) {
+        setPickupError(`Please fill all fields for slot ${i + 1}.`);
+        return;
+      }
+
+      // Validate time logic
+      const startTime = new Date(slot.slotStartTime);
+      const endTime = new Date(slot.slotEndTime);
+      if (startTime >= endTime) {
+        setPickupError(`Slot ${i + 1}: End time must be after start time.`);
+        return;
+      }
     }
 
     // Validate dates for varying calls
@@ -193,28 +234,22 @@ export default function CallPage() {
 
     setPickupLoading(true);
     try {
-      // Create full timestamps with zones
-      const today = new Date();
-      const [pickupHours, pickupMinutes] = pickupTime.split(":").map(Number);
-      const [dropHours, dropMinutes] = dropTime.split(":").map(Number);
-
-      const pickupTimestamp = new Date(today);
-      pickupTimestamp.setHours(pickupHours, pickupMinutes, 0, 0);
-
-      const dropTimestamp = new Date(today);
-      dropTimestamp.setHours(dropHours, dropMinutes, 0, 0);
+      // Prepare slots with proper timestamps
+      const preparedSlots = slots.map((slot) => ({
+        fromLocation: slot.fromLocation,
+        toLocation: slot.toLocation,
+        slotStartTime: slot.slotStartTime,
+        slotEndTime: slot.slotEndTime,
+      }));
 
       const pickupData: any = {
         parentId: parentDetails.id.toString(),
         childId: selectedChildId,
         description,
         availableDays,
-        callPickupTime: pickupTimestamp.toISOString(),
-        callDropTime: dropTimestamp.toISOString(),
         kidsCount: Number(kidsCount),
-        fromZone,
-        toZone,
         type: callType,
+        slots: preparedSlots,
       };
 
       // Add dates only for varying calls
@@ -229,9 +264,20 @@ export default function CallPage() {
 
       // Send system notification for successful pickup request creation
       try {
-        await notificationService.sendPickupRequestSuccessNotification(user?.firstName || 'User');
+        const selectedChild = registeredKids.find(
+          (kid) => kid.id === selectedChildId
+        );
+        const childName = selectedChild?.name || "your child";
+        const firstSlotTime = slots[0]?.slotStartTime
+          ? formatTimeForDisplay(slots[0].slotStartTime)
+          : "scheduled time";
+
+        await notificationService.sendPickupRequestSuccessNotification(
+          childName,
+          firstSlotTime
+        );
       } catch (error) {
-        console.log('Failed to send notification:', error);
+        console.log("Failed to send notification:", error);
       }
 
       setPickupSuccess("Pickup request created successfully!");
@@ -276,14 +322,14 @@ export default function CallPage() {
     }
   };
 
-  useEffect(() => {
+  React.useEffect(() => {
     fetchRegisteredKids();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [parentDetails?.id]);
 
   // Refresh kids list when screen comes into focus (e.g., after deleting a kid)
   useFocusEffect(
-    useCallback(() => {
+    React.useCallback(() => {
       if (parentDetails?.id) {
         fetchRegisteredKids();
       }
@@ -295,38 +341,33 @@ export default function CallPage() {
     fetchRegisteredKids();
   };
 
-  // For time picker, use a simple text input for now (can be replaced with a picker later)
-  // Time picker handler
-  const handleTimeChange = (event: any, selectedDate?: Date | undefined) => {
-    if (Platform.OS === "android") {
-      setShowTimePicker(false);
-    }
-    if (selectedDate) {
-      // Format to HH:mm
-      const hours = selectedDate.getHours().toString().padStart(2, "0");
-      const minutes = selectedDate.getMinutes().toString().padStart(2, "0");
-      setPickupTime(`${hours}:${minutes}`);
-      if (Platform.OS === "ios") {
-        setShowTimePicker(false);
-      }
-    }
-  };
-
-  // Drop time picker handler
-  const handleDropTimeChange = (
+  // Slot time picker handlers
+  const handleSlotStartTimeChange = (
     event: any,
     selectedDate?: Date | undefined
   ) => {
     if (Platform.OS === "android") {
-      setShowDropTimePicker(false);
+      setShowSlotStartTimePicker(false);
     }
-    if (selectedDate) {
-      // Format to HH:mm
-      const hours = selectedDate.getHours().toString().padStart(2, "0");
-      const minutes = selectedDate.getMinutes().toString().padStart(2, "0");
-      setDropTime(`${hours}:${minutes}`);
+    if (selectedDate && activeSlotIndex !== null) {
+      updateSlot(activeSlotIndex, "slotStartTime", selectedDate.toISOString());
       if (Platform.OS === "ios") {
-        setShowDropTimePicker(false);
+        setShowSlotStartTimePicker(false);
+      }
+    }
+  };
+
+  const handleSlotEndTimeChange = (
+    event: any,
+    selectedDate?: Date | undefined
+  ) => {
+    if (Platform.OS === "android") {
+      setShowSlotEndTimePicker(false);
+    }
+    if (selectedDate && activeSlotIndex !== null) {
+      updateSlot(activeSlotIndex, "slotEndTime", selectedDate.toISOString());
+      if (Platform.OS === "ios") {
+        setShowSlotEndTimePicker(false);
       }
     }
   };
@@ -367,6 +408,20 @@ export default function CallPage() {
       }
     }
   };
+
+  // Helper function to format time for display
+  const formatTimeForDisplay = (isoString: string) => {
+    if (!isoString) return "";
+    const date = new Date(isoString);
+    return date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+  };
+
+  // Add initial slot when component mounts
+  React.useEffect(() => {
+    if (slots.length === 0) {
+      addSlot();
+    }
+  }, [slots.length]);
 
   // Debug: log registeredKids before rendering
   console.log("registeredKids (before render):", registeredKids);
@@ -1127,7 +1182,7 @@ export default function CallPage() {
             )}
           </View>
           {/* Form Header */}
-         
+
           {/* Description */}
           <Text
             style={{
@@ -1326,7 +1381,7 @@ export default function CallPage() {
           </View>
           {/* Call Type Explanation */}
 
-          {/* Pickup Time */}
+          {/* Time Slots */}
           <Text
             style={{
               fontFamily: "Comfortaa-Bold",
@@ -1335,145 +1390,229 @@ export default function CallPage() {
               marginBottom: 8,
             }}
           >
-            Pickup Time
+            Pickup Schedule
           </Text>
-          <View
-            style={{
-              flexDirection: "row",
-              alignItems: "center",
-              marginBottom: 18,
-            }}
-          >
-            <MaterialIcons
-              name="access-time"
-              size={20}
-              color="#4f46e5"
-              style={{ marginRight: 8 }}
-            />
-            <TouchableOpacity
-              onPress={() => setShowTimePicker(true)}
-              style={{
-                borderWidth: 1,
-                borderColor: "#E0E0E0",
-                borderRadius: 12,
-                padding: 12,
-                backgroundColor: "#F9FAFB",
-                flex: 1,
-                flexDirection: "row",
-                alignItems: "center",
-              }}
-              activeOpacity={0.85}
-            >
-              <Text
-                style={{
-                  fontFamily: "Comfortaa-Regular",
-                  fontSize: 15,
-                  color: pickupTime ? "#232B3A" : "#BDBDBD",
-                }}
-              >
-                {pickupTime
-                  ? `Selected Time: ${pickupTime} (${formatTime12Hour(
-                      pickupTime
-                    )})`
-                  : "Select Pickup Time"}
-              </Text>
-            </TouchableOpacity>
-            {showTimePicker && (
-              <DateTimePicker
-                testID="dateTimePicker"
-                value={
-                  pickupTime
-                    ? (() => {
-                        const [h, m] = pickupTime.split(":");
-                        const d = new Date();
-                        d.setHours(Number(h));
-                        d.setMinutes(Number(m));
-                        d.setSeconds(0);
-                        d.setMilliseconds(0);
-                        return d;
-                      })()
-                    : new Date()
-                }
-                mode="time"
-                is24Hour={false}
-                display="default"
-                onChange={handleTimeChange}
-              />
-            )}
-          </View>
-          {/* Drop-off Time */}
           <Text
             style={{
-              fontFamily: "Comfortaa-Bold",
-              fontSize: 16,
-              color: "#232B3A",
-              marginBottom: 8,
+              fontFamily: "Comfortaa-Regular",
+              fontSize: 13,
+              color: "#6B7280",
+              marginBottom: 16,
             }}
           >
-            Drop-off Time
+            Add multiple time schedules for different pickup/drop-off times and
+            locations
           </Text>
-          <View
-            style={{
-              flexDirection: "row",
-              alignItems: "center",
-              marginBottom: 18,
-            }}
-          >
-            <MaterialIcons
-              name="access-time"
-              size={20}
-              color="#4f46e5"
-              style={{ marginRight: 8 }}
-            />
-            <TouchableOpacity
-              onPress={() => setShowDropTimePicker(true)}
+
+          {slots.map((slot, index) => (
+            <View
+              key={index}
               style={{
+                backgroundColor: "#F8F9FE",
+                borderRadius: 16,
+                padding: 16,
+                marginBottom: 16,
                 borderWidth: 1,
-                borderColor: "#E0E0E0",
-                borderRadius: 12,
-                padding: 12,
-                backgroundColor: "#F9FAFB",
-                flex: 1,
-                flexDirection: "row",
-                alignItems: "center",
+                borderColor: "#E6E6E6",
               }}
-              activeOpacity={0.85}
             >
-              <Text
+              <View
                 style={{
-                  fontFamily: "Comfortaa-Regular",
-                  fontSize: 15,
-                  color: dropTime ? "#232B3A" : "#BDBDBD",
+                  flexDirection: "row",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  marginBottom: 12,
                 }}
               >
-                {dropTime
-                  ? `Selected Time: ${dropTime} (${formatTime12Hour(dropTime)})`
-                  : "Select Drop-off Time"}
+                <Text
+                  style={{
+                    fontFamily: "Comfortaa-Bold",
+                    fontSize: 15,
+                    color: "#232B3A",
+                  }}
+                >
+                  Schedule {index + 1}
+                </Text>
+                {slots.length > 1 && (
+                  <TouchableOpacity
+                    onPress={() => removeSlot(index)}
+                    style={{
+                      backgroundColor: "#FEE2E2",
+                      borderRadius: 8,
+                      padding: 6,
+                    }}
+                  >
+                    <Ionicons name="trash" size={16} color="#EF4444" />
+                  </TouchableOpacity>
+                )}
+              </View>
+
+              {/* From Location */}
+              <Text
+                style={{
+                  fontFamily: "Comfortaa-Medium",
+                  fontSize: 14,
+                  color: "#232B3A",
+                  marginBottom: 6,
+                }}
+              >
+                From Address
               </Text>
-            </TouchableOpacity>
-            {showDropTimePicker && (
-              <DateTimePicker
-                testID="dropTimePicker"
-                value={
-                  dropTime
-                    ? (() => {
-                        const [h, m] = dropTime.split(":");
-                        const d = new Date();
-                        d.setHours(Number(h));
-                        d.setMinutes(Number(m));
-                        d.setSeconds(0);
-                        d.setMilliseconds(0);
-                        return d;
-                      })()
-                    : new Date()
-                }
-                mode="time"
-                is24Hour={false}
-                display="default"
-                onChange={handleDropTimeChange}
+              <TextInput
+                value={slot.fromLocation}
+                onChangeText={(text) => updateSlot(index, "fromLocation", text)}
+                placeholder="e.g. School, Home, etc."
+                placeholderTextColor="#BDBDBD"
+                style={{
+                  borderWidth: 1,
+                  borderColor: "#E0E0E0",
+                  borderRadius: 12,
+                  padding: 12,
+                  marginBottom: 12,
+                  backgroundColor: "#fff",
+                  fontFamily: "Comfortaa-Regular",
+                  fontSize: 15,
+                  color: "#232B3A",
+                }}
               />
-            )}
-          </View>
+
+              {/* To Location */}
+              <Text
+                style={{
+                  fontFamily: "Comfortaa-Medium",
+                  fontSize: 14,
+                  color: "#232B3A",
+                  marginBottom: 6,
+                }}
+              >
+                To Address
+              </Text>
+              <TextInput
+                value={slot.toLocation}
+                onChangeText={(text) => updateSlot(index, "toLocation", text)}
+                placeholder="e.g. Home, Activity Center, etc."
+                placeholderTextColor="#BDBDBD"
+                style={{
+                  borderWidth: 1,
+                  borderColor: "#E0E0E0",
+                  borderRadius: 12,
+                  padding: 12,
+                  marginBottom: 12,
+                  backgroundColor: "#fff",
+                  fontFamily: "Comfortaa-Regular",
+                  fontSize: 15,
+                  color: "#232B3A",
+                }}
+              />
+
+              {/* Start Time */}
+              <Text
+                style={{
+                  fontFamily: "Comfortaa-Medium",
+                  fontSize: 14,
+                  color: "#232B3A",
+                  marginBottom: 6,
+                }}
+              >
+                Start Time
+              </Text>
+              <TouchableOpacity
+                onPress={() => {
+                  setActiveSlotIndex(index);
+                  setShowSlotStartTimePicker(true);
+                }}
+                style={{
+                  borderWidth: 1,
+                  borderColor: "#E0E0E0",
+                  borderRadius: 12,
+                  padding: 12,
+                  backgroundColor: "#fff",
+                  marginBottom: 12,
+                }}
+                activeOpacity={0.85}
+              >
+                <Text
+                  style={{
+                    fontFamily: "Comfortaa-Regular",
+                    fontSize: 15,
+                    color: slot.slotStartTime ? "#232B3A" : "#BDBDBD",
+                  }}
+                >
+                  {slot.slotStartTime
+                    ? `Start: ${formatTimeForDisplay(slot.slotStartTime)}`
+                    : "Select Start Time"}
+                </Text>
+              </TouchableOpacity>
+
+              {/* End Time */}
+              <Text
+                style={{
+                  fontFamily: "Comfortaa-Medium",
+                  fontSize: 14,
+                  color: "#232B3A",
+                  marginBottom: 6,
+                }}
+              >
+                End Time
+              </Text>
+              <TouchableOpacity
+                onPress={() => {
+                  setActiveSlotIndex(index);
+                  setShowSlotEndTimePicker(true);
+                }}
+                style={{
+                  borderWidth: 1,
+                  borderColor: "#E0E0E0",
+                  borderRadius: 12,
+                  padding: 12,
+                  backgroundColor: "#fff",
+                  marginBottom: 8,
+                }}
+                activeOpacity={0.85}
+              >
+                <Text
+                  style={{
+                    fontFamily: "Comfortaa-Regular",
+                    fontSize: 15,
+                    color: slot.slotEndTime ? "#232B3A" : "#BDBDBD",
+                  }}
+                >
+                  {slot.slotEndTime
+                    ? `End: ${formatTimeForDisplay(slot.slotEndTime)}`
+                    : "Select End Time"}
+                </Text>
+              </TouchableOpacity>
+            </View>
+          ))}
+
+          {/* Add Slot Button */}
+          <TouchableOpacity
+            onPress={addSlot}
+            style={{
+              backgroundColor: "#F3F4F6",
+              borderRadius: 12,
+              padding: 16,
+              alignItems: "center",
+              borderWidth: 2,
+              borderColor: "#E5E7EB",
+              borderStyle: "dashed",
+              marginBottom: 20,
+            }}
+            activeOpacity={0.85}
+          >
+            <Ionicons name="add-circle-outline" size={24} color="#6B7280" />
+            <Text
+              style={{
+                fontFamily: "Comfortaa-Medium",
+                fontSize: 14,
+                color: "#6B7280",
+                marginTop: 4,
+              }}
+            >
+              Add Another Time Schedule
+            </Text>
+          </TouchableOpacity>
+
           {/* Date Fields - Only show for varying calls */}
           {callType === "varying" && (
             <>
@@ -1663,62 +1802,7 @@ export default function CallPage() {
               }}
             />
           </View>
-          {/* From Zone (free text) */}
-          <Text
-            style={{
-              fontFamily: "Comfortaa-Bold",
-              fontSize: 16,
-              color: "#232B3A",
-              marginBottom: 8,
-            }}
-          >
-            From Address
-          </Text>
-          <TextInput
-            value={fromZone}
-            onChangeText={setFromZone}
-            placeholder="Enter pickup address"
-            placeholderTextColor="#BDBDBD"
-            style={{
-              borderWidth: 1,
-              borderColor: "#E0E0E0",
-              borderRadius: 12,
-              padding: 12,
-              marginBottom: 18,
-              backgroundColor: "#F9FAFB",
-              fontFamily: "Comfortaa-Regular",
-              fontSize: 15,
-              color: "#232B3A",
-            }}
-          />
-          {/* To Zone (free text) */}
-          <Text
-            style={{
-              fontFamily: "Comfortaa-Bold",
-              fontSize: 16,
-              color: "#232B3A",
-              marginBottom: 8,
-            }}
-          >
-            To Address
-          </Text>
-          <TextInput
-            value={toZone}
-            onChangeText={setToZone}
-            placeholder="Enter drop-off address"
-            placeholderTextColor="#BDBDBD"
-            style={{
-              borderWidth: 1,
-              borderColor: "#E0E0E0",
-              borderRadius: 12,
-              padding: 12,
-              marginBottom: 24,
-              backgroundColor: "#F9FAFB",
-              fontFamily: "Comfortaa-Regular",
-              fontSize: 15,
-              color: "#232B3A",
-            }}
-          />
+
           {/* Submit Button */}
           <TouchableOpacity
             style={{
@@ -1752,6 +1836,37 @@ export default function CallPage() {
           </TouchableOpacity>
         </View>
       </ScrollView>
+
+      {/* Slot Time Pickers */}
+      {showSlotStartTimePicker && (
+        <DateTimePicker
+          testID="slotStartTimePicker"
+          value={
+            activeSlotIndex !== null && slots[activeSlotIndex]?.slotStartTime
+              ? new Date(slots[activeSlotIndex].slotStartTime)
+              : new Date()
+          }
+          mode="time"
+          is24Hour={false}
+          display="default"
+          onChange={handleSlotStartTimeChange}
+        />
+      )}
+
+      {showSlotEndTimePicker && (
+        <DateTimePicker
+          testID="slotEndTimePicker"
+          value={
+            activeSlotIndex !== null && slots[activeSlotIndex]?.slotEndTime
+              ? new Date(slots[activeSlotIndex].slotEndTime)
+              : new Date()
+          }
+          mode="time"
+          is24Hour={false}
+          display="default"
+          onChange={handleSlotEndTimeChange}
+        />
+      )}
     </SafeAreaView>
   );
 }

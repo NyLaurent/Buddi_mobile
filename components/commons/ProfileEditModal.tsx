@@ -13,7 +13,6 @@ import {
   Text,
   TextInput,
   TouchableOpacity,
-  TouchableWithoutFeedback,
   View,
 } from "react-native";
 import { useAuth } from "../../context/AuthContext";
@@ -157,127 +156,137 @@ const ProfileEditModal: React.FC<ProfileEditModalProps> = ({
       onRequestClose={handleCancel}
     >
       <KeyboardAvoidingView
-        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        behavior={Platform.OS === "ios" ? "padding" : undefined}
         className="flex-1"
       >
-        <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-          <View className="flex-1 bg-white">
-            {/* Header with Gradient */}
-            <LinearGradient
-              colors={["#FF932E", "#FF7A00"]}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 0 }}
-              className="pt-12 pb-6 px-6"
-            >
-              <View className="flex-row items-center justify-between">
-                <TouchableOpacity
-                  onPress={handleCancel}
-                  className="w-10 h-10 bg-white/20 rounded-full items-center justify-center"
-                >
-                  <Ionicons name="close" size={24} color="white" />
-                </TouchableOpacity>
-                <Text className="font-comfortaa-bold text-xl text-white">
-                  Edit Profile
-                </Text>
-                <TouchableOpacity
-                  onPress={handleSave}
-                  disabled={isLoading}
-                  className="bg-white/20 px-6 py-2 rounded-full"
-                >
-                  {isLoading ? (
-                    <ActivityIndicator size="small" color="white" />
-                  ) : (
-                    <Text className="text-white font-comfortaa-bold">Save</Text>
-                  )}
-                </TouchableOpacity>
-              </View>
-            </LinearGradient>
-
-            {/* Profile Avatar Section */}
-            <View className="items-center py-6 bg-gray-50">
-              <View className="relative">
-                <View className="w-20 h-20 bg-gradient-to-br from-[#FF932E] to-[#FF7A00] rounded-full items-center justify-center">
-                  <Text className="text-white font-comfortaa-bold text-2xl">
-                    {user?.firstName?.charAt(0) || "U"}
-                  </Text>
-                </View>
-                <View className="absolute -bottom-1 -right-1 w-6 h-6 bg-[#FF932E] rounded-full items-center justify-center border-2 border-white">
-                  <Ionicons name="camera" size={12} color="white" />
-                </View>
-              </View>
-              <Text className="font-comfortaa-bold text-lg text-black mt-3">
-                {user?.firstName} {user?.lastName}
+        <View className="flex-1 bg-white">
+          {/* Header with Gradient */}
+          <LinearGradient
+            colors={["#FF932E", "#FF7A00"]}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 0 }}
+            className="pt-12 pb-6 px-6"
+          >
+            <View className="flex-row items-center justify-between">
+              <TouchableOpacity
+                onPress={handleCancel}
+                className="w-10 h-10 bg-white/20 rounded-full items-center justify-center"
+              >
+                <Ionicons name="close" size={24} color="white" />
+              </TouchableOpacity>
+              <Text className="font-comfortaa-bold text-xl text-white">
+                Edit Profile
               </Text>
+              <TouchableOpacity
+                onPress={handleSave}
+                disabled={isLoading}
+                className="bg-white/20 px-6 py-2 rounded-full"
+              >
+                {isLoading ? (
+                  <ActivityIndicator size="small" color="white" />
+                ) : (
+                  <Text className="text-white font-comfortaa-bold">Save</Text>
+                )}
+              </TouchableOpacity>
             </View>
+          </LinearGradient>
 
-            {/* Form Fields */}
-            <ScrollView
-              className="flex-1 px-6"
-              showsVerticalScrollIndicator={false}
-              keyboardShouldPersistTaps="handled"
-            >
-              <InputField
-                label="First Name"
-                value={formData.firstName}
-                onChangeText={(value: string) => handleInputChange("firstName", value)}
-                placeholder="Enter your first name"
-                icon="person-outline"
-                autoCapitalize="words"
-              />
-
-              <InputField
-                label="Last Name"
-                value={formData.lastName}
-                onChangeText={(value: string) => handleInputChange("lastName", value)}
-                placeholder="Enter your last name"
-                icon="person-outline"
-                autoCapitalize="words"
-              />
-
-              <InputField
-                label="Email"
-                value={formData.email}
-                onChangeText={(value: string) => handleInputChange("email", value)}
-                placeholder="Enter your email"
-                icon="mail-outline"
-                keyboardType="email-address"
-                autoCapitalize="none"
-              />
-
-              <InputField
-                label="Phone Number"
-                value={formData.phoneNumber}
-                onChangeText={(value: string) => handleInputChange("phoneNumber", value)}
-                placeholder="Enter your phone number"
-                icon="call-outline"
-                keyboardType="phone-pad"
-              />
-
-              <InputField
-                label="Home Address"
-                value={formData.homeAddress}
-                onChangeText={(value: string) => handleInputChange("homeAddress", value)}
-                placeholder="Enter your home address"
-                icon="home-outline"
-                multiline={true}
-                numberOfLines={3}
-              />
-
-              <InputField
-                label="New Password (Optional)"
-                value={formData.password}
-                onChangeText={(value: string) => handleInputChange("password", value)}
-                placeholder="Enter new password (leave blank to keep current)"
-                icon="lock-closed-outline"
-                secureTextEntry={true}
-                autoCapitalize="none"
-              />
-
-              {/* Spacer for bottom padding */}
-              <View className="h-8" />
-            </ScrollView>
+          {/* Profile Avatar Section */}
+          <View className="items-center py-6 bg-gray-50">
+            <View className="relative">
+              <View className="w-20 h-20 bg-gradient-to-br from-[#FF932E] to-[#FF7A00] rounded-full items-center justify-center">
+                <Text className="text-white font-comfortaa-bold text-2xl">
+                  {user?.firstName?.charAt(0) || "U"}
+                </Text>
+              </View>
+              <View className="absolute -bottom-1 -right-1 w-6 h-6 bg-[#FF932E] rounded-full items-center justify-center border-2 border-white">
+                <Ionicons name="camera" size={12} color="white" />
+              </View>
+            </View>
+            <Text className="font-comfortaa-bold text-lg text-black mt-3">
+              {user?.firstName} {user?.lastName}
+            </Text>
           </View>
-        </TouchableWithoutFeedback>
+
+          {/* Form Fields */}
+          <ScrollView
+            className="flex-1 px-6"
+            showsVerticalScrollIndicator={false}
+            keyboardShouldPersistTaps="always"
+          >
+            <InputField
+              label="First Name"
+              value={formData.firstName}
+              onChangeText={(value: string) =>
+                handleInputChange("firstName", value)
+              }
+              placeholder="Enter your first name"
+              icon="person-outline"
+              autoCapitalize="words"
+            />
+
+            <InputField
+              label="Last Name"
+              value={formData.lastName}
+              onChangeText={(value: string) =>
+                handleInputChange("lastName", value)
+              }
+              placeholder="Enter your last name"
+              icon="person-outline"
+              autoCapitalize="words"
+            />
+
+            <InputField
+              label="Email"
+              value={formData.email}
+              onChangeText={(value: string) =>
+                handleInputChange("email", value)
+              }
+              placeholder="Enter your email"
+              icon="mail-outline"
+              keyboardType="email-address"
+              autoCapitalize="none"
+            />
+
+            <InputField
+              label="Phone Number"
+              value={formData.phoneNumber}
+              onChangeText={(value: string) =>
+                handleInputChange("phoneNumber", value)
+              }
+              placeholder="Enter your phone number"
+              icon="call-outline"
+              keyboardType="phone-pad"
+            />
+
+            <InputField
+              label="Home Address"
+              value={formData.homeAddress}
+              onChangeText={(value: string) =>
+                handleInputChange("homeAddress", value)
+              }
+              placeholder="Enter your home address"
+              icon="home-outline"
+              multiline={true}
+              numberOfLines={3}
+            />
+
+            <InputField
+              label="New Password (Optional)"
+              value={formData.password}
+              onChangeText={(value: string) =>
+                handleInputChange("password", value)
+              }
+              placeholder="Enter new password (leave blank to keep current)"
+              icon="lock-closed-outline"
+              secureTextEntry={true}
+              autoCapitalize="none"
+            />
+
+            {/* Spacer for bottom padding */}
+            <View className="h-8" />
+          </ScrollView>
+        </View>
       </KeyboardAvoidingView>
     </Modal>
   );

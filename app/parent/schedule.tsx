@@ -1,15 +1,20 @@
 import AnalyticsCard from "@/components/commons/AnalyticsCard";
 import PageHeader from "@/components/commons/PageHeader";
 import CoverageRequestModal from "@/components/modals/CoverageRequestModal";
+import SuccessModal from "@/components/modals/SuccessModal";
 import CoverageRequestCard from "@/components/parent/CoverageRequestCard";
 import KidPickupCard from "@/components/parent/KidPickupCard";
 import { useAuth } from "@/context/AuthContext";
 import BuddiService from "@/services/api/buddi.service";
 import ChildrenService from "@/services/api/children.service";
-import ParentService from "@/services/api/parent.service";
+import ParentService, {
+  ParentPickupRequest,
+  Pickup,
+} from "@/services/api/parent.service";
 import notificationService from "@/services/notifications/notification.service";
 import SocketService from "@/services/socket";
 import { Ionicons } from "@expo/vector-icons";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useRouter } from "expo-router";
 import React from "react";
 import {
@@ -23,7 +28,6 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-//   {
 //     name: "Bryan Smith",
 //     time: "2:23:04",
 //     days: "$25 per hour",
@@ -52,7 +56,9 @@ const SchedulePage = () => {
   const [activeTab, setActiveTab] = React.useState("pickups");
 
   // State for real pickup requests and details
-  const [pickupRequests, setPickupRequests] = React.useState<any[]>([]);
+  const [pickupRequests, setPickupRequests] = React.useState<
+    ParentPickupRequest[]
+  >([]);
   const [childDetailsMap, setChildDetailsMap] = React.useState<
     Record<string, any>
   >({});
@@ -62,11 +68,41 @@ const SchedulePage = () => {
   const [loading, setLoading] = React.useState(true);
   const [error, setError] = React.useState<string | null>(null);
 
-  // State for tracking pickup statuses (copied from parent index)
+  // State for actual pickups tracking
+  const [pickups, setPickups] = React.useState<Pickup[]>([]);
+
+  // State for tracking pickup statuses
   const [pickupStatuses, setPickupStatuses] = React.useState<
     Record<number, string>
   >({});
-  const [startingTripId] = React.useState<number | null>(null);
+  const [startingTripId, setStartingTripId] = React.useState<number | null>(
+    null
+  );
+
+  // Success modal states
+  const [successModal, setSuccessModal] = React.useState({
+    visible: false,
+    title: "",
+    message: "",
+    iconName: "checkmark-circle" as keyof typeof Ionicons.glyphMap,
+    iconColor: "#22C55E",
+  });
+
+  // Helper to show success modal
+  const showSuccessModal = (
+    title: string,
+    message: string,
+    iconName: keyof typeof Ionicons.glyphMap = "checkmark-circle",
+    iconColor: string = "#22C55E"
+  ) => {
+    setSuccessModal({
+      visible: true,
+      title,
+      message,
+      iconName,
+      iconColor,
+    });
+  };
 
   // Coverage request modal is handled in the coverage tab only
 
@@ -125,7 +161,28 @@ const SchedulePage = () => {
         setLoading(false);
       }
     };
+
+    const fetchPickups = async () => {
+      if (!parentDetails?.id) return;
+      try {
+        const res = await ParentService.getAllPickups(
+          parentDetails.id.toString()
+        );
+        setPickups(res.pickups || []);
+      } catch (err: any) {
+        console.error("Failed to fetch pickups:", err);
+      }
+    };
+
     fetchDetailsForRequests();
+    fetchPickups();
+
+    // On mount, load pickups from AsyncStorage
+    AsyncStorage.getItem("parentPickups").then((stored) => {
+      if (stored) {
+        setPickupRequests(JSON.parse(stored));
+      }
+    });
   }, [parentDetails?.id]);
 
   // Socket event listeners for real-time pickup status updates (copied from parent index)
@@ -133,7 +190,30 @@ const SchedulePage = () => {
     // Enhanced socket event listeners for real-time updates
     SocketService.on("pickup-started", (pickupData: any) => {
       console.log("[SCHEDULE] Received pickup-started event:", pickupData);
-      // Update pickup status in real-time
+      console.log("[SCHEDULE] 📊 Current pickups before update:", pickups);
+
+      // Update both pickups and pickup statuses
+      setPickups((prev) => {
+        const updated = prev.map((pickup) =>
+          pickup.id === pickupData.id
+            ? { ...pickup, status: "enRoute" as const, ...pickupData }
+            : pickup
+        ) as Pickup[];
+
+        // Add new pickup if it doesn't exist
+        const exists = updated.find((p) => p.id === pickupData.id);
+        if (!exists) {
+          updated.push({ ...pickupData, status: "enRoute" as const });
+        }
+
+        console.log(
+          "[SCHEDULE] 📊 Updated pickups after pickup-started:",
+          updated
+        );
+        return updated;
+      });
+
+      // Update pickup statuses
       setPickupStatuses((prev) => ({
         ...prev,
         [pickupData.id]: "enRoute",
@@ -155,7 +235,22 @@ const SchedulePage = () => {
 
     SocketService.on("child-picked-up", (pickupData: any) => {
       console.log("[SCHEDULE] Received child-picked-up event:", pickupData);
-      // Update pickup status in real-time
+      console.log("[SCHEDULE] 📊 Current pickups before update:", pickups);
+
+      setPickups((prev) => {
+        const updated = prev.map((pickup) =>
+          pickup.id === pickupData.id
+            ? { ...pickup, status: "pickedUp" as const, ...pickupData }
+            : pickup
+        ) as Pickup[];
+        console.log(
+          "[SCHEDULE] 📊 Updated pickups after child-picked-up:",
+          updated
+        );
+        return updated;
+      });
+
+      // Update pickup statuses
       setPickupStatuses((prev) => ({
         ...prev,
         [pickupData.id]: "pickedUp",
@@ -177,11 +272,34 @@ const SchedulePage = () => {
 
     SocketService.on("trip-completed", (pickupData: any) => {
       console.log("[SCHEDULE] Received trip-completed event:", pickupData);
-      // Update pickup status in real-time
+      console.log("[SCHEDULE] 📊 Current pickups before update:", pickups);
+
+      setPickups((prev) => {
+        const updated = prev.map((pickup) =>
+          pickup.id === pickupData.id
+            ? { ...pickup, status: "completed" as const, ...pickupData }
+            : pickup
+        ) as Pickup[];
+        console.log(
+          "[SCHEDULE] 📊 Updated pickups after trip-completed:",
+          updated
+        );
+        return updated;
+      });
+
+      // Update pickup statuses
       setPickupStatuses((prev) => ({
         ...prev,
         [pickupData.id]: "completed",
       }));
+
+      // Show completion success modal
+      showSuccessModal(
+        "Trip Completed! 🎉",
+        "Your pickup trip has been completed successfully! Wait for the next day pickup and your buddi to submit their timesheet.",
+        "trophy",
+        "#FFD700"
+      );
 
       // Send notification to parent that trip is completed
       try {
@@ -199,11 +317,31 @@ const SchedulePage = () => {
 
     SocketService.on("trip-cancelled", (pickupData: any) => {
       console.log("[SCHEDULE] Received trip-cancelled event:", pickupData);
-      // Update pickup status in real-time
+
+      setPickups((prev) => {
+        const updated = prev.map((pickup) =>
+          pickup.id === pickupData.id
+            ? { ...pickup, status: "cancelled" as const, ...pickupData }
+            : pickup
+        ) as Pickup[];
+        console.log(
+          "[SCHEDULE] 📊 Updated pickups after trip-cancelled:",
+          updated
+        );
+        return updated;
+      });
+
+      // Update pickup statuses
       setPickupStatuses((prev) => ({
         ...prev,
         [pickupData.id]: "cancelled",
       }));
+
+      Alert.alert(
+        "Trip Cancelled",
+        "Your pickup trip has been cancelled. Please contact support if you need assistance.",
+        [{ text: "OK", style: "default" }]
+      );
 
       // Send notification to parent that trip was cancelled
       try {
@@ -228,9 +366,27 @@ const SchedulePage = () => {
     };
   }, []);
 
-  // Helper function to get pickup status (copied from parent index)
+  // Helper function to get pickup status
   const getPickupStatus = (buddiRequestId: number) => {
     return pickupStatuses[buddiRequestId] || null;
+  };
+
+  // Helper function to get pickup data for a specific request
+  const getPickupData = (buddiRequestId: number) => {
+    return pickups.find((p) => p.buddiRequestId === buddiRequestId);
+  };
+
+  // Helper to refresh pickups
+  const refreshPickups = async () => {
+    if (!parentDetails?.id) return;
+    try {
+      const res = await ParentService.getAllPickups(
+        parentDetails.id.toString()
+      );
+      setPickups(res.pickups || []);
+    } catch (err: any) {
+      console.error("Failed to refresh pickups:", err);
+    }
   };
 
   // Coverage request modal states - only used in coverage tab
@@ -647,13 +803,178 @@ const SchedulePage = () => {
                                   (pickup.status === "matched" &&
                                     parentDetails?.approvalStage === "pending")
                                 }
-                                onMainAction={() => {
-                                  // Handle pickup action - coverage requests are handled in coverage tab
-                                  console.log(
-                                    "Pickup action triggered for pickup:",
-                                    pickup.id
-                                  );
-                                }}
+                                onMainAction={
+                                  pickup.status === "matched" &&
+                                  !currentPickupStatus
+                                    ? async () => {
+                                        // Check if parent has pending approval status
+                                        if (
+                                          parentDetails?.approvalStage ===
+                                          "pending"
+                                        ) {
+                                          Alert.alert(
+                                            "Background Check Required",
+                                            "To ensure the safety of all children, we require a background check before you can create pickup requests. Please complete your background check first.",
+                                            [
+                                              {
+                                                text: "Cancel",
+                                                style: "cancel",
+                                              },
+                                              {
+                                                text: "Perform Background Check",
+                                                style: "default",
+                                                onPress: () => {
+                                                  router.push(
+                                                    "/parent/background-check"
+                                                  );
+                                                },
+                                              },
+                                            ]
+                                          );
+                                          return;
+                                        }
+
+                                        Alert.alert(
+                                          "Start Pickup Trip",
+                                          "Are you ready to start a pickup trip?",
+                                          [
+                                            { text: "Cancel", style: "cancel" },
+                                            {
+                                              text: "Yes, Start Trip",
+                                              style: "default",
+                                              onPress: async () => {
+                                                try {
+                                                  setStartingTripId(pickup.id);
+
+                                                  const res =
+                                                    await ParentService.createPickupRequest(
+                                                      {
+                                                        parentId:
+                                                          parentDetails!.id,
+                                                        buddiId: Number(
+                                                          pickup.matchedBuddiId!
+                                                        ),
+                                                        childId: pickup.childId,
+                                                        fromLocation:
+                                                          pickup.fromZone,
+                                                        toLocation:
+                                                          pickup.toZone,
+                                                        buddiRequestId:
+                                                          pickup.id,
+                                                        callId: pickup.id,
+                                                      }
+                                                    );
+
+                                                  console.log(
+                                                    "[SCHEDULE] ✅ Pickup request created successfully:",
+                                                    res
+                                                  );
+
+                                                  // Refresh pickups to get updated status
+                                                  await refreshPickups();
+
+                                                  // Show success modal
+                                                  showSuccessModal(
+                                                    "Trip Started! 🚀",
+                                                    "Your pickup trip has been started successfully! The Buddi is now on their way.",
+                                                    "car-sport",
+                                                    "#22C55E"
+                                                  );
+                                                } catch (err: any) {
+                                                  let errorMessage =
+                                                    "Failed to start trip.";
+
+                                                  // Handle specific 400 error for duplicate pickup
+                                                  if (
+                                                    err?.response?.status ===
+                                                    400
+                                                  ) {
+                                                    if (
+                                                      typeof err?.response?.data
+                                                        ?.error === "string" &&
+                                                      err.response.data.error.includes(
+                                                        "already requested"
+                                                      )
+                                                    ) {
+                                                      errorMessage =
+                                                        "This pickup trip has already been started today. You can only start one trip per day.";
+                                                    } else if (
+                                                      typeof err?.response?.data
+                                                        ?.error === "string" &&
+                                                      err.response.data.error.includes(
+                                                        "already started"
+                                                      )
+                                                    ) {
+                                                      errorMessage =
+                                                        "This pickup trip has already been started. Please check your trip status.";
+                                                    } else if (
+                                                      err?.response?.data?.error
+                                                    ) {
+                                                      errorMessage =
+                                                        err.response.data.error;
+                                                    }
+                                                  } else if (
+                                                    err?.response?.data?.message
+                                                  ) {
+                                                    errorMessage =
+                                                      err.response.data.message;
+                                                  } else if (err?.message) {
+                                                    if (
+                                                      err.message.includes(
+                                                        "Network"
+                                                      )
+                                                    ) {
+                                                      errorMessage =
+                                                        "Network error. Please check your connection and try again.";
+                                                    } else if (
+                                                      err.message.includes(
+                                                        "timeout"
+                                                      )
+                                                    ) {
+                                                      errorMessage =
+                                                        "Request timed out. Please try again.";
+                                                    } else {
+                                                      errorMessage =
+                                                        err.message;
+                                                    }
+                                                  }
+
+                                                  Alert.alert(
+                                                    "Cannot Start Trip",
+                                                    errorMessage,
+                                                    [
+                                                      {
+                                                        text: "OK",
+                                                        style: "default",
+                                                      },
+                                                    ]
+                                                  );
+                                                } finally {
+                                                  setStartingTripId(null);
+                                                }
+                                              },
+                                            },
+                                          ]
+                                        );
+                                      }
+                                    : currentPickupStatus === "completed"
+                                    ? () => {
+                                        const pickupData = getPickupData(
+                                          pickup.id
+                                        );
+                                        Alert.alert(
+                                          "Trip Completed",
+                                          `Your trip has been completed successfully!\n\nFare: $${
+                                            pickupData?.fare?.toFixed(2) ||
+                                            "0.00"
+                                          }\nDuration: ${
+                                            pickupData?.duration || "N/A"
+                                          }`,
+                                          [{ text: "OK", style: "default" }]
+                                        );
+                                      }
+                                    : undefined
+                                }
                               />
                             </View>
                           ))}
@@ -996,6 +1317,18 @@ const SchedulePage = () => {
         onClose={() => setShowCoverageModal(false)}
         onSubmit={handleCreateCoverageRequest}
         buddiName={selectedBuddiName}
+      />
+
+      {/* Success Modal */}
+      <SuccessModal
+        visible={successModal.visible}
+        title={successModal.title}
+        message={successModal.message}
+        iconName={successModal.iconName}
+        iconColor={successModal.iconColor}
+        onClose={() => setSuccessModal((prev) => ({ ...prev, visible: false }))}
+        autoCloseDelay={4000}
+        showCloseButton={true}
       />
     </SafeAreaView>
   );

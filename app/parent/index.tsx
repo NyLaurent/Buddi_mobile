@@ -4,7 +4,6 @@ import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
 import React from "react";
 import {
-  ActivityIndicator,
   Alert,
   Image,
   ScrollView,
@@ -17,44 +16,11 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import AnalyticsCard from "../../components/commons/AnalyticsCard";
 import SuccessModal from "../../components/modals/SuccessModal";
 import BuyTokensCTA from "../../components/parent/BuyTokensCTA";
-import KidPickupCard from "../../components/parent/KidPickupCard";
 import { useAuth } from "../../context/AuthContext";
-import BuddiService from "../../services/api/buddi.service";
-import ChildrenService from "../../services/api/children.service";
-import ParentService, {
-  ParentPickupRequest,
-  Pickup,
-} from "../../services/api/parent.service";
-import notificationService from "../../services/notifications/notification.service";
-import SocketService from "../../services/socket";
 
 export default function ParentDashboard() {
-  // const [selectedDate, setSelectedDate] = React.useState(new Date());
   const { user, logout, parentDetails, refreshUserData } = useAuth();
   const router = useRouter();
-
-  // New state for pickup requests
-  const [pickupRequests, setPickupRequests] = React.useState<
-    ParentPickupRequest[]
-  >([]);
-  const [loadingRequests, setLoadingRequests] = React.useState(true);
-  const [errorRequests, setErrorRequests] = React.useState<string | null>(null);
-
-  // New state for actual pickups tracking
-  const [pickups, setPickups] = React.useState<Pickup[]>([]);
-  // const [loadingPickups, setLoadingPickups] = React.useState(true);
-  // const [errorPickups, setErrorPickups] = React.useState<string | null>(null);
-
-  // New state for child and buddi details per pickup request
-  const [childDetailsMap, setChildDetailsMap] = React.useState<
-    Record<string, any>
-  >({});
-  const [buddiDetailsMap, setBuddiDetailsMap] = React.useState<
-    Record<string, any>
-  >({});
-  const [startingTripId, setStartingTripId] = React.useState<number | null>(
-    null
-  );
 
   // Success modal states
   const [successModal, setSuccessModal] = React.useState({
@@ -81,28 +47,6 @@ export default function ParentDashboard() {
     });
   };
 
-  // Helper to emit pickup events to buddi's room
-  const emitPickupEvent = (
-    eventName: string,
-    pickupData: any,
-    buddiId: number
-  ) => {
-    const socket = SocketService.getSocket();
-    if (socket) {
-      const buddiRoomId = `buddi-${buddiId}`;
-      console.log(`[PARENT] Emitting ${eventName} to buddi room:`, buddiRoomId);
-      console.log(`[PARENT] Pickup data:`, pickupData);
-      console.log(`[PARENT] Socket connected:`, socket.connected);
-      socket.emit(eventName, {
-        roomId: buddiRoomId,
-        pickupData: pickupData,
-      });
-      console.log(`[PARENT] ${eventName} event emitted successfully`);
-    } else {
-      console.log(`[PARENT] Cannot emit ${eventName}: socket not available`);
-    }
-  };
-
   // Profile polling state
   const [profilePollingInterval, setProfilePollingInterval] =
     React.useState<ReturnType<typeof setInterval> | null>(null);
@@ -118,585 +62,6 @@ export default function ParentDashboard() {
       console.error("[PARENT] Error refreshing profile:", error);
     }
   };
-
-  React.useEffect(() => {
-    const fetchDetailsForRequests = async () => {
-      if (!parentDetails?.id) return;
-      setLoadingRequests(true);
-      setErrorRequests(null);
-      try {
-        const res = await ParentService.getMyPickupRequests(
-          parentDetails.id.toString()
-        );
-        const requests = res.data || [];
-        setPickupRequests(requests);
-        // Fetch all children for this parent once
-        const childrenRes = await ChildrenService.getChildrenByParent(
-          parentDetails.id.toString()
-        );
-        const childrenArr = Array.isArray(childrenRes) ? childrenRes : [];
-        // Map childId to child details
-        const childMap: Record<string, any> = {};
-        childrenArr.forEach((child: any) => {
-          childMap[child.id] = child;
-        });
-        setChildDetailsMap(childMap);
-        // Fetch buddi details for each matchedBuddiId
-        const buddiIds = Array.from(
-          new Set(requests.map((r: any) => r.matchedBuddiId).filter(Boolean))
-        );
-        const buddiMap: Record<string, any> = {};
-        for (const buddiId of buddiIds) {
-          try {
-            const buddiRes = await BuddiService.getBuddiInfo(
-              buddiId.toString()
-            );
-            buddiMap[buddiId] = buddiRes.data;
-          } catch {
-            // fallback: just store id
-            buddiMap[buddiId] = { id: buddiId };
-          }
-        }
-        setBuddiDetailsMap(buddiMap);
-      } catch (err: any) {
-        setErrorRequests(err.message || "Failed to fetch pickup requests.");
-      } finally {
-        setLoadingRequests(false);
-      }
-    };
-
-    const fetchPickups = async () => {
-      if (!parentDetails?.id) return;
-      try {
-        const res = await ParentService.getAllPickups(
-          parentDetails.id.toString()
-        );
-        setPickups(res.pickups || []);
-      } catch (err: any) {
-        console.error("Failed to fetch pickups:", err);
-      }
-    };
-
-    fetchDetailsForRequests();
-    fetchPickups();
-
-    // Real-time trip event listeners and local persistence
-    const getSocket = () =>
-      SocketService.getSocket ? SocketService.getSocket() : null;
-
-    // Helper to update or add a pickup in state
-    const upsertPickup = (pickup: any) => {
-      setPickupRequests((prev) => {
-        const idx = prev.findIndex((p) => p.id === pickup.id);
-        let updated;
-        if (idx !== -1) {
-          updated = [...prev];
-          updated[idx] = { ...updated[idx], ...pickup };
-        } else {
-          updated = [...prev, pickup];
-        }
-        // Persist to AsyncStorage
-        AsyncStorage.setItem("parentPickups", JSON.stringify(updated));
-        return updated;
-      });
-    };
-
-    // pickup-requested
-    const handlePickupRequested = (data: any) => {
-      let pickup;
-      try {
-        pickup = typeof data === "string" ? JSON.parse(data) : data;
-      } catch (err) {
-        console.error("[PARENT] Parse error (pickup-requested):", err);
-        return;
-      }
-      console.log("[PARENT] Pickup requested event received:", pickup);
-      console.log(
-        "[PARENT] Current pickup requests count:",
-        pickupRequests.length
-      );
-      upsertPickup(pickup);
-      // Refresh pickups to get updated status
-      refreshPickups();
-    };
-    // pickup-started
-    const handlePickupStarted = (data: any) => {
-      let pickup;
-      try {
-        pickup = typeof data === "string" ? JSON.parse(data) : data;
-      } catch (err) {
-        console.error("[PARENT] Parse error (pickup-started):", err);
-        return;
-      }
-      console.log("[PARENT] Pickup started event received:", pickup);
-      console.log(
-        "[PARENT] Current pickup requests count:",
-        pickupRequests.length
-      );
-      upsertPickup(pickup);
-      // Refresh pickups to get updated status
-      refreshPickups();
-    };
-    // child-picked-up
-    const handleChildPickedUp = (data: any) => {
-      let pickup;
-      try {
-        pickup = typeof data === "string" ? JSON.parse(data) : data;
-      } catch (err) {
-        console.error("[PARENT] Parse error (child-picked-up):", err);
-        return;
-      }
-      console.log("[PARENT] Child picked up event received:", pickup);
-      console.log(
-        "[PARENT] Current pickup requests count:",
-        pickupRequests.length
-      );
-      upsertPickup(pickup);
-      // Refresh pickups to get updated status
-      refreshPickups();
-    };
-    // trip-completed
-    const handleTripCompleted = (data: any) => {
-      let pickup;
-      try {
-        pickup = typeof data === "string" ? JSON.parse(data) : data;
-      } catch (err) {
-        console.error("[PARENT] Parse error (trip-completed):", err);
-        return;
-      }
-      console.log("[PARENT] Trip completed event received:", pickup);
-      console.log(
-        "[PARENT] Current pickup requests count:",
-        pickupRequests.length
-      );
-      upsertPickup(pickup);
-      // Refresh pickups to get updated status
-      refreshPickups();
-    };
-
-    // Enhanced socket event listeners for real-time updates
-    SocketService.on("pickup-started", (pickupData: any) => {
-      console.log("[PARENT] Received pickup-started event:", pickupData);
-      // Update pickup status in real-time
-      setPickupRequests((prev) =>
-        prev.map((pickup) => {
-          if (pickup.id === pickupData.id) {
-            return { ...pickup, status: "enRoute" };
-          }
-          return pickup;
-        })
-      );
-    });
-
-    SocketService.on("child-picked-up", (pickupData: any) => {
-      console.log("[PARENT] Received child-picked-up event:", pickupData);
-      // Update pickup status in real-time
-      setPickupRequests((prev) =>
-        prev.map((pickup) => {
-          if (pickup.id === pickupData.id) {
-            return { ...pickup, status: "pickedUp" };
-          }
-          return pickup;
-        })
-      );
-    });
-
-    SocketService.on("trip-completed", (pickupData: any) => {
-      console.log("[PARENT] Received trip-completed event:", pickupData);
-      // Update pickup status in real-time
-      setPickupRequests((prev) =>
-        prev.map((pickup) => {
-          if (pickup.id === pickupData.id) {
-            return { ...pickup, status: "completed" };
-          }
-          return pickup;
-        })
-      );
-    });
-
-    SocketService.on("trip-cancelled", (pickupData: any) => {
-      console.log("[PARENT] Received trip-cancelled event:", pickupData);
-      // Update pickup status in real-time
-      setPickupRequests((prev) =>
-        prev.map((pickup) => {
-          if (pickup.id === pickupData.id) {
-            return { ...pickup, status: "cancelled" };
-          }
-          return pickup;
-        })
-      );
-    });
-
-    // On mount, load pickups from AsyncStorage
-    AsyncStorage.getItem("parentPickups").then((stored) => {
-      if (stored) {
-        setPickupRequests(JSON.parse(stored));
-      }
-    });
-
-    // Cleanup listeners on unmount
-    return () => {
-      SocketService.off("pickup-started");
-      SocketService.off("child-picked-up");
-      SocketService.off("trip-completed");
-      SocketService.off("trip-cancelled");
-    };
-  }, [parentDetails?.id]);
-
-  React.useEffect(() => {
-    if (!parentDetails?.id || !user?.userId) return;
-
-    // Enhanced socket connection and room management
-    const connectAndJoinRoom = () => {
-      console.log("[PARENT] 🔌 Connecting to socket as parent:", user.userId);
-      console.log("[PARENT] 🏠 Parent details:", parentDetails);
-      console.log("[PARENT] 🆔 Parent ID for room:", parentDetails.id);
-
-      // Connect to socket
-      SocketService.connect(user.userId.toString(), "Parent");
-
-      // Join parent-specific room for real-time updates
-      const socket = SocketService.getSocket();
-      if (socket) {
-        console.log(
-          "[PARENT] 🚪 Joining parent room with ID:",
-          parentDetails.id
-        );
-        console.log("[PARENT] 🚪 Emitting join-parent-room event...");
-        socket.emit("join-parent-room", parentDetails.id);
-        console.log(
-          "[PARENT] ✅ join-parent-room event emitted for parent:",
-          parentDetails.id
-        );
-
-        // Listen for room join confirmation (if your server sends it)
-        socket.on("room-joined", (data) => {
-          console.log("[PARENT] ✅ Successfully joined room:", data);
-        });
-
-        socket.on("room-join-error", (error) => {
-          console.error("[PARENT] ❌ Failed to join room:", error);
-        });
-      } else {
-        console.error("[PARENT] ❌ Socket not available for room joining");
-      }
-    };
-
-    // Initial connection
-    connectAndJoinRoom();
-
-    // Reconnect on socket reconnection
-    const socket = SocketService.getSocket();
-    if (socket) {
-      socket.on("connect", () => {
-        console.log("[PARENT] 🔄 Socket reconnected, rejoining room");
-        connectAndJoinRoom();
-      });
-
-      socket.on("disconnect", (reason) => {
-        console.log("[PARENT] 💔 Socket disconnected:", reason);
-      });
-    }
-
-    // Enhanced handlers for all trip events
-    const handlePickupRequested = (pickupData: any) => {
-      console.log("[PARENT] 📋 Received pickup-requested event:", pickupData);
-      // Update pickup requests state when a pickup is requested
-      setPickupRequests((prev) => {
-        const exists = prev.find((p) => p.id === pickupData.id);
-        if (!exists) {
-          console.log("[PARENT] ➕ Adding new pickup request");
-          return [...prev, pickupData];
-        }
-        console.log("[PARENT] 🔄 Updating existing pickup request");
-        return prev.map((p) =>
-          p.id === pickupData.id ? { ...p, ...pickupData } : p
-        );
-      });
-    };
-
-    const handlePickupStarted = (pickupData: any) => {
-      console.log("[PARENT] 🚀 Received pickup-started event:", pickupData);
-      console.log("[PARENT] 📊 Current pickups before update:", pickups);
-
-      // Update both pickups and pickup requests
-      setPickups((prev) => {
-        const updated = prev.map((pickup) =>
-          pickup.id === pickupData.id
-            ? { ...pickup, status: "enRoute" as const, ...pickupData }
-            : pickup
-        ) as Pickup[];
-
-        // Add new pickup if it doesn't exist
-        const exists = updated.find((p) => p.id === pickupData.id);
-        if (!exists) {
-          updated.push({ ...pickupData, status: "enRoute" as const });
-        }
-
-        console.log(
-          "[PARENT] 📊 Updated pickups after pickup-started:",
-          updated
-        );
-        return updated;
-      });
-
-      // Update pickup requests status
-      setPickupRequests((prev) =>
-        prev.map((req) =>
-          req.id === pickupData.parentPickupRequestId
-            ? { ...req, tripStatus: "enRoute" }
-            : req
-        )
-      );
-
-      // Send local notification
-      try {
-        notificationService.sendImmediateNotification({
-          title: "Trip Started 🚗",
-          body: "Your pickup trip has just started.",
-          data: { type: "trip_started", pickupId: pickupData?.id },
-          priority: "high",
-          sound: "default",
-        });
-      } catch (e) {
-        console.log("[PARENT] Failed to send trip_started notification", e);
-      }
-    };
-
-    const handleChildPickedUp = (pickupData: any) => {
-      console.log("[PARENT] 👶 Received child-picked-up event:", pickupData);
-      console.log("[PARENT] 📊 Current pickups before update:", pickups);
-
-      setPickups((prev) => {
-        const updated = prev.map((pickup) =>
-          pickup.id === pickupData.id
-            ? { ...pickup, status: "pickedUp" as const, ...pickupData }
-            : pickup
-        ) as Pickup[];
-        console.log(
-          "[PARENT] 📊 Updated pickups after child-picked-up:",
-          updated
-        );
-        return updated;
-      });
-
-      // Update pickup requests status
-      setPickupRequests((prev) =>
-        prev.map((req) =>
-          req.id === pickupData.parentPickupRequestId
-            ? { ...req, tripStatus: "pickedUp" }
-            : req
-        )
-      );
-
-      // Send local notification
-      try {
-        notificationService.sendImmediateNotification({
-          title: "Child Picked Up 👶",
-          body: "Your child has been picked up by the Buddi.",
-          data: { type: "child_picked_up", pickupId: pickupData?.id },
-          priority: "high",
-          sound: "default",
-        });
-      } catch (e) {
-        console.log("[PARENT] Failed to send child_picked_up notification", e);
-      }
-    };
-
-    const handleTripCompleted = (pickupData: any) => {
-      console.log("[PARENT] ✅ Received trip-completed event:", pickupData);
-      console.log("[PARENT] 📊 Current pickups before update:", pickups);
-
-      setPickups((prev) => {
-        const updated = prev.map((pickup) =>
-          pickup.id === pickupData.id
-            ? { ...pickup, status: "completed" as const, ...pickupData }
-            : pickup
-        ) as Pickup[];
-        console.log(
-          "[PARENT] 📊 Updated pickups after trip-completed:",
-          updated
-        );
-        return updated;
-      });
-
-      // Update pickup requests status
-      setPickupRequests((prev) =>
-        prev.map((req) =>
-          req.id === pickupData.parentPickupRequestId
-            ? { ...req, tripStatus: "completed" }
-            : req
-        )
-      );
-
-      // Show completion success modal
-      showSuccessModal(
-        "Trip Completed! 🎉",
-        "Your pickup trip has been completed successfully! Wait for the next day pickup and your buddi to submit their timesheet.",
-        "trophy",
-        "#FFD700"
-      );
-
-      // Send local notification
-      try {
-        notificationService.sendImmediateNotification({
-          title: "Trip Completed 🎉",
-          body: "Your pickup trip has been completed successfully.",
-          data: { type: "trip_completed", pickupId: pickupData?.id },
-          priority: "high",
-          sound: "default",
-        });
-      } catch (e) {
-        console.log("[PARENT] Failed to send trip_completed notification", e);
-      }
-    };
-
-    const handleTripCancelled = (pickupData: any) => {
-      console.log("[PARENT] ❌ Received trip-cancelled event:", pickupData);
-
-      setPickups((prev) => {
-        const updated = prev.map((pickup) =>
-          pickup.id === pickupData.id
-            ? { ...pickup, status: "cancelled" as const, ...pickupData }
-            : pickup
-        ) as Pickup[];
-        console.log(
-          "[PARENT] 📊 Updated pickups after trip-cancelled:",
-          updated
-        );
-        return updated;
-      });
-
-      // Update pickup requests status
-      setPickupRequests((prev) =>
-        prev.map((req) =>
-          req.id === pickupData.parentPickupRequestId
-            ? { ...req, tripStatus: "cancelled" }
-            : req
-        )
-      );
-
-      Alert.alert(
-        "Trip Cancelled",
-        "Your pickup trip has been cancelled. Please contact support if you need assistance.",
-        [{ text: "OK", style: "default" }]
-      );
-
-      // Send local notification
-      try {
-        notificationService.sendImmediateNotification({
-          title: "Trip Cancelled ❌",
-          body: "Your pickup trip has been cancelled.",
-          data: { type: "trip_cancelled", pickupId: pickupData?.id },
-          priority: "high",
-          sound: "default",
-        });
-      } catch (e) {
-        console.log("[PARENT] Failed to send trip_cancelled notification", e);
-      }
-    };
-
-    // Register listeners for all trip events matching your server's event names
-    console.log("[PARENT] 👂 Registering real-time event listeners...");
-    SocketService.on("pickup-requests-updated", (data: any) => {
-      console.log("[PARENT] 📋 Pickup requests updated:", data);
-      // Refresh pickup requests when updated
-      if (parentDetails?.id) {
-        ParentService.getMyPickupRequests(parentDetails.id.toString())
-          .then((res) => {
-            const newRequests = res.data || [];
-            const oldRequests = pickupRequests;
-
-            // Check for new Buddi assignments
-            newRequests.forEach((newRequest: any) => {
-              const oldRequest = oldRequests.find(
-                (old: any) => old.id === newRequest.id
-              );
-              if (
-                oldRequest &&
-                !oldRequest.matchedBuddiId &&
-                newRequest.matchedBuddiId
-              ) {
-                // New Buddi assigned!
-                try {
-                  notificationService.sendImmediateNotification({
-                    title: "🎉 Buddi Assigned!",
-                    body: `Great news! A Buddi has been assigned to your pickup request. Check the app for details.`,
-                    data: { type: "buddi_assigned", pickupId: newRequest.id },
-                    priority: "high",
-                    sound: "default",
-                  });
-                } catch (error) {
-                  console.log("Failed to send notification:", error);
-                }
-              }
-            });
-
-            setPickupRequests(newRequests);
-          })
-          .catch((err) =>
-            console.error("Failed to refresh pickup requests:", err)
-          );
-      }
-    });
-    SocketService.on("pickup-started", handlePickupStarted);
-    SocketService.on("child-picked-up", handleChildPickedUp);
-    SocketService.on("trip-completed", handleTripCompleted);
-
-    // Cleanup listeners on unmount or id change
-    return () => {
-      console.log("[PARENT] 🧹 Cleaning up real-time event listeners...");
-      const socket = SocketService.getSocket();
-      if (socket) {
-        socket.off("connect");
-        socket.off("disconnect");
-        socket.off("room-joined");
-        socket.off("room-join-error");
-      }
-      SocketService.off("pickup-requests-updated");
-      SocketService.off("pickup-started", handlePickupStarted);
-      SocketService.off("child-picked-up", handleChildPickedUp);
-      SocketService.off("trip-completed", handleTripCompleted);
-    };
-  }, [parentDetails?.id, user?.userId]);
-
-  // Periodic room check to ensure we stay connected
-  React.useEffect(() => {
-    if (!parentDetails?.id || !user?.userId) return;
-
-    const intervalId = setInterval(() => {
-      const socket = SocketService.getSocket();
-      if (socket && socket.connected) {
-        console.log(
-          "[PARENT] 🔄 Periodic room rejoin check for parent:",
-          parentDetails.id
-        );
-        console.log("[PARENT] 🔄 Re-emitting join-parent-room...");
-        socket.emit("join-parent-room", parentDetails.id);
-        console.log("[PARENT] ✅ Periodic join-parent-room event emitted");
-      } else if (user?.userId) {
-        console.log(
-          "[PARENT] 🚨 Socket disconnected during periodic check, reconnecting..."
-        );
-        SocketService.connect(user.userId.toString(), "Parent");
-      }
-    }, 30000); // Check every 30 seconds
-
-    return () => clearInterval(intervalId);
-  }, [parentDetails?.id, user?.userId]);
-
-  // Check socket connection status periodically
-  React.useEffect(() => {
-    const checkConnection = () => {
-      const status = SocketService.getConnectionStatus();
-      console.log("[PARENT] Socket connection status:", status);
-    };
-
-    checkConnection();
-    const interval = setInterval(checkConnection, 30000); // Check every 30 seconds
-
-    return () => clearInterval(interval);
-  }, []);
 
   // Profile polling effect - poll every 30 seconds to track status changes
   React.useEffect(() => {
@@ -747,29 +112,6 @@ export default function ParentDashboard() {
     parentDetails?.bgcStatus,
   ]);
 
-  // Enhanced refresh function that also refreshes profile
-  const enhancedRefreshPickups = async () => {
-    if (!parentDetails?.id) return;
-    try {
-      console.log(
-        "[PARENT] Enhanced refresh - updating pickups and profile..."
-      );
-
-      // Refresh pickups
-      const res = await ParentService.getAllPickups(
-        parentDetails.id.toString()
-      );
-      setPickups(res.pickups || []);
-
-      // Also refresh profile data
-      await refreshProfileData();
-
-      console.log("[PARENT] Enhanced refresh completed");
-    } catch (err: any) {
-      console.error("Failed to refresh pickups and profile:", err);
-    }
-  };
-
   const handleLogout = () => {
     console.log("Logout button clicked!"); // Debug log
     // Show confirmation modal before logout
@@ -796,28 +138,6 @@ export default function ParentDashboard() {
     }
   };
 
-  const refreshPickups = async () => {
-    if (!parentDetails?.id) return;
-    try {
-      const res = await ParentService.getAllPickups(
-        parentDetails.id.toString()
-      );
-      setPickups(res.pickups || []);
-    } catch (err: any) {
-      console.error("Failed to refresh pickups:", err);
-    }
-  };
-
-  // Helper function to get pickup status for a specific request
-  const getPickupStatus = (buddiRequestId: number) => {
-    const pickup = pickups.find((p) => p.buddiRequestId === buddiRequestId);
-    return pickup?.status || null;
-  };
-
-  // Helper function to get pickup data for a specific request
-  const getPickupData = (buddiRequestId: number) => {
-    return pickups.find((p) => p.buddiRequestId === buddiRequestId);
-  };
   return (
     <SafeAreaView
       style={{ flex: 1, backgroundColor: "#fff" }}
@@ -857,33 +177,7 @@ export default function ParentDashboard() {
                   color="white"
                 />
               </TouchableOpacity>
-              {/* <View
-                style={{
-                  position: "absolute",
-                  top: -8,
-                  right: -8,
-                  backgroundColor: "#EF4444",
-                  borderRadius: 9999,
-                  width: 24,
-                  height: 24,
-                  alignItems: "center",
-                  justifyContent: "center",
-                  borderWidth: 2,
-                  borderColor: "white",
-                  zIndex: 999,
-                }}
-              >
-                <Text className="text-xs text-white font-bold">9</Text>
-              </View> */}
             </View>
-            {/* Search Icon */}
-            {/* <TouchableOpacity className="p-2 bg-orange-400 rounded-xl shadow-sm">
-              <Ionicons name="search-outline" size={22} color="white" />
-            </TouchableOpacity> */}
-            {/* Notification Icon */}
-            {/* <TouchableOpacity className="p-2 bg-orange-400 rounded-xl shadow-sm">
-              <Ionicons name="notifications-outline" size={22} color="white" />
-            </TouchableOpacity> */}
             <TouchableOpacity
               className="p-2 bg-red-500 rounded-xl shadow-sm"
               onPress={handleLogout}
@@ -1004,603 +298,117 @@ export default function ParentDashboard() {
           showButtonBelow={true}
           onPress={() => router.push("/parent/payments")}
         />
-        {/* Call to Action Rectangle or Pickup Request Card */}
-        {loadingRequests ? (
-          <View
-            style={{
-              marginTop: 28,
-              marginBottom: 18,
-              alignItems: "center",
-              justifyContent: "center",
-              paddingHorizontal: 16,
-              paddingVertical: 10,
-            }}
+
+        {/* Call to Action Rectangle */}
+        <View
+          style={{
+            borderRadius: 18,
+            marginTop: 18,
+            marginBottom: 10,
+            overflow: "hidden",
+            shadowColor: "#FF932E",
+            shadowOffset: { width: 0, height: 4 },
+            shadowOpacity: 0.15,
+            shadowRadius: 12,
+            elevation: 4,
+          }}
+        >
+          <LinearGradient
+            colors={["#FF932E", "#FFB86C"]}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={{ padding: 20, borderRadius: 18 }}
           >
-            <ActivityIndicator size="large" color="#FF932E" />
-          </View>
-        ) : errorRequests ? (
-          <View style={{ marginTop: 18, marginBottom: 10 }}>
-            <Text style={{ color: "red" }}>{errorRequests}</Text>
-          </View>
-        ) : pickupRequests.length === 0 ? (
-          // Show CTA if no calls
-          <View
-            style={{
-              borderRadius: 18,
-              marginTop: 18,
-              marginBottom: 10,
-              overflow: "hidden",
-              shadowColor: "#FF932E",
-              shadowOffset: { width: 0, height: 4 },
-              shadowOpacity: 0.15,
-              shadowRadius: 12,
-              elevation: 4,
-            }}
-          >
-            <LinearGradient
-              colors={["#FF932E", "#FFB86C"]}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-              style={{ padding: 20, borderRadius: 18 }}
-            >
-              <View
-                style={{
-                  flexDirection: "row",
-                  alignItems: "center",
-                  marginBottom: 10,
-                }}
-              >
-                <FontAwesome5
-                  name="user-friends"
-                  size={28}
-                  color="#fff"
-                  style={{ marginRight: 12 }}
-                />
-                <Text
-                  style={{
-                    color: "#fff",
-                    fontFamily: "Comfortaa-Bold",
-                    fontSize: 18,
-                    flex: 1,
-                  }}
-                >
-                  Ready to connect?
-                </Text>
-              </View>
-              <Text
-                style={{
-                  color: "#fff",
-                  fontFamily: "Comfortaa-Regular",
-                  fontSize: 15,
-                  marginBottom: 18,
-                }}
-              >
-                Start your journey by creating a call and discover amazing
-                Buddis to help your family!
-              </Text>
-              <TouchableOpacity
-                style={{
-                  backgroundColor: "#fff",
-                  borderRadius: 999,
-                  paddingVertical: 12,
-                  paddingHorizontal: 28,
-                  alignSelf: "flex-start",
-                  flexDirection: "row",
-                  alignItems: "center",
-                  shadowColor: "#FF932E",
-                  shadowOffset: { width: 0, height: 2 },
-                  shadowOpacity: 0.12,
-                  shadowRadius: 6,
-                  elevation: 2,
-                }}
-                onPress={() => {
-                  if (parentDetails?.approvalStage === "pending") {
-                    Alert.alert(
-                      "Background Check Required",
-                      "To ensure the safety of all children, we require a background check before you can create pickup requests. Please complete your background check first.",
-                      [
-                        {
-                          text: "Perform Background Check",
-                          onPress: () =>
-                            router.push("/parent/background-check"),
-                        },
-                        {
-                          text: "Cancel",
-                          style: "cancel",
-                        },
-                      ]
-                    );
-                  } else {
-                    router.push("/parent/call-page");
-                  }
-                }}
-                activeOpacity={0.85}
-              >
-                <FontAwesome5
-                  name="search"
-                  size={18}
-                  color="#FF932E"
-                  style={{ marginRight: 10 }}
-                />
-                <Text
-                  style={{
-                    color: "#FF932E",
-                    fontFamily: "Comfortaa-Bold",
-                    fontSize: 16,
-                  }}
-                >
-                  Find Your Buddi Now
-                </Text>
-              </TouchableOpacity>
-            </LinearGradient>
-          </View>
-        ) : // Show first call card and See More if needed
-        pickupRequests[0].status === "matched" ? (
-          <View
-            style={{
-              backgroundColor: "#fff",
-              borderRadius: 12,
-              padding: 14,
-              marginTop: 18,
-              marginBottom: 10,
-              flexDirection: "row",
-              alignItems: "center",
-              shadowColor: "#FF932E",
-              shadowOffset: { width: 0, height: 2 },
-              shadowOpacity: 0.08,
-              shadowRadius: 4,
-              elevation: 1,
-              borderWidth: 1,
-              borderColor: "#FFE0B2",
-            }}
-          >
-            <FontAwesome5
-              name="user-friends"
-              size={22}
-              color="#FF932E"
-              style={{ marginRight: 12 }}
-            />
-            <Text
+            <View
               style={{
-                color: "#232B3A",
-                fontFamily: "Comfortaa-Bold",
-                fontSize: 15,
-                flex: 1,
-              }}
-            >
-              Matched Buddi!
-            </Text>
-            <TouchableOpacity
-              style={{
-                backgroundColor: "#FF932E",
-                borderRadius: 999,
-                paddingVertical: 6,
-                paddingHorizontal: 16,
                 flexDirection: "row",
                 alignItems: "center",
+                marginBottom: 10,
               }}
-              onPress={() =>
-                router.push({
-                  pathname: "/parent/buddi-profile/[buddiId]",
-                  params: {
-                    buddiId: String(pickupRequests[0].matchedBuddiId ?? ""),
-                  },
-                })
-              }
-              activeOpacity={0.85}
             >
+              <FontAwesome5
+                name="user-friends"
+                size={28}
+                color="#fff"
+                style={{ marginRight: 12 }}
+              />
               <Text
                 style={{
                   color: "#fff",
                   fontFamily: "Comfortaa-Bold",
-                  fontSize: 13,
-                  marginRight: 6,
+                  fontSize: 18,
+                  flex: 1,
                 }}
               >
-                View
+                Ready to connect?
               </Text>
-              <Ionicons name="arrow-forward" size={16} color="#fff" />
-            </TouchableOpacity>
-          </View>
-        ) : (
-          // Show first call card and See More if needed (original block for non-matched)
-          <>
-            <LinearGradient
-              colors={["#FF932E", "#FFB86C"]}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
+            </View>
+            <Text
               style={{
-                borderRadius: 18,
-                marginTop: 18,
-                marginBottom: 10,
-                overflow: "hidden",
-                shadowColor: "#FF932E",
-                shadowOffset: { width: 0, height: 4 },
-                shadowOpacity: 0.15,
-                shadowRadius: 12,
-                elevation: 4,
-                padding: 20,
-                flexDirection: "row",
-                alignItems: "center",
+                color: "#fff",
+                fontFamily: "Comfortaa-Regular",
+                fontSize: 15,
+                marginBottom: 18,
               }}
             >
-              {/* Icon with colored circle */}
-              <View
+              Start your journey by creating a call and discover amazing Buddis
+              to help your family!
+            </Text>
+            <TouchableOpacity
+              style={{
+                backgroundColor: "#fff",
+                borderRadius: 999,
+                paddingVertical: 12,
+                paddingHorizontal: 28,
+                alignSelf: "flex-start",
+                flexDirection: "row",
+                alignItems: "center",
+                shadowColor: "#FF932E",
+                shadowOffset: { width: 0, height: 2 },
+                shadowOpacity: 0.12,
+                shadowRadius: 6,
+                elevation: 2,
+              }}
+              onPress={() => {
+                if (parentDetails?.approvalStage === "pending") {
+                  Alert.alert(
+                    "Background Check Required",
+                    "To ensure the safety of all children, we require a background check before you can create pickup requests. Please complete your background check first.",
+                    [
+                      {
+                        text: "Perform Background Check",
+                        onPress: () => router.push("/parent/background-check"),
+                      },
+                      {
+                        text: "Cancel",
+                        style: "cancel",
+                      },
+                    ]
+                  );
+                } else {
+                  router.push("/parent/call-page");
+                }
+              }}
+              activeOpacity={0.85}
+            >
+              <FontAwesome5
+                name="search"
+                size={18}
+                color="#FF932E"
+                style={{ marginRight: 10 }}
+              />
+              <Text
                 style={{
-                  marginRight: 18,
-                  alignItems: "center",
-                  justifyContent: "flex-start",
-                  marginTop: 2,
+                  color: "#FF932E",
+                  fontFamily: "Comfortaa-Bold",
+                  fontSize: 16,
                 }}
               >
-                <View
-                  style={{
-                    backgroundColor: "rgba(255,255,255,0.18)",
-                    borderRadius: 999,
-                    padding: 14,
-                    marginBottom: 4,
-                    borderWidth: 2,
-                    borderColor: "#fff",
-                    shadowColor: "#fff",
-                    shadowOpacity: 0.18,
-                    shadowRadius: 8,
-                    elevation: 2,
-                  }}
-                >
-                  {(() => {
-                    const status = pickupRequests[0].status;
-                    switch (status) {
-                      case "pending":
-                        return (
-                          <FontAwesome5
-                            name="hourglass-half"
-                            size={28}
-                            color="#fff"
-                          />
-                        );
-                      case "matched":
-                        return (
-                          <FontAwesome5
-                            name="user-friends"
-                            size={28}
-                            color="#fff"
-                          />
-                        );
-                      case "completed":
-                        return (
-                          <FontAwesome5
-                            name="check-circle"
-                            size={28}
-                            color="#fff"
-                          />
-                        );
-                      default:
-                        return (
-                          <FontAwesome5
-                            name="info-circle"
-                            size={28}
-                            color="#fff"
-                          />
-                        );
-                    }
-                  })()}
-                </View>
-              </View>
-              <View style={{ flex: 1 }}>
-                {/* Status-specific message */}
-                {pickupRequests[0].status === "matched" ? (
-                  <View
-                    style={{
-                      backgroundColor: "#fff",
-                      borderRadius: 12,
-                      padding: 14,
-                      marginBottom: 8,
-                      flexDirection: "row",
-                      alignItems: "center",
-                      shadowColor: "#FF932E",
-                      shadowOffset: { width: 0, height: 2 },
-                      shadowOpacity: 0.08,
-                      shadowRadius: 4,
-                      elevation: 1,
-                      borderWidth: 1,
-                      borderColor: "#FFE0B2",
-                    }}
-                  >
-                    <FontAwesome5
-                      name="user-friends"
-                      size={22}
-                      color="#FF932E"
-                      style={{ marginRight: 12 }}
-                    />
-                    <Text
-                      style={{
-                        color: "#232B3A",
-                        fontFamily: "Comfortaa-Bold",
-                        fontSize: 15,
-                        flex: 1,
-                      }}
-                    >
-                      Matched Buddi!
-                    </Text>
-                    <TouchableOpacity
-                      style={{
-                        backgroundColor: "#FF932E",
-                        borderRadius: 999,
-                        paddingVertical: 6,
-                        paddingHorizontal: 16,
-                        flexDirection: "row",
-                        alignItems: "center",
-                      }}
-                      onPress={() =>
-                        router.push({
-                          pathname: "/parent/buddi-recommendations/[callId]",
-                          params: { callId: pickupRequests[0].id.toString() },
-                        })
-                      }
-                      activeOpacity={0.85}
-                    >
-                      <Text
-                        style={{
-                          color: "#fff",
-                          fontFamily: "Comfortaa-Bold",
-                          fontSize: 13,
-                          marginRight: 6,
-                        }}
-                      >
-                        View
-                      </Text>
-                      <Ionicons name="arrow-forward" size={16} color="#fff" />
-                    </TouchableOpacity>
-                  </View>
-                ) : (
-                  <>
-                    {/* Other Statuses - Original Layout */}
-                    <Text
-                      style={{
-                        color: "#fff",
-                        fontFamily: "Comfortaa-Regular",
-                        fontSize: 15,
-                        marginBottom: 10,
-                      }}
-                    >
-                      {pickupRequests[0].status === "pending"
-                        ? "Your pickup request is being processed. We will notify you once a Buddi is matched!"
-                        : "Your pickup request is being processed."}
-                    </Text>
-                  </>
-                )}
-
-                {/* Description and Status - Only show for non-matched statuses */}
-                {pickupRequests[0].status !== "matched" && (
-                  <>
-                    <View
-                      style={{
-                        flexDirection: "row",
-                        alignItems: "center",
-                        marginBottom: 8,
-                      }}
-                    >
-                      <FontAwesome5
-                        name="align-left"
-                        size={16}
-                        color="#fff"
-                        style={{ marginRight: 6 }}
-                      />
-                      <Text
-                        style={{
-                          color: "#fff",
-                          fontFamily: "Comfortaa-Bold",
-                          fontSize: 15,
-                          marginRight: 6,
-                        }}
-                      >
-                        Description:
-                      </Text>
-                      <Text
-                        numberOfLines={1}
-                        ellipsizeMode="tail"
-                        style={{
-                          color: "#fff",
-                          fontFamily: "Comfortaa-Regular",
-                          fontSize: 15,
-                          flexShrink: 1,
-                        }}
-                      >
-                        {pickupRequests[0].description}
-                      </Text>
-                    </View>
-                    <View
-                      style={{
-                        flexDirection: "row",
-                        alignItems: "center",
-                        marginBottom: 2,
-                      }}
-                    >
-                      <FontAwesome5
-                        name="info-circle"
-                        size={16}
-                        color="#fff"
-                        style={{ marginRight: 6 }}
-                      />
-                      <Text
-                        style={{
-                          color: "#fff",
-                          fontFamily: "Comfortaa-Bold",
-                          fontSize: 15,
-                          marginRight: 6,
-                        }}
-                      >
-                        Status:
-                      </Text>
-                      <Text
-                        style={{
-                          color: "#fff",
-                          fontFamily: "Comfortaa-Regular",
-                          fontSize: 15,
-                        }}
-                      >
-                        {pickupRequests[0].status === "pending"
-                          ? "Under Review"
-                          : pickupRequests[0].status.charAt(0).toUpperCase() +
-                            pickupRequests[0].status.slice(1)}
-                      </Text>
-                    </View>
-                  </>
-                )}
-                {/* Action Buttons - Different for matched status */}
-                {pickupRequests[0].status === "matched" ? (
-                  <>
-                    {/* View Recommendations Button for Matched Status */}
-                    <TouchableOpacity
-                      style={{
-                        backgroundColor: "#fff",
-                        borderRadius: 999,
-                        paddingVertical: 10,
-                        paddingHorizontal: 24,
-                        alignSelf: "flex-start",
-                        flexDirection: "row",
-                        alignItems: "center",
-                        marginTop: 14,
-                        shadowColor: "#FF932E",
-                        shadowOffset: { width: 0, height: 2 },
-                        shadowOpacity: 0.15,
-                        shadowRadius: 6,
-                        elevation: 3,
-                      }}
-                      onPress={() =>
-                        router.push({
-                          pathname: "/parent/buddi-recommendations/[callId]",
-                          params: { callId: pickupRequests[0].id.toString() },
-                        })
-                      }
-                      activeOpacity={0.85}
-                    >
-                      <FontAwesome5
-                        name="users"
-                        size={16}
-                        color="#FF932E"
-                        style={{ marginRight: 8 }}
-                      />
-                      <Text
-                        style={{
-                          color: "#FF932E",
-                          fontFamily: "Comfortaa-Bold",
-                          fontSize: 15,
-                        }}
-                      >
-                        View Matched Buddi
-                      </Text>
-                    </TouchableOpacity>
-                    {/* See More Button */}
-                    <TouchableOpacity
-                      style={{
-                        backgroundColor: "rgba(255,255,255,0.2)",
-                        borderRadius: 999,
-                        paddingVertical: 8,
-                        paddingHorizontal: 20,
-                        alignSelf: "flex-start",
-                        flexDirection: "row",
-                        alignItems: "center",
-                        marginTop: 10,
-                        borderWidth: 1,
-                        borderColor: "rgba(255,255,255,0.3)",
-                      }}
-                      onPress={() => router.push("/parent/my-calls")}
-                      activeOpacity={0.85}
-                    >
-                      <Text
-                        style={{
-                          color: "#fff",
-                          fontFamily: "Comfortaa-Bold",
-                          fontSize: 14,
-                          marginRight: 6,
-                        }}
-                      >
-                        See All Calls
-                      </Text>
-                      <Ionicons name="arrow-forward" size={16} color="#fff" />
-                    </TouchableOpacity>
-                  </>
-                ) : (
-                  <>
-                    {/* Original buttons for other statuses */}
-                    <TouchableOpacity
-                      style={{
-                        backgroundColor: "#fff",
-                        borderRadius: 999,
-                        paddingVertical: 8,
-                        paddingHorizontal: 22,
-                        alignSelf: "flex-start",
-                        flexDirection: "row",
-                        alignItems: "center",
-                        marginTop: 14,
-                        shadowColor: "#FF932E",
-                        shadowOffset: { width: 0, height: 2 },
-                        shadowOpacity: 0.1,
-                        shadowRadius: 4,
-                        elevation: 2,
-                      }}
-                      onPress={() => router.push("/parent/my-calls")}
-                      activeOpacity={0.85}
-                    >
-                      <Text
-                        style={{
-                          color: "#FF932E",
-                          fontFamily: "Comfortaa-Bold",
-                          fontSize: 15,
-                          marginRight: 8,
-                        }}
-                      >
-                        See More
-                      </Text>
-                      <Ionicons
-                        name="arrow-forward"
-                        size={18}
-                        color="#FF932E"
-                      />
-                    </TouchableOpacity>
-                    {/* Create Another Call Button */}
-                    {/* <TouchableOpacity
-                      style={{
-                        backgroundColor: "#fff",
-                        borderRadius: 999,
-                        paddingVertical: 8,
-                        paddingHorizontal: 22,
-                        alignSelf: "flex-start",
-                        flexDirection: "row",
-                        alignItems: "center",
-                        marginTop: 10,
-                        shadowColor: "#FF932E",
-                        shadowOffset: { width: 0, height: 2 },
-                        shadowOpacity: 0.1,
-                        shadowRadius: 4,
-                        elevation: 2,
-                      }}
-                      onPress={() => router.push("/parent/call-page")}
-                      activeOpacity={0.85}
-                    >
-                      <Text
-                        style={{
-                          color: "#FF932E",
-                          fontFamily: "Comfortaa-Bold",
-                          fontSize: 15,
-                          marginRight: 8,
-                        }}
-                      >
-                        Request another
-                      </Text>
-                      <Ionicons
-                        name="add-circle-outline"
-                        size={18}
-                        color="#FF932E"
-                      />
-                    </TouchableOpacity> */}
-                  </>
-                )}
-              </View>
-            </LinearGradient>
-          </>
-        )}
+                Find Your Buddi Now
+              </Text>
+            </TouchableOpacity>
+          </LinearGradient>
+        </View>
 
         {/* Stats Cards */}
         <View className="flex-row flex-wrap justify-between mb-4">
@@ -1608,9 +416,7 @@ export default function ParentDashboard() {
             <AnalyticsCard
               icon={<Feather name="users" size={28} color="#22C55E" />}
               title="Buddis"
-              value={pickupRequests
-                .filter((p) => p.matchedBuddiId)
-                .length.toString()}
+              value="0"
               subtitle="Matched"
             />
           </View>
@@ -1618,7 +424,7 @@ export default function ParentDashboard() {
             <AnalyticsCard
               icon={<FontAwesome5 name="child" size={28} color="#FF9100" />}
               title="Registered Kids"
-              value={Object.keys(childDetailsMap).length.toString()}
+              value="0"
               subtitle="Total"
             />
           </View>
@@ -1638,555 +444,21 @@ export default function ParentDashboard() {
           </TouchableOpacity>
         </View>
 
-        {/* Pickup Schedule */}
-        <View className="mb-4">
-          <View className="flex-row items-center justify-between mb-2 px-2">
-            <Text className="text-sm font-comfortaa-bold text-[#232B3A]">
-              Your Kids Pickup Schedule
-            </Text>
-            <TouchableOpacity
-              onPress={() => router.push("/parent/schedule" as any)}
-              className="flex-row items-center"
-            >
-              <Text className="text-sm text-primary font-comfortaa mr-1">
-                Full Schedule
-              </Text>
-              <Ionicons name="arrow-forward" size={20} color="#FF9100" />
-            </TouchableOpacity>
-          </View>
-
-          {/* Refresh Button Inside Box */}
-          {/* <View
-            style={{
-              backgroundColor: "#fff",
-              borderRadius: 16,
-              borderWidth: 1,
-              borderColor: "#E5E7EB",
-              padding: 16,
-              marginBottom: 12,
-              shadowColor: "#000",
-              shadowOffset: { width: 0, height: 2 },
-              shadowOpacity: 0.05,
-              shadowRadius: 4,
-              elevation: 2,
-            }}
+        {/* Quick Access to Schedule */}
+        <View className="px-4 mb-6">
+          <TouchableOpacity
+            className="bg-orange-100 rounded-full py-4 items-center border border-orange-200"
+            onPress={() => router.push("/parent/schedule")}
           >
-            <View className="flex-row items-center justify-between">
-              <View className="flex-row items-center">
-                <Ionicons
-                  name="time-outline"
-                  size={20}
-                  color="#FF932E"
-                  style={{ marginRight: 8 }}
-                />
-                <Text className="text-sm font-comfortaa-bold text-[#232B3A]">
-                  Trip Status Updates
-                </Text>
-              </View>
-              <TouchableOpacity
-                onPress={enhancedRefreshPickups}
-                className="flex-row items-center"
-                style={{
-                  opacity: loadingPickups ? 0.5 : 1,
-                  backgroundColor: "#FF932E",
-                  paddingHorizontal: 12,
-                  paddingVertical: 6,
-                  borderRadius: 12,
-                  shadowColor: "#FF932E",
-                  shadowOffset: { width: 0, height: 1 },
-                  shadowOpacity: 0.2,
-                  shadowRadius: 2,
-                  elevation: 2,
-                }}
-                disabled={loadingPickups}
-              >
-                <Ionicons
-                  name="refresh"
-                  size={14}
-                  color="#fff"
-                  style={{ marginRight: 4 }}
-                />
-                <Text className="text-xs text-white font-comfortaa-bold">
-                  {loadingPickups ? "Refreshing..." : "Refresh Status"}
-                </Text>
-              </TouchableOpacity>
+            <View className="flex-row items-center gap-2">
+              <Ionicons name="calendar-outline" size={20} color="#FF932E" />
+              <Text className="text-orange-700 font-comfortaa-bold text-lg">
+                View Your Pickup Schedule
+              </Text>
+              <Ionicons name="arrow-forward" size={18} color="#FF932E" />
             </View>
-            <Text className="text-xs text-gray-500 mt-2 font-comfortaa">
-              Tap refresh to get the latest status of your pickup trips
-            </Text>
-          </View> */}
-          {/* Render KidPickupCard for each pickup request and only for the next relevant day */}
-          {pickupRequests.length > 0 ? (
-            pickupRequests.map((pickup) => {
-              console.log("Processing pickup request:", pickup.id);
-              console.log("Pickup request data:", pickup);
-
-              const child = childDetailsMap[pickup.childId];
-              console.log("Child details:", child);
-
-              const pickupData = getPickupData(pickup.id);
-              console.log("Pickup data:", pickupData);
-
-              const currentPickupStatus = pickupData?.status || null;
-              console.log("Current pickup status:", currentPickupStatus);
-
-              // If not matched with a Buddi, show waiting card
-              console.log("Matched buddi ID:", pickup.matchedBuddiId);
-              if (!pickup.matchedBuddiId) {
-                console.log("No matched buddi, showing waiting card");
-                return (
-                  <View
-                    key={`waiting-${pickup.id}`}
-                    style={{
-                      backgroundColor: "#FFF7ED",
-                      borderRadius: 16,
-                      borderWidth: 1.2,
-                      borderColor: "#FFD9B3",
-                      padding: 18,
-                      marginVertical: 6,
-                      alignItems: "center",
-                      justifyContent: "center",
-                    }}
-                  >
-                    <Text
-                      style={{
-                        fontFamily: "Comfortaa-Bold",
-                        fontSize: 16,
-                        color: "#FF932E",
-                        marginBottom: 6,
-                      }}
-                    >
-                      Waiting for a matched Buddi
-                    </Text>
-                    <Text
-                      style={{
-                        fontFamily: "Comfortaa-Regular",
-                        fontSize: 13,
-                        color: "#A3A3A3",
-                        textAlign: "center",
-                      }}
-                    >
-                      Once a Buddi is matched to your request, you will see your
-                      pickups here.
-                    </Text>
-                  </View>
-                );
-              }
-              let buddiName = undefined;
-              let buddiEmail = undefined;
-              let buddiAvatar = undefined;
-              if (
-                pickup.matchedBuddiId &&
-                buddiDetailsMap[pickup.matchedBuddiId]
-              ) {
-                const buddi = buddiDetailsMap[pickup.matchedBuddiId];
-                buddiName = `Buddi ${pickup.matchedBuddiId}`;
-                buddiEmail =
-                  buddi.User?.email || buddi.email || "buddi@email.com";
-                buddiAvatar =
-                  buddi.profilePicture ||
-                  "https://randomuser.me/api/portraits/men/2.jpg";
-              } else {
-                buddiName = pickup.matchedBuddiId
-                  ? `Buddi ${pickup.matchedBuddiId}`
-                  : "Buddi";
-                buddiEmail = "buddi@email.com";
-                buddiAvatar = "https://randomuser.me/api/portraits/men/2.jpg";
-              }
-
-              // Determine status based on actual pickup data
-              let buddiStatus = "Available";
-              if (currentPickupStatus === "pending") {
-                buddiStatus = "Trip Started";
-              } else if (currentPickupStatus === "enRoute") {
-                buddiStatus = "En Route";
-              } else if (currentPickupStatus === "pickedUp") {
-                buddiStatus = "Child Picked Up";
-              } else if (currentPickupStatus === "completed") {
-                buddiStatus = "Trip Completed";
-              }
-
-              // Find the next relevant day (today if included, otherwise next closest)
-              const daysOfWeek = [
-                "Sunday",
-                "Monday",
-                "Tuesday",
-                "Wednesday",
-                "Thursday",
-                "Friday",
-                "Saturday",
-              ];
-              const todayIdx = new Date().getDay();
-              const todayName = daysOfWeek[todayIdx];
-              let nextDay = null;
-
-              if (pickup.availableDays && pickup.availableDays.length > 0) {
-                // Parse the available days - it's an array of strings, each potentially containing comma-separated days
-                const availableDays: string[] = [];
-
-                pickup.availableDays.forEach((dayString: string) => {
-                  if (typeof dayString === "string") {
-                    // Split by comma and trim each day
-                    const days = dayString
-                      .split(",")
-                      .map((day: string) => day.trim());
-                    availableDays.push(...days);
-                  }
-                });
-
-                console.log("🔍 [PICKUP DEBUG] Pickup ID:", pickup.id);
-                console.log("🔍 [PICKUP DEBUG] Today's day:", todayName);
-                console.log("🔍 [PICKUP DEBUG] Today's index:", todayIdx);
-                console.log(
-                  "🔍 [PICKUP DEBUG] Raw availableDays:",
-                  pickup.availableDays
-                );
-                console.log(
-                  "🔍 [PICKUP DEBUG] Parsed available days:",
-                  availableDays
-                );
-
-                // First, try to find today
-                if (availableDays.includes(todayName)) {
-                  nextDay = todayName;
-                  console.log(
-                    "🔍 [PICKUP DEBUG] Found today in available days:",
-                    todayName
-                  );
-                } else {
-                  console.log(
-                    "🔍 [PICKUP DEBUG] Today NOT found in available days, looking for next closest day"
-                  );
-
-                  // Find the next closest day
-                  const sortedDays = availableDays
-                    .map((day) => ({
-                      day,
-                      idx: daysOfWeek.indexOf(day),
-                    }))
-                    .filter((d) => d.idx !== -1)
-                    .sort((a, b) => a.idx - b.idx);
-
-                  console.log("🔍 [PICKUP DEBUG] Sorted days:", sortedDays);
-
-                  // Find the first day after today
-                  const nextDayAfterToday = sortedDays.find(
-                    (d) => d.idx > todayIdx
-                  )?.day;
-
-                  // If no day after today, wrap around to the first available day
-                  const firstAvailableDay = sortedDays[0]?.day;
-                  nextDay = nextDayAfterToday || firstAvailableDay;
-
-                  console.log(
-                    "🔍 [PICKUP DEBUG] Next day after today:",
-                    nextDayAfterToday
-                  );
-                  console.log(
-                    "🔍 [PICKUP DEBUG] First available day:",
-                    firstAvailableDay
-                  );
-                  console.log(
-                    "🔍 [PICKUP DEBUG] Final nextDay selected:",
-                    nextDay
-                  );
-                }
-              }
-
-              if (!nextDay) {
-                console.log(
-                  "🔍 [PICKUP DEBUG] No next day found, skipping card"
-                );
-                return null;
-              }
-
-              console.log(
-                "🔍 [PICKUP DEBUG] Rendering KidPickupCard for day:",
-                nextDay
-              );
-              return (
-                <KidPickupCard
-                  key={`${pickup.id}-${nextDay}`}
-                  childName={child?.name || "Child"}
-                  remaining={pickup.callPickupTime || "-"}
-                  schedule={nextDay}
-                  buddiName={buddiName}
-                  buddiEmail={buddiEmail}
-                  buddiAvatar={buddiAvatar}
-                  buddiStatus={buddiStatus}
-                  schoolName={
-                    child?.school || pickup.fromZone || "From Address"
-                  }
-                  destination={pickup.toZone || "To Address"}
-                  callPickupTime={pickup.callPickupTime}
-                  callDropTime={pickup.callDropTime}
-                  mainAction={
-                    startingTripId === pickup.id
-                      ? "Starting Trip..."
-                      : currentPickupStatus === "pending"
-                      ? "Trip Started"
-                      : currentPickupStatus === "enRoute"
-                      ? "En Route"
-                      : currentPickupStatus === "pickedUp"
-                      ? "Child Picked Up"
-                      : currentPickupStatus === "completed"
-                      ? "Trip Completed"
-                      : pickup.status === "matched"
-                      ? parentDetails?.approvalStage === "pending"
-                        ? "Background Check Required"
-                        : "Trip Not Yet Started"
-                      : "Pending"
-                  }
-                  mainActionColor={
-                    currentPickupStatus === "pending"
-                      ? "#FF932E"
-                      : currentPickupStatus === "enRoute"
-                      ? "#3B82F6"
-                      : currentPickupStatus === "pickedUp"
-                      ? "#7C3AED"
-                      : currentPickupStatus === "completed"
-                      ? "#16A34A"
-                      : pickup.status === "matched" &&
-                        parentDetails?.approvalStage === "pending"
-                      ? "#EF4444"
-                      : undefined
-                  }
-                  disabled={
-                    currentPickupStatus === "pending" ||
-                    currentPickupStatus === "enRoute" ||
-                    currentPickupStatus === "pickedUp" ||
-                    currentPickupStatus === "completed" ||
-                    startingTripId === pickup.id ||
-                    (pickup.status === "matched" &&
-                      parentDetails?.approvalStage === "pending")
-                  }
-                  onMainAction={
-                    pickup.status === "matched" && !currentPickupStatus
-                      ? async () => {
-                          // Check if parent has pending approval status
-                          if (parentDetails?.approvalStage === "pending") {
-                            Alert.alert(
-                              "Background Check Required",
-                              "To ensure the safety of all children, we require a background check before you can create pickup requests. Please complete your background check first.",
-                              [
-                                { text: "Cancel", style: "cancel" },
-                                {
-                                  text: "Perform Background Check",
-                                  style: "default",
-                                  onPress: () => {
-                                    router.push("/parent/background-check");
-                                  },
-                                },
-                              ]
-                            );
-                            return;
-                          }
-
-                          Alert.alert(
-                            "Start Pickup Trip",
-                            "Are you ready to start a pickup trip?",
-                            [
-                              { text: "Cancel", style: "cancel" },
-                              {
-                                text: "Yes, Start Trip",
-                                style: "default",
-                                onPress: async () => {
-                                  try {
-                                    setStartingTripId(pickup.id);
-                                    // Debug: log payload and types
-                                    console.log("Pickup request payload:", {
-                                      parentId: parentDetails!.id,
-                                      parentIdType: typeof parentDetails!.id,
-                                      buddiId: pickup.matchedBuddiId,
-                                      buddiIdType: typeof pickup.matchedBuddiId,
-                                      childId: pickup.childId,
-                                      childIdType: typeof pickup.childId,
-                                      fromLocation: pickup.fromZone,
-                                      toLocation: pickup.toZone,
-                                    });
-                                    // Ensure parent is in room before making pickup request
-                                    let socket = SocketService.getSocket();
-                                    if (
-                                      socket &&
-                                      !socket.connected &&
-                                      user?.userId
-                                    ) {
-                                      console.log(
-                                        "[PARENT] 🔄 Socket disconnected, reconnecting..."
-                                      );
-                                      SocketService.connect(
-                                        user.userId.toString(),
-                                        "Parent"
-                                      );
-                                      await new Promise((resolve) =>
-                                        setTimeout(resolve, 1000)
-                                      ); // Wait for connection
-                                    }
-
-                                    // Re-join room to ensure we're connected
-                                    if (socket) {
-                                      console.log(
-                                        "[PARENT] 🚪 Re-joining parent room before pickup request"
-                                      );
-                                      socket.emit(
-                                        "join-parent-room",
-                                        parentDetails!.id
-                                      );
-                                      await new Promise((resolve) =>
-                                        setTimeout(resolve, 500)
-                                      ); // Wait for room join
-                                    }
-
-                                    const res =
-                                      await ParentService.createPickupRequest({
-                                        parentId: parentDetails!.id,
-                                        buddiId: Number(pickup.matchedBuddiId!),
-                                        childId: pickup.childId,
-                                        fromLocation: pickup.fromZone,
-                                        toLocation: pickup.toZone,
-                                        buddiRequestId: pickup.id,
-                                        callId: pickup.id,
-                                      });
-
-                                    console.log(
-                                      "[PARENT] ✅ Pickup request created successfully:",
-                                      res
-                                    );
-                                    console.log(
-                                      "[PARENT] 🔍 Raw response keys:",
-                                      Object.keys(res)
-                                    );
-                                    console.log(
-                                      "[PARENT] 🔍 res.pickup:",
-                                      res.pickup
-                                    );
-                                    console.log(
-                                      "[PARENT] 🔍 res.data:",
-                                      res.data
-                                    );
-
-                                    // Get the actual pickup data from response
-                                    const pickupDataToSend =
-                                      res.pickup || res.data || res;
-                                    console.log(
-                                      "[PARENT] 📦 Pickup data to send:",
-                                      pickupDataToSend
-                                    );
-
-                                    // NOTE: Manual pickup requests are no longer needed
-                                    // The backend automatically sends pickup-requested events 30 minutes before scheduled time
-                                    // This ensures buddi is always ready to receive automatic pickup assignments
-                                    console.log(
-                                      "[PARENT] ✅ Pickup trip started - backend will automatically notify buddi"
-                                    );
-
-                                    // Refresh pickups to get updated status
-                                    await refreshPickups();
-
-                                    // Show success modal
-                                    showSuccessModal(
-                                      "Trip Started! 🚀",
-                                      "Your pickup trip has been started successfully! The Buddi is now on their way.",
-                                      "car-sport",
-                                      "#22C55E"
-                                    );
-                                  } catch (err: any) {
-                                    let errorMessage = "Failed to start trip.";
-
-                                    // Handle specific 400 error for duplicate pickup
-                                    if (err?.response?.status === 400) {
-                                      if (
-                                        typeof err?.response?.data?.error ===
-                                          "string" &&
-                                        err.response.data.error.includes(
-                                          "already requested"
-                                        )
-                                      ) {
-                                        errorMessage =
-                                          "This pickup trip has already been started today. You can only start one trip per day.";
-                                      } else if (
-                                        typeof err?.response?.data?.error ===
-                                          "string" &&
-                                        err.response.data.error.includes(
-                                          "already started"
-                                        )
-                                      ) {
-                                        errorMessage =
-                                          "This pickup trip has already been started. Please check your trip status.";
-                                      } else if (err?.response?.data?.error) {
-                                        errorMessage = err.response.data.error;
-                                      }
-                                    } else if (err?.response?.data?.message) {
-                                      errorMessage = err.response.data.message;
-                                    } else if (err?.message) {
-                                      if (err.message.includes("Network")) {
-                                        errorMessage =
-                                          "Network error. Please check your connection and try again.";
-                                      } else if (
-                                        err.message.includes("timeout")
-                                      ) {
-                                        errorMessage =
-                                          "Request timed out. Please try again.";
-                                      } else {
-                                        errorMessage = err.message;
-                                      }
-                                    }
-
-                                    Alert.alert(
-                                      "Cannot Start Trip",
-                                      errorMessage,
-                                      [{ text: "OK", style: "default" }]
-                                    );
-                                  } finally {
-                                    setStartingTripId(null);
-                                  }
-                                },
-                              },
-                            ]
-                          );
-                        }
-                      : currentPickupStatus === "completed"
-                      ? () => {
-                          Alert.alert(
-                            "Trip Completed",
-                            `Your trip has been completed successfully!\n\nFare: $${
-                              pickupData?.fare?.toFixed(2) || "0.00"
-                            }\nDuration: ${pickupData?.duration || "N/A"}`,
-                            [{ text: "OK", style: "default" }]
-                          );
-                        }
-                      : undefined
-                  }
-                />
-              );
-            })
-          ) : (
-            <Text
-              style={{
-                color: "#888",
-                fontFamily: "Comfortaa-Regular",
-                marginTop: 10,
-              }}
-            >
-              No pickups scheduled yet.
-            </Text>
-          )}
+          </TouchableOpacity>
         </View>
-
-        {/* Extra Activities Calendar */}
-        {/* <View className="mb-6">
-          <View className="flex-row justify-between items-center mx-4 mb-2">
-            <Text className="font-comfortaa-bold text-xl">Schedule</Text>
-            <TouchableOpacity>
-              <Text className="text-primary font-comfortaa">View All</Text>
-            </TouchableOpacity>
-          </View>
-          <Calendar
-            selectedDate={selectedDate}
-            onDaySelect={(date) => setSelectedDate(date)}
-            primaryColor="#FF932E"
-          />
-        </View> */}
       </ScrollView>
 
       {/* Success Modal */}

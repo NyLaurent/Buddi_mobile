@@ -153,6 +153,8 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({
       }
     };
 
+    // Ensure single listener: remove previous then add
+    SocketService.off("receive-message", handleReceiveMessage);
     SocketService.on("receive-message", handleReceiveMessage);
     return () => {
       SocketService.off("receive-message", handleReceiveMessage);
