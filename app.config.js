@@ -37,7 +37,12 @@ module.exports = {
             ],
             // Additional Android configuration
             allowBackup: true,
-            fullBackupContent: false
+            fullBackupContent: false,
+            // Build configuration
+            buildToolsVersion: "35.0.0",
+            compileSdkVersion: 35,
+            targetSdkVersion: 35,
+            minSdkVersion: 24
         },
         web: {
             bundler: "metro",
@@ -60,28 +65,6 @@ module.exports = {
                 {
                     supportsBackgroundPlayback: true,
                     supportsPictureInPicture: true
-                }
-            ],
-            [
-                "expo-build-properties",
-                {
-                    android: {
-                        compileSdkVersion: 35,
-                        targetSdkVersion: 35,
-                        buildToolsVersion: "35.0.0",
-                        minSdkVersion: 24,
-                        // Additional build configurations
-                        kotlinVersion: "1.9.0",
-                        enableProguardInReleaseBuilds: false,
-                        enableSeparateBuildPerCPUArchitecture: false,
-                        // Handle dependency conflicts
-                        packagingOptions: {
-                            pickFirst: [
-                                "**/libc++_shared.so",
-                                "**/libjsc.so"
-                            ]
-                        }
-                    }
                 }
             ]
         ],
