@@ -15,12 +15,19 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import AnalyticsCard from "../../components/commons/AnalyticsCard";
 import SuccessModal from "../../components/modals/SuccessModal";
+import BuddiRequestCard from "../../components/parent/BuddiRequestCard";
 import BuyTokensCTA from "../../components/parent/BuyTokensCTA";
 import { useAuth } from "../../context/AuthContext";
+import { BuddiRequestsService } from "../../services/api";
+import type { BuddiRequest } from "../../services/api/buddi-requests.service";
 
 export default function ParentDashboard() {
   const { user, logout, parentDetails, refreshUserData } = useAuth();
   const router = useRouter();
+
+  // State for buddi requests
+  const [buddiRequests, setBuddiRequests] = React.useState<BuddiRequest[]>([]);
+  const [loadingRequests, setLoadingRequests] = React.useState(false);
 
   // Success modal states
   const [successModal, setSuccessModal] = React.useState({
@@ -50,6 +57,34 @@ export default function ParentDashboard() {
   // Profile polling state
   const [profilePollingInterval, setProfilePollingInterval] =
     React.useState<ReturnType<typeof setInterval> | null>(null);
+
+  // Function to fetch buddi requests
+  const fetchBuddiRequests = async () => {
+    if (!parentDetails?.id && !user?.userId) return;
+
+    setLoadingRequests(true);
+    try {
+      // Try using parentDetails.id first, fallback to user.userId
+      const parentId = parentDetails?.id || user?.userId;
+      if (!parentId) {
+        console.log("[PARENT] No parent ID available");
+        return;
+      }
+
+      console.log("[PARENT] Fetching buddi requests for parent ID:", parentId);
+      console.log("[PARENT] Using parentDetails.id:", parentDetails?.id);
+      console.log("[PARENT] Using user.userId:", user?.userId);
+
+      const data = await BuddiRequestsService.getMyRequests(parentId);
+      console.log("[PARENT] Buddi requests fetched successfully:", data);
+      setBuddiRequests(data.data);
+    } catch (error: any) {
+      console.error("Error fetching buddi requests:", error.message);
+      // You could show an error toast here if needed
+    } finally {
+      setLoadingRequests(false);
+    }
+  };
 
   // Function to refresh profile data
   const refreshProfileData = async () => {
@@ -96,6 +131,22 @@ export default function ParentDashboard() {
         setProfilePollingInterval(null);
       }
     };
+  }, [parentDetails?.id]);
+
+  // Fetch buddi requests when parent details are available
+  React.useEffect(() => {
+    console.log("[PARENT] parentDetails changed:", parentDetails);
+    if (parentDetails?.id) {
+      console.log(
+        "[PARENT] Parent ID found:",
+        parentDetails.id,
+        "Type:",
+        typeof parentDetails.id
+      );
+      fetchBuddiRequests();
+    } else {
+      console.log("[PARENT] No parent ID found in parentDetails");
+    }
   }, [parentDetails?.id]);
 
   // Debug effect to log status changes
@@ -444,20 +495,71 @@ export default function ParentDashboard() {
           </TouchableOpacity>
         </View>
 
-        {/* Quick Access to Schedule */}
-        <View className="px-4 mb-6">
-          <TouchableOpacity
-            className="bg-orange-100 rounded-full py-4 items-center border border-orange-200"
-            onPress={() => router.push("/parent/schedule")}
-          >
-            <View className="flex-row items-center gap-2">
-              <Ionicons name="calendar-outline" size={20} color="#FF932E" />
-              <Text className="text-orange-700 font-comfortaa-bold text-lg">
-                View Your Pickup Schedule
+        {/* My Buddi Requests Section */}
+        <View className=" px-1 mb-6">
+          <View className="mb-4">
+            <Text className="text-xl font-comfortaa-bold text-gray-800 mb-2">
+              My Buddi Requests
+            </Text>
+            <Text className="text-gray-600 font-comfortaa text-sm">
+              Track your pickup requests and their status
+            </Text>
+          </View>
+
+          {loadingRequests ? (
+            <View className="bg-gray-50 rounded-xl p-6 items-center">
+              <Text className="text-gray-500 font-comfortaa">
+                Loading requests...
               </Text>
-              <Ionicons name="arrow-forward" size={18} color="#FF932E" />
             </View>
-          </TouchableOpacity>
+          ) : buddiRequests.length === 0 ? (
+            <View className="bg-gray-50 rounded-xl p-6 items-center">
+              <FontAwesome5 name="clipboard-list" size={32} color="#9CA3AF" />
+              <Text className="text-gray-500 font-comfortaa mt-2 text-center">
+                No buddi requests yet
+              </Text>
+              <Text className="text-gray-400 font-comfortaa text-sm text-center mt-1">
+                Create your first pickup request to get started
+              </Text>
+            </View>
+          ) : (
+            <View style={{ gap: 16 }}>
+              {/* Show only first 2 requests */}
+              {buddiRequests.slice(0, 2).map((request) => (
+                <BuddiRequestCard key={request.id} request={request} />
+              ))}
+              
+              {/* View All Button */}
+              {buddiRequests.length > 2 && (
+                <TouchableOpacity
+                  style={{
+                    backgroundColor: "#FF932E",
+                    borderRadius: 16,
+                    paddingVertical: 16,
+                    paddingHorizontal: 24,
+                    alignItems: "center",
+                    marginTop: 8,
+                  }}
+                  onPress={() => router.push("/parent/buddi-requests")}
+                  activeOpacity={0.8}
+                >
+                  <View style={{ flexDirection: "row", alignItems: "center" }}>
+                    <Text
+                      style={{
+                        color: "#fff",
+                        fontFamily: "Comfortaa-Bold",
+                        fontSize: 16,
+                        marginRight: 8,
+                      }}
+                    >
+                      View All {buddiRequests.length} Requests
+                    </Text>
+                    <Ionicons name="arrow-forward" size={20} color="#fff" />
+                  </View>
+                </TouchableOpacity>
+              )}
+            </View>
+          )}
         </View>
       </ScrollView>
 

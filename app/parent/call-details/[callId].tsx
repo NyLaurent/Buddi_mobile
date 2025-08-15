@@ -1,20 +1,20 @@
-import { FontAwesome5, Ionicons } from "@expo/vector-icons";
+import { FontAwesome5, Ionicons, MaterialIcons } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import React from "react";
 import { ScrollView, Text, TouchableOpacity, View } from "react-native";
 import { useAuth } from "../../../context/AuthContext";
-import { ChildrenService } from "../../../services/api";
-import ParentService, {
-  ParentPickupRequest,
-} from "../../../services/api/parent.service";
+import { BuddiRequestsService, ChildrenService } from "../../../services/api";
+
+import type { BuddiRequest } from "../../../services/api/buddi-requests.service";
 
 export default function CallDetailsPage() {
   const params = useLocalSearchParams<{ callId: string }>();
   const callId = params.callId;
   const { parentDetails } = useAuth();
   const router = useRouter();
-  const [callDetails, setCallDetails] =
-    React.useState<ParentPickupRequest | null>(null);
+  const [callDetails, setCallDetails] = React.useState<BuddiRequest | null>(
+    null
+  );
   const [loading, setLoading] = React.useState(true);
   const [error, setError] = React.useState<string | null>(null);
   const [childDetails, setChildDetails] = React.useState<any>(null);
@@ -25,19 +25,20 @@ export default function CallDetailsPage() {
       setLoading(true);
       setError(null);
       try {
-        const res = await ParentService.getParentRequestDetails(
+        // Use the new buddi request API endpoint
+        const res = await BuddiRequestsService.getRequestDetails(
           parseInt(callId as string)
         );
-        setCallDetails(res.data);
+        setCallDetails(res);
 
         // Fetch child details if we have childId
-        if (res.data.childId) {
+        if (res.childId) {
           try {
             const childRes = await ChildrenService.getChildrenByParent(
               parentDetails?.id?.toString() || ""
             );
             const child = Array.isArray(childRes)
-              ? childRes.find((c) => c.id === res.data.childId)
+              ? childRes.find((c) => c.id === res.childId)
               : null;
             setChildDetails(child);
           } catch (err) {
@@ -198,7 +199,8 @@ export default function CallDetailsPage() {
               lineHeight: 24,
             }}
           >
-            {error || "Unable to load pickup request details. Please try again."}
+            {error ||
+              "Unable to load pickup request details. Please try again."}
           </Text>
         </View>
         <TouchableOpacity
@@ -279,7 +281,7 @@ export default function CallDetailsPage() {
                 color: "#1F2937",
               }}
             >
-              Call Status
+              Pickup Request Status
             </Text>
           </View>
           <View
@@ -344,7 +346,7 @@ export default function CallDetailsPage() {
                 color: "#1F2937",
               }}
             >
-              Child Information
+              Child Information 
             </Text>
           </View>
           {childDetails ? (
@@ -492,7 +494,7 @@ export default function CallDetailsPage() {
                 fontFamily: "Comfortaa-Regular",
               }}
             >
-              Pickup Time
+              Request Type
             </Text>
             <Text
               style={{
@@ -502,7 +504,7 @@ export default function CallDetailsPage() {
                 marginTop: 4,
               }}
             >
-              {callDetails.pickupTime}
+              {callDetails.type === "repetitive" ? "Ongoing" : "One-time"}
             </Text>
           </View>
 
@@ -548,141 +550,230 @@ export default function CallDetailsPage() {
                     marginTop: 4,
                   }}
                 >
-                  {callDetails.availableDays.map((day, index) => (
-                    <View
-                      key={index}
-                      style={{
-                        backgroundColor: "#F4F7FE",
-                        borderRadius: 8,
-                        paddingHorizontal: 12,
-                        paddingVertical: 6,
-                        marginRight: 8,
-                        marginBottom: 8,
-                      }}
-                    >
-                      <Text
+                  {callDetails.availableDays.map(
+                    (day: string, index: number) => (
+                      <View
+                        key={index}
                         style={{
-                          fontFamily: "Comfortaa-Bold",
-                          fontSize: 12,
-                          color: "#3B82F6",
+                          backgroundColor: "#F4F7FE",
+                          borderRadius: 8,
+                          paddingHorizontal: 12,
+                          paddingVertical: 6,
+                          marginRight: 8,
+                          marginBottom: 8,
                         }}
                       >
-                        {day}
-                      </Text>
-                    </View>
-                  ))}
+                        <Text
+                          style={{
+                            fontFamily: "Comfortaa-Bold",
+                            fontSize: 12,
+                            color: "#3B82F6",
+                          }}
+                        >
+                          {day}
+                        </Text>
+                      </View>
+                    )
+                  )}
                 </View>
               </View>
             )}
         </View>
 
-        {/* Location Details */}
-        <View
-          style={{
-            backgroundColor: "#fff",
-            borderRadius: 16,
-            borderWidth: 1,
-            borderColor: "#E6E6E6",
-            padding: 20,
-            marginBottom: 16,
-          }}
-        >
+        {/* Pickup Slots */}
+        {callDetails.slots && callDetails.slots.length > 0 && (
           <View
             style={{
-              flexDirection: "row",
-              alignItems: "center",
+              backgroundColor: "#fff",
+              borderRadius: 16,
+              borderWidth: 1,
+              borderColor: "#E6E6E6",
+              padding: 20,
               marginBottom: 16,
             }}
           >
-            <FontAwesome5
-              name="map-marker-alt"
-              size={20}
-              color="#FF932E"
-              style={{ marginRight: 8 }}
-            />
-            <Text
-              style={{
-                fontFamily: "Comfortaa-Bold",
-                fontSize: 18,
-                color: "#1F2937",
-              }}
-            >
-              Location Details
-            </Text>
-          </View>
-
-          <View style={{ marginBottom: 16 }}>
             <View
               style={{
                 flexDirection: "row",
                 alignItems: "center",
-                marginBottom: 8,
+                marginBottom: 16,
               }}
             >
-              <Ionicons
-                name="school"
-                size={18}
-                color="#22C55E"
+              <MaterialIcons
+                name="schedule"
+                size={20}
+                color="#FF932E"
                 style={{ marginRight: 8 }}
               />
               <Text
                 style={{
-                  fontSize: 12,
-                  color: "#BDBDBD",
-                  fontFamily: "Comfortaa-Regular",
+                  fontFamily: "Comfortaa-Bold",
+                  fontSize: 18,
+                  color: "#1F2937",
                 }}
               >
-                Pickup Location (School)
+                Pickup Schedules ({callDetails.slots.length})
               </Text>
             </View>
-            <Text
-              style={{
-                fontFamily: "Comfortaa-Bold",
-                fontSize: 16,
-                color: "#222",
-                marginLeft: 26,
-              }}
-            >
-              {callDetails.fromZone}
-            </Text>
-          </View>
 
-          <View>
-            <View
-              style={{
-                flexDirection: "row",
-                alignItems: "center",
-                marginBottom: 8,
-              }}
-            >
-              <FontAwesome5
-                name="home"
-                size={18}
-                color="#FF9100"
-                style={{ marginRight: 8 }}
-              />
-              <Text
+            {callDetails.slots.map((slot, index) => (
+              <View
+                key={slot.id}
                 style={{
-                  fontSize: 12,
-                  color: "#BDBDBD",
-                  fontFamily: "Comfortaa-Regular",
+                  backgroundColor: "#FFF7ED",
+                  borderRadius: 12,
+                  padding: 16,
+                  marginBottom: index < callDetails.slots.length - 1 ? 12 : 0,
+                  borderWidth: 1,
+                  borderColor: "#FF932E",
                 }}
               >
-                Drop-off Location (Home)
-              </Text>
-            </View>
-            <Text
-              style={{
-                fontFamily: "Comfortaa-Bold",
-                fontSize: 16,
-                color: "#222",
-                marginLeft: 26,
-              }}
-            >
-              {callDetails.toZone}
-            </Text>
+                {/* Route */}
+                <View
+                  style={{
+                    flexDirection: "row",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    marginBottom: 12,
+                  }}
+                >
+                  <View style={{ flex: 1, marginRight: 8 }}>
+                    <Text
+                      style={{
+                        color: "#64748B",
+                        fontFamily: "Comfortaa-Regular",
+                        fontSize: 11,
+                        marginBottom: 4,
+                      }}
+                    >
+                      From
+                    </Text>
+                    <Text
+                      style={{
+                        fontFamily: "Comfortaa-Bold",
+                        color: "#1F2937",
+                        fontSize: 14,
+                      }}
+                      numberOfLines={1}
+                    >
+                      {slot.fromLocation}
+                    </Text>
+                  </View>
+
+                  <View
+                    style={{
+                      width: 24,
+                      height: 24,
+                      borderRadius: 12,
+                      backgroundColor: "#E0F2FE",
+                      alignItems: "center",
+                      justifyContent: "center",
+                    }}
+                  >
+                    <Ionicons name="arrow-forward" size={14} color="#0284C7" />
+                  </View>
+
+                  <View style={{ flex: 1, marginLeft: 8 }}>
+                    <Text
+                      style={{
+                        color: "#64748B",
+                        fontFamily: "Comfortaa-Regular",
+                        fontSize: 11,
+                        marginBottom: 4,
+                      }}
+                    >
+                      To
+                    </Text>
+                    <Text
+                      style={{
+                        fontFamily: "Comfortaa-Bold",
+                        color: "#1F2937",
+                        fontSize: 14,
+                      }}
+                      numberOfLines={1}
+                    >
+                      {slot.toLocation}
+                    </Text>
+                  </View>
+                </View>
+
+                {/* Time */}
+                <View
+                  style={{
+                    flexDirection: "row",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                  }}
+                >
+                  <View
+                    style={{
+                      flexDirection: "row",
+                      alignItems: "center",
+                      backgroundColor: "#FEF3C7",
+                      borderRadius: 6,
+                      paddingHorizontal: 8,
+                      paddingVertical: 4,
+                    }}
+                  >
+                    <MaterialIcons
+                      name="schedule"
+                      size={14}
+                      color="#92400E"
+                      style={{ marginRight: 4 }}
+                    />
+                    <Text
+                      style={{
+                        color: "#92400E",
+                        fontFamily: "Comfortaa-Bold",
+                        fontSize: 12,
+                      }}
+                    >
+                      {new Date(slot.slotStartTime).toLocaleTimeString(
+                        "en-US",
+                        {
+                          hour: "2-digit",
+                          minute: "2-digit",
+                          hour12: true,
+                        }
+                      )}
+                    </Text>
+                  </View>
+
+                  <View
+                    style={{
+                      flexDirection: "row",
+                      alignItems: "center",
+                      backgroundColor: "#D1FAE5",
+                      borderRadius: 6,
+                      paddingHorizontal: 8,
+                      paddingVertical: 4,
+                    }}
+                  >
+                    <MaterialIcons
+                      name="home"
+                      size={14}
+                      color="#065F46"
+                      style={{ marginRight: 4 }}
+                    />
+                    <Text
+                      style={{
+                        color: "#065F46",
+                        fontFamily: "Comfortaa-Bold",
+                        fontSize: 12,
+                      }}
+                    >
+                      {new Date(slot.slotEndTime).toLocaleTimeString("en-US", {
+                        hour: "2-digit",
+                        minute: "2-digit",
+                        hour12: true,
+                      })}
+                    </Text>
+                  </View>
+                </View>
+              </View>
+            ))}
           </View>
-        </View>
+        )}
 
         {/* Matched Buddi Information */}
         {callDetails.matchedBuddiId && (
@@ -839,11 +930,6 @@ export default function CallDetailsPage() {
               alignItems: "center",
               borderWidth: 1.5,
               borderColor: "#E5E7EB",
-              shadowColor: "#000",
-              shadowOffset: { width: 0, height: 2 },
-              shadowOpacity: 0.05,
-              shadowRadius: 8,
-              elevation: 2,
             }}
             onPress={() => router.back()}
             activeOpacity={0.8}
@@ -862,12 +948,13 @@ export default function CallDetailsPage() {
                   color: "#6B7280",
                 }}
               >
-                Back to Calls
+                Back to Schedule
               </Text>
             </View>
           </TouchableOpacity>
 
-          {callDetails.status === "matched" && (
+          {/* View Applicants Button - Show when buddis are recommended */}
+          {callDetails.isBuddiRecommended && (
             <TouchableOpacity
               style={{
                 flex: 1,
@@ -876,17 +963,9 @@ export default function CallDetailsPage() {
                 paddingVertical: 14,
                 paddingHorizontal: 20,
                 alignItems: "center",
-                shadowColor: "#FF932E",
-                shadowOffset: { width: 0, height: 4 },
-                shadowOpacity: 0.2,
-                shadowRadius: 8,
-                elevation: 4,
               }}
               onPress={() => {
-                router.push({
-                  pathname: "/parent/buddi-recommendations/[callId]",
-                  params: { callId: callDetails.id.toString() },
-                });
+                router.push("/parent/rank-buddies");
               }}
               activeOpacity={0.85}
             >
@@ -904,7 +983,7 @@ export default function CallDetailsPage() {
                     color: "#fff",
                   }}
                 >
-                  View Recommendations
+                  View Applicants
                 </Text>
               </View>
             </TouchableOpacity>

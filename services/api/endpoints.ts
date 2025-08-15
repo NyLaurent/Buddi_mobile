@@ -186,4 +186,14 @@ export const CHILDREN_ENDPOINTS = {
 export const COVERAGE_ENDPOINTS = {
   CREATE_REQUEST: '/coverage/buddi-requests',
   MATCH_BUDDI: '/coverage/match-buddi',
+} as const;
+
+// Buddi Request Endpoints
+export const BUDDI_REQUEST_ENDPOINTS = {
+  MY_REQUESTS: (parentId: string) => `/parent/buddi-requests/my-requests/${parentId}`,
+  CREATE: '/parent/buddi-requests',
+  UPDATE: (id: string) => `/parent/buddi-requests/${id}`,
+  DELETE: (id: string) => `/parent/buddi-requests/${id}`,
+  DETAILS: (id: string) => `/parent/buddi-requests/${id}`,
+  COVERAGE_DETAILS: (id: string) => `/coverage/buddi-request/${id}`,
 } as const; 
