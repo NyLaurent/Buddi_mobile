@@ -59,6 +59,19 @@ export interface ParentPickupRequest {
   status: string;
   matchedBuddiId: string | null;
   isBuddiRecommended: boolean;
+  type?: string;
+  startDate?: string;
+  endDate?: string;
+  slots?: Array<{
+    id: number;
+    buddiRequestId: number;
+    fromLocation: string;
+    toLocation: string;
+    slotStartTime: string;
+    slotEndTime: string;
+    createdAt: string;
+    updatedAt: string;
+  }>;
   createdAt: string;
   updatedAt: string;
 }
