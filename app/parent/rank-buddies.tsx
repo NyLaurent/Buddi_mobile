@@ -131,7 +131,7 @@ const RankBuddiesPage = () => {
             }}
           >
             The ranking system for buddi applicants is currently under
-            development. You'll be able to review profiles, ratings, and choose
+            development. You&apos;ll be able to review profiles, ratings, and choose
             the best buddi for your children.
           </Text>
 
@@ -146,7 +146,7 @@ const RankBuddiesPage = () => {
                 marginBottom: 16,
               }}
             >
-              What's Coming:
+              What&apos;s Coming:
             </Text>
 
             <View style={{ gap: 12 }}>
@@ -282,7 +282,7 @@ const RankBuddiesPage = () => {
               lineHeight: 20,
             }}
           >
-            Once the ranking system is live, you'll receive notifications when
+            Once the ranking system is live, you&apos;ll receive notifications when
             buddis apply for your pickup requests. You can then review their
             profiles, ratings, and experience to make the best choice for your
             family.

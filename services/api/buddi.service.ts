@@ -79,6 +79,16 @@ export interface AvailableCall {
   endDate: string | null; // Only for "varying" type
   createdAt: string;
   updatedAt: string;
+  slots?: {
+    id: number;
+    buddiRequestId: number;
+    fromLocation: string;
+    toLocation: string;
+    slotStartTime: string;
+    slotEndTime: string;
+    createdAt: string;
+    updatedAt: string;
+  }[];
 }
 
 export interface AvailableCallsResponse {

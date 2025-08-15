@@ -1,7 +1,9 @@
 import { FontAwesome5, Ionicons, MaterialIcons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
+import { useEffect } from "react";
 import { Text, TouchableOpacity, View } from "react-native";
 import type { BuddiRequest } from "../../services/api/buddi-requests.service";
+import notificationService from "../../services/notifications/notification.service";
 
 // Helper function to generate initials from name
 const getInitials = (name?: string): string => {
@@ -142,6 +144,58 @@ const BuddiRequestCard = ({
 }: BuddiRequestCardProps) => {
   const router = useRouter();
 
+  // Check for buddi recommendations and send notification every time
+  useEffect(() => {
+    if (request.isBuddiRecommended && !request.matchedBuddiId) {
+      // Send notification about buddi recommendations
+      const sendRecommendationNotification = async () => {
+        try {
+          // Truncate description if too long for notification
+          const shortDescription =
+            request.description.length > 30
+              ? request.description.substring(0, 30) + "..."
+              : request.description;
+
+          await notificationService.sendImmediateNotification({
+            title: "🎯 Buddi Recommendations Available!",
+            body: `You have ${
+              request.kidsCount > 1
+                ? "buddi recommendations"
+                : "a buddi recommendation"
+            } for: "${shortDescription}". Tap to view and rank them!`,
+            data: {
+              type: "buddi_recommendations",
+              requestId: request.id,
+              requestDescription: request.description,
+              navigateTo: "buddi-recommendations",
+              kidsCount: request.kidsCount,
+            },
+            priority: "high",
+            sound: "default",
+          });
+          console.log(
+            "🔔 Buddi recommendation notification sent for request:",
+            request.id
+          );
+        } catch (error) {
+          console.error(
+            "❌ Failed to send buddi recommendation notification:",
+            error
+          );
+        }
+      };
+
+      // Send notification every time recommendations are available
+      sendRecommendationNotification();
+    }
+  }, [
+    request.isBuddiRecommended,
+    request.matchedBuddiId,
+    request.id,
+    request.description,
+    request.kidsCount,
+  ]);
+
   const handleViewDetails = () => {
     if (onViewDetails) {
       onViewDetails();
@@ -152,7 +206,7 @@ const BuddiRequestCard = ({
   };
 
   const handleViewApplicants = () => {
-    router.push("/parent/rank-buddies");
+    router.push(`/parent/buddi-recommendations/${request.id}`);
   };
 
   return (
@@ -218,22 +272,38 @@ const BuddiRequestCard = ({
         {/* Status Badge */}
         <View
           style={{
-            backgroundColor: request.isBuddiRecommended ? "#FFF7ED" : "#FEF3C7",
+            backgroundColor: request.matchedBuddiId
+              ? "#F0FDF4"
+              : request.isBuddiRecommended
+              ? "#FFF7ED"
+              : "#FEF3C7",
             borderRadius: 12,
             paddingHorizontal: 12,
             paddingVertical: 6,
             borderWidth: 1,
-            borderColor: request.isBuddiRecommended ? "#FF932E" : "#F59E0B",
+            borderColor: request.matchedBuddiId
+              ? "#22C55E"
+              : request.isBuddiRecommended
+              ? "#FF932E"
+              : "#F59E0B",
           }}
         >
           <Text
             style={{
-              color: request.isBuddiRecommended ? "#FF932E" : "#92400E",
+              color: request.matchedBuddiId
+                ? "#22C55E"
+                : request.isBuddiRecommended
+                ? "#FF932E"
+                : "#92400E",
               fontFamily: "Comfortaa-Bold",
               fontSize: 12,
             }}
           >
-            {request.isBuddiRecommended ? "View Applicants" : "Pending"}
+            {request.matchedBuddiId
+              ? "Matched"
+              : request.isBuddiRecommended
+              ? "View Applicants"
+              : "Pending"}
           </Text>
         </View>
       </View>
@@ -560,8 +630,8 @@ const BuddiRequestCard = ({
           </Text>
         </TouchableOpacity>
 
-        {/* View Applicants Button (only show if recommended) */}
-        {request.isBuddiRecommended && (
+        {/* View Applicants Button (only show if recommended and not matched) */}
+        {request.isBuddiRecommended && !request.matchedBuddiId && (
           <TouchableOpacity
             style={{
               flex: 1,
@@ -593,10 +663,47 @@ const BuddiRequestCard = ({
             </Text>
           </TouchableOpacity>
         )}
+
+        {/* Matched Button (only show if matched) */}
+        {request.matchedBuddiId && (
+          <TouchableOpacity
+            style={{
+              flex: 1,
+              backgroundColor: "#22C55E",
+              borderRadius: 12,
+              paddingVertical: 14,
+              paddingHorizontal: 16,
+              alignItems: "center",
+              flexDirection: "row",
+              justifyContent: "center",
+            }}
+            onPress={() => {
+              // Navigate to matched buddi profile
+              router.push(`/parent/buddi-profile/${request.matchedBuddiId}`);
+            }}
+            activeOpacity={0.8}
+          >
+            <FontAwesome5
+              name="user-friends"
+              size={16}
+              color="#fff"
+              style={{ marginRight: 8 }}
+            />
+            <Text
+              style={{
+                color: "#fff",
+                fontFamily: "Comfortaa-Bold",
+                fontSize: 14,
+              }}
+            >
+              View Profile
+            </Text>
+          </TouchableOpacity>
+        )}
       </View>
 
       {/* Status Message */}
-      {!request.isBuddiRecommended && (
+      {!request.isBuddiRecommended && !request.matchedBuddiId && (
         <View
           style={{
             backgroundColor: "#FEF3C7",
@@ -629,6 +736,45 @@ const BuddiRequestCard = ({
               }}
             >
               Waiting for buddi recommendations
+            </Text>
+          </View>
+        </View>
+      )}
+
+      {/* Matched Status Message */}
+      {request.matchedBuddiId && (
+        <View
+          style={{
+            backgroundColor: "#F0FDF4",
+            borderRadius: 8,
+            padding: 12,
+            marginTop: 12,
+            borderWidth: 1,
+            borderColor: "#22C55E",
+            alignItems: "center",
+          }}
+        >
+          <View
+            style={{
+              flexDirection: "row",
+              alignItems: "center",
+            }}
+          >
+            <FontAwesome5
+              name="user-friends"
+              size={16}
+              color="#22C55E"
+              style={{ marginRight: 6 }}
+            />
+            <Text
+              style={{
+                color: "#22C55E",
+                fontFamily: "Comfortaa-Regular",
+                fontSize: 13,
+                textAlign: "center",
+              }}
+            >
+              Successfully matched with a buddi!
             </Text>
           </View>
         </View>

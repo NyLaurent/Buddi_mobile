@@ -125,7 +125,7 @@ export default function AvailableCallCard({
         {/* Details */}
         <View style={styles.detailsContainer}>
           {/* Time */}
-          <View style={styles.timeContainer}>
+          {/* <View style={styles.timeContainer}>
             <View style={styles.timeItem}>
               <Ionicons name="time-outline" size={16} color="#666" />
               <Text style={styles.timeLabel}>Pickup:</Text>
@@ -140,15 +140,15 @@ export default function AvailableCallCard({
                 {formatTime(call.callDropTime)}
               </Text>
             </View>
-          </View>
+          </View> */}
 
           {/* Location */}
-          <View style={styles.detailItem}>
+          {/* <View style={styles.detailItem}>
             <FontAwesome5 name="map-marker-alt" size={14} color="#666" />
             <Text style={styles.detailText}>
               {call.fromZone} → {call.toZone}
             </Text>
-          </View>
+          </View> */}
 
           {/* Available Days */}
           <View style={styles.daysContainer}>
@@ -167,6 +167,40 @@ export default function AvailableCallCard({
               <Text style={styles.dateRangeValue}>
                 {formatDate(call.startDate)} - {formatDate(call.endDate)}
               </Text>
+            </View>
+          )}
+
+          {/* Slots Section - Show if available */}
+          {call.slots && call.slots.length > 0 && (
+            <View style={styles.slotsContainer}>
+              <View style={styles.slotsHeader}>
+                <FontAwesome5 name="route" size={14} color="#FF932E" />
+                <Text style={styles.slotsTitle}>
+                  Pickup Slots ({call.slots.length})
+                </Text>
+              </View>
+
+              {call.slots.slice(0, 2).map((slot, index) => (
+                <View key={slot.id} style={styles.slotItem}>
+                  <View style={styles.slotRoute}>
+                    <Text style={styles.slotLocation}>
+                      {slot.fromLocation} → {slot.toLocation}
+                    </Text>
+                  </View>
+                  <View style={styles.slotTime}>
+                    <Text style={styles.slotTimeText}>
+                      {formatTime(slot.slotStartTime)} -{" "}
+                      {formatTime(slot.slotEndTime)}
+                    </Text>
+                  </View>
+                </View>
+              ))}
+
+              {call.slots.length > 2 && (
+                <Text style={styles.moreSlotsText}>
+                  +{call.slots.length - 2} more slots
+                </Text>
+              )}
             </View>
           )}
         </View>
@@ -333,6 +367,60 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: "#8A8A8A",
     fontFamily: "Comfortaa-Regular",
+  },
+  // Slots Section Styles
+  slotsContainer: {
+    marginTop: 16,
+    backgroundColor: "#FFF7ED",
+    borderRadius: 12,
+    padding: 12,
+    borderWidth: 1,
+    borderColor: "#FF932E",
+  },
+  slotsHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 10,
+  },
+  slotsTitle: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: "#FF932E",
+    marginLeft: 8,
+    fontFamily: "Comfortaa-Bold",
+  },
+  slotItem: {
+    backgroundColor: "#fff",
+    borderRadius: 8,
+    padding: 8,
+    marginBottom: 6,
+    borderWidth: 1,
+    borderColor: "#FF932E",
+  },
+  slotRoute: {
+    marginBottom: 4,
+  },
+  slotLocation: {
+    fontSize: 13,
+    color: "#1F2937",
+    fontFamily: "Comfortaa-Bold",
+  },
+  slotTime: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  slotTimeText: {
+    fontSize: 12,
+    color: "#92400E",
+    fontFamily: "Comfortaa-Regular",
+  },
+  moreSlotsText: {
+    fontSize: 12,
+    color: "#FF932E",
+    fontFamily: "Comfortaa-Regular",
+    textAlign: "center",
+    fontStyle: "italic",
+    marginTop: 4,
   },
   buttonsRow: {
     flexDirection: "row",

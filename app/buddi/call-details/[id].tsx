@@ -34,6 +34,16 @@ interface CallDetails {
   endDate: string | null; // Only for "varying" type
   createdAt: string;
   updatedAt: string;
+  slots?: {
+    id: number;
+    buddiRequestId: number;
+    fromLocation: string;
+    toLocation: string;
+    slotStartTime: string;
+    slotEndTime: string;
+    createdAt: string;
+    updatedAt: string;
+  }[];
 }
 
 export default function CallDetailsScreen() {
@@ -288,28 +298,6 @@ export default function CallDetailsScreen() {
 
         {/* Details Grid */}
         <View style={styles.detailsGrid}>
-          {/* Pickup Time */}
-          <View style={styles.detailCard}>
-            <FontAwesome5 name="clock" size={24} color="#FF932E" />
-            <View style={styles.detailContent}>
-              <Text style={styles.detailValue}>
-                {formatTime(callDetails.callPickupTime)}
-              </Text>
-              <Text style={styles.detailLabel}>Pickup Time</Text>
-            </View>
-          </View>
-
-          {/* Drop-off Time */}
-          <View style={styles.detailCard}>
-            <FontAwesome5 name="clock" size={24} color="#3B82F6" />
-            <View style={styles.detailContent}>
-              <Text style={styles.detailValue}>
-                {formatTime(callDetails.callDropTime)}
-              </Text>
-              <Text style={styles.detailLabel}>Drop-off Time</Text>
-            </View>
-          </View>
-
           {/* Kids Count */}
           <View style={styles.detailCard}>
             <FontAwesome5 name="child" size={24} color="#FF932E" />
@@ -350,6 +338,63 @@ export default function CallDetailsScreen() {
             </View>
           </View>
         </View>
+
+        {/* Slots Card - Show if available */}
+        {callDetails.slots && callDetails.slots.length > 0 && (
+          <View style={styles.card}>
+            <View style={styles.cardHeader}>
+              <FontAwesome5 name="route" size={20} color="#FF932E" />
+              <Text style={styles.cardTitle}>
+                Pickup Slots ({callDetails.slots.length})
+              </Text>
+            </View>
+            <View style={styles.slotsContainer}>
+              {callDetails.slots.map((slot, index) => (
+                <View key={slot.id} style={styles.slotItem}>
+                  <View style={styles.slotHeader}>
+                    <Text style={styles.slotNumber}>Slot {index + 1}</Text>
+                  </View>
+                  <View style={styles.slotRoute}>
+                    <View style={styles.slotLocationItem}>
+                      <FontAwesome5 name="arrow-up" size={14} color="#FF932E" />
+                      <Text style={styles.slotLocationLabel}>From:</Text>
+                      <Text style={styles.slotLocationText}>
+                        {slot.fromLocation}
+                      </Text>
+                    </View>
+                    <View style={styles.slotLocationItem}>
+                      <FontAwesome5
+                        name="arrow-down"
+                        size={14}
+                        color="#34C759"
+                      />
+                      <Text style={styles.slotLocationLabel}>To:</Text>
+                      <Text style={styles.slotLocationText}>
+                        {slot.toLocation}
+                      </Text>
+                    </View>
+                  </View>
+                  <View style={styles.slotTimeContainer}>
+                    <View style={styles.slotTimeItem}>
+                      <FontAwesome5 name="clock" size={14} color="#92400E" />
+                      <Text style={styles.slotTimeLabel}>Start:</Text>
+                      <Text style={styles.slotTimeText}>
+                        {formatTime(slot.slotStartTime)}
+                      </Text>
+                    </View>
+                    <View style={styles.slotTimeItem}>
+                      <FontAwesome5 name="clock" size={14} color="#065F46" />
+                      <Text style={styles.slotTimeLabel}>End:</Text>
+                      <Text style={styles.slotTimeText}>
+                        {formatTime(slot.slotEndTime)}
+                      </Text>
+                    </View>
+                  </View>
+                </View>
+              ))}
+            </View>
+          </View>
+        )}
 
         {/* Available Days Card */}
         <View style={styles.card}>
@@ -628,7 +673,7 @@ const styles = {
     lineHeight: 24,
   },
   detailsGrid: {
-    flexDirection: "column" as const,
+    flexDirection: "row" as const,
     gap: 16,
     marginBottom: 16,
   },
@@ -640,6 +685,7 @@ const styles = {
     alignItems: "center" as const,
     borderWidth: 1,
     borderColor: "#E6E6E6",
+    flex: 1,
   },
   detailContent: {
     flex: 1,
@@ -769,5 +815,65 @@ const styles = {
     fontFamily: "Comfortaa-Bold",
     fontSize: 18,
     color: "#fff",
+  },
+  // Slots Section Styles
+  slotsContainer: {
+    gap: 12,
+  },
+  slotItem: {
+    backgroundColor: "#FFF7ED",
+    borderRadius: 12,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: "#FF932E",
+  },
+  slotHeader: {
+    marginBottom: 12,
+  },
+  slotNumber: {
+    fontFamily: "Comfortaa-Bold",
+    fontSize: 16,
+    color: "#FF932E",
+  },
+  slotRoute: {
+    gap: 8,
+    marginBottom: 12,
+  },
+  slotLocationItem: {
+    flexDirection: "row" as const,
+    alignItems: "center" as const,
+  },
+  slotLocationLabel: {
+    fontFamily: "Comfortaa-Bold",
+    fontSize: 14,
+    color: "#666",
+    marginLeft: 8,
+    marginRight: 8,
+    minWidth: 40,
+  },
+  slotLocationText: {
+    fontFamily: "Comfortaa-Regular",
+    fontSize: 16,
+    color: "#333",
+    flex: 1,
+  },
+  slotTimeContainer: {
+    flexDirection: "column" as const,
+    gap: 8,
+  },
+  slotTimeItem: {
+    flexDirection: "row" as const,
+    alignItems: "center" as const,
+    gap: 6,
+  },
+  slotTimeLabel: {
+    fontFamily: "Comfortaa-Bold",
+    fontSize: 14,
+    color: "#666",
+  },
+  slotTimeText: {
+    fontFamily: "Comfortaa-Regular",
+    fontSize: 14,
+    color: "#333",
   },
 };
