@@ -34,7 +34,10 @@ module.exports = {
                 "android.permission.VIBRATE",
                 "android.permission.WAKE_LOCK",
                 "android.permission.POST_NOTIFICATIONS"
-            ]
+            ],
+            // Additional Android configuration
+            allowBackup: true,
+            fullBackupContent: false
         },
         web: {
             bundler: "metro",
@@ -63,12 +66,20 @@ module.exports = {
                 "expo-build-properties",
                 {
                     android: {
-                        compileSdkVersion: 34,
-                        targetSdkVersion: 34,
-                        buildToolsVersion: "34.0.0",
-                        // Explicitly exclude foreground service permissions
-                        manifestPlaceholders: {
-                            // This ensures no foreground service permissions are added
+                        compileSdkVersion: 35,
+                        targetSdkVersion: 35,
+                        buildToolsVersion: "35.0.0",
+                        minSdkVersion: 24,
+                        // Additional build configurations
+                        kotlinVersion: "1.9.0",
+                        enableProguardInReleaseBuilds: false,
+                        enableSeparateBuildPerCPUArchitecture: false,
+                        // Handle dependency conflicts
+                        packagingOptions: {
+                            pickFirst: [
+                                "**/libc++_shared.so",
+                                "**/libjsc.so"
+                            ]
                         }
                     }
                 }
