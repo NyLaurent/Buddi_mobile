@@ -1,10 +1,7 @@
 import AnalyticsCard from "@/components/commons/AnalyticsCard";
 import PageHeader from "@/components/commons/PageHeader";
-import AvailableBuddie from "@/components/parent/AvailableBuddie";
 import { useAuth } from "@/context/AuthContext";
-import ParentService, {
-  BuddiRecommendation,
-} from "@/services/api/parent.service";
+import ParentService from "@/services/api/parent.service";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useEffect, useState } from "react";
@@ -21,10 +18,8 @@ import { SafeAreaView } from "react-native-safe-area-context";
 const MyBuddyPage = () => {
   const router = useRouter();
   const { parentDetails } = useAuth();
-  const [buddies, setBuddies] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [matchedBuddiId, setMatchedBuddiId] = useState<number | null>(null);
 
   // State for analytics data
   const [pickupRequests, setPickupRequests] = useState<any[]>([]);
@@ -71,29 +66,6 @@ const MyBuddyPage = () => {
         );
         const requests = requestsRes.data || [];
         setPickupRequests(requests);
-
-        // Find the latest call/request
-        const latestRequest = requests.length > 0 ? requests[0] : null;
-        if (!latestRequest) {
-          setBuddies([]);
-          setMatchedBuddiId(null);
-          setLoading(false);
-          return;
-        }
-        setMatchedBuddiId(
-          latestRequest.matchedBuddiId
-            ? Number(latestRequest.matchedBuddiId)
-            : null
-        );
-        // Fetch recommendations for the latest call
-        const recRes = await ParentService.getBuddiRecommendations(
-          parentDetails.id.toString(),
-          latestRequest.id
-        );
-        const recommendations: BuddiRecommendation[] = recRes.data || [];
-        // Flatten all buddis from all recommendations (should be 3)
-        const buddis = recommendations.flatMap((rec) => rec.buddis);
-        setBuddies(buddis);
 
         // Fetch coverage requests
         await fetchCoverageRequests();
@@ -169,51 +141,438 @@ const MyBuddyPage = () => {
           </View>
           <View className="px-4 mt-6">
             <Text className="text-lg font-comfortaa-bold mb-3">
-              Proposed Buddies
+              My Requests & Buddies
             </Text>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-              <View className="flex-row gap-4">
-                {loading ? (
+            {loading ? (
+              <View
+                style={{
+                  justifyContent: "center",
+                  alignItems: "center",
+                  paddingVertical: 40,
+                }}
+              >
+                <ActivityIndicator size="large" color="#FF932E" />
+                <Text
+                  style={{
+                    marginTop: 12,
+                    color: "#666",
+                    fontFamily: "Comfortaa-Regular",
+                    fontSize: 16,
+                  }}
+                >
+                  Loading your requests...
+                </Text>
+              </View>
+            ) : error ? (
+              <Text style={{ color: "red" }}>{error}</Text>
+            ) : pickupRequests.length === 0 ? (
+              <View
+                style={{
+                  backgroundColor: "#F9FAFB",
+                  borderRadius: 16,
+                  padding: 40,
+                  alignItems: "center",
+                }}
+              >
+                <Ionicons
+                  name="document-text-outline"
+                  size={48}
+                  color="#9CA3AF"
+                />
+                <Text
+                  style={{
+                    fontFamily: "Comfortaa-Bold",
+                    fontSize: 16,
+                    color: "#374151",
+                    marginTop: 12,
+                    textAlign: "center",
+                  }}
+                >
+                  No Requests Yet
+                </Text>
+                <Text
+                  style={{
+                    fontFamily: "Comfortaa-Regular",
+                    fontSize: 14,
+                    color: "#6B7280",
+                    marginTop: 8,
+                    textAlign: "center",
+                    lineHeight: 20,
+                  }}
+                >
+                  You haven&apos;t created any pickup requests yet.
+                </Text>
+              </View>
+            ) : (
+              <View style={{ gap: 16 }}>
+                {pickupRequests.map((request) => (
                   <View
+                    key={request.id}
                     style={{
-                      justifyContent: "center",
-                      alignItems: "center",
-                      width: 340,
-                      height: 220,
+                      backgroundColor: "#F9FAFB",
+                      borderRadius: 16,
+                      padding: 16,
+                      borderWidth: 1,
+                      borderColor:
+                        request.status === "matched" ? "#10B981" : "#E5E7EB",
                     }}
                   >
-                    <ActivityIndicator size="large" color="#FF932E" />
-                    <Text
+                    {/* Request Header */}
+                    <View
                       style={{
-                        marginTop: 12,
-                        color: "#666",
-                        fontFamily: "Comfortaa-Regular",
-                        fontSize: 16,
+                        flexDirection: "row",
+                        justifyContent: "space-between",
+                        alignItems: "flex-start",
+                        marginBottom: 12,
                       }}
                     >
-                      Loading buddies...
-                    </Text>
-                  </View>
-                ) : error ? (
-                  <Text style={{ color: "red" }}>{error}</Text>
-                ) : buddies.length === 0 ? (
-                  <Text>No buddies available.</Text>
-                ) : (
-                  buddies.map((buddi, idx) => (
-                    <View
-                      key={buddi.id || idx}
-                      style={{ width: 340, maxWidth: 420 }}
-                    >
-                      <AvailableBuddie
-                        buddi={buddi}
-                        matched={matchedBuddiId === buddi.id}
-                        ranking={idx + 1}
-                      />
+                      <View style={{ flex: 1 }}>
+                        <Text
+                          style={{
+                            fontFamily: "Comfortaa-Bold",
+                            fontSize: 16,
+                            color: "#1F2937",
+                            marginBottom: 4,
+                          }}
+                        >
+                          {request.description}
+                        </Text>
+                        <View
+                          style={{
+                            flexDirection: "row",
+                            alignItems: "center",
+                            gap: 8,
+                          }}
+                        >
+                          <View
+                            style={{
+                              backgroundColor:
+                                request.status === "matched"
+                                  ? "#D1FAE5"
+                                  : request.status === "pending"
+                                  ? "#FEF3C7"
+                                  : "#FEE2E2",
+                              paddingHorizontal: 8,
+                              paddingVertical: 4,
+                              borderRadius: 12,
+                            }}
+                          >
+                            <Text
+                              style={{
+                                fontFamily: "Comfortaa-Bold",
+                                fontSize: 12,
+                                color:
+                                  request.status === "matched"
+                                    ? "#065F46"
+                                    : request.status === "pending"
+                                    ? "#92400E"
+                                    : "#991B1B",
+                                textTransform: "capitalize",
+                              }}
+                            >
+                              {request.status}
+                            </Text>
+                          </View>
+                          <Text
+                            style={{
+                              fontFamily: "Comfortaa-Regular",
+                              fontSize: 12,
+                              color: "#6B7280",
+                            }}
+                          >
+                            {request.type}
+                          </Text>
+                        </View>
+                      </View>
+                      <TouchableOpacity
+                        onPress={() =>
+                          router.push(
+                            `/parent/buddi-recommendations/${request.id}`
+                          )
+                        }
+                        style={{
+                          backgroundColor: "#FF932E",
+                          paddingHorizontal: 12,
+                          paddingVertical: 6,
+                          borderRadius: 8,
+                        }}
+                      >
+                        <Text
+                          style={{
+                            color: "#fff",
+                            fontFamily: "Comfortaa-Bold",
+                            fontSize: 12,
+                          }}
+                        >
+                          {request.status === "matched"
+                            ? "View Details"
+                            : "View Recommendations"}
+                        </Text>
+                      </TouchableOpacity>
                     </View>
-                  ))
-                )}
+
+                    {/* Request Details */}
+                    <View style={{ marginBottom: 12 }}>
+                      <View
+                        style={{
+                          flexDirection: "row",
+                          alignItems: "center",
+                          marginBottom: 4,
+                        }}
+                      >
+                        <Ionicons name="calendar" size={14} color="#6B7280" />
+                        <Text
+                          style={{
+                            fontFamily: "Comfortaa-Regular",
+                            fontSize: 12,
+                            color: "#6B7280",
+                            marginLeft: 6,
+                          }}
+                        >
+                          {request.availableDays.join(", ")}
+                        </Text>
+                      </View>
+                      <View
+                        style={{
+                          flexDirection: "row",
+                          alignItems: "center",
+                          marginBottom: 4,
+                        }}
+                      >
+                        <Ionicons name="people" size={14} color="#6B7280" />
+                        <Text
+                          style={{
+                            fontFamily: "Comfortaa-Regular",
+                            fontSize: 12,
+                            color: "#6B7280",
+                            marginLeft: 6,
+                          }}
+                        >
+                          {request.kidsCount} kid
+                          {request.kidsCount !== 1 ? "s" : ""}
+                        </Text>
+                      </View>
+                      {request.startDate && request.endDate && (
+                        <View
+                          style={{
+                            flexDirection: "row",
+                            alignItems: "center",
+                          }}
+                        >
+                          <Ionicons name="time" size={14} color="#6B7280" />
+                          <Text
+                            style={{
+                              fontFamily: "Comfortaa-Regular",
+                              fontSize: 12,
+                              color: "#6B7280",
+                              marginLeft: 6,
+                            }}
+                          >
+                            {new Date(request.startDate).toLocaleDateString()} -{" "}
+                            {new Date(request.endDate).toLocaleDateString()}
+                          </Text>
+                        </View>
+                      )}
+                    </View>
+
+                    {/* Matched Buddi Section */}
+                    {request.status === "matched" && request.matchedBuddiId ? (
+                      <View
+                        style={{
+                          backgroundColor: "#F0FDF4",
+                          borderRadius: 12,
+                          padding: 12,
+                          borderWidth: 1,
+                          borderColor: "#D1FAE5",
+                        }}
+                      >
+                        <View
+                          style={{
+                            flexDirection: "row",
+                            alignItems: "center",
+                            marginBottom: 8,
+                          }}
+                        >
+                          <Ionicons
+                            name="checkmark-circle"
+                            size={16}
+                            color="#10B981"
+                          />
+                          <Text
+                            style={{
+                              fontFamily: "Comfortaa-Bold",
+                              fontSize: 14,
+                              color: "#065F46",
+                              marginLeft: 6,
+                            }}
+                          >
+                            Matched Buddi
+                          </Text>
+                        </View>
+                        <View
+                          style={{
+                            flexDirection: "row",
+                            alignItems: "center",
+                            justifyContent: "space-between",
+                          }}
+                        >
+                          <View style={{ flex: 1 }}>
+                            <Text
+                              style={{
+                                fontFamily: "Comfortaa-Bold",
+                                fontSize: 14,
+                                color: "#1F2937",
+                                marginBottom: 2,
+                              }}
+                            >
+                              Buddi #{request.matchedBuddiId}
+                            </Text>
+                            <Text
+                              style={{
+                                fontFamily: "Comfortaa-Regular",
+                                fontSize: 12,
+                                color: "#6B7280",
+                              }}
+                            >
+                              Successfully matched
+                            </Text>
+                          </View>
+                          <TouchableOpacity
+                            onPress={() =>
+                              router.push(
+                                `/parent/buddi-profile/${request.matchedBuddiId}`
+                              )
+                            }
+                            style={{
+                              backgroundColor: "#10B981",
+                              paddingHorizontal: 12,
+                              paddingVertical: 6,
+                              borderRadius: 8,
+                            }}
+                          >
+                            <Text
+                              style={{
+                                color: "#fff",
+                                fontFamily: "Comfortaa-Bold",
+                                fontSize: 12,
+                              }}
+                            >
+                              View Profile
+                            </Text>
+                          </TouchableOpacity>
+                        </View>
+                      </View>
+                    ) : request.status === "pending" ? (
+                      <View
+                        style={{
+                          backgroundColor: "#FEF3C7",
+                          borderRadius: 12,
+                          padding: 12,
+                          borderWidth: 1,
+                          borderColor: "#FDE68A",
+                        }}
+                      >
+                        <View
+                          style={{
+                            flexDirection: "row",
+                            alignItems: "center",
+                            marginBottom: 8,
+                          }}
+                        >
+                          <Ionicons name="time" size={16} color="#F59E0B" />
+                          <Text
+                            style={{
+                              fontFamily: "Comfortaa-Bold",
+                              fontSize: 14,
+                              color: "#92400E",
+                              marginLeft: 6,
+                            }}
+                          >
+                            Waiting for Recommendations
+                          </Text>
+                        </View>
+                        <Text
+                          style={{
+                            fontFamily: "Comfortaa-Regular",
+                            fontSize: 12,
+                            color: "#92400E",
+                          }}
+                        >
+                          Admins are reviewing your request and will recommend
+                          suitable buddis soon.
+                        </Text>
+                      </View>
+                    ) : null}
+
+                    {/* Slots Information */}
+                    {request.slots && request.slots.length > 0 && (
+                      <View style={{ marginTop: 12 }}>
+                        <Text
+                          style={{
+                            fontFamily: "Comfortaa-Bold",
+                            fontSize: 12,
+                            color: "#6B7280",
+                            marginBottom: 8,
+                          }}
+                        >
+                          Pickup Schedule
+                        </Text>
+                        {request.slots.slice(0, 2).map((slot: any) => (
+                          <View
+                            key={slot.id}
+                            style={{
+                              backgroundColor: "#fff",
+                              borderRadius: 8,
+                              padding: 8,
+                              marginBottom: 6,
+                              borderWidth: 1,
+                              borderColor: "#E5E7EB",
+                            }}
+                          >
+                            <Text
+                              style={{
+                                fontFamily: "Comfortaa-Regular",
+                                fontSize: 11,
+                                color: "#374151",
+                                marginBottom: 2,
+                              }}
+                            >
+                              {slot.fromLocation} → {slot.toLocation}
+                            </Text>
+                            <Text
+                              style={{
+                                fontFamily: "Comfortaa-Regular",
+                                fontSize: 10,
+                                color: "#6B7280",
+                              }}
+                            >
+                              {new Date(
+                                slot.slotStartTime
+                              ).toLocaleTimeString()}{" "}
+                              -{" "}
+                              {new Date(slot.slotEndTime).toLocaleTimeString()}
+                            </Text>
+                          </View>
+                        ))}
+                        {request.slots.length > 2 && (
+                          <Text
+                            style={{
+                              fontFamily: "Comfortaa-Regular",
+                              fontSize: 10,
+                              color: "#6B7280",
+                              textAlign: "center",
+                              fontStyle: "italic",
+                            }}
+                          >
+                            +{request.slots.length - 2} more slots
+                          </Text>
+                        )}
+                      </View>
+                    )}
+                  </View>
+                ))}
               </View>
-            </ScrollView>
+            )}
           </View>
         </View>
       </ScrollView>
