@@ -511,13 +511,14 @@ const ParentService = {
     }
   },
 
-  async rankBuddi(parentId: string, buddiId: number, rating: number, comment: string): Promise<any> {
+  async rankBuddi(parentId: string, buddiId: number, rating: number, comment: string, buddiRequestId: number): Promise<any> {
     try {
       const response = await authorizedApi.post('/rankings/rank', {
         parentId,
         buddiId,
         rating,
         comment,
+        buddiRequestId,
       });
       return response.data;
     } catch (err: any) {
@@ -539,9 +540,12 @@ const ParentService = {
     }
   },
 
-  async getBuddiRankings(parentId: string): Promise<any> {
+  async getBuddiRankings(parentId: string, buddiRequestId?: number): Promise<any> {
     try {
-      const response = await authorizedApi.get(`/rankings/my-rankings/${parentId}`);
+      const url = buddiRequestId 
+        ? `/rankings/buddi-request/${buddiRequestId}/rankings`
+        : `/rankings/my-rankings/${parentId}`;
+      const response = await authorizedApi.get(url);
       return response.data;
     } catch (err: any) {
       let message = 'Failed to fetch buddi rankings.';
@@ -562,9 +566,12 @@ const ParentService = {
     }
   },
 
-  async getTopRankedBuddi(parentId: string): Promise<any> {
+  async getTopRankedBuddi(parentId: string, buddiRequestId?: number): Promise<any> {
     try {
-      const response = await authorizedApi.get(`/rankings/top-ranked/${parentId}`);
+      const url = buddiRequestId 
+        ? `/rankings/top-ranked/${parentId}?buddiRequestId=${buddiRequestId}`
+        : `/rankings/top-ranked/${parentId}`;
+      const response = await authorizedApi.get(url);
       return response.data;
     } catch (err: any) {
       let message = 'Failed to fetch top ranked buddi.';

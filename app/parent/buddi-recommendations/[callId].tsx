@@ -53,18 +53,20 @@ export default function BuddiRecommendationsPage() {
     fetchRecommendations();
   }, [parentDetails?.id, callId]);
 
-  // Fetch existing rankings when recommendations are loaded
+  // Fetch existing rankings for this specific request when recommendations are loaded
   React.useEffect(() => {
     const fetchRankings = async () => {
-      if (!parentDetails?.id || recommendations.length === 0) return;
+      if (!parentDetails?.id || !callId || recommendations.length === 0) return;
 
       try {
         const res = await ParentService.getBuddiRankings(
-          parentDetails.id.toString()
+          parentDetails.id.toString(),
+          parseInt(callId)
         );
 
         // Convert the rankings array to the format we use in state
         // Handle duplicates by taking the most recent ranking for each buddi
+        // Note: Now rankings are specific to this buddiRequestId
         const rankingsMap: { [buddiId: number]: number } = {};
         const datesMap: { [buddiId: number]: string } = {};
         if (res.data && Array.isArray(res.data)) {
@@ -91,12 +93,12 @@ export default function BuddiRecommendationsPage() {
     };
 
     fetchRankings();
-  }, [parentDetails?.id, recommendations.length]);
+  }, [parentDetails?.id, callId, recommendations.length]);
 
-  // Get top-ranked buddy from existing rankings
+  // Get top-ranked buddy from existing rankings for this specific request
   React.useEffect(() => {
     if (Object.keys(rankings).length > 0) {
-      // Find the buddy with rating 1 (top ranked)
+      // Find the buddy with rating 1 (top ranked) for this specific request
       const topRankedId = Object.keys(rankings).find(
         (buddiId) => rankings[parseInt(buddiId)] === 1
       );
@@ -149,9 +151,10 @@ export default function BuddiRecommendationsPage() {
     rating: number,
     comment: string
   ) => {
-    if (!parentDetails?.id) return;
+    if (!parentDetails?.id || !callId) return;
 
-    // Check if this rank is already taken by another buddy
+    // Check if this rank is already taken by another buddy for this specific request
+    // Since each request has its own rankings, this prevents duplicate rankings within the same request
     const existingRank = rankings[buddiId];
     const isRankTaken =
       Object.values(rankings).includes(rating) && existingRank !== rating;
@@ -170,7 +173,8 @@ export default function BuddiRecommendationsPage() {
         parentDetails.id.toString(),
         buddiId,
         rating,
-        comment
+        comment,
+        parseInt(callId) // Pass the callId as buddiRequestId
       );
 
       setRankings((prev) => ({ ...prev, [buddiId]: rating }));
@@ -186,7 +190,7 @@ export default function BuddiRecommendationsPage() {
       if (rankedCount >= 3) {
         // All buddies ranked, show success message and exit ranking mode
         alert(
-          "All buddies have been ranked! The 1st ranked buddy will be automatically assigned to your call."
+          "All buddies have been ranked for this request! The 1st ranked buddy will be automatically assigned to your call."
         );
         setIsRankingMode(false); // Exit ranking mode automatically
       }
@@ -240,10 +244,10 @@ export default function BuddiRecommendationsPage() {
                 }\n\nYou will receive a confirmation email shortly with next steps.`,
                 [
                   {
-                    text: "Great!",
+                    text: "View Updated Requests",
                     onPress: () => {
-                      // Navigate back or to a success page
-                      router.back();
+                      // Navigate back to buddi-requests page and trigger refresh
+                      router.push("/parent/buddi-requests");
                     },
                   },
                 ]

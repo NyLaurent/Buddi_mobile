@@ -1,6 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
-import { useRouter } from "expo-router";
-import { useEffect, useState } from "react";
+import { useFocusEffect, useRouter } from "expo-router";
+import { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
   ScrollView,
@@ -52,6 +52,14 @@ export default function BuddiRequestsPage() {
   useEffect(() => {
     fetchBuddiRequests();
   }, [parentDetails?.id, user?.userId]);
+
+  // Refresh data when page comes into focus (e.g., after matching)
+  useFocusEffect(
+    useCallback(() => {
+      console.log("[BUDDI REQUESTS] Page focused, refreshing data...");
+      fetchBuddiRequests();
+    }, [parentDetails?.id, user?.userId])
+  );
 
   const handleRefresh = () => {
     fetchBuddiRequests();
@@ -254,8 +262,8 @@ export default function BuddiRequestsPage() {
                 lineHeight: 20,
               }}
             >
-              You haven &apos; t created any pickup requests yet. Start by creating
-              your first request to find amazing Buddis!
+              You haven &apos; t created any pickup requests yet. Start by
+              creating your first request to find amazing Buddis!
             </Text>
 
             <TouchableOpacity
