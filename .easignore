@@ -38,3 +38,7 @@ yarn-error.*
 *.tsbuildinfo
 
 app-example
+
+# Ignore native folders to use app.config.js configuration
+/android
+/ios
