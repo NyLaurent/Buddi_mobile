@@ -12,6 +12,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useAuth } from "../../context/AuthContext";
+import BuddiService from "../../services/api/buddi.service";
 import ParentService, {
   ParentPickupRequest,
 } from "../../services/api/parent.service";
@@ -27,6 +28,9 @@ interface ChatItem {
 
 export default function ParentMessagesScreen() {
   const [chatItems, setChatItems] = useState<ChatItem[]>([]);
+  const [pickupRequests, setPickupRequests] = useState<ParentPickupRequest[]>(
+    []
+  );
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
@@ -55,22 +59,56 @@ export default function ParentMessagesScreen() {
         parentDetails.id.toString()
       );
 
+      // Store all pickup requests
+      setPickupRequests(response.data || []);
+
       // Filter only matched calls and convert to chat items
       const matchedCalls = response.data.filter(
         (call: ParentPickupRequest) =>
           call.status === "matched" && call.matchedBuddiId
       );
 
-      const chatItemsData: ChatItem[] = matchedCalls.map(
-        (call: ParentPickupRequest) => ({
-          id: call.id.toString(),
-          roomId: `${call.parentId}-${call.matchedBuddiId}`,
-          otherUserName: "Buddi", // You can get this from API if needed
-          lastMessage: "Tap to start chatting about pickup details",
-          timestamp: new Date(call.updatedAt).toLocaleDateString(),
-          unreadCount: 0, // You can implement unread count logic
-        })
-      );
+      // Fetch buddy details for each matched call
+      const chatItemsData: ChatItem[] = [];
+
+      for (const call of matchedCalls) {
+        if (!call.matchedBuddiId) continue; // Skip if no matched buddi
+
+        try {
+          // Get buddy information using the service
+          const buddyResponse = await BuddiService.getBuddiInfo(
+            call.matchedBuddiId.toString()
+          );
+          const buddyName = buddyResponse.data?.User?.firstName
+            ? `${buddyResponse.data.User.firstName} ${
+                buddyResponse.data.User.lastName || ""
+              }`.trim()
+            : `Buddi ${call.matchedBuddiId}`;
+
+          chatItemsData.push({
+            id: call.id.toString(),
+            roomId: `${call.parentId}-${call.matchedBuddiId}`,
+            otherUserName: buddyName,
+            lastMessage: `Chat about ${call.description || "pickup details"}`,
+            timestamp: new Date(call.updatedAt).toLocaleDateString(),
+            unreadCount: 0,
+          });
+        } catch (error) {
+          console.error(
+            `Failed to fetch buddy info for ${call.matchedBuddiId}:`,
+            error
+          );
+          // Fallback if buddy info can't be fetched
+          chatItemsData.push({
+            id: call.id.toString(),
+            roomId: `${call.parentId}-${call.matchedBuddiId}`,
+            otherUserName: `Buddi ${call.matchedBuddiId}`,
+            lastMessage: `Chat about ${call.description || "pickup details"}`,
+            timestamp: new Date(call.updatedAt).toLocaleDateString(),
+            unreadCount: 0,
+          });
+        }
+      }
 
       setChatItems(chatItemsData);
     } catch (err: any) {
@@ -93,6 +131,13 @@ export default function ParentMessagesScreen() {
 
   const handleBackPress = () => {
     router.back();
+  };
+
+  // Get request description for context
+  const getRequestDescription = (chatId: string) => {
+    // Find the corresponding request in pickupRequests
+    const request = pickupRequests.find((r) => r.id.toString() === chatId);
+    return request?.description || "Pickup request";
   };
 
   // Get user initials
@@ -146,7 +191,7 @@ export default function ParentMessagesScreen() {
       <Text style={styles.emptyTitle}>No Messages Yet</Text>
       <Text style={styles.emptyText}>
         You&apos;ll see your chat conversations here once you have matched
-        buddi
+        buddies
       </Text>
     </View>
   );
