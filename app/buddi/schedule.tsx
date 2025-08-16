@@ -5,7 +5,6 @@ import CoverageRequestModal from "@/components/modals/CoverageRequestModal";
 import CoverageRequestCard from "@/components/parent/CoverageRequestCard";
 import { useAuth } from "@/context/AuthContext";
 import BuddiService from "@/services/api/buddi.service";
-import ChildrenService from "@/services/api/children.service";
 import CoverageService from "@/services/api/coverage.service";
 import ParentService from "@/services/api/parent.service";
 import notificationService from "@/services/notifications/notification.service";
@@ -54,11 +53,12 @@ const SchedulePage = () => {
   const { parentDetails, buddiDetails, user } = useAuth();
   const [activeTab, setActiveTab] = React.useState("pickups");
 
+  // State for managing multiple requests and days
+  const [selectedRequestIndex, setSelectedRequestIndex] = React.useState(0);
+  const [selectedDay, setSelectedDay] = React.useState<string>("");
+
   // State for real pickup requests and details
   const [pickupRequests, setPickupRequests] = React.useState<any[]>([]);
-  const [childDetailsMap, setChildDetailsMap] = React.useState<
-    Record<string, any>
-  >({});
   const [buddiDetailsMap, setBuddiDetailsMap] = React.useState<
     Record<string, any>
   >({});
@@ -66,9 +66,9 @@ const SchedulePage = () => {
   const [error, setError] = React.useState<string | null>(null);
 
   // State for tracking pickup statuses (copied from parent index)
-  const [pickupStatuses, setPickupStatuses] = React.useState<
-    Record<number, string>
-  >({});
+  // const [pickupStatuses, setPickupStatuses] = React.useState<
+  //   Record<number, string>
+  // >({});
 
   // State for coverage request modal
   const [showCoverageModal, setShowCoverageModal] = React.useState(false);
@@ -91,10 +91,6 @@ const SchedulePage = () => {
   // State for weekly pickup summary (completed pickups)
   const [weeklyPickupSummary, setWeeklyPickupSummary] =
     React.useState<any>(null);
-  const [weeklySummaryLoading, setWeeklySummaryLoading] = React.useState(false);
-  const [weeklySummaryError, setWeeklySummaryError] = React.useState<
-    string | null
-  >(null);
 
   // State for active pickup tracking
   const [activePickup, setActivePickup] = React.useState<any>(null);
@@ -107,30 +103,56 @@ const SchedulePage = () => {
   // Helper to get today's day as a string (e.g., 'Monday')
   const today = new Date().toLocaleDateString("en-US", { weekday: "long" });
 
-  // Helper to check if a pickup is for today
-  const isPickupForToday = (pickup: any) => {
-    if (!pickup.availableDays || !Array.isArray(pickup.availableDays)) {
-      return false;
+  // Helper to get unique days across all requests
+  const getAllAvailableDays = React.useCallback(() => {
+    const allDays = new Set<string>();
+    pickupRequests.forEach((request) => {
+      if (request.availableDays && Array.isArray(request.availableDays)) {
+        request.availableDays.forEach((day: string) => allDays.add(day));
+      }
+    });
+    return Array.from(allDays);
+  }, [pickupRequests]);
+
+  // Helper to get request type display text
+  const getRequestTypeDisplayText = (type?: string) => {
+    if (!type) return "One-time";
+    return type === "repetitive" ? "Ongoing" : "One-time";
+  };
+
+  // Helper to get slots for selected request and day
+  const getSlotsForSelectedDay = () => {
+    if (
+      pickupRequests.length === 0 ||
+      selectedRequestIndex >= pickupRequests.length
+    ) {
+      return [];
     }
 
-    // Parse all available days from the array
-    const allAvailableDays: string[] = [];
-    pickup.availableDays.forEach((dayString: string) => {
-      const days = dayString
-        .split(",")
-        .map((day: string) => day.trim().toLowerCase());
-      allAvailableDays.push(...days);
-    });
+    const selectedRequest = pickupRequests[selectedRequestIndex];
+    if (!selectedRequest.slots || !selectedDay) {
+      return [];
+    }
 
-    return allAvailableDays.includes(today.toLowerCase());
+    // Check if the selected day is available for this request
+    const isDayAvailable =
+      selectedRequest.availableDays &&
+      selectedRequest.availableDays.includes(selectedDay);
+
+    if (!isDayAvailable) {
+      return [];
+    }
+
+    // Return all slots for this request (since slots don't have specific days, they're all available on available days)
+    return selectedRequest.slots.map((slot: any) => ({
+      ...slot,
+      request: selectedRequest,
+    }));
   };
 
   // Helper to fetch weekly pickup summary
-  const fetchWeeklyPickupSummary = async () => {
+  const fetchWeeklyPickupSummary = React.useCallback(async () => {
     if (!buddiDetails?.id) return;
-
-    setWeeklySummaryLoading(true);
-    setWeeklySummaryError(null);
 
     try {
       const summary = await BuddiService.getWeeklyPickupSummary(
@@ -140,11 +162,8 @@ const SchedulePage = () => {
       setWeeklyPickupSummary(summary);
     } catch (err: any) {
       console.error("[SCHEDULE] Error fetching weekly pickup summary:", err);
-      setWeeklySummaryError(err.message || "Failed to fetch weekly summary");
-    } finally {
-      setWeeklySummaryLoading(false);
     }
-  };
+  }, [buddiDetails?.id]);
 
   // Helper to check if a pickup is completed for today
   const isPickupCompletedForToday = (pickup: any) => {
@@ -173,46 +192,45 @@ const SchedulePage = () => {
   };
 
   // Enhanced helper to emit pickup events to parent's room
-  const emitPickupEvent = (
-    eventName: string,
-    pickupData: any,
-    parentId?: string
-  ) => {
-    const socket = SocketService.getSocket ? SocketService.getSocket() : null;
-    const targetParentId = parentId || pickupData?.parentId;
+  const emitPickupEvent = React.useCallback(
+    (eventName: string, pickupData: any, parentId?: string) => {
+      const socket = SocketService.getSocket ? SocketService.getSocket() : null;
+      const targetParentId = parentId || pickupData?.parentId;
 
-    if (socket && targetParentId) {
-      const parentRoomId = `parent-${targetParentId}`;
-      console.log(
-        `[SCHEDULE] 📡 Emitting ${eventName} to parent room:`,
-        parentRoomId
-      );
-      console.log(`[SCHEDULE] 📦 Pickup data:`, pickupData);
-      console.log(`[SCHEDULE] 👥 Target parent ID:`, targetParentId);
+      if (socket && targetParentId) {
+        const parentRoomId = `parent-${targetParentId}`;
+        console.log(
+          `[SCHEDULE] 📡 Emitting ${eventName} to parent room:`,
+          parentRoomId
+        );
+        console.log(`[SCHEDULE] 📦 Pickup data:`, pickupData);
+        console.log(`[SCHEDULE] 👥 Target parent ID:`, targetParentId);
 
-      // Emit the event with enhanced data structure
-      socket.emit(eventName, {
-        roomId: parentRoomId,
-        pickupData: {
-          ...pickupData,
-          buddiId: buddiDetails?.id,
-          timestamp: new Date().toISOString(),
-        },
-        eventType: eventName,
-        from: "buddi",
-        to: "parent",
-      });
+        // Emit the event with enhanced data structure
+        socket.emit(eventName, {
+          roomId: parentRoomId,
+          pickupData: {
+            ...pickupData,
+            buddiId: buddiDetails?.id,
+            timestamp: new Date().toISOString(),
+          },
+          eventType: eventName,
+          from: "buddi",
+          to: "parent",
+        });
 
-      console.log(`[SCHEDULE] ✅ ${eventName} event emitted successfully`);
-    } else {
-      console.log(`[SCHEDULE] ❌ Cannot emit ${eventName}:`, {
-        hasSocket: !!socket,
-        hasPickupData: !!pickupData,
-        targetParentId,
-        pickupDataParentId: pickupData?.parentId,
-      });
-    }
-  };
+        console.log(`[SCHEDULE] ✅ ${eventName} event emitted successfully`);
+      } else {
+        console.log(`[SCHEDULE] ❌ Cannot emit ${eventName}:`, {
+          hasSocket: !!socket,
+          hasPickupData: !!pickupData,
+          targetParentId,
+          pickupDataParentId: pickupData?.parentId,
+        });
+      }
+    },
+    [buddiDetails?.id]
+  );
 
   // New function to fetch pickup data from API as alternative to socket events
   const fetchPickupFromAPI = async () => {
@@ -307,134 +325,82 @@ const SchedulePage = () => {
     }
   }, [buddiDetails?.id]);
 
-  // Handle pickup started (clock in)
-  const handlePickupStarted = async (pickup: any) => {
-    try {
-      console.log("[SCHEDULE] 🚀 Starting pickup:", pickup.id);
-
-      // Update local state
-      setActivePickup({
-        ...pickup,
-        status: "enRoute",
-        tripStartTime: new Date().toISOString(),
-      });
-
-      // Emit event to parent
-      emitPickupEvent("pickup-started", {
-        ...pickup,
-        buddiId: buddiDetails?.id,
-        status: "enRoute",
-        tripStartTime: new Date().toISOString(),
-      });
-
-      // Send system notification for trip started
-      try {
-        await notificationService.sendImmediateNotification({
-          title: "🚗 Trip Started!",
-          body: `You're now en route to pick up your passenger. Drive safely!`,
-          data: { type: "trip_started", pickupId: pickup.id },
-          priority: "high",
-          sound: "default",
-        });
-      } catch (error) {
-        console.log("Failed to send notification:", error);
-      }
-
-      // Show success feedback
-      console.log("[SCHEDULE] ✅ Pickup started successfully");
-    } catch (error) {
-      console.error("[SCHEDULE] ❌ Error starting pickup:", error);
-    }
-  };
-
-  // Handle child picked up
-  const handleChildPickedUp = async (pickup: any) => {
-    try {
-      console.log("[SCHEDULE] 👶 Child picked up:", pickup.id);
-
-      // Update local state
-      setActivePickup({
-        ...pickup,
-        status: "pickedUp",
-        pickupTime: new Date().toISOString(),
-      });
-
-      // Emit event to parent
-      emitPickupEvent("child-picked-up", {
-        ...pickup,
-        buddiId: buddiDetails?.id,
-        status: "pickedUp",
-        pickupTime: new Date().toISOString(),
-      });
-
-      // Send system notification for child picked up
-      try {
-        await notificationService.sendImmediateNotification({
-          title: "👶 Child Picked Up!",
-          body: `Great! You've successfully picked up your passenger. Now head to the destination.`,
-          data: { type: "child_picked_up", pickupId: pickup.id },
-          priority: "high",
-          sound: "default",
-        });
-      } catch (error) {
-        console.log("Failed to send notification:", error);
-      }
-
-      // Show success feedback
-      console.log("[SCHEDULE] ✅ Child picked up successfully");
-    } catch (error) {
-      console.error("[SCHEDULE] ❌ Error picking up child:", error);
-    }
-  };
-
   // Handle trip completed (clock out)
-  const handleTripCompleted = async (pickup: any) => {
-    try {
-      console.log("[SCHEDULE] ✅ Completing trip:", pickup.id);
-
-      // Update local state
-      setActivePickup({
-        ...pickup,
-        status: "completed",
-        dropoffTime: new Date().toISOString(),
-      });
-
-      // Emit event to parent
-      emitPickupEvent("trip-completed", {
-        ...pickup,
-        buddiId: buddiDetails?.id,
-        status: "completed",
-        dropoffTime: new Date().toISOString(),
-      });
-
-      // Clear active pickup
-      setActivePickup(null);
-
-      // Refresh weekly summary to show completed pickup
-      await fetchWeeklyPickupSummary();
-
-      // Send system notification for successful trip completion
+  const handleTripCompleted = React.useCallback(
+    async (pickup: any) => {
       try {
-        await notificationService.sendTripCompletedNotification(
-          pickup.kidName || "Child",
-          25, // Default fare - you might want to get this from actual data
-          "30 min" // Default duration - you might want to calculate this
-        );
+        console.log("[SCHEDULE] ✅ Completing trip:", pickup.id);
+
+        // Update local state
+        setActivePickup({
+          ...pickup,
+          status: "completed",
+          dropoffTime: new Date().toISOString(),
+        });
+
+        // Emit event to parent
+        emitPickupEvent("trip-completed", {
+          ...pickup,
+          buddiId: buddiDetails?.id,
+          status: "completed",
+          dropoffTime: new Date().toISOString(),
+        });
+
+        // Clear active pickup
+        setActivePickup(null);
+
+        // Refresh weekly summary to show completed pickup
+        await fetchWeeklyPickupSummary();
+
+        // Send system notification for successful trip completion
+        try {
+          await notificationService.sendTripCompletedNotification(
+            pickup.kidName || "Child",
+            25, // Default fare - you might want to get this from actual data
+            "30 min" // Default duration - you might want to calculate this
+          );
+        } catch (error) {
+          console.log("Failed to send notification:", error);
+        }
+
+        // Show success feedback
+        console.log("[SCHEDULE] ✅ Trip completed successfully");
       } catch (error) {
-        console.log("Failed to send notification:", error);
+        console.error("[SCHEDULE] ❌ Error completing trip:", error);
       }
+    },
+    [buddiDetails?.id, fetchWeeklyPickupSummary, emitPickupEvent]
+  );
 
-      // Show success feedback
-      console.log("[SCHEDULE] ✅ Trip completed successfully");
-    } catch (error) {
-      console.error("[SCHEDULE] ❌ Error completing trip:", error);
-    }
-  };
+  // Get today's slots across all requests
+  const todaysAllSlots = React.useMemo(() => {
+    const today = new Date().toLocaleDateString("en-US", { weekday: "long" });
+    const slots: any[] = [];
 
-  // Filter pickups for today
-  const todaysPickups = pickupRequests.filter(isPickupForToday);
+    pickupRequests.forEach((request) => {
+      if (request.availableDays && request.availableDays.includes(today)) {
+        request.slots?.forEach((slot: any) => {
+          slots.push({
+            ...slot,
+            request,
+          });
+        });
+      }
+    });
 
-  const fetchDetailsForRequests = async () => {
+    return slots;
+  }, [pickupRequests]);
+
+  // Count today's pickup requests
+  const todaysRequestsCount = React.useMemo(() => {
+    const today = new Date().toLocaleDateString("en-US", { weekday: "long" });
+    return pickupRequests.filter(
+      (request) =>
+        request.availableDays && request.availableDays.includes(today)
+    ).length;
+  }, [pickupRequests]);
+
+  const fetchDetailsForRequests = React.useCallback(async () => {
     // For Buddi users - get matched requests
     if (user?.role === "buddi" && buddiDetails?.id) {
       setLoading(true);
@@ -445,8 +411,7 @@ const SchedulePage = () => {
         setPickupRequests(requests);
 
         // For Buddi, we don't need children details but we might need parent details
-        // We can leave child and buddi details maps empty for now
-        setChildDetailsMap({});
+        // We can leave buddi details map empty for now
         setBuddiDetailsMap({});
       } catch (err: any) {
         setError(err.message || "Failed to fetch pickup requests.");
@@ -464,17 +429,16 @@ const SchedulePage = () => {
         );
         const requests = res.data || [];
         setPickupRequests(requests);
-        // Fetch all children for this parent once
-        const childrenRes = await ChildrenService.getChildrenByParent(
-          parentDetails.id.toString()
-        );
-        const childrenArr = Array.isArray(childrenRes) ? childrenRes : [];
-        // Map childId to child details
-        const childMap: Record<string, any> = {};
-        childrenArr.forEach((child: any) => {
-          childMap[child.id] = child;
-        });
-        setChildDetailsMap(childMap);
+        // Fetch all children for this parent once (not needed for buddi view)
+        // const childrenRes = await ChildrenService.getChildrenByParent(
+        //   parentDetails.id.toString()
+        // );
+        // const childrenArr = Array.isArray(childrenRes) ? childrenRes : [];
+        // Map childId to child details (not needed for buddi view)
+        // const childMap: Record<string, any> = {};
+        // childrenArr.forEach((child: any) => {
+        //   childMap[child.id] = child;
+        // });
         // Fetch buddi details for each matchedBuddiId
         const buddiIds = Array.from(
           new Set(requests.map((r: any) => r.matchedBuddiId).filter(Boolean))
@@ -497,7 +461,7 @@ const SchedulePage = () => {
         setLoading(false);
       }
     }
-  };
+  }, [user?.role, buddiDetails?.id, parentDetails?.id]);
 
   // Fail-safe: stop loading after 8s to avoid endless spinner
   React.useEffect(() => {
@@ -524,45 +488,57 @@ const SchedulePage = () => {
     if (user?.role === "buddi" && buddiDetails?.id) {
       fetchWeeklyPickupSummary();
     }
-  }, [parentDetails?.id, buddiDetails?.id, user?.role]);
+  }, [
+    parentDetails?.id,
+    buddiDetails?.id,
+    user?.role,
+    fetchDetailsForRequests,
+    fetchWeeklyPickupSummary,
+  ]);
+
+  // Set initial selected day when pickup requests are loaded
+  React.useEffect(() => {
+    if (pickupRequests.length > 0 && !selectedDay) {
+      const availableDays = getAllAvailableDays();
+      if (availableDays.length > 0) {
+        // Default to today if available, otherwise first available day
+        const today = new Date().toLocaleDateString("en-US", {
+          weekday: "long",
+        });
+        const dayToSelect = availableDays.includes(today)
+          ? today
+          : availableDays[0];
+        setSelectedDay(dayToSelect);
+      }
+    }
+
+    // Reset selected request index if it's out of bounds
+    if (selectedRequestIndex >= pickupRequests.length) {
+      setSelectedRequestIndex(0);
+    }
+  }, [pickupRequests, selectedDay, selectedRequestIndex, getAllAvailableDays]);
 
   // Socket event listeners for real-time pickup status updates (copied from parent index)
   React.useEffect(() => {
     // Enhanced socket event listeners for real-time updates
     SocketService.on("pickup-started", (pickupData: any) => {
       console.log("[SCHEDULE] Received pickup-started event:", pickupData);
-      // Update pickup status in real-time
-      setPickupStatuses((prev) => ({
-        ...prev,
-        [pickupData.id]: "enRoute",
-      }));
+      // Update pickup status in real-time (handled by activePickup state now)
     });
 
     SocketService.on("child-picked-up", (pickupData: any) => {
       console.log("[SCHEDULE] Received child-picked-up event:", pickupData);
-      // Update pickup status in real-time
-      setPickupStatuses((prev) => ({
-        ...prev,
-        [pickupData.id]: "pickedUp",
-      }));
+      // Update pickup status in real-time (handled by activePickup state now)
     });
 
     SocketService.on("trip-completed", (pickupData: any) => {
       console.log("[SCHEDULE] Received trip-completed event:", pickupData);
-      // Update pickup status in real-time
-      setPickupStatuses((prev) => ({
-        ...prev,
-        [pickupData.id]: "completed",
-      }));
+      // Update pickup status in real-time (handled by activePickup state now)
     });
 
     SocketService.on("trip-cancelled", (pickupData: any) => {
       console.log("[SCHEDULE] Received trip-cancelled event:", pickupData);
-      // Update pickup status in real-time
-      setPickupStatuses((prev) => ({
-        ...prev,
-        [pickupData.id]: "cancelled",
-      }));
+      // Update pickup status in real-time (handled by activePickup state now)
     });
 
     // Cleanup listeners on unmount
@@ -573,11 +549,6 @@ const SchedulePage = () => {
       SocketService.off("trip-cancelled");
     };
   }, []);
-
-  // Helper function to get pickup status (copied from parent index)
-  const getPickupStatus = (buddiRequestId: number) => {
-    return pickupStatuses[buddiRequestId] || null;
-  };
 
   // Function to handle coverage request creation
   const handleCreateCoverageRequest = async (reason: string) => {
@@ -690,61 +661,64 @@ const SchedulePage = () => {
   };
 
   // Function to fetch coverage requests (for Buddi)
-  const fetchCoverageRequests = async (page: number = 1) => {
-    // Check if user is a Buddi or Parent
-    if (user?.role === "buddi" && buddiDetails?.id) {
-      setCoverageLoading(true);
-      setCoverageError(null);
+  const fetchCoverageRequests = React.useCallback(
+    async (page: number = 1) => {
+      // Check if user is a Buddi or Parent
+      if (user?.role === "buddi" && buddiDetails?.id) {
+        setCoverageLoading(true);
+        setCoverageError(null);
 
-      try {
-        const response = await CoverageService.getBuddiCoverageRequests(
-          buddiDetails.id.toString(),
-          page,
-          2 // Only show 2 coverage requests on schedule page
-        );
+        try {
+          const response = await CoverageService.getBuddiCoverageRequests(
+            buddiDetails.id.toString(),
+            page,
+            2 // Only show 2 coverage requests on schedule page
+          );
 
-        if (page === 1) {
-          setCoverageRequests(response.data);
-        } else {
-          setCoverageRequests((prev) => [...prev, ...response.data]);
+          if (page === 1) {
+            setCoverageRequests(response.data);
+          } else {
+            setCoverageRequests((prev) => [...prev, ...response.data]);
+          }
+
+          setCoveragePagination({
+            total: response.pagination.totalItems,
+            page: response.pagination.currentPage,
+            limit: response.pagination.perPage,
+            totalPages: response.pagination.totalPages,
+          });
+        } catch (err: any) {
+          setCoverageError(err.message || "Failed to fetch coverage requests.");
+        } finally {
+          setCoverageLoading(false);
         }
+      } else if (parentDetails?.id) {
+        setCoverageLoading(true);
+        setCoverageError(null);
 
-        setCoveragePagination({
-          total: response.pagination.totalItems,
-          page: response.pagination.currentPage,
-          limit: response.pagination.perPage,
-          totalPages: response.pagination.totalPages,
-        });
-      } catch (err: any) {
-        setCoverageError(err.message || "Failed to fetch coverage requests.");
-      } finally {
-        setCoverageLoading(false);
-      }
-    } else if (parentDetails?.id) {
-      setCoverageLoading(true);
-      setCoverageError(null);
+        try {
+          const response = await ParentService.getCoverageRequests(
+            parentDetails.id.toString(),
+            page,
+            5
+          );
 
-      try {
-        const response = await ParentService.getCoverageRequests(
-          parentDetails.id.toString(),
-          page,
-          5
-        );
+          if (page === 1) {
+            setCoverageRequests(response.data);
+          } else {
+            setCoverageRequests((prev) => [...prev, ...response.data]);
+          }
 
-        if (page === 1) {
-          setCoverageRequests(response.data);
-        } else {
-          setCoverageRequests((prev) => [...prev, ...response.data]);
+          setCoveragePagination(response.pagination);
+        } catch (err: any) {
+          setCoverageError(err.message || "Failed to fetch coverage requests.");
+        } finally {
+          setCoverageLoading(false);
         }
-
-        setCoveragePagination(response.pagination);
-      } catch (err: any) {
-        setCoverageError(err.message || "Failed to fetch coverage requests.");
-      } finally {
-        setCoverageLoading(false);
       }
-    }
-  };
+    },
+    [user?.role, buddiDetails?.id, parentDetails?.id]
+  );
 
   // Fetch coverage requests when tab is active
   React.useEffect(() => {
@@ -754,7 +728,13 @@ const SchedulePage = () => {
     ) {
       fetchCoverageRequests(1);
     }
-  }, [activeTab, parentDetails?.id, buddiDetails?.id, user?.role]);
+  }, [
+    activeTab,
+    parentDetails?.id,
+    buddiDetails?.id,
+    user?.role,
+    fetchCoverageRequests,
+  ]);
 
   // Enhanced socket connection and room management
   React.useEffect(() => {
@@ -1143,12 +1123,13 @@ const SchedulePage = () => {
       SocketService.off("pickup-history");
     };
   }, [
-    buddiDetails?.id,
+    buddiDetails,
     user?.userId,
     activePickup,
     handleTripCompleted,
     fetchWeeklyPickupSummary,
     checkLocalPickupRequests,
+    emitPickupEvent,
   ]); // Include all dependencies
 
   // Periodic room check to ensure we stay connected and ready for pickup requests
@@ -1178,7 +1159,7 @@ const SchedulePage = () => {
     }, 30000); // Check every 30 seconds
 
     return () => clearInterval(intervalId);
-  }, [buddiDetails?.id, user?.userId, checkLocalPickupRequests]);
+  }, [buddiDetails, user?.userId, checkLocalPickupRequests]);
 
   // Check socket connection status periodically
   React.useEffect(() => {
@@ -1226,8 +1207,10 @@ const SchedulePage = () => {
               <AnalyticsCard
                 icon={<Ionicons name="calendar" size={20} color="#FF932E" />}
                 title="Today's Pickups"
-                value={todaysPickups.length.toString()}
-                subtitle="Scheduled"
+                value={todaysAllSlots.length.toString()}
+                subtitle={`${todaysRequestsCount} ${
+                  todaysRequestsCount === 1 ? "Request" : "Requests"
+                }`}
               />
             </View>
 
@@ -1301,7 +1284,7 @@ const SchedulePage = () => {
               <>
                 <View className="flex-row items-center justify-between mb-4">
                   <Text className="font-comfortaa-bold text-xl">
-                    Scheduled Pickups
+                    Your Matched Requests
                   </Text>
                   <TouchableOpacity
                     className="flex-row items-center gap-1"
@@ -1379,7 +1362,7 @@ const SchedulePage = () => {
                       </Text>
                     </TouchableOpacity>
                   </View>
-                ) : todaysPickups.length === 0 ? (
+                ) : pickupRequests.length === 0 ? (
                   <View
                     style={{
                       backgroundColor: "#F4F7FE",
@@ -1407,7 +1390,7 @@ const SchedulePage = () => {
                         textAlign: "center",
                       }}
                     >
-                      No Pickups Scheduled Today
+                      No Matched Requests
                     </Text>
                     <Text
                       style={{
@@ -1419,8 +1402,8 @@ const SchedulePage = () => {
                         lineHeight: 20,
                       }}
                     >
-                      You don&apos;t have any pickup requests scheduled for
-                      today.
+                      You don&apos;t have any matched pickup requests yet. Apply
+                      for available requests to get started.
                     </Text>
 
                     {/* <TouchableOpacity
@@ -1453,154 +1436,201 @@ const SchedulePage = () => {
                     </TouchableOpacity> */}
                   </View>
                 ) : (
-                  todaysPickups.map((pickup) => {
-                    console.log("Processing pickup request:", pickup.id);
-                    console.log("Pickup request data:", pickup);
-
-                    const child = childDetailsMap[pickup.childId];
-                    console.log("Child details:", child);
-
-                    // If not matched with a Buddi, show waiting card
-                    console.log("Matched buddi ID:", pickup.matchedBuddiId);
-                    if (!pickup.matchedBuddiId) {
-                      console.log("No matched buddi, showing waiting card");
-                      return (
-                        <View
-                          key={`waiting-${pickup.id}`}
+                  <>
+                    {/* Request Tabs */}
+                    {pickupRequests.length > 0 && (
+                      <View style={{ marginBottom: 20 }}>
+                        <Text
                           style={{
-                            backgroundColor: "#FFF7ED",
-                            borderRadius: 16,
-                            borderWidth: 1.2,
-                            borderColor: "#FFD9B3",
-                            padding: 18,
-                            marginVertical: 6,
-                            alignItems: "center",
-                            justifyContent: "center",
+                            fontFamily: "Comfortaa-Bold",
+                            fontSize: 16,
+                            color: "#374151",
+                            marginBottom: 12,
                           }}
                         >
-                          <Text
-                            style={{
-                              fontFamily: "Comfortaa-Bold",
-                              fontSize: 16,
-                              color: "#FF932E",
-                              marginBottom: 6,
-                            }}
-                          >
-                            Waiting for a matched Buddi
-                          </Text>
-                          <Text
-                            style={{
-                              fontFamily: "Comfortaa-Regular",
-                              fontSize: 13,
-                              color: "#A3A3A3",
-                              textAlign: "center",
-                            }}
-                          >
-                            Once a Buddi is matched to your request, you&apos;ll
-                            see your pickups here.
-                          </Text>
-                        </View>
-                      );
-                    }
-                    let buddiName = undefined;
-                    let buddiEmail = undefined;
-                    let buddiAvatar = undefined;
-                    if (
-                      pickup.matchedBuddiId &&
-                      buddiDetailsMap[pickup.matchedBuddiId]
-                    ) {
-                      const buddi = buddiDetailsMap[pickup.matchedBuddiId];
-                      buddiName = `Buddi ${pickup.matchedBuddiId}`;
-                      buddiEmail =
-                        buddi.User?.email || buddi.email || "buddi@email.com";
-                      buddiAvatar =
-                        buddi.profilePicture ||
-                        "https://randomuser.me/api/portraits/men/2.jpg";
-                    } else {
-                      buddiName = pickup.matchedBuddiId
-                        ? `Buddi ${pickup.matchedBuddiId}`
-                        : "Buddi";
-                      buddiEmail = "buddi@email.com";
-                      buddiAvatar =
-                        "https://randomuser.me/api/portraits/men/2.jpg";
-                    }
-                    const buddiStatus =
-                      pickup.status === "matched" ? "Available" : "Pending";
-
-                    // Get current pickup status for this request
-                    const currentPickupStatus = getPickupStatus(pickup.id);
-
-                    // Check if this pickup is completed for today
-                    const isCompleted = isPickupCompletedForToday(pickup);
-
-                    // Parse the available days string and show only today's day
-                    let todaysDays: string[] = [];
-                    if (
-                      pickup.availableDays &&
-                      pickup.availableDays.length > 0
-                    ) {
-                      // Parse the comma-separated available days string
-                      const allAvailableDays: string[] = [];
-                      pickup.availableDays.forEach((dayString: string) => {
-                        const days = dayString
-                          .split(",")
-                          .map((day: string) => day.trim());
-                        allAvailableDays.push(...days);
-                      });
-
-                      // Filter for today's day only
-                      todaysDays = allAvailableDays.filter(
-                        (day: string) =>
-                          day.toLowerCase() === today.toLowerCase()
-                      );
-
-                      console.log(
-                        "Available days string:",
-                        pickup.availableDays
-                      );
-                      console.log(
-                        "Parsed all available days:",
-                        allAvailableDays
-                      );
-                      console.log("Today's days to display:", todaysDays);
-                    }
-
-                    // If no days for today, skip this pickup
-                    if (todaysDays.length === 0) {
-                      return null;
-                    }
-
-                    return (
-                      <View key={pickup.id} style={{ marginBottom: 18 }}>
+                          {pickupRequests.length > 1
+                            ? `Select Request (${pickupRequests.length} total):`
+                            : "Your Request:"}
+                        </Text>
                         <ScrollView
                           horizontal
                           showsHorizontalScrollIndicator={false}
                           contentContainerStyle={{ paddingRight: 16 }}
                         >
-                          {todaysDays.map((day: string, idx: number) => (
-                            <View
-                              key={`${pickup.id}-${day}`}
-                              style={{ width: 338, marginRight: 12 }}
-                            >
+                          {pickupRequests.map((request, index) => {
+                            const isSelected = selectedRequestIndex === index;
+
+                            return (
+                              <TouchableOpacity
+                                key={request.id}
+                                style={{
+                                  backgroundColor: isSelected
+                                    ? "#FF932E"
+                                    : "#F3F4F6",
+                                  borderRadius: 12,
+                                  paddingVertical: 12,
+                                  paddingHorizontal: 20,
+                                  marginRight: 12,
+                                  borderWidth: 1,
+                                  borderColor: isSelected
+                                    ? "#FF932E"
+                                    : "#E5E7EB",
+                                  minWidth: 140,
+                                  alignItems: "center",
+                                }}
+                                onPress={() => setSelectedRequestIndex(index)}
+                              >
+                                <Text
+                                  style={{
+                                    fontFamily: "Comfortaa-Bold",
+                                    fontSize: 14,
+                                    color: isSelected ? "#fff" : "#374151",
+                                    textAlign: "center",
+                                  }}
+                                >
+                                  {request.description ||
+                                    `Request ${index + 1}`}
+                                </Text>
+                                <Text
+                                  style={{
+                                    fontFamily: "Comfortaa-Regular",
+                                    fontSize: 11,
+                                    color: isSelected ? "#FFE4CC" : "#6B7280",
+                                    marginTop: 2,
+                                    textAlign: "center",
+                                  }}
+                                >
+                                  {request.slots?.length || 0} slots •{" "}
+                                  {getRequestTypeDisplayText(request.type)}
+                                </Text>
+                              </TouchableOpacity>
+                            );
+                          })}
+                        </ScrollView>
+                      </View>
+                    )}
+
+                    {/* Day Tabs for Selected Request */}
+                    {pickupRequests.length > 0 &&
+                      selectedRequestIndex < pickupRequests.length && (
+                        <View style={{ marginBottom: 20 }}>
+                          <Text
+                            style={{
+                              fontFamily: "Comfortaa-Bold",
+                              fontSize: 16,
+                              color: "#374151",
+                              marginBottom: 12,
+                            }}
+                          >
+                            Select Day:
+                          </Text>
+                          <ScrollView
+                            horizontal
+                            showsHorizontalScrollIndicator={false}
+                            contentContainerStyle={{ paddingRight: 16 }}
+                          >
+                            {pickupRequests[
+                              selectedRequestIndex
+                            ]?.availableDays?.map((day: string) => {
+                              const isSelected = selectedDay === day;
+                              const isToday =
+                                day ===
+                                new Date().toLocaleDateString("en-US", {
+                                  weekday: "long",
+                                });
+
+                              return (
+                                <TouchableOpacity
+                                  key={day}
+                                  style={{
+                                    backgroundColor: isSelected
+                                      ? "#3B82F6"
+                                      : "#F3F4F6",
+                                    borderRadius: 12,
+                                    paddingVertical: 10,
+                                    paddingHorizontal: 16,
+                                    marginRight: 10,
+                                    borderWidth: 1,
+                                    borderColor: isSelected
+                                      ? "#3B82F6"
+                                      : "#E5E7EB",
+                                    minWidth: 80,
+                                    alignItems: "center",
+                                  }}
+                                  onPress={() => setSelectedDay(day)}
+                                >
+                                  <Text
+                                    style={{
+                                      fontFamily: "Comfortaa-Bold",
+                                      fontSize: 13,
+                                      color: isSelected ? "#fff" : "#374151",
+                                    }}
+                                  >
+                                    {day}
+                                  </Text>
+                                  {isToday && (
+                                    <Text
+                                      style={{
+                                        fontFamily: "Comfortaa-Regular",
+                                        fontSize: 10,
+                                        color: isSelected
+                                          ? "#DBEAFE"
+                                          : "#3B82F6",
+                                        marginTop: 2,
+                                      }}
+                                    >
+                                      Today
+                                    </Text>
+                                  )}
+                                </TouchableOpacity>
+                              );
+                            })}
+                          </ScrollView>
+                        </View>
+                      )}
+
+                    {/* Slots for Selected Day */}
+                    {getSlotsForSelectedDay().length > 0 ? (
+                      <View>
+                        <Text
+                          style={{
+                            fontFamily: "Comfortaa-Bold",
+                            fontSize: 16,
+                            color: "#374151",
+                            marginBottom: 12,
+                          }}
+                        >
+                          Pickups for {selectedDay}:
+                        </Text>
+                        <View style={{ gap: 12 }}>
+                          {getSlotsForSelectedDay().map((slot: any) => {
+                            const request = slot.request;
+
+                            // Check if this pickup is completed for today
+                            const isCompleted =
+                              isPickupCompletedForToday(request);
+
+                            return (
                               <PickupCard
-                                id={pickup.id.toString()}
-                                name={pickup.description || "Pickup Request"}
-                                time={pickup.callPickupTime || "-"}
-                                days={day}
-                                school={pickup.fromZone || "School"}
-                                home={pickup.toZone || "Home"}
-                                dropoffTime={pickup.callDropTime || "-"}
-                                kidsCount={pickup.kidsCount || 0}
+                                key={slot.id}
+                                id={request.id.toString()}
+                                name={`${request.description} - Slot ${slot.id}`}
+                                time={slot.slotStartTime}
+                                days={selectedDay}
+                                school={slot.fromLocation}
+                                home={slot.toLocation}
+                                dropoffTime={slot.slotEndTime}
+                                kidsCount={request.kidsCount || 0}
                                 status={
                                   isCompleted
                                     ? "completed"
-                                    : getCurrentPickupStatus(pickup.id)
+                                    : getCurrentPickupStatus(request.id)
                                 }
-                                callType={pickup.type}
-                                startDate={pickup.startDate}
-                                endDate={pickup.endDate}
-                                fromZone={pickup.fromZone}
-                                toZone={pickup.toZone}
+                                callType={request.type}
+                                startDate={request.startDate}
+                                endDate={request.endDate}
+                                fromZone={slot.fromLocation}
+                                toZone={slot.toLocation}
                                 onButtonPress={() => {
                                   // Don't allow navigation if pickup is completed
                                   if (isCompleted) {
@@ -1608,7 +1638,7 @@ const SchedulePage = () => {
                                   }
                                   // Handle pickup action based on status
                                   const currentStatus = getCurrentPickupStatus(
-                                    pickup.id
+                                    request.id
                                   );
                                   if (currentStatus === "notStarted") {
                                     Alert.alert(
@@ -1621,21 +1651,6 @@ const SchedulePage = () => {
                                           style: "default",
                                           onPress: async () => {
                                             try {
-                                              // Debug: Log current user and pickup details
-                                              console.log(
-                                                "[SCHEDULE] Starting trip with details:",
-                                                {
-                                                  buddiId: buddiDetails?.id,
-                                                  buddiRequestId: pickup.id,
-                                                  pickupIdFromEvent:
-                                                    currentPickupId,
-                                                  pickupStatus: pickup.status,
-                                                  matchedBuddiId:
-                                                    pickup.matchedBuddiId,
-                                                  userRole: user?.role,
-                                                }
-                                              );
-
                                               // Check if we have the actual pickup ID from the pickup-requested event
                                               let pickupIdToUse: number | null =
                                                 currentPickupId;
@@ -1682,25 +1697,18 @@ const SchedulePage = () => {
                                                 );
                                                 return;
                                               }
-                                              console.log(
-                                                "[SCHEDULE] Using pickup ID for trip start:",
-                                                pickupIdToUse
-                                              );
 
                                               const res =
                                                 await BuddiService.startPickupTrip(
                                                   pickupIdToUse
                                                 );
                                               setActivePickup(res.pickup);
-                                              // Clear the pickup ID since trip is started
                                               setCurrentPickupId(null);
-                                              // Emit pickup-started event to parent
                                               emitPickupEvent(
                                                 "pickup-started",
                                                 res.pickup
                                               );
 
-                                              // Show success feedback
                                               Alert.alert(
                                                 "Trip Started! 🚀",
                                                 "Your pickup trip has started successfully! You can now navigate to pick up the child.",
@@ -1716,106 +1724,10 @@ const SchedulePage = () => {
                                                 "[SCHEDULE] Start trip error:",
                                                 err
                                               );
-
-                                              // Handle different types of errors
-                                              let errorMessage =
-                                                "Failed to start trip.";
-
-                                              if (
-                                                err &&
-                                                typeof err === "object"
-                                              ) {
-                                                // Check for network/HTTP errors
-                                                if (
-                                                  (err as any).status === 400
-                                                ) {
-                                                  errorMessage =
-                                                    "This trip has already been started or is not available.";
-                                                } else if (
-                                                  (err as any).status === 401
-                                                ) {
-                                                  errorMessage =
-                                                    "Please log in again to continue.";
-                                                } else if (
-                                                  (err as any).status === 403
-                                                ) {
-                                                  errorMessage =
-                                                    "You don't have permission to start this trip.";
-                                                } else if (
-                                                  (err as any).status === 404
-                                                ) {
-                                                  errorMessage =
-                                                    "No pickup request found. Please wait for the parent to request a pickup.";
-                                                } else if (
-                                                  (err as any).status >= 500
-                                                ) {
-                                                  errorMessage =
-                                                    "Server error. Please try again later.";
-                                                } else if (
-                                                  (err as any).message
-                                                ) {
-                                                  errorMessage = (err as any)
-                                                    .message;
-                                                } else if (
-                                                  (err as any).data?.error
-                                                ) {
-                                                  errorMessage = (err as any)
-                                                    .data.error;
-                                                }
-                                              }
-
-                                              // Check for specific error patterns
-                                              if (
-                                                errorMessage
-                                                  .toLowerCase()
-                                                  .includes(
-                                                    "already started"
-                                                  ) ||
-                                                errorMessage
-                                                  .toLowerCase()
-                                                  .includes(
-                                                    "pikcup already started"
-                                                  ) ||
-                                                errorMessage
-                                                  .toLowerCase()
-                                                  .includes("not available")
-                                              ) {
-                                                Alert.alert(
-                                                  "Trip Already Started",
-                                                  "This pickup trip has already been started. Please check the current status.",
-                                                  [
-                                                    {
-                                                      text: "OK",
-                                                      style: "default",
-                                                    },
-                                                  ]
-                                                );
-                                              } else if (
-                                                errorMessage
-                                                  .toLowerCase()
-                                                  .includes(
-                                                    "pickup not found"
-                                                  ) ||
-                                                errorMessage
-                                                  .toLowerCase()
-                                                  .includes("no pickup request")
-                                              ) {
-                                                Alert.alert(
-                                                  "No Pickup Request",
-                                                  "No pickup request found. Please wait for the parent to request a pickup.",
-                                                  [
-                                                    {
-                                                      text: "OK",
-                                                      style: "default",
-                                                    },
-                                                  ]
-                                                );
-                                              } else {
-                                                Alert.alert(
-                                                  "Error",
-                                                  errorMessage
-                                                );
-                                              }
+                                              Alert.alert(
+                                                "Error",
+                                                "Failed to start trip. Please try again."
+                                              );
                                             }
                                           },
                                         },
@@ -1826,7 +1738,7 @@ const SchedulePage = () => {
                                 onPickUp={() => {
                                   if (!isCompleted) {
                                     const currentStatus =
-                                      getCurrentPickupStatus(pickup.id);
+                                      getCurrentPickupStatus(request.id);
                                     if (currentStatus === "enRoute") {
                                       Alert.alert(
                                         "Child Picked Up",
@@ -1843,13 +1755,11 @@ const SchedulePage = () => {
                                                     activePickup.id
                                                   );
                                                 setActivePickup(res.pickup);
-                                                // Emit child-picked-up event to parent
                                                 emitPickupEvent(
                                                   "child-picked-up",
                                                   res.pickup
                                                 );
 
-                                                // Show success feedback
                                                 Alert.alert(
                                                   "Child Picked Up! 👶",
                                                   "Great! You've successfully picked up the child. Now head to the destination.",
@@ -1860,11 +1770,10 @@ const SchedulePage = () => {
                                                     },
                                                   ]
                                                 );
-                                              } catch (err) {
+                                              } catch {
                                                 Alert.alert(
                                                   "Error",
-                                                  (err as any)?.message ||
-                                                    "Failed to mark as picked up."
+                                                  "Failed to mark as picked up."
                                                 );
                                               }
                                             },
@@ -1877,7 +1786,7 @@ const SchedulePage = () => {
                                 onClockOut={() => {
                                   if (!isCompleted) {
                                     const currentStatus =
-                                      getCurrentPickupStatus(pickup.id);
+                                      getCurrentPickupStatus(request.id);
                                     if (currentStatus === "pickedUp") {
                                       Alert.alert(
                                         "Complete Trip",
@@ -1892,16 +1801,14 @@ const SchedulePage = () => {
                                                 const res =
                                                   await BuddiService.completePickupTrip(
                                                     activePickup.id,
-                                                    pickup.pickupTime
+                                                    request.pickupTime
                                                   );
                                                 setActivePickup(res.pickup);
-                                                // Emit trip-completed event to parent
                                                 emitPickupEvent(
                                                   "trip-completed",
                                                   res.pickup
                                                 );
 
-                                                // Show success feedback
                                                 Alert.alert(
                                                   "Trip Completed! 🎉",
                                                   "Excellent work! You've successfully completed the pickup trip. Well done!",
@@ -1913,13 +1820,11 @@ const SchedulePage = () => {
                                                   ]
                                                 );
 
-                                                // Refresh weekly pickup summary after trip completion
                                                 await fetchWeeklyPickupSummary();
-                                              } catch (err) {
+                                              } catch {
                                                 Alert.alert(
                                                   "Error",
-                                                  (err as any)?.message ||
-                                                    "Failed to complete trip."
+                                                  "Failed to complete trip."
                                                 );
                                               }
                                             },
@@ -1930,12 +1835,46 @@ const SchedulePage = () => {
                                   }
                                 }}
                               />
-                            </View>
-                          ))}
-                        </ScrollView>
+                            );
+                          })}
+                        </View>
                       </View>
-                    );
-                  })
+                    ) : selectedDay ? (
+                      <View>
+                        <Text
+                          style={{
+                            fontFamily: "Comfortaa-Bold",
+                            fontSize: 16,
+                            color: "#374151",
+                            marginBottom: 12,
+                          }}
+                        >
+                          Pickups for {selectedDay}:
+                        </Text>
+                        <View
+                          style={{
+                            backgroundColor: "#F3F4F6",
+                            borderRadius: 16,
+                            padding: 20,
+                            alignItems: "center",
+                            borderWidth: 1,
+                            borderColor: "#E5E7EB",
+                          }}
+                        >
+                          <Text
+                            style={{
+                              fontFamily: "Comfortaa-Regular",
+                              fontSize: 14,
+                              color: "#6B7280",
+                              textAlign: "center",
+                            }}
+                          >
+                            No pickup slots scheduled for {selectedDay}
+                          </Text>
+                        </View>
+                      </View>
+                    ) : null}
+                  </>
                 )}
 
                 {/* Pagination Dots */}

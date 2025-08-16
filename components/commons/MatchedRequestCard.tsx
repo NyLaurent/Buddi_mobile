@@ -40,6 +40,12 @@ export default function MatchedRequestCard({
     }
   };
 
+  // Helper to get request type display text
+  const getRequestTypeDisplayText = (type?: string) => {
+    if (!type) return "One-time";
+    return type === "repetitive" ? "Ongoing" : "One-time";
+  };
+
   const getStatusColor = () => {
     switch (request.status) {
       case "matched":
@@ -144,10 +150,9 @@ export default function MatchedRequestCard({
                   color: "white",
                   fontSize: 12,
                   fontFamily: "Comfortaa-Medium",
-                  textTransform: "capitalize",
                 }}
               >
-                {request.type}
+                {getRequestTypeDisplayText(request.type)}
               </Text>
             </View>
           </View>

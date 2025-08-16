@@ -3,6 +3,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import React, { useCallback, useState } from "react";
 import {
+  ActivityIndicator,
   Alert,
   Image,
   Platform,
@@ -29,6 +30,7 @@ export default function BuddiHome() {
   const { user, logout, buddiDetails } = useAuth();
   const [availableCalls, setAvailableCalls] = useState<any[]>([]);
   const [matchedPickups, setMatchedPickups] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
 
   // State for weekly pickup summary (completed pickups)
   const [weeklyPickupSummary, setWeeklyPickupSummary] = useState<any>(null);
@@ -48,6 +50,12 @@ export default function BuddiHome() {
     } else {
       return "Good night";
     }
+  };
+
+  // Helper to get request type display text
+  const getRequestTypeDisplayText = (type?: string) => {
+    if (!type) return "One-time";
+    return type === "repetitive" ? "Ongoing" : "One-time";
   };
 
   // Helper to fetch weekly pickup summary
@@ -95,6 +103,7 @@ export default function BuddiHome() {
   React.useEffect(() => {
     const fetchCalls = async () => {
       try {
+        setLoading(true);
         console.log("[BuddiHome] Fetching matched requests...");
 
         if (buddiDetails?.id) {
@@ -123,6 +132,8 @@ export default function BuddiHome() {
         console.error("[BuddiHome] Error fetching calls:", err);
         setAvailableCalls([]);
         setMatchedPickups([]);
+      } finally {
+        setLoading(false);
       }
     };
     fetchCalls();
@@ -288,7 +299,33 @@ export default function BuddiHome() {
 
         {/* Matched Request Cards Vertical */}
         <View className="px-4">
-          {matchedPickups.length > 0 ? (
+          {loading ? (
+            <View
+              style={{
+                justifyContent: "center",
+                alignItems: "center",
+                backgroundColor: "#F9FAFB",
+                borderRadius: 16,
+                borderWidth: 1,
+                borderColor: "#E5E7EB",
+                padding: 40,
+                marginBottom: 16,
+              }}
+            >
+              <ActivityIndicator size="large" color="#FF932E" />
+              <Text
+                style={{
+                  fontFamily: "Comfortaa-Regular",
+                  fontSize: 14,
+                  color: "#6B7280",
+                  marginTop: 12,
+                  textAlign: "center",
+                }}
+              >
+                Loading your matched requests...
+              </Text>
+            </View>
+          ) : matchedPickups.length > 0 ? (
             matchedPickups.map((request, index) => {
               const isToday = isRequestAvailableToday(request);
 

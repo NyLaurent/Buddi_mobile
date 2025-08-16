@@ -1,7 +1,7 @@
 import { FontAwesome5, Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useRouter } from "expo-router";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
   FlatList,
@@ -28,14 +28,10 @@ export default function BuddiMessagesScreen() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
-  const { user, buddiDetails } = useAuth();
+  const { buddiDetails } = useAuth();
   const [unreadMap, setUnreadMap] = useState<{ [roomId: string]: boolean }>({});
 
-  useEffect(() => {
-    fetchMatchedCalls();
-  }, [buddiDetails?.id]);
-
-  const fetchMatchedCalls = async () => {
+  const fetchMatchedCalls = useCallback(async () => {
     if (!buddiDetails?.id) {
       setLoading(false);
       return;
@@ -44,7 +40,7 @@ export default function BuddiMessagesScreen() {
       setLoading(true);
       setError(null);
 
-      // Fetch 
+      // Fetch
       //  using the new API
       const response = await BuddiService.getMatchedRequests(buddiDetails.id);
       const matchedCalls = response.data || [];
@@ -53,8 +49,12 @@ export default function BuddiMessagesScreen() {
         (call: AvailableCall) => ({
           id: call.id.toString(),
           roomId: `${call.parentId}-${call.matchedBuddiId}`,
-          otherUserName: "Parent", // Placeholder, can fetch real name if needed
-          lastMessage: "Tap to start chatting about pickup details",
+          otherUserName: `Parent - ${call.description}`,
+          lastMessage: `${call.kidsCount} ${
+            call.kidsCount === 1 ? "kid" : "kids"
+          } • ${
+            call.type === "repetitive" ? "Ongoing" : "One-time"
+          } • Tap to chat`,
           timestamp: new Date(call.updatedAt).toLocaleDateString(),
           unreadCount: 0,
         })
@@ -67,7 +67,11 @@ export default function BuddiMessagesScreen() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [buddiDetails?.id]);
+
+  useEffect(() => {
+    fetchMatchedCalls();
+  }, [fetchMatchedCalls]);
 
   // Helper to get last seen timestamp for a chat room
   const getLastSeen = async (roomId: string, buddiId: number) => {
