@@ -159,8 +159,8 @@ export default function AvailableCallsCard({
                 marginBottom: 18,
               }}
             >
-              You&apos;ve been matched to a pickup request. View details and get
-              ready!
+              You&apos;ve been matched to a pickup request. View details, get
+              ready, or apply for more requests!
             </Text>
             <View style={{ flexDirection: "row", gap: 8 }}>
               <TouchableOpacity
@@ -200,25 +200,21 @@ export default function AvailableCallsCard({
               </TouchableOpacity>
               <TouchableOpacity
                 style={{
-                  backgroundColor: matchedCall ? "#f2f2f2" : "#fff",
+                  backgroundColor: "#fff",
                   borderRadius: 999,
                   paddingVertical: 7,
                   paddingHorizontal: 14,
                   flexDirection: "row",
                   alignItems: "center",
-                  shadowColor: matchedCall ? undefined : "#FF932E",
-                  shadowOffset: matchedCall
-                    ? undefined
-                    : { width: 0, height: 2 },
-                  shadowOpacity: matchedCall ? undefined : 0.12,
-                  shadowRadius: matchedCall ? undefined : 6,
-                  elevation: matchedCall ? 0 : 2,
+                  shadowColor: "#FF932E",
+                  shadowOffset: { width: 0, height: 2 },
+                  shadowOpacity: 0.12,
+                  shadowRadius: 6,
+                  elevation: 2,
                   flex: 1,
-                  opacity: matchedCall ? 0.5 : 1,
                 }}
-                onPress={matchedCall ? undefined : onApplyPress}
-                activeOpacity={matchedCall ? 1 : 0.85}
-                disabled={!!matchedCall}
+                onPress={onApplyPress}
+                activeOpacity={0.85}
               >
                 <FontAwesome5
                   name="search"
@@ -233,7 +229,7 @@ export default function AvailableCallsCard({
                     fontSize: 12,
                   }}
                 >
-                  Apply Now
+                  {matchedCall ? "Apply for More" : "Apply Now"}
                 </Text>
               </TouchableOpacity>
             </View>
