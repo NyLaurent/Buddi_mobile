@@ -1,7 +1,7 @@
 // app/buddi/index.tsx
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import React, { useCallback, useRef, useState } from "react";
+import React, { useCallback, useState } from "react";
 import {
   Alert,
   Image,
@@ -19,17 +19,15 @@ import {
 } from "react-native-safe-area-context";
 import AnalyticsCard from "../../components/commons/AnalyticsCard";
 import AvailableCallsCard from "../../components/commons/AvailableCallsCard";
-import PickupCard from "../../components/commons/PickupCard";
+import MatchedRequestCard from "../../components/commons/MatchedRequestCard";
 import { useAuth } from "../../context/AuthContext";
 import BuddiService from "../../services/api/buddi.service";
 
 export default function BuddiHome() {
-  const scrollViewRef = useRef(null);
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { user, logout, buddiDetails } = useAuth();
   const [availableCalls, setAvailableCalls] = useState<any[]>([]);
-  const [matchedCall, setMatchedCall] = useState<any>(null);
   const [matchedPickups, setMatchedPickups] = useState<any[]>([]);
 
   // State for weekly pickup summary (completed pickups)
@@ -84,31 +82,15 @@ export default function BuddiHome() {
     );
   };
 
-  // Helper to check if matchedCall is for today
-  const isPickupToday = (() => {
-    if (
-      !matchedCall ||
-      !matchedCall.availableDays ||
-      !Array.isArray(matchedCall.availableDays)
-    ) {
+  // Helper to check if a request is available today
+  const isRequestAvailableToday = (request: any) => {
+    if (!request.availableDays || !Array.isArray(request.availableDays)) {
       return false;
     }
-
-    // Parse all available days from the array
-    const allAvailableDays: string[] = [];
-    matchedCall.availableDays.forEach((dayString: string) => {
-      const days = dayString
-        .split(",")
-        .map((day: string) => day.trim().toLowerCase());
-      allAvailableDays.push(...days);
-    });
-
-    console.log("[BUDDI] Available days array:", matchedCall.availableDays);
-    console.log("[BUDDI] Parsed all available days:", allAvailableDays);
-    console.log("[BUDDI] Today:", today.toLowerCase());
-
-    return allAvailableDays.includes(today.toLowerCase());
-  })();
+    return request.availableDays
+      .map((day: string) => day.toLowerCase())
+      .includes(today.toLowerCase());
+  };
 
   React.useEffect(() => {
     const fetchCalls = async () => {
@@ -122,8 +104,6 @@ export default function BuddiHome() {
           );
           const matchedList = matchedRes.data || [];
           setMatchedPickups(matchedList);
-          const matched = matchedList[0] || null;
-          setMatchedCall(matched);
           // Fetch available calls for application (pending requests)
           const availableRes = await BuddiService.getAvailableCalls(1, 50);
           const availableForApplication = availableRes.data.filter(
@@ -136,14 +116,12 @@ export default function BuddiHome() {
           await fetchWeeklyPickupSummary();
         } else {
           console.log("[BuddiHome] No buddi details available");
-          setMatchedCall(null);
           setAvailableCalls([]);
           setMatchedPickups([]);
         }
       } catch (err) {
         console.error("[BuddiHome] Error fetching calls:", err);
         setAvailableCalls([]);
-        setMatchedCall(null);
         setMatchedPickups([]);
       }
     };
@@ -183,13 +161,14 @@ export default function BuddiHome() {
   };
 
   const todayName = new Date().toLocaleDateString("en-US", { weekday: "long" });
-  const todaysPickups = matchedPickups.filter((pickup) => {
+
+  // Count today's pickup requests (not individual slots)
+  const todaysPickupRequests = matchedPickups.filter((pickup) => {
     if (!pickup.availableDays || !Array.isArray(pickup.availableDays))
       return false;
-    const days = pickup.availableDays
-      .flatMap((d: string) => d.split(","))
-      .map((d: string) => d.trim().toLowerCase());
-    return days.includes(todayName.toLowerCase());
+    return pickup.availableDays
+      .map((day: string) => day.toLowerCase())
+      .includes(todayName.toLowerCase());
   });
 
   return (
@@ -248,13 +227,6 @@ export default function BuddiHome() {
             router.push("/buddi/available-calls");
           }}
           availableCalls={availableCalls.length}
-          matchedCall={matchedCall}
-          onViewMatchedCall={(callId) => {
-            router.push({
-              pathname: "/buddi/call-details/[id]",
-              params: { id: callId.toString() },
-            });
-          }}
         />
 
         {/* Analytics Cards */}
@@ -265,24 +237,22 @@ export default function BuddiHome() {
                 <Ionicons name="flash" size={20} color="white" />
               </View>
             }
-            title="Today's Pickups"
-            value={todaysPickups.length.toString()}
+            title="Today's Requests"
+            value={todaysPickupRequests.length.toString()}
             subtitle={
-              todaysPickups.length > 0
-                ? `${
-                    [
-                      ...new Set(
-                        todaysPickups.map((p) =>
-                          p.fromZone &&
-                          typeof p.fromZone === "string" &&
-                          p.fromZone.trim() !== ""
-                            ? p.fromZone.trim()
-                            : "-"
-                        )
-                      ),
-                    ].length
+              todaysPickupRequests.length > 0
+                ? `${todaysPickupRequests.reduce(
+                    (total, request) => total + (request.slots?.length || 0),
+                    0
+                  )} ${
+                    todaysPickupRequests.reduce(
+                      (total, request) => total + (request.slots?.length || 0),
+                      0
+                    ) === 1
+                      ? "Slot"
+                      : "Slots"
                   }`
-                : "0 Zones"
+                : "No requests"
             }
           />
           <AnalyticsCard
@@ -304,9 +274,11 @@ export default function BuddiHome() {
           }}
         /> */}
 
-        {/* Pickups Header */}
+        {/* Your Matched Request Header */}
         <View className="flex-row justify-between items-center mx-4 mb-2 pt-5">
-          <Text className="font-comfortaa-bold text-xl">Pickups</Text>
+          <Text className="font-comfortaa-bold text-xl">
+            Your Matched Request
+          </Text>
           <TouchableOpacity
             onPress={() => router.push("/buddi/schedule" as any)}
           >
@@ -314,138 +286,94 @@ export default function BuddiHome() {
           </TouchableOpacity>
         </View>
 
-        {/* Pickup Cards Horizontal */}
-        <ScrollView
-          ref={scrollViewRef}
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={{ paddingHorizontal: 12 }}
-          // onScroll={handleScroll}
-          scrollEventThrottle={16}
-          pagingEnabled
-          decelerationRate="fast"
-          snapToInterval={352} // card width (340) + margin (12)
-        >
-          {matchedCall && isPickupToday ? (
-            // Create separate cards for each available day that matches today
-            (() => {
-              // Parse all available days from the array
-              const allAvailableDays: string[] = [];
-              matchedCall.availableDays.forEach((dayString: string) => {
-                const days = dayString
-                  .split(",")
-                  .map((day: string) => day.trim());
-                allAvailableDays.push(...days);
+        {/* Matched Request Cards Vertical */}
+        <View className="px-4">
+          {matchedPickups.length > 0 ? (
+            matchedPickups.map((request, index) => {
+              const isToday = isRequestAvailableToday(request);
+
+              console.log("[BUDDI] Rendering matched request card with data:", {
+                requestData: request,
+                isToday,
               });
 
-              console.log(
-                "[BUDDI] Rendering pickup cards for all available days:",
-                allAvailableDays
+              return (
+                <MatchedRequestCard
+                  key={`${request.id}-${index}`}
+                  request={request}
+                  isToday={isToday}
+                  onViewDetails={() => {
+                    // Navigate to call details page
+                    router.push({
+                      pathname: "/buddi/call-details/[id]",
+                      params: { id: request.id.toString() },
+                    });
+                  }}
+                />
               );
-
-              // Filter for today's day
-              const todaysDays = allAvailableDays.filter(
-                (day: string) => day.toLowerCase() === today.toLowerCase()
-              );
-
-              console.log("[BUDDI] Today's days to render:", todaysDays);
-
-              return todaysDays.map((day: string, index: number) => {
-                // Check if this pickup is completed for today
-                const isCompleted = isPickupCompletedForToday(matchedCall);
-
-                console.log("[BUDDI] Rendering pickup card with data:", {
-                  pickupData: matchedCall,
-                  status: matchedCall.status,
-                  isCompleted,
-                });
-
-                return (
-                  <PickupCard
-                    key={`${matchedCall.id}-${day}-${index}`}
-                    id={matchedCall.id?.toString() || "0"}
-                    name={matchedCall.description || "Pickup"}
-                    time={matchedCall.callPickupTime || "-"}
-                    days={day} // Show only the specific day
-                    school={
-                      matchedCall.fromLocation ||
-                      matchedCall.fromZone ||
-                      "School"
-                    }
-                    home={
-                      matchedCall.toLocation || matchedCall.toZone || "Home"
-                    }
-                    status={isCompleted ? "completed" : "notStarted"}
-                    pickupTime={matchedCall.callPickupTime || "-"}
-                    tripStartTime={matchedCall.tripStartTime || "-"}
-                    dropoffTime={matchedCall.callDropTime || "-"}
-                    fare={matchedCall.fare || 0}
-                    kidsCount={matchedCall.kidsCount || 0}
-                    callType={matchedCall.type}
-                    startDate={matchedCall.startDate}
-                    endDate={matchedCall.endDate}
-                    fromZone={matchedCall.fromZone}
-                    toZone={matchedCall.toZone}
-                    onButtonPress={() => {
-                      if (isCompleted) {
-                        Alert.alert(
-                          "Pickup Completed",
-                          "This pickup has already been completed for today.",
-                          [{ text: "OK", style: "default" }]
-                        );
-                      } else {
-                        // Navigate to schedule page for trip management
-                        router.push("/buddi/schedule");
-                      }
-                    }}
-                    onPickUp={undefined}
-                    onClockOut={undefined}
-                  />
-                );
-              });
-            })()
+            })
           ) : (
             <View
               style={{
                 justifyContent: "center",
                 alignItems: "center",
-                width: 340,
-                height: 180,
                 backgroundColor: "#FFF7ED",
                 borderRadius: 16,
-                borderWidth: 1.2,
+                borderWidth: 2,
                 borderColor: "#FFD9B3",
-                marginRight: 12,
+                padding: 32,
+                marginBottom: 16,
               }}
             >
+              <View className="bg-orange-100 rounded-full p-4 mb-4">
+                <Ionicons name="briefcase-outline" size={32} color="#FF932E" />
+              </View>
               <Text
                 style={{
                   fontFamily: "Comfortaa-Bold",
-                  fontSize: 16,
+                  fontSize: 18,
                   color: "#FF932E",
-                  marginBottom: 6,
+                  marginBottom: 8,
+                  textAlign: "center",
                 }}
               >
-                No pickups for this day.
+                No matched requests
               </Text>
               <Text
                 style={{
                   fontFamily: "Comfortaa-Regular",
-                  fontSize: 13,
+                  fontSize: 14,
                   color: "#A3A3A3",
                   textAlign: "center",
+                  lineHeight: 20,
+                  marginBottom: 16,
                 }}
               >
-                This day is not available for pickups.
-                {matchedCall?.availableDays
-                  ? ` Your available days are ${matchedCall.availableDays.join(
-                      ", "
-                    )}`
-                  : " No pickups assigned yet."}
+                You don't have any matched pickup requests yet. Check available
+                calls to apply for new requests.
               </Text>
+              <TouchableOpacity
+                onPress={() => router.push("/buddi/available-calls")}
+                style={{
+                  backgroundColor: "#FF932E",
+                  paddingHorizontal: 20,
+                  paddingVertical: 12,
+                  borderRadius: 12,
+                }}
+              >
+                <Text
+                  style={{
+                    color: "white",
+                    fontFamily: "Comfortaa-Medium",
+                    fontSize: 14,
+                  }}
+                >
+                  View Available Calls
+                </Text>
+              </TouchableOpacity>
             </View>
           )}
-        </ScrollView>
+        </View>
 
         {/* Pagination Dots removed */}
 

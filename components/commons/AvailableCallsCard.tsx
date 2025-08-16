@@ -7,15 +7,11 @@ import BuddiService from "../../services/api/buddi.service";
 interface AvailableCallsCardProps {
   onApplyPress: () => void;
   availableCalls?: number;
-  matchedCall?: any;
-  onViewMatchedCall?: (callId: number) => void;
 }
 
 export default function AvailableCallsCard({
   onApplyPress,
   availableCalls = 8,
-  matchedCall = null,
-  onViewMatchedCall,
 }: AvailableCallsCardProps) {
   const [analytics, setAnalytics] = useState({
     totalCalls: 0,
@@ -61,351 +57,170 @@ export default function AvailableCallsCard({
         end={{ x: 1, y: 1 }}
         style={{ padding: 20, borderRadius: 18 }}
       >
-        {matchedCall ? (
-          <>
-            <View
+        <View
+          style={{
+            flexDirection: "row",
+            alignItems: "center",
+            marginBottom: 16,
+          }}
+        >
+          <FontAwesome5
+            name="hand-holding-heart"
+            size={28}
+            color="#fff"
+            style={{ marginRight: 12 }}
+          />
+          <Text
+            style={{
+              color: "#fff",
+              fontFamily: "Comfortaa-Bold",
+              fontSize: 18,
+              flex: 1,
+            }}
+          >
+            New Pickups Requests Available!
+          </Text>
+        </View>
+        <View
+          style={{
+            flexDirection: "row",
+            justifyContent: "space-between",
+            marginBottom: 20,
+            backgroundColor: "rgba(255, 255, 255, 0.15)",
+            borderRadius: 12,
+            padding: 16,
+          }}
+        >
+          <View style={{ alignItems: "center", flex: 1 }}>
+            <FontAwesome5 name="hand-holding-heart" size={16} color="#fff" />
+            <Text
               style={{
-                flexDirection: "row",
-                alignItems: "center",
-                marginBottom: 16,
+                color: "#fff",
+                fontFamily: "Comfortaa-Bold",
+                fontSize: 20,
+                marginTop: 4,
               }}
             >
-              <FontAwesome5
-                name="check-circle"
-                size={28}
-                color="#fff"
-                style={{ marginRight: 12 }}
-              />
-              <Text
-                style={{
-                  color: "#fff",
-                  fontFamily: "Comfortaa-Bold",
-                  fontSize: 18,
-                  flex: 1,
-                }}
-              >
-                You have a matched Request!
-              </Text>
-            </View>
-            <View
-              style={{
-                flexDirection: "row",
-                justifyContent: "space-between",
-                marginBottom: 20,
-                backgroundColor: "rgba(255, 255, 255, 0.15)",
-                borderRadius: 12,
-                padding: 16,
-              }}
-            >
-              <View style={{ alignItems: "center", flex: 1 }}>
-                <FontAwesome5 name="check-circle" size={16} color="#fff" />
-                <Text
-                  style={{
-                    color: "#fff",
-                    fontFamily: "Comfortaa-Bold",
-                    fontSize: 20,
-                    marginTop: 4,
-                  }}
-                >
-                  {matchedCall.availableDays?.length || 0}
-                </Text>
-                <Text
-                  style={{
-                    color: "#fff",
-                    fontFamily: "Comfortaa-Regular",
-                    fontSize: 11,
-                    opacity: 0.9,
-                  }}
-                >
-                  Days
-                </Text>
-              </View>
-              <View
-                style={{
-                  width: 1,
-                  height: 40,
-                  backgroundColor: "rgba(255, 255, 255, 0.3)",
-                }}
-              />
-              <View style={{ alignItems: "center", flex: 1 }}>
-                <FontAwesome5 name="child" size={16} color="#fff" />
-                <Text
-                  style={{
-                    color: "#fff",
-                    fontFamily: "Comfortaa-Bold",
-                    fontSize: 20,
-                    marginTop: 4,
-                  }}
-                >
-                  {matchedCall.kidsCount || 0}
-                </Text>
-                <Text
-                  style={{
-                    color: "#fff",
-                    fontFamily: "Comfortaa-Regular",
-                    fontSize: 11,
-                    opacity: 0.9,
-                  }}
-                >
-                  Kids
-                </Text>
-              </View>
-            </View>
+              {analytics.totalCalls}
+            </Text>
             <Text
               style={{
                 color: "#fff",
                 fontFamily: "Comfortaa-Regular",
-                fontSize: 15,
-                marginBottom: 18,
+                fontSize: 11,
+                opacity: 0.9,
               }}
             >
-              You&apos;ve been matched to a pickup request. View details, get
-              ready, or apply for more requests!
+              Total Requests
             </Text>
-            <View style={{ flexDirection: "row", gap: 8 }}>
-              <TouchableOpacity
-                style={{
-                  backgroundColor: "#fff",
-                  borderRadius: 999,
-                  paddingVertical: 7,
-                  paddingHorizontal: 14,
-                  flexDirection: "row",
-                  alignItems: "center",
-                  shadowColor: "#FF932E",
-                  shadowOffset: { width: 0, height: 2 },
-                  shadowOpacity: 0.12,
-                  shadowRadius: 6,
-                  elevation: 2,
-                  marginRight: 4,
-                  flex: 1,
-                }}
-                onPress={() => onViewMatchedCall?.(matchedCall.id)}
-                activeOpacity={0.85}
-              >
-                <FontAwesome5
-                  name="eye"
-                  size={14}
-                  color="#FF932E"
-                  style={{ marginRight: 6 }}
-                />
-                <Text
-                  style={{
-                    color: "#FF932E",
-                    fontFamily: "Comfortaa-Bold",
-                    fontSize: 12,
-                  }}
-                >
-                  View Request Details
-                </Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={{
-                  backgroundColor: "#fff",
-                  borderRadius: 999,
-                  paddingVertical: 7,
-                  paddingHorizontal: 14,
-                  flexDirection: "row",
-                  alignItems: "center",
-                  shadowColor: "#FF932E",
-                  shadowOffset: { width: 0, height: 2 },
-                  shadowOpacity: 0.12,
-                  shadowRadius: 6,
-                  elevation: 2,
-                  flex: 1,
-                }}
-                onPress={onApplyPress}
-                activeOpacity={0.85}
-              >
-                <FontAwesome5
-                  name="search"
-                  size={14}
-                  color="#FF932E"
-                  style={{ marginRight: 6 }}
-                />
-                <Text
-                  style={{
-                    color: "#FF932E",
-                    fontFamily: "Comfortaa-Bold",
-                    fontSize: 12,
-                  }}
-                >
-                  {matchedCall ? "Apply for More" : "Apply Now"}
-                </Text>
-              </TouchableOpacity>
-            </View>
-          </>
-        ) : (
-          <>
-            <View
+          </View>
+          <View
+            style={{
+              width: 1,
+              height: 40,
+              backgroundColor: "rgba(255, 255, 255, 0.3)",
+            }}
+          />
+          <View style={{ alignItems: "center", flex: 1 }}>
+            <FontAwesome5 name="clock" size={16} color="#fff" />
+            <Text
               style={{
-                flexDirection: "row",
-                alignItems: "center",
-                marginBottom: 16,
+                color: "#fff",
+                fontFamily: "Comfortaa-Bold",
+                fontSize: 20,
+                marginTop: 4,
               }}
             >
-              <FontAwesome5
-                name="hand-holding-heart"
-                size={28}
-                color="#fff"
-                style={{ marginRight: 12 }}
-              />
-              <Text
-                style={{
-                  color: "#fff",
-                  fontFamily: "Comfortaa-Bold",
-                  fontSize: 18,
-                  flex: 1,
-                }}
-              >
-                New Pickups Requests Available!
-              </Text>
-            </View>
-            <View
+              {analytics.availableCalls}
+            </Text>
+            <Text
               style={{
-                flexDirection: "row",
-                justifyContent: "space-between",
-                marginBottom: 20,
-                backgroundColor: "rgba(255, 255, 255, 0.15)",
-                borderRadius: 12,
-                padding: 16,
+                color: "#fff",
+                fontFamily: "Comfortaa-Regular",
+                fontSize: 11,
+                opacity: 0.9,
               }}
             >
-              <View style={{ alignItems: "center", flex: 1 }}>
-                <FontAwesome5
-                  name="hand-holding-heart"
-                  size={16}
-                  color="#fff"
-                />
-                <Text
-                  style={{
-                    color: "#fff",
-                    fontFamily: "Comfortaa-Bold",
-                    fontSize: 20,
-                    marginTop: 4,
-                  }}
-                >
-                  {analytics.totalCalls}
-                </Text>
-                <Text
-                  style={{
-                    color: "#fff",
-                    fontFamily: "Comfortaa-Regular",
-                    fontSize: 11,
-                    opacity: 0.9,
-                  }}
-                >
-                  Total Requests
-                </Text>
-              </View>
-              <View
-                style={{
-                  width: 1,
-                  height: 40,
-                  backgroundColor: "rgba(255, 255, 255, 0.3)",
-                }}
-              />
-              <View style={{ alignItems: "center", flex: 1 }}>
-                <FontAwesome5 name="clock" size={16} color="#fff" />
-                <Text
-                  style={{
-                    color: "#fff",
-                    fontFamily: "Comfortaa-Bold",
-                    fontSize: 20,
-                    marginTop: 4,
-                  }}
-                >
-                  {analytics.availableCalls}
-                </Text>
-                <Text
-                  style={{
-                    color: "#fff",
-                    fontFamily: "Comfortaa-Regular",
-                    fontSize: 11,
-                    opacity: 0.9,
-                  }}
-                >
-                  Available
-                </Text>
-              </View>
-              <View
-                style={{
-                  width: 1,
-                  height: 40,
-                  backgroundColor: "rgba(255, 255, 255, 0.3)",
-                }}
-              />
-              <View style={{ alignItems: "center", flex: 1 }}>
-                <FontAwesome5 name="check-circle" size={16} color="#fff" />
-                <Text
-                  style={{
-                    color: "#fff",
-                    fontFamily: "Comfortaa-Bold",
-                    fontSize: 20,
-                    marginTop: 4,
-                  }}
-                >
-                  {analytics.matchedCalls}
-                </Text>
-                <Text
-                  style={{
-                    color: "#fff",
-                    fontFamily: "Comfortaa-Regular",
-                    fontSize: 11,
-                    opacity: 0.9,
-                  }}
-                >
-                  Matched
-                </Text>
-              </View>
-            </View>
+              Available
+            </Text>
+          </View>
+          <View
+            style={{
+              width: 1,
+              height: 40,
+              backgroundColor: "rgba(255, 255, 255, 0.3)",
+            }}
+          />
+          <View style={{ alignItems: "center", flex: 1 }}>
+            <FontAwesome5 name="check-circle" size={16} color="#fff" />
+            <Text
+              style={{
+                color: "#fff",
+                fontFamily: "Comfortaa-Bold",
+                fontSize: 20,
+                marginTop: 4,
+              }}
+            >
+              {analytics.matchedCalls}
+            </Text>
+            <Text
+              style={{
+                color: "#fff",
+                fontFamily: "Comfortaa-Regular",
+                fontSize: 11,
+                opacity: 0.9,
+              }}
+            >
+              Matched
+            </Text>
+          </View>
+        </View>
 
-            <Text
-              style={{
-                color: "#fff",
-                fontFamily: "Comfortaa-Regular",
-                fontSize: 15,
-                marginBottom: 18,
-              }}
-            >
-              {analytics.availableCalls} pickup requests are waiting for you.
-              Apply now to start earning!
-            </Text>
-            <TouchableOpacity
-              style={{
-                backgroundColor: "#fff",
-                borderRadius: 999,
-                paddingVertical: 7,
-                paddingHorizontal: 14,
-                alignSelf: "flex-start",
-                flexDirection: "row",
-                alignItems: "center",
-                shadowColor: "#FF932E",
-                shadowOffset: { width: 0, height: 2 },
-                shadowOpacity: 0.12,
-                shadowRadius: 6,
-                elevation: 2,
-              }}
-              onPress={onApplyPress}
-              activeOpacity={0.85}
-            >
-              <FontAwesome5
-                name="search"
-                size={14}
-                color="#FF932E"
-                style={{ marginRight: 6 }}
-              />
-              <Text
-                style={{
-                  color: "#FF932E",
-                  fontFamily: "Comfortaa-Bold",
-                  fontSize: 12,
-                }}
-              >
-                Apply Now
-              </Text>
-            </TouchableOpacity>
-          </>
-        )}
+        <Text
+          style={{
+            color: "#fff",
+            fontFamily: "Comfortaa-Regular",
+            fontSize: 15,
+            marginBottom: 18,
+          }}
+        >
+          {analytics.availableCalls} pickup requests are waiting for you. Apply
+          now to start earning!
+        </Text>
+        <TouchableOpacity
+          style={{
+            backgroundColor: "#fff",
+            borderRadius: 999,
+            paddingVertical: 7,
+            paddingHorizontal: 14,
+            alignSelf: "flex-start",
+            flexDirection: "row",
+            alignItems: "center",
+            shadowColor: "#FF932E",
+            shadowOffset: { width: 0, height: 2 },
+            shadowOpacity: 0.12,
+            shadowRadius: 6,
+            elevation: 2,
+          }}
+          onPress={onApplyPress}
+          activeOpacity={0.85}
+        >
+          <FontAwesome5
+            name="search"
+            size={14}
+            color="#FF932E"
+            style={{ marginRight: 6 }}
+          />
+          <Text
+            style={{
+              color: "#FF932E",
+              fontFamily: "Comfortaa-Bold",
+              fontSize: 12,
+            }}
+          >
+            Apply Now
+          </Text>
+        </TouchableOpacity>
       </LinearGradient>
     </View>
   );
