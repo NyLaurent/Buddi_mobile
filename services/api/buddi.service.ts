@@ -698,6 +698,45 @@ const BuddiService = {
     }
   },
 
+  async getPickupsByRequestId(buddiRequestId: number, buddiId: number): Promise<any> {
+    try {
+      console.log("[BUDDI SERVICE] Fetching pickups for request:", { buddiRequestId, buddiId });
+      const response = await authorizedApi.get(`/pickups/${buddiRequestId}/all-pickups`);
+      console.log("[BUDDI SERVICE] All pickups response:", response.data);
+      
+      const pendingPickup = response.data.pickups?.find(
+        (pickup: any) => pickup.buddiId === buddiId && pickup.status === "pending"
+      );
+      
+      console.log("[BUDDI SERVICE] Found pending pickup:", pendingPickup);
+      
+      if (pendingPickup && pendingPickup.id) {
+        console.log("[BUDDI SERVICE] Returning pickup with ID:", pendingPickup.id);
+        return pendingPickup;
+      } else {
+        console.log("[BUDDI SERVICE] No pending pickup found for buddi:", buddiId);
+        return null;
+      }
+    } catch (err: any) {
+      console.error("[BUDDI SERVICE] Error fetching pickups by request ID:", err);
+      let message = 'Failed to fetch pickups by request ID.';
+      if (err?.response?.data?.message) {
+        message = err.response.data.message;
+      } else if (err?.message) {
+        if (err.message.includes('Network')) {
+          message = 'Network error. Please check your connection and try again.';
+        } else if (err.message.includes('timeout')) {
+          message = 'Request timed out. Please try again.';
+        } else {
+          message = err.message;
+        }
+      } else if (typeof err === 'string') {
+        message = err;
+      }
+      throw new Error(message);
+    }
+  },
+
   startTrip,
   startPickupTrip,
   completePickupTrip,

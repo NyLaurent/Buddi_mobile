@@ -2,6 +2,12 @@ import { io, Socket } from 'socket.io-client';
 
 // Socket server URL from your configuration
 const SOCKET_SERVER_URL = process.env.API_BASE_URL?.replace('/api/v1', '') || 'https://backend-service-hw1rh.kinsta.app';
+// Silence all console output within this module
+const console = {
+  log: (..._args: any[]) => {},
+  warn: (..._args: any[]) => {},
+  error: (..._args: any[]) => {},
+} as const;
 
 interface PickupData {
   id: number;

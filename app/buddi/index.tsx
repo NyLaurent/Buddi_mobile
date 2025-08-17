@@ -386,8 +386,8 @@ export default function BuddiHome() {
                   marginBottom: 16,
                 }}
               >
-                You don't have any matched pickup requests yet. Check available
-                calls to apply for new requests.
+                You don&apos;t have any matched pickup requests yet. Check
+                available calls to apply for new requests.
               </Text>
               <TouchableOpacity
                 onPress={() => router.push("/buddi/available-calls")}
@@ -405,7 +405,7 @@ export default function BuddiHome() {
                     fontSize: 14,
                   }}
                 >
-                  View Available Calls
+                  View Available Buddi Requests
                 </Text>
               </TouchableOpacity>
             </View>

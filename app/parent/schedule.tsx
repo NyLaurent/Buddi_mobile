@@ -28,27 +28,6 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-//     time: "2:23:04",
-//     days: "$25 per hour",
-//     school: "School Nome",
-//     home: "Senen",
-//   },
-//   {
-//     name: "Emma Johnson",
-//     time: "3:15:30",
-//     days: "$22 per hour",
-//     school: "Lincoln Elementary",
-//     home: "Downtown",
-//   },
-//   {
-//     name: "Michael Davis",
-//     time: "8:45:12",
-//     days: "$28 per hour",
-//     school: "Oak High School",
-//     home: "Westside",
-//   },
-// ];
-
 const SchedulePage = () => {
   const router = useRouter();
   const { parentDetails } = useAuth();
@@ -78,6 +57,11 @@ const SchedulePage = () => {
     null
   );
 
+  // Notification debouncing to prevent spam
+  const [lastNotificationTime, setLastNotificationTime] = React.useState<
+    Record<string, number>
+  >({});
+
   // New state for tab navigation
   const [selectedRequestId, setSelectedRequestId] = React.useState<
     number | null
@@ -92,6 +76,27 @@ const SchedulePage = () => {
     iconName: "checkmark-circle" as keyof typeof Ionicons.glyphMap,
     iconColor: "#22C55E",
   });
+
+  // Helper to send notification only if not sent recently (debouncing)
+  const sendNotificationOnce = React.useCallback(
+    async (key: string, notificationData: any, minInterval: number = 5000) => {
+      const now = Date.now();
+      const lastTime = lastNotificationTime[key] || 0;
+
+      if (now - lastTime > minInterval) {
+        try {
+          await notificationService.sendImmediateNotification(notificationData);
+          setLastNotificationTime((prev) => ({ ...prev, [key]: now }));
+        } catch (error) {
+          console.error(
+            `[PARENT] Failed to send notification for key ${key}:`,
+            error
+          );
+        }
+      }
+    },
+    [lastNotificationTime]
+  );
 
   // Helper to show success modal
   const showSuccessModal = (
@@ -233,13 +238,10 @@ const SchedulePage = () => {
     });
   }, [parentDetails?.id]);
 
-  // Socket event listeners for real-time pickup status updates (copied from parent index)
+  // Socket event listeners for real-time pickup status updates
   React.useEffect(() => {
     // Enhanced socket event listeners for real-time updates
     SocketService.on("pickup-started", (pickupData: any) => {
-      console.log("[SCHEDULE] Received pickup-started event:", pickupData);
-      console.log("[SCHEDULE] 📊 Current pickups before update:", pickups);
-
       // Update both pickups and pickup statuses
       setPickups((prev) => {
         const updated = prev.map((pickup) =>
@@ -254,91 +256,68 @@ const SchedulePage = () => {
           updated.push({ ...pickupData, status: "enRoute" as const });
         }
 
-        console.log(
-          "[SCHEDULE] 📊 Updated pickups after pickup-started:",
-          updated
-        );
         return updated;
       });
 
-      // Update pickup statuses
+      // Update pickup statuses - use the actual pickup ID from the data
+      const pickupId = pickupData.pickupId || pickupData.id;
       setPickupStatuses((prev) => ({
         ...prev,
-        [pickupData.id]: "enRoute",
+        [pickupId]: "enRoute",
       }));
 
-      // Send notification to parent that Buddi is en route
-      try {
-        notificationService.sendImmediateNotification({
-          title: "🚗 Buddi is En Route!",
-          body: `Your Buddi has started the trip and is on the way to pick up your child.`,
-          data: { type: "pickup_started", pickupId: pickupData.id },
-          priority: "high",
-          sound: "default",
-        });
-      } catch (error) {
-        console.log("Failed to send notification:", error);
-      }
+      // Send debounced notification to parent that Buddi is en route
+      sendNotificationOnce(`pickup-started-${pickupId}`, {
+        title: "🚗 Buddi is En Route!",
+        body: `Your Buddi has started the trip and is on the way to pick up your child.`,
+        data: { type: "pickup_started", pickupId: pickupId },
+        priority: "high",
+        sound: "default",
+      });
     });
 
     SocketService.on("child-picked-up", (pickupData: any) => {
-      console.log("[SCHEDULE] Received child-picked-up event:", pickupData);
-      console.log("[SCHEDULE] 📊 Current pickups before update:", pickups);
-
       setPickups((prev) => {
         const updated = prev.map((pickup) =>
           pickup.id === pickupData.id
             ? { ...pickup, status: "pickedUp" as const, ...pickupData }
             : pickup
         ) as Pickup[];
-        console.log(
-          "[SCHEDULE] 📊 Updated pickups after child-picked-up:",
-          updated
-        );
         return updated;
       });
 
       // Update pickup statuses
+      const pickupId = pickupData.pickupId || pickupData.id;
       setPickupStatuses((prev) => ({
         ...prev,
-        [pickupData.id]: "pickedUp",
+        [pickupId]: "pickedUp",
       }));
 
-      // Send notification to parent that child has been picked up
-      try {
-        notificationService.sendImmediateNotification({
-          title: "👶 Child Picked Up!",
-          body: `Great news! Your child has been picked up and is on the way to the destination.`,
-          data: { type: "child_picked_up", pickupId: pickupData.id },
-          priority: "high",
-          sound: "default",
-        });
-      } catch (error) {
-        console.log("Failed to send notification:", error);
-      }
+      // Send debounced notification to parent that child has been picked up
+      sendNotificationOnce(`child-picked-up-${pickupId}`, {
+        title: "👶 Child Picked Up!",
+        body: `Great news! Your child has been picked up and is on the way to the destination.`,
+        data: { type: "child_picked_up", pickupId: pickupId },
+        priority: "high",
+        sound: "default",
+      });
     });
 
     SocketService.on("trip-completed", (pickupData: any) => {
-      console.log("[SCHEDULE] Received trip-completed event:", pickupData);
-      console.log("[SCHEDULE] 📊 Current pickups before update:", pickups);
-
       setPickups((prev) => {
         const updated = prev.map((pickup) =>
           pickup.id === pickupData.id
             ? { ...pickup, status: "completed" as const, ...pickupData }
             : pickup
         ) as Pickup[];
-        console.log(
-          "[SCHEDULE] 📊 Updated pickups after trip-completed:",
-          updated
-        );
         return updated;
       });
 
       // Update pickup statuses
+      const pickupId = pickupData.pickupId || pickupData.id;
       setPickupStatuses((prev) => ({
         ...prev,
-        [pickupData.id]: "completed",
+        [pickupId]: "completed",
       }));
 
       // Show completion success modal
@@ -349,40 +328,31 @@ const SchedulePage = () => {
         "#FFD700"
       );
 
-      // Send notification to parent that trip is completed
-      try {
-        notificationService.sendImmediateNotification({
-          title: "✅ Trip Completed!",
-          body: `Your child has arrived safely at the destination. The trip has been completed successfully.`,
-          data: { type: "trip_completed", pickupId: pickupData.id },
-          priority: "high",
-          sound: "default",
-        });
-      } catch (error) {
-        console.log("Failed to send notification:", error);
-      }
+      // Send debounced notification to parent that trip is completed
+      sendNotificationOnce(`trip-completed-${pickupId}`, {
+        title: "✅ Trip Completed!",
+        body: `Your child has arrived safely at the destination. The trip has been completed successfully.`,
+        data: { type: "trip_completed", pickupId: pickupId },
+        priority: "high",
+        sound: "default",
+      });
     });
 
     SocketService.on("trip-cancelled", (pickupData: any) => {
-      console.log("[SCHEDULE] Received trip-cancelled event:", pickupData);
-
       setPickups((prev) => {
         const updated = prev.map((pickup) =>
           pickup.id === pickupData.id
             ? { ...pickup, status: "cancelled" as const, ...pickupData }
             : pickup
         ) as Pickup[];
-        console.log(
-          "[SCHEDULE] 📊 Updated pickups after trip-cancelled:",
-          updated
-        );
         return updated;
       });
 
       // Update pickup statuses
+      const pickupId = pickupData.pickupId || pickupData.id;
       setPickupStatuses((prev) => ({
         ...prev,
-        [pickupData.id]: "cancelled",
+        [pickupId]: "cancelled",
       }));
 
       Alert.alert(
@@ -391,18 +361,14 @@ const SchedulePage = () => {
         [{ text: "OK", style: "default" }]
       );
 
-      // Send notification to parent that trip was cancelled
-      try {
-        notificationService.sendImmediateNotification({
-          title: "❌ Trip Cancelled",
-          body: `Your pickup request has been cancelled. Please check the app for details or contact support.`,
-          data: { type: "trip_cancelled", pickupId: pickupData.id },
-          priority: "high",
-          sound: "default",
-        });
-      } catch (error) {
-        console.log("Failed to send notification:", error);
-      }
+      // Send debounced notification to parent that trip was cancelled
+      sendNotificationOnce(`trip-cancelled-${pickupId}`, {
+        title: "❌ Trip Cancelled",
+        body: `Your pickup request has been cancelled. Please check the app for details or contact support.`,
+        data: { type: "trip_cancelled", pickupId: pickupId },
+        priority: "high",
+        sound: "default",
+      });
     });
 
     // Cleanup listeners on unmount
@@ -412,7 +378,7 @@ const SchedulePage = () => {
       SocketService.off("trip-completed");
       SocketService.off("trip-cancelled");
     };
-  }, []);
+  }, [sendNotificationOnce]);
 
   // Helper function to get pickup status for a specific slot
   const getPickupStatus = (slotId: number) => {
@@ -437,6 +403,15 @@ const SchedulePage = () => {
         parentDetails.id.toString()
       );
       setPickups(res.pickups || []);
+
+      // Also update pickup statuses based on the fetched data
+      const newStatuses: Record<number, string> = {};
+      (res.pickups || []).forEach((pickup: any) => {
+        if (pickup.status) {
+          newStatuses[pickup.id] = pickup.status;
+        }
+      });
+      setPickupStatuses(newStatuses);
     } catch (err: any) {
       console.error("Failed to refresh pickups:", err);
     }
@@ -479,12 +454,13 @@ const SchedulePage = () => {
       return "Starting Trip...";
     }
 
-    if (pickupStatus === "pending") return "Trip Started";
+    // Real-time status from socket events takes priority
     if (pickupStatus === "enRoute") return "En Route";
     if (pickupStatus === "pickedUp") return "Child Picked Up";
     if (pickupStatus === "completed") return "Trip Completed";
     if (pickupStatus === "cancelled") return "Trip Cancelled";
 
+    // Fallback to request status
     if (requestStatus === "matched") {
       return parentDetails?.approvalStage === "pending"
         ? "Background Check Required"
@@ -538,15 +514,16 @@ const SchedulePage = () => {
         reason: reason,
       });
 
-      // Send system notification for successful coverage request
-      try {
-        await notificationService.sendCoverageRequestNotification(
-          selectedBuddiName || "Buddi",
-          new Date().toLocaleTimeString()
-        );
-      } catch (error) {
-        console.log("Failed to send notification:", error);
-      }
+      // Send debounced notification for successful coverage request
+      await sendNotificationOnce(`coverage-request-${Date.now()}`, {
+        title: "📋 Coverage Request Sent",
+        body: `Your coverage request has been sent to ${
+          selectedBuddiName || "Buddi"
+        }.`,
+        data: { type: "coverage_request_sent", buddiName: selectedBuddiName },
+        priority: "high",
+        sound: "default",
+      });
 
       Alert.alert(
         "Success",
@@ -616,6 +593,17 @@ const SchedulePage = () => {
   React.useEffect(() => {
     if (activeTab === "coverage" && parentDetails?.id) {
       fetchCoverageRequests(1);
+    }
+  }, [activeTab, parentDetails?.id]);
+
+  // Periodically refresh pickup statuses to keep them in sync
+  React.useEffect(() => {
+    if (activeTab === "pickups" && parentDetails?.id) {
+      const interval = setInterval(() => {
+        refreshPickups();
+      }, 30000); // Refresh every 30 seconds
+
+      return () => clearInterval(interval);
     }
   }, [activeTab, parentDetails?.id]);
 
@@ -731,6 +719,18 @@ const SchedulePage = () => {
                   <Text className="font-comfortaa-bold text-xl">
                     Your Pickup Schedule
                   </Text>
+                  <TouchableOpacity
+                    onPress={refreshPickups}
+                    style={{
+                      backgroundColor: "#F3F4F6",
+                      padding: 8,
+                      borderRadius: 8,
+                      borderWidth: 1,
+                      borderColor: "#E5E7EB",
+                    }}
+                  >
+                    <Ionicons name="refresh" size={20} color="#374151" />
+                  </TouchableOpacity>
                 </View>
                 {loading ? (
                   <Text
@@ -1052,10 +1052,10 @@ const SchedulePage = () => {
                                         request.status
                                       )}
                                       disabled={
-                                        currentPickupStatus === "pending" ||
                                         currentPickupStatus === "enRoute" ||
                                         currentPickupStatus === "pickedUp" ||
                                         currentPickupStatus === "completed" ||
+                                        currentPickupStatus === "cancelled" ||
                                         startingTripId === slot.id ||
                                         (request.status === "matched" &&
                                           parentDetails?.approvalStage ===
@@ -1129,11 +1129,6 @@ const SchedulePage = () => {
                                                               callId: slot.id,
                                                             }
                                                           );
-
-                                                        console.log(
-                                                          "[SCHEDULE] ✅ Pickup request created successfully:",
-                                                          res
-                                                        );
 
                                                         // Refresh pickups to get updated status
                                                         await refreshPickups();
