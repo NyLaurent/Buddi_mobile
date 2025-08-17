@@ -926,6 +926,7 @@ export default function TimesheetDetailsPage() {
               value={updatedHours}
               onChangeText={setUpdatedHours}
               placeholder="Enter hours (e.g., 8.5)"
+              placeholderTextColor="#9CA3AF"
               keyboardType="decimal-pad"
               style={{
                 borderWidth: 2,
@@ -937,6 +938,7 @@ export default function TimesheetDetailsPage() {
                 fontFamily: "Comfortaa-Regular",
                 marginBottom: 24,
                 textAlign: "center",
+                color: "black",
               }}
             />
 

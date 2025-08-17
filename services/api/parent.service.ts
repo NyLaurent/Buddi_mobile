@@ -62,7 +62,7 @@ export interface ParentPickupRequest {
   type?: string;
   startDate?: string;
   endDate?: string;
-  slots?: Array<{
+  slots?: {
     id: number;
     buddiRequestId: number;
     fromLocation: string;
@@ -71,7 +71,7 @@ export interface ParentPickupRequest {
     slotEndTime: string;
     createdAt: string;
     updatedAt: string;
-  }>;
+  }[];
   createdAt: string;
   updatedAt: string;
 }
@@ -700,9 +700,7 @@ const ParentService = {
         if (err.message.includes('Network')) {
           message = 'Network error. Please check your connection and try again.';
         } else if (err.message.includes('timeout')) {
-          message = 'Request timed out. Please try again.';
-        } else {
-            message = err.message;
+          message = err.message;
         }
       } else if (typeof err === 'string') {
         message = err;
@@ -710,6 +708,8 @@ const ParentService = {
       throw new Error(message);
     }
   },
+
+
 
   proposeBuddiRecommendations,
   createPickupRequest,

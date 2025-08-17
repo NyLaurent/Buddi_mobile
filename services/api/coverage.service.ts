@@ -181,6 +181,132 @@ const CoverageService = {
       throw new Error(message);
     }
   },
+
+  async approveOrRejectCoverage(coverageRequestId: string, status: 'approved' | 'denied'): Promise<any> {
+    try {
+      const response = await authorizedApi.post('/coverage/rejectOrApprove-coverage', {
+        coverageRequestId,
+        status,
+      });
+      return response.data;
+    } catch (err: any) {
+      let message = 'Failed to approve/reject coverage request.';
+      if (err?.response?.data?.message) {
+        message = err.response.data.message;
+      } else if (err?.message) {
+        if (err.message.includes('Network')) {
+          message = 'Network error. Please check your connection and try again.';
+        } else if (err.message.includes('timeout')) {
+          message = 'Request timed out. Please try again.';
+        } else {
+          message = err.message;
+        }
+      } else if (typeof err === 'string') {
+        message = err;
+      }
+      throw new Error(message);
+    }
+  },
+
+  async coverRequest(coverageRequestId: string, buddiId: string): Promise<any> {
+    try {
+      const response = await authorizedApi.post('/coverage/buddi/cover', {
+        coverageRequestId,
+        buddiId,
+      });
+      return response.data;
+    } catch (err: any) {
+      let message = 'Failed to cover request.';
+      if (err?.response?.data?.message) {
+        message = err.response.data.message;
+      } else if (err?.message) {
+        if (err.message.includes('Network')) {
+          message = 'Network error. Please check your connection and try again.';
+        } else if (err.message.includes('timeout')) {
+          message = 'Request timed out. Please try again.';
+        } else {
+          message = err.message;
+        }
+      } else if (typeof err === 'string') {
+        message = err;
+      }
+      throw new Error(message);
+    }
+  },
+
+  async startCoverageTrip(coverageRequestId: string, buddiRequestId: string, timesheetId: string): Promise<any> {
+    try {
+      const response = await authorizedApi.post('/coverage-trips/start', {
+        coverageRequestId,
+        buddiRequestId,
+        timesheetId,
+      });
+      return response.data;
+    } catch (err: any) {
+      let message = 'Failed to start coverage trip.';
+      if (err?.response?.data?.message) {
+        message = err.response.data.message;
+      } else if (err?.message) {
+        if (err.message.includes('Network')) {
+          message = 'Network error. Please check your connection and try again.';
+        } else if (err.message.includes('timeout')) {
+          message = 'Request timed out. Please try again.';
+        } else {
+          message = err.message;
+        }
+      } else if (typeof err === 'string') {
+        message = err;
+      }
+      throw new Error(message);
+    }
+  },
+
+  async completeCoverageTrip(coverageTripId: string): Promise<any> {
+    try {
+      const response = await authorizedApi.post(`/coverage-trips/${coverageTripId}/complete`);
+      return response.data;
+    } catch (err: any) {
+      let message = 'Failed to complete coverage trip.';
+      if (err?.response?.data?.message) {
+        message = err.response.data.message;
+      } else if (err?.message) {
+        if (err.message.includes('Network')) {
+          message = 'Network error. Please check your connection and try again.';
+        } else if (err.message.includes('timeout')) {
+          message = 'Request timed out. Please try again.';
+        } else {
+          message = err.message;
+        }
+      } else if (typeof err === 'string') {
+        message = err;
+      }
+      throw new Error(message);
+    }
+  },
+
+  async getActiveCoverageTrips(): Promise<any> {
+    try {
+      const response = await authorizedApi.get('/coverage-trips/me/buddi');
+      // The API returns the array directly in response.data
+      return response.data || [];
+    } catch (err: any) {
+      let message = 'Failed to fetch active coverage trips.';
+      if (err?.response?.data?.message) {
+        message = err.response.data.message;
+      } else if (err?.message) {
+        if (err.message.includes('Network')) {
+          message = 'Network error. Please check your connection and try again.';
+        } else if (err.message.includes('timeout')) {
+          message = 'Request timed out. Please try again.';
+        } else {
+          message = err.message;
+        }
+      } else if (typeof err === 'string') {
+        message = err;
+      }
+      throw new Error(message);
+    }
+  },
 };
 
 export default CoverageService; 

@@ -300,6 +300,17 @@ class SocketService {
       this.triggerEvent('pickup-history', data);
     });
 
+    // Coverage trip events
+    this.socket.on('coverage-trip-started', (data: any) => {
+      console.log('[SocketService] 🚀 Coverage trip started:', data);
+      this.triggerEvent('coverage-trip-started', data);
+    });
+
+    this.socket.on('coverage-trip-completed', (data: any) => {
+      console.log('[SocketService] ✅ Coverage trip completed:', data);
+      this.triggerEvent('coverage-trip-completed', data);
+    });
+
     this.socket.on('all-pickups-updated', (data: string) => {
       console.log('[SocketService] 📋 All pickups updated:', data);
       try {

@@ -1,6 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import React from "react";
-import { StyleSheet, Text, View } from "react-native";
+import { StyleSheet, Text, View, TouchableOpacity, Alert } from "react-native";
 
 interface CoverageRequestCardProps {
   coverage: {
@@ -8,16 +8,20 @@ interface CoverageRequestCardProps {
     parentId: string;
     buddiId: number;
     reason: string;
-    coveredBy: string | null;
+    coveredBy: string | number | null;
     status: string;
     coverageType: string;
     createdAt: string;
     updatedAt: string;
   };
+  onStartTrip?: (coverageId: number) => void;
+  showStartButton?: boolean;
 }
 
 const CoverageRequestCard: React.FC<CoverageRequestCardProps> = ({
   coverage,
+  onStartTrip,
+  showStartButton = false,
 }) => {
   // Only allow: pending, approved, denied
   const getStatusColor = (status: string) => {
@@ -70,6 +74,23 @@ const CoverageRequestCard: React.FC<CoverageRequestCardProps> = ({
     });
   };
 
+  const handleStartTrip = () => {
+    if (onStartTrip) {
+      Alert.alert(
+        "Start Coverage Trip",
+        `Are you ready to start this coverage trip?\n\nReason: ${coverage.reason || "No reason provided"}`,
+        [
+          { text: "Cancel", style: "cancel" },
+          {
+            text: "Yes, Start Trip",
+            style: "default",
+            onPress: () => onStartTrip(coverage.id),
+          },
+        ]
+      );
+    }
+  };
+
   return (
     <View style={styles.card}>
       <View style={styles.header}>
@@ -96,8 +117,19 @@ const CoverageRequestCard: React.FC<CoverageRequestCardProps> = ({
       {coverage.coveredBy && (
         <View style={styles.coveredBy}>
           <Text style={styles.coveredByLabel}>Covered by:</Text>
-          <Text style={styles.coveredByText}>{coverage.coveredBy}</Text>
+          <Text style={styles.coveredByText}>Buddi {coverage.coveredBy}</Text>
         </View>
+      )}
+
+      {/* Show Start Trip button when coveredBy has an ID and showStartButton is true */}
+      {coverage.coveredBy && showStartButton && (
+        <TouchableOpacity
+          style={styles.startButton}
+          onPress={handleStartTrip}
+        >
+          <Ionicons name="play-circle" size={18} color="white" style={{ marginRight: 8 }} />
+          <Text style={styles.startButtonText}>Start Coverage Trip</Text>
+        </TouchableOpacity>
       )}
 
       <View style={styles.footer}>
@@ -167,6 +199,21 @@ const styles = StyleSheet.create({
     fontFamily: "Comfortaa-Regular",
     fontSize: 12,
     color: "#4CAF50",
+  },
+  startButton: {
+    backgroundColor: "#3B82F6",
+    borderRadius: 12,
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 12,
+  },
+  startButtonText: {
+    fontFamily: "Comfortaa-Bold",
+    fontSize: 14,
+    color: "white",
   },
   footer: {
     flexDirection: "row",

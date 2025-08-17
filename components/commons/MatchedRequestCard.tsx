@@ -171,7 +171,7 @@ export default function MatchedRequestCard({
 
       {/* Available Days */}
       <View className="mb-4">
-        <Text className="text-xs text-gray-500 font-comfortaa mb-2">
+        <Text className="text-xs text-black font-comfortaa mb-2">
           AVAILABLE DAYS
         </Text>
         <View className="flex-row flex-wrap gap-1">
@@ -203,7 +203,7 @@ export default function MatchedRequestCard({
                         .toLocaleDateString("en-US", { weekday: "long" })
                         .toLowerCase()
                       ? "white"
-                      : "#6B7280",
+                      : "black",
                 }}
               >
                 {day.slice(0, 3)}
@@ -215,7 +215,7 @@ export default function MatchedRequestCard({
 
       {/* Pickup Slots */}
       <View className="mb-4">
-        <Text className="text-xs text-gray-500 font-comfortaa mb-3">
+        <Text className="text-xs text-black font-comfortaa mb-3">
           PICKUP SLOTS ({request.slots.length})
         </Text>
         <View className="space-y-3">
@@ -244,7 +244,7 @@ export default function MatchedRequestCard({
                   borderColor: "#E5E7EB",
                 }}
               >
-                <Text className="text-xs text-gray-500 font-comfortaa mb-2">
+                <Text className="text-xs text-black font-comfortaa mb-2">
                   SLOT {index + 1}
                 </Text>
 
@@ -252,14 +252,14 @@ export default function MatchedRequestCard({
                 <View className="flex-row items-center mb-2">
                   <View className="w-3 h-3 bg-green-500 rounded-full mr-3" />
                   <View className="flex-1">
-                    <Text className="text-xs text-gray-500 font-comfortaa">
+                    <Text className="text-xs text-black font-comfortaa">
                       FROM
                     </Text>
                     <Text className="font-comfortaa-medium text-gray-900">
                       {slot.fromLocation}
                     </Text>
                   </View>
-                  <Text className="text-xs text-gray-500 font-comfortaa">
+                  <Text className="text-xs text-black font-comfortaa">
                     {formatTime(slot.slotStartTime)}
                   </Text>
                 </View>
@@ -277,14 +277,14 @@ export default function MatchedRequestCard({
                 <View className="flex-row items-center">
                   <View className="w-3 h-3 bg-red-500 rounded-full mr-3" />
                   <View className="flex-1">
-                    <Text className="text-xs text-gray-500 font-comfortaa">
+                    <Text className="text-xs text-black font-comfortaa">
                       TO
                     </Text>
                     <Text className="font-comfortaa-medium text-gray-900">
                       {slot.toLocation}
                     </Text>
                   </View>
-                  <Text className="text-xs text-gray-500 font-comfortaa">
+                  <Text className="text-xs text-black font-comfortaa">
                     {formatTime(slot.slotEndTime)}
                   </Text>
                 </View>
@@ -297,7 +297,7 @@ export default function MatchedRequestCard({
       {/* Date Range */}
       {request.startDate && request.endDate && (
         <View className="mb-4">
-          <Text className="text-xs text-gray-500 font-comfortaa mb-1">
+          <Text className="text-xs text-black font-comfortaa mb-1">
             DURATION
           </Text>
           <Text className="font-comfortaa-medium text-gray-700">
@@ -310,7 +310,7 @@ export default function MatchedRequestCard({
       <View className="flex-row items-center justify-between">
         <View className="flex-row items-center">
           <Ionicons name="people" size={16} color="#6B7280" />
-          <Text className="text-gray-600 font-comfortaa ml-2">
+          <Text className="text-black font-comfortaa ml-2">
             {request.kidsCount} {request.kidsCount === 1 ? "Kid" : "Kids"}
           </Text>
         </View>

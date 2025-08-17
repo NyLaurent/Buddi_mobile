@@ -388,7 +388,7 @@ const CoverageRequestsPage = () => {
                     textAlign: "center",
                   }}
                 >
-                  You haven't made any coverage requests yet.
+                  You haven&apos;t made any coverage requests yet.
                 </Text>
               </View>
             )}

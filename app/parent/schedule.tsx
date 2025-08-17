@@ -371,12 +371,173 @@ const SchedulePage = () => {
       });
     });
 
+    // Listen for coverage covered by buddi event
+    SocketService.on("coverage-covered-by-buddi", (coverageData: any) => {
+      console.log("[PARENT] Coverage covered by buddi:", coverageData);
+
+      // Send notification to parent that coverage request has been accepted
+      sendNotificationOnce(`coverage-covered-${coverageData.id}`, {
+        title: "✅ Coverage Request Accepted!",
+        body: `Great news! A Buddi has agreed to cover your request. Reason: ${
+          coverageData.reason || "No reason provided"
+        }`,
+        data: {
+          type: "coverage_covered_by_buddi",
+          coverageId: coverageData.id,
+          buddiId: coverageData.buddiId,
+          reason: coverageData.reason,
+        },
+        priority: "high",
+        sound: "default",
+      });
+
+      // Show success modal
+      showSuccessModal(
+        "Coverage Request Accepted! 🎉",
+        "A Buddi has agreed to cover your request. You'll be notified when they're ready to start.",
+        "shield-checkmark",
+        "#16A34A"
+      );
+
+      // Refresh coverage requests to show updated status
+      if (activeTab === "coverage") {
+        fetchCoverageRequests(1);
+      }
+    });
+
+    // Listen for coverage request status updates (approved/denied)
+    SocketService.on("coverage-request-updated", (coverageData: any) => {
+      console.log("[PARENT] Coverage request updated:", coverageData);
+
+      if (coverageData.status === "approved") {
+        // Send notification to parent that coverage request has been approved
+        sendNotificationOnce(`coverage-approved-${coverageData.id}`, {
+          title: "✅ Coverage Request Approved!",
+          body: `Great news! Your coverage request has been approved by the Buddi. Reason: ${
+            coverageData.reason || "No reason provided"
+          }`,
+          data: {
+            type: "coverage_request_approved",
+            coverageId: coverageData.id,
+            buddiId: coverageData.buddiId,
+            reason: coverageData.reason,
+          },
+          priority: "high",
+          sound: "default",
+        });
+
+        // Show success modal
+        showSuccessModal(
+          "Coverage Request Approved! 🎉",
+          "Your coverage request has been approved! The Buddi will now be able to cover your request.",
+          "checkmark-circle",
+          "#16A34A"
+        );
+      } else if (coverageData.status === "denied") {
+        // Send notification to parent that coverage request has been denied
+        sendNotificationOnce(`coverage-denied-${coverageData.id}`, {
+          title: "❌ Coverage Request Denied",
+          body: `Your coverage request has been denied by the Buddi. Reason: ${
+            coverageData.reason || "No reason provided"
+          }`,
+          data: {
+            type: "coverage_request_denied",
+            coverageId: coverageData.id,
+            buddiId: coverageData.buddiId,
+            reason: coverageData.reason,
+          },
+          priority: "high",
+          sound: "default",
+        });
+
+        // Show alert
+        Alert.alert(
+          "Coverage Request Denied",
+          "Your coverage request has been denied. You may need to find another Buddi or contact support.",
+          [{ text: "OK", style: "default" }]
+        );
+      }
+
+      // Refresh coverage requests to show updated status
+      if (activeTab === "coverage") {
+        fetchCoverageRequests(1);
+      }
+    });
+
+    // Listen for coverage trip events
+    SocketService.on("coverage-trip-started", (data: any) => {
+      console.log("[PARENT] Coverage trip started event received:", data);
+
+      // Send notification to parent
+      sendNotificationOnce(`coverage-trip-started-${data.id}`, {
+        title: "🚀 Coverage Trip Started!",
+        body: `Your Buddi has started the coverage trip. Reason: ${
+          data.reason || "No reason provided"
+        }`,
+        data: {
+          type: "coverage_trip_started",
+          tripId: data.id,
+          coverageRequestId: data.coverageRequestId,
+          reason: data.reason,
+        },
+        priority: "high",
+        sound: "default",
+      });
+
+      // Show success modal
+      showSuccessModal(
+        "Coverage Trip Started! 🚀",
+        "Your Buddi has started the coverage trip. You'll be notified when it's completed.",
+        "play-circle",
+        "#3B82F6"
+      );
+
+      // Refresh coverage requests to show updated status
+      if (activeTab === "coverage") {
+        fetchCoverageRequests(1);
+      }
+    });
+
+    SocketService.on("coverage-trip-completed", (data: any) => {
+      console.log("[PARENT] Coverage trip completed event received:", data);
+
+      // Send notification to parent
+      sendNotificationOnce(`coverage-trip-completed-${data.id}`, {
+        title: "✅ Coverage Trip Completed!",
+        body: `Your coverage trip has been completed successfully by your Buddi.`,
+        data: {
+          type: "coverage_trip_completed",
+          tripId: data.id,
+          coverageRequestId: data.coverageRequestId,
+        },
+        priority: "high",
+        sound: "default",
+      });
+
+      // Show success modal
+      showSuccessModal(
+        "Coverage Trip Completed! ✅",
+        "Your coverage trip has been completed successfully by your Buddi.",
+        "checkmark-circle",
+        "#16A34A"
+      );
+
+      // Refresh coverage requests to show updated status
+      if (activeTab === "coverage") {
+        fetchCoverageRequests(1);
+      }
+    });
+
     // Cleanup listeners on unmount
     return () => {
       SocketService.off("pickup-started");
       SocketService.off("child-picked-up");
       SocketService.off("trip-completed");
       SocketService.off("trip-cancelled");
+      SocketService.off("coverage-covered-by-buddi");
+      SocketService.off("coverage-request-updated");
+      SocketService.off("coverage-trip-started");
+      SocketService.off("coverage-trip-completed");
     };
   }, [sendNotificationOnce]);
 

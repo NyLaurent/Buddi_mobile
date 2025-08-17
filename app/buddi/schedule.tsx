@@ -5,6 +5,7 @@ import CoverageRequestModal from "@/components/modals/CoverageRequestModal";
 import CoverageRequestCard from "@/components/parent/CoverageRequestCard";
 import { useAuth } from "@/context/AuthContext";
 import BuddiService from "@/services/api/buddi.service";
+import { authorizedApi } from "@/services/api/config";
 import CoverageService from "@/services/api/coverage.service";
 import ParentService from "@/services/api/parent.service";
 import notificationService from "@/services/notifications/notification.service";
@@ -69,6 +70,11 @@ const SchedulePage = () => {
   // Store the pickup ID from real-time events
   const [currentPickupId, setCurrentPickupId] = React.useState<number | null>(
     null
+  );
+
+  // State for active coverage trips
+  const [activeCoverageTrips, setActiveCoverageTrips] = React.useState<any[]>(
+    []
   );
 
   // Force re-render when pickup status changes
@@ -293,6 +299,57 @@ const SchedulePage = () => {
     }
   };
 
+  // Function to get a random unpaid timesheet
+  const getRandomUnpaidTimesheet = async (): Promise<{
+    id: number;
+    buddiRequestId: number;
+  } | null> => {
+    try {
+      if (!buddiDetails?.id) return null;
+
+      const response = await authorizedApi.get(
+        `/timesheets/buddi/${buddiDetails.id}?page=1&limit=50`
+      );
+      const timesheets = response.data.data || [];
+
+      // Filter unpaid timesheets
+      const unpaidTimesheets = timesheets.filter((ts: any) => !ts.isPaid);
+
+      if (unpaidTimesheets.length === 0) {
+        console.log("[SCHEDULE] No unpaid timesheets found");
+        return null;
+      }
+
+      // Get a random unpaid timesheet
+      const randomIndex = Math.floor(Math.random() * unpaidTimesheets.length);
+      const selectedTimesheet = unpaidTimesheets[randomIndex];
+
+      console.log("[SCHEDULE] Selected timesheet:", selectedTimesheet);
+      return {
+        id: selectedTimesheet.id,
+        buddiRequestId: selectedTimesheet.buddiRequestId,
+      };
+    } catch (error) {
+      console.error("[SCHEDULE] Error fetching timesheets:", error);
+      return null;
+    }
+  };
+
+  // Function to get active coverage trips from the backend API
+  const getActiveCoverageTrips = async (): Promise<any[]> => {
+    try {
+      if (!buddiDetails?.id) return [];
+
+      const coverageTrips = await CoverageService.getActiveCoverageTrips();
+
+      console.log("[SCHEDULE] Fetched active coverage trips:", coverageTrips);
+      return coverageTrips;
+    } catch (error) {
+      console.error("[SCHEDULE] Error fetching coverage trips:", error);
+      return [];
+    }
+  };
+
   // Check for any locally stored pickup requests that might have been missed
   const checkLocalPickupRequests = React.useCallback(async () => {
     try {
@@ -356,6 +413,20 @@ const SchedulePage = () => {
       console.error("[SCHEDULE] Failed to check local pickup requests:", error);
     }
   }, [buddiDetails?.id, sendNotificationOnce]);
+
+  // Check for any locally stored coverage trips
+  const checkLocalCoverageTrips = React.useCallback(async () => {
+    try {
+      const stored = await AsyncStorage.getItem("buddiCoverageTrips");
+      if (stored) {
+        const localTrips = JSON.parse(stored);
+        setActiveCoverageTrips(localTrips);
+        console.log("[SCHEDULE] Loaded local coverage trips:", localTrips);
+      }
+    } catch (error) {
+      console.error("[SCHEDULE] Failed to check local coverage trips:", error);
+    }
+  }, []);
 
   // Cleanup notification queue on unmount
   React.useEffect(() => {
@@ -813,8 +884,10 @@ const SchedulePage = () => {
     connectAndJoinRoom();
 
     // Check for any locally stored pickup requests that might have been missed
-
     checkLocalPickupRequests();
+
+    // Check for any locally stored coverage trips
+    checkLocalCoverageTrips();
 
     // Reconnect on socket reconnection
 
@@ -825,8 +898,10 @@ const SchedulePage = () => {
         connectAndJoinRoom();
 
         // Re-check local pickup requests after reconnection
-
         checkLocalPickupRequests();
+
+        // Re-check local coverage trips after reconnection
+        checkLocalCoverageTrips();
       });
 
       socket.on("disconnect", (reason) => {});
@@ -1293,6 +1368,98 @@ const SchedulePage = () => {
       handleCoverageRequestByParent
     );
 
+    // Listen for coverage trip events
+    SocketService.on("coverage-trip-started", (data: any) => {
+      console.log("[SCHEDULE] Coverage trip started event received:", data);
+
+      // Check if this trip is for this buddi
+      if (data.buddiId === buddiDetails?.id) {
+        // Send notification
+        sendNotificationOnce(`coverage-trip-started-${data.id}`, {
+          title: "🚀 Coverage Trip Started!",
+          body: `Your coverage trip has started. Reason: ${
+            data.reason || "No reason provided"
+          }`,
+          data: {
+            type: "coverage_trip_started",
+            tripId: data.id,
+            coverageRequestId: data.coverageRequestId,
+            reason: data.reason,
+          },
+          priority: "default",
+          sound: "default",
+        });
+
+        // Update local state if we have this trip and store the backend trip ID
+        setActiveCoverageTrips((prev) => {
+          const updated = prev.map((trip) =>
+            trip.coverageRequestId === data.coverageRequestId
+              ? {
+                  ...trip,
+                  status: "started",
+                  startTime: new Date().toISOString(),
+                  backendTripId: data.id, // Store the backend coverage trip ID
+                }
+              : trip
+          );
+          return updated;
+        });
+
+        // Also update local storage with the backend trip ID
+        AsyncStorage.getItem("buddiCoverageTrips").then((stored) => {
+          if (stored) {
+            const trips = JSON.parse(stored);
+            const updatedTrips = trips.map((trip: any) =>
+              trip.coverageRequestId === data.coverageRequestId
+                ? {
+                    ...trip,
+                    status: "started",
+                    startTime: new Date().toISOString(),
+                    backendTripId: data.id, // Store the backend coverage trip ID
+                  }
+                : trip
+            );
+            AsyncStorage.setItem(
+              "buddiCoverageTrips",
+              JSON.stringify(updatedTrips)
+            );
+          }
+        });
+      }
+    });
+
+    SocketService.on("coverage-trip-completed", (data: any) => {
+      console.log("[SCHEDULE] Coverage trip completed event received:", data);
+
+      // Check if this trip is for this buddi
+      if (data.buddiId === buddiDetails?.id) {
+        // Send notification
+        sendNotificationOnce(`coverage-trip-completed-${data.id}`, {
+          title: "✅ Coverage Trip Completed!",
+          body: `Your coverage trip has been completed successfully.`,
+          data: {
+            type: "coverage_trip_completed",
+            tripId: data.id,
+            coverageRequestId: data.coverageRequestId,
+          },
+          priority: "default",
+          sound: "default",
+        });
+
+        // Remove from local state and storage
+        setActiveCoverageTrips((prev) => {
+          const updated = prev.filter(
+            (trip) => trip.coverageRequestId !== data.coverageRequestId
+          );
+
+          // Update local storage
+          AsyncStorage.setItem("buddiCoverageTrips", JSON.stringify(updated));
+
+          return updated;
+        });
+      }
+    });
+
     // Additional events from your server
 
     SocketService.on("active-pickups", (data: any) => {
@@ -1337,6 +1504,10 @@ const SchedulePage = () => {
         handleCoverageRequestByParent
       );
 
+      SocketService.off("coverage-trip-started");
+
+      SocketService.off("coverage-trip-completed");
+
       SocketService.off("active-pickups");
 
       SocketService.off("pickup-history");
@@ -1362,13 +1533,16 @@ const SchedulePage = () => {
       if (socket && socket.connected) {
         // Rejoin buddi room to ensure we stay connected
         socket.emit("join-buddi-room", buddiDetails.id);
+
+        // Also check local coverage trips periodically
+        checkLocalCoverageTrips();
       } else {
         SocketService.connect(user.userId.toString(), "Buddi");
       }
     }, 60000); // Reduced to check every 60 seconds
 
     return () => clearInterval(intervalId);
-  }, [buddiDetails?.id, user?.userId]); // Removed checkLocalPickupRequests from dependencies
+  }, [buddiDetails?.id, user?.userId, checkLocalCoverageTrips]); // Added checkLocalCoverageTrips to dependencies
 
   return (
     <SafeAreaView
@@ -2268,50 +2442,6 @@ const SchedulePage = () => {
                   </Text>
 
                   <View className="flex-row items-center gap-2">
-                    {/* Test Coverage Notification Button */}
-                    {user?.role === "buddi" && (
-                      <TouchableOpacity
-                        onPress={async () => {
-                          try {
-                            console.log(
-                              "[SCHEDULE] Testing coverage request notification..."
-                            );
-                            await sendNotificationOnce(
-                              `test-coverage-${Date.now()}`,
-                              {
-                                title: "🧪 Test Coverage Notification",
-                                body: "This is a test notification for coverage requests. If you see this, notifications are working!",
-                                data: {
-                                  type: "test_coverage_notification",
-                                  timestamp: new Date().toISOString(),
-                                },
-                                priority: "default",
-                                sound: "default",
-                              }
-                            );
-                          } catch (error) {
-                            console.error(
-                              "[SCHEDULE] Test notification failed:",
-                              error
-                            );
-                          }
-                        }}
-                        style={{
-                          backgroundColor: "#F3F4F6",
-                          padding: 6,
-                          borderRadius: 6,
-                          borderWidth: 1,
-                          borderColor: "#E5E7EB",
-                        }}
-                      >
-                        <Ionicons
-                          name="notifications"
-                          size={16}
-                          color="#374151"
-                        />
-                      </TouchableOpacity>
-                    )}
-
                     <TouchableOpacity
                       className="flex-row items-center gap-1"
                       onPress={() => router.push("/buddi/coverage-requests")}
@@ -2412,10 +2542,636 @@ const SchedulePage = () => {
                   ) : coverageRequests.length > 0 ? (
                     <>
                       {coverageRequests.map((coverage, index) => (
-                        <CoverageRequestCard
-                          key={coverage.id}
-                          coverage={coverage}
-                        />
+                        <View key={coverage.id}>
+                          <CoverageRequestCard coverage={coverage} />
+
+                          {/* Add Approve/Reject and Cover Buttons for PARENTCOVERAGE type */}
+                          {coverage.coverageType === "PARENTCOVERAGE" && (
+                            <View style={{ marginTop: 12, marginBottom: 16 }}>
+                              {/* Show Approve/Reject buttons only if status is pending */}
+                              {coverage.status === "pending" && (
+                                <View
+                                  style={{
+                                    flexDirection: "row",
+                                    gap: 12,
+                                    marginBottom: 12,
+                                  }}
+                                >
+                                  <TouchableOpacity
+                                    style={{
+                                      backgroundColor: "#16A34A",
+                                      borderRadius: 12,
+                                      paddingVertical: 12,
+                                      paddingHorizontal: 20,
+                                      flexDirection: "row",
+                                      alignItems: "center",
+                                      justifyContent: "center",
+                                      flex: 1,
+                                    }}
+                                    onPress={() => {
+                                      Alert.alert(
+                                        "Approve Coverage Request",
+                                        `Are you sure you want to approve this coverage request?\n\nReason: ${
+                                          coverage.reason ||
+                                          "No reason provided"
+                                        }`,
+                                        [
+                                          { text: "Cancel", style: "cancel" },
+                                          {
+                                            text: "Yes, Approve",
+                                            style: "default",
+                                            onPress: async () => {
+                                              try {
+                                                // Call the approve API using CoverageService
+                                                const result =
+                                                  await CoverageService.approveOrRejectCoverage(
+                                                    coverage.id.toString(),
+                                                    "approved"
+                                                  );
+                                                console.log(
+                                                  "[SCHEDULE] Approve request successful:",
+                                                  result
+                                                );
+
+                                                Alert.alert(
+                                                  "Request Approved!",
+                                                  "You've approved this coverage request. The parent will be notified.",
+                                                  [
+                                                    {
+                                                      text: "OK",
+                                                      style: "default",
+                                                    },
+                                                  ]
+                                                );
+
+                                                // Refresh coverage requests to show updated status
+                                                fetchCoverageRequests(1);
+                                              } catch (error) {
+                                                console.error(
+                                                  "[SCHEDULE] Error approving request:",
+                                                  error
+                                                );
+                                                Alert.alert(
+                                                  "Error",
+                                                  "Failed to approve request. Please try again.",
+                                                  [
+                                                    {
+                                                      text: "OK",
+                                                      style: "default",
+                                                    },
+                                                  ]
+                                                );
+                                              }
+                                            },
+                                          },
+                                        ]
+                                      );
+                                    }}
+                                  >
+                                    <Ionicons
+                                      name="checkmark-circle"
+                                      size={18}
+                                      color="white"
+                                      style={{ marginRight: 6 }}
+                                    />
+                                    <Text
+                                      style={{
+                                        fontFamily: "Comfortaa-Bold",
+                                        fontSize: 14,
+                                        color: "white",
+                                      }}
+                                    >
+                                      Approve
+                                    </Text>
+                                  </TouchableOpacity>
+
+                                  <TouchableOpacity
+                                    style={{
+                                      backgroundColor: "#DC2626",
+                                      borderRadius: 12,
+                                      paddingVertical: 12,
+                                      paddingHorizontal: 20,
+                                      flexDirection: "row",
+                                      alignItems: "center",
+                                      justifyContent: "center",
+                                      flex: 1,
+                                    }}
+                                    onPress={() => {
+                                      Alert.alert(
+                                        "Reject Coverage Request",
+                                        `Are you sure you want to reject this coverage request?\n\nReason: ${
+                                          coverage.reason ||
+                                          "No reason provided"
+                                        }`,
+                                        [
+                                          { text: "Cancel", style: "cancel" },
+                                          {
+                                            text: "Yes, Reject",
+                                            style: "default",
+                                            onPress: async () => {
+                                              try {
+                                                // Call the reject API using CoverageService
+                                                const result =
+                                                  await CoverageService.approveOrRejectCoverage(
+                                                    coverage.id.toString(),
+                                                    "denied"
+                                                  );
+                                                console.log(
+                                                  "[SCHEDULE] Reject request successful:",
+                                                  result
+                                                );
+
+                                                Alert.alert(
+                                                  "Request Rejected",
+                                                  "You've rejected this coverage request. The parent will be notified.",
+                                                  [
+                                                    {
+                                                      text: "OK",
+                                                      style: "default",
+                                                    },
+                                                  ]
+                                                );
+
+                                                // Refresh coverage requests to show updated status
+                                                fetchCoverageRequests(1);
+                                              } catch (error) {
+                                                console.error(
+                                                  "[SCHEDULE] Error rejecting request:",
+                                                  error
+                                                );
+                                                Alert.alert(
+                                                  "Error",
+                                                  "Failed to reject request. Please try again.",
+                                                  [
+                                                    {
+                                                      text: "OK",
+                                                      style: "default",
+                                                    },
+                                                  ]
+                                                );
+                                              }
+                                            },
+                                          },
+                                        ]
+                                      );
+                                    }}
+                                  >
+                                    <Ionicons
+                                      name="close-circle"
+                                      size={18}
+                                      color="white"
+                                      style={{ marginRight: 6 }}
+                                    />
+                                    <Text
+                                      style={{
+                                        fontFamily: "Comfortaa-Bold",
+                                        fontSize: 14,
+                                        color: "white",
+                                      }}
+                                    >
+                                      Reject
+                                    </Text>
+                                  </TouchableOpacity>
+                                </View>
+                              )}
+
+                              {/* Show Cover button only if status is approved AND no one has covered it yet */}
+                              {coverage.status === "approved" &&
+                                !coverage.coveredBy && (
+                                  <TouchableOpacity
+                                    style={{
+                                      backgroundColor: "#16A34A",
+                                      borderRadius: 12,
+                                      paddingVertical: 12,
+                                      paddingHorizontal: 20,
+                                      flexDirection: "row",
+                                      alignItems: "center",
+                                      justifyContent: "center",
+                                    }}
+                                    onPress={() => {
+                                      Alert.alert(
+                                        "Cover Request",
+                                        `Are you sure you want to cover this request?\n\nReason: ${
+                                          coverage.reason ||
+                                          "No reason provided"
+                                        }`,
+                                        [
+                                          { text: "Cancel", style: "cancel" },
+                                          {
+                                            text: "Yes, I'll Cover",
+                                            style: "default",
+                                            onPress: async () => {
+                                              try {
+                                                // Call the cover API using CoverageService
+                                                const result =
+                                                  await CoverageService.coverRequest(
+                                                    coverage.id.toString(),
+                                                    buddiDetails?.id?.toString() ||
+                                                      ""
+                                                  );
+                                                console.log(
+                                                  "[SCHEDULE] Cover request successful:",
+                                                  result
+                                                );
+
+                                                Alert.alert(
+                                                  "Cover Request Sent!",
+                                                  "You've agreed to cover this request. The parent will be notified.",
+                                                  [
+                                                    {
+                                                      text: "OK",
+                                                      style: "default",
+                                                    },
+                                                  ]
+                                                );
+
+                                                // Refresh coverage requests to show updated status
+                                                fetchCoverageRequests(1);
+                                              } catch (error: any) {
+                                                console.error(
+                                                  "[SCHEDULE] Error covering request:",
+                                                  error
+                                                );
+
+                                                // Check if this is the specific "already handled" error
+                                                // The error might be in different locations depending on how it's thrown
+                                                const errorMessage =
+                                                  error?.data?.error ||
+                                                  error?.response?.data
+                                                    ?.error ||
+                                                  error?.message ||
+                                                  "";
+
+                                                if (
+                                                  errorMessage.includes(
+                                                    "already handled"
+                                                  )
+                                                ) {
+                                                  Alert.alert(
+                                                    "Request Already Handled",
+                                                    "This coverage request has already been handled by another Buddi or is no longer available.",
+                                                    [
+                                                      {
+                                                        text: "OK",
+                                                        style: "default",
+                                                      },
+                                                    ]
+                                                  );
+                                                } else {
+                                                  Alert.alert(
+                                                    "Error",
+                                                    "Failed to cover request. Please try again.",
+                                                    [
+                                                      {
+                                                        text: "OK",
+                                                        style: "default",
+                                                      },
+                                                    ]
+                                                  );
+                                                }
+
+                                                // Refresh coverage requests to show updated status
+                                                fetchCoverageRequests(1);
+                                              }
+                                            },
+                                          },
+                                        ]
+                                      );
+                                    }}
+                                  >
+                                    <Ionicons
+                                      name="shield-checkmark"
+                                      size={18}
+                                      color="white"
+                                      style={{ marginRight: 8 }}
+                                    />
+                                    <Text
+                                      style={{
+                                        fontFamily: "Comfortaa-Bold",
+                                        fontSize: 14,
+                                        color: "white",
+                                      }}
+                                    >
+                                      Cover This Request
+                                    </Text>
+                                  </TouchableOpacity>
+                                )}
+
+                              {/* Show Start Trip button if this Buddi covered the request and no active trip */}
+                              {coverage.coveredBy === buddiDetails?.id &&
+                                !activeCoverageTrips.find(
+                                  (trip) =>
+                                    trip.coverageRequestId === coverage.id
+                                ) && (
+                                  <TouchableOpacity
+                                    style={{
+                                      backgroundColor: "#3B82F6",
+                                      borderRadius: 12,
+                                      paddingVertical: 12,
+                                      paddingHorizontal: 20,
+                                      flexDirection: "row",
+                                      alignItems: "center",
+                                      justifyContent: "center",
+                                      marginTop: 12,
+                                    }}
+                                    onPress={() => {
+                                      Alert.alert(
+                                        "Start Coverage Trip",
+                                        `Are you ready to start this coverage trip?\n\nReason: ${
+                                          coverage.reason ||
+                                          "No reason provided"
+                                        }`,
+                                        [
+                                          { text: "Cancel", style: "cancel" },
+                                          {
+                                            text: "Yes, Start Trip",
+                                            style: "default",
+                                            onPress: async () => {
+                                              try {
+                                                // Get a random unpaid timesheet
+                                                const timesheet =
+                                                  await getRandomUnpaidTimesheet();
+                                                if (!timesheet) {
+                                                  Alert.alert(
+                                                    "No Timesheet Available",
+                                                    "You need an unpaid timesheet to start a coverage trip. Please check your timesheets first.",
+                                                    [
+                                                      {
+                                                        text: "OK",
+                                                        style: "default",
+                                                      },
+                                                    ]
+                                                  );
+                                                  return;
+                                                }
+
+                                                // Start the coverage trip
+                                                const result =
+                                                  await CoverageService.startCoverageTrip(
+                                                    coverage.id.toString(),
+                                                    timesheet.buddiRequestId.toString(),
+                                                    timesheet.id.toString()
+                                                  );
+                                                console.log(
+                                                  "[SCHEDULE] Coverage trip started:",
+                                                  result
+                                                );
+
+                                                // Store in local storage
+                                                const newTrip = {
+                                                  id: Date.now(), // Local ID for tracking
+                                                  coverageRequestId:
+                                                    coverage.id, // Use coverage request ID for API calls
+                                                  buddiRequestId:
+                                                    timesheet.buddiRequestId,
+                                                  timesheetId: timesheet.id,
+                                                  status: "started",
+                                                  startTime:
+                                                    new Date().toISOString(),
+                                                  reason: coverage.reason,
+                                                };
+
+                                                try {
+                                                  const stored =
+                                                    await AsyncStorage.getItem(
+                                                      "buddiCoverageTrips"
+                                                    );
+                                                  const trips = stored
+                                                    ? JSON.parse(stored)
+                                                    : [];
+                                                  trips.push(newTrip);
+                                                  await AsyncStorage.setItem(
+                                                    "buddiCoverageTrips",
+                                                    JSON.stringify(trips)
+                                                  );
+
+                                                  // Update local state
+                                                  setActiveCoverageTrips(
+                                                    (prev) => [...prev, newTrip]
+                                                  );
+                                                } catch (storageError) {
+                                                  console.error(
+                                                    "[SCHEDULE] Failed to store coverage trip:",
+                                                    storageError
+                                                  );
+                                                }
+
+                                                Alert.alert(
+                                                  "Trip Started!",
+                                                  "Your coverage trip has started. You can now complete it when finished.",
+                                                  [
+                                                    {
+                                                      text: "OK",
+                                                      style: "default",
+                                                    },
+                                                  ]
+                                                );
+
+                                                // Refresh coverage requests
+                                                fetchCoverageRequests(1);
+                                              } catch (error) {
+                                                console.error(
+                                                  "[SCHEDULE] Error starting coverage trip:",
+                                                  error
+                                                );
+                                                Alert.alert(
+                                                  "Error",
+                                                  "Failed to start coverage trip. Please try again.",
+                                                  [
+                                                    {
+                                                      text: "OK",
+                                                      style: "default",
+                                                    },
+                                                  ]
+                                                );
+                                              }
+                                            },
+                                          },
+                                        ]
+                                      );
+                                    }}
+                                  >
+                                    <Ionicons
+                                      name="play-circle"
+                                      size={18}
+                                      color="white"
+                                      style={{ marginRight: 8 }}
+                                    />
+                                    <Text
+                                      style={{
+                                        fontFamily: "Comfortaa-Bold",
+                                        fontSize: 14,
+                                        color: "white",
+                                      }}
+                                    >
+                                      Start Coverage Trip
+                                    </Text>
+                                  </TouchableOpacity>
+                                )}
+
+                              {/* Show Complete Trip button if trip is active */}
+                              {activeCoverageTrips.find(
+                                (trip) => trip.coverageRequestId === coverage.id
+                              ) && (
+                                <TouchableOpacity
+                                  style={{
+                                    backgroundColor: "#DC2626",
+                                    borderRadius: 12,
+                                    paddingVertical: 12,
+                                    paddingHorizontal: 20,
+                                    flexDirection: "row",
+                                    alignItems: "center",
+                                    justifyContent: "center",
+                                    marginTop: 12,
+                                  }}
+                                  onPress={() => {
+                                    Alert.alert(
+                                      "Complete Coverage Trip",
+                                      `Are you sure you want to complete this coverage trip?\n\nReason: ${
+                                        coverage.reason || "No reason provided"
+                                      }`,
+                                      [
+                                        { text: "Cancel", style: "cancel" },
+                                        {
+                                          text: "Yes, Complete Trip",
+                                          style: "default",
+                                          onPress: async () => {
+                                            try {
+                                              const activeTrip =
+                                                activeCoverageTrips.find(
+                                                  (trip) =>
+                                                    trip.coverageRequestId ===
+                                                    coverage.id
+                                                );
+                                              if (!activeTrip) {
+                                                Alert.alert(
+                                                  "Error",
+                                                  "No active trip found."
+                                                );
+                                                return;
+                                              }
+
+                                              // Get the correct coverage trip ID from the backend API
+                                              const backendTrips =
+                                                await getActiveCoverageTrips();
+                                              const matchingTrip =
+                                                backendTrips.find(
+                                                  (trip) =>
+                                                    trip.coverageRequestId ===
+                                                    coverage.id
+                                                );
+
+                                              if (!matchingTrip) {
+                                                Alert.alert(
+                                                  "Error",
+                                                  "No active coverage trip found on the backend."
+                                                );
+                                                return;
+                                              }
+
+                                              console.log(
+                                                "[SCHEDULE] Using backend trip ID:",
+                                                matchingTrip.id
+                                              );
+                                              const result =
+                                                await CoverageService.completeCoverageTrip(
+                                                  matchingTrip.id.toString()
+                                                );
+                                              console.log(
+                                                "[SCHEDULE] Coverage trip completed:",
+                                                result
+                                              );
+
+                                              // Remove from local storage and state
+                                              try {
+                                                const stored =
+                                                  await AsyncStorage.getItem(
+                                                    "buddiCoverageTrips"
+                                                  );
+                                                const trips = stored
+                                                  ? JSON.parse(stored)
+                                                  : [];
+                                                const updatedTrips =
+                                                  trips.filter(
+                                                    (trip: any) =>
+                                                      trip.coverageRequestId !==
+                                                      coverage.id
+                                                  );
+                                                await AsyncStorage.setItem(
+                                                  "buddiCoverageTrips",
+                                                  JSON.stringify(updatedTrips)
+                                                );
+
+                                                // Update local state
+                                                setActiveCoverageTrips((prev) =>
+                                                  prev.filter(
+                                                    (trip) =>
+                                                      trip.coverageRequestId !==
+                                                      coverage.id
+                                                  )
+                                                );
+                                              } catch (storageError) {
+                                                console.error(
+                                                  "[SCHEDULE] Failed to update coverage trips:",
+                                                  storageError
+                                                );
+                                              }
+
+                                              Alert.alert(
+                                                "Trip Completed!",
+                                                "Your coverage trip has been completed successfully.",
+                                                [
+                                                  {
+                                                    text: "OK",
+                                                    style: "default",
+                                                  },
+                                                ]
+                                              );
+
+                                              // Refresh coverage requests
+                                              fetchCoverageRequests(1);
+                                            } catch (error) {
+                                              console.error(
+                                                "[SCHEDULE] Error completing coverage trip:",
+                                                error
+                                              );
+                                              Alert.alert(
+                                                "Error",
+                                                "Failed to complete coverage trip. Please try again.",
+                                                [
+                                                  {
+                                                    text: "OK",
+                                                    style: "default",
+                                                  },
+                                                ]
+                                              );
+                                            }
+                                          },
+                                        },
+                                      ]
+                                    );
+                                  }}
+                                >
+                                  <Ionicons
+                                    name="checkmark-circle"
+                                    size={18}
+                                    color="white"
+                                    style={{ marginRight: 8 }}
+                                  />
+                                  <Text
+                                    style={{
+                                      fontFamily: "Comfortaa-Bold",
+                                      fontSize: 14,
+                                      color: "white",
+                                    }}
+                                  >
+                                    Complete Coverage Trip
+                                  </Text>
+                                </TouchableOpacity>
+                              )}
+                            </View>
+                          )}
+                        </View>
                       ))}
 
                       {/* Show Load More only if there are more than 2 items */}
