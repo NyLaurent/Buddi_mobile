@@ -762,6 +762,7 @@ const SchedulePage = () => {
       const socket = SocketService.getSocket();
 
       if (socket) {
+        // Join buddi-specific room for all updates (pickups and coverage)
         socket.emit("join-buddi-room", buddiDetails.id);
 
         // Listen for room join confirmation (if your server sends it)
@@ -1228,6 +1229,50 @@ const SchedulePage = () => {
       // You can add timesheet state management here if needed
     };
 
+    // Handle coverage request from parent
+    const handleCoverageRequestByParent = async (coverageData: any) => {
+      console.log(
+        "[SCHEDULE] Coverage request received from parent:",
+        coverageData
+      );
+
+      // Check if this coverage request is for this buddi
+      if (coverageData.buddiId === buddiDetails?.id) {
+        console.log(
+          "[SCHEDULE] Coverage request is for current buddi, sending notification..."
+        );
+
+        // Send notification for coverage request from parent (debounced)
+        await sendNotificationOnce(
+          `coverage-request-parent-${coverageData.id}`,
+          {
+            title: "🆘 Coverage Request from Parent!",
+            body: `A parent has requested coverage from you. Reason: ${
+              coverageData.reason || "No reason provided"
+            }`,
+            data: {
+              type: "coverage_request_from_parent",
+              coverageId: coverageData.id,
+              parentId: coverageData.parentId,
+              reason: coverageData.reason,
+              status: coverageData.status,
+            },
+            priority: "default",
+            sound: "default",
+          }
+        );
+
+        // Refresh coverage requests list to show the new request
+        if (activeTab === "coverage") {
+          fetchCoverageRequests(1);
+        }
+      } else {
+        console.log(
+          "[SCHEDULE] Coverage request is not for current buddi, ignoring"
+        );
+      }
+    };
+
     // Register all event listeners matching your server's event names
 
     SocketService.on("pickup-requested", handlePickupRequested);
@@ -1241,6 +1286,12 @@ const SchedulePage = () => {
     SocketService.on("earnings-updated", handleEarningsUpdated);
 
     SocketService.on("timesheet-updated", handleTimesheetUpdated);
+
+    // Listen for coverage requests from parents
+    SocketService.on(
+      "coverage-request-by-parent",
+      handleCoverageRequestByParent
+    );
 
     // Additional events from your server
 
@@ -1281,6 +1332,11 @@ const SchedulePage = () => {
 
       SocketService.off("timesheet-updated", handleTimesheetUpdated);
 
+      SocketService.off(
+        "coverage-request-by-parent",
+        handleCoverageRequestByParent
+      );
+
       SocketService.off("active-pickups");
 
       SocketService.off("pickup-history");
@@ -1304,6 +1360,7 @@ const SchedulePage = () => {
       const socket = SocketService.getSocket();
 
       if (socket && socket.connected) {
+        // Rejoin buddi room to ensure we stay connected
         socket.emit("join-buddi-room", buddiDetails.id);
       } else {
         SocketService.connect(user.userId.toString(), "Buddi");
@@ -2210,16 +2267,66 @@ const SchedulePage = () => {
                     Coverage Requests
                   </Text>
 
-                  <TouchableOpacity
-                    className="flex-row items-center gap-1"
-                    onPress={() => router.push("/buddi/coverage-requests")}
-                  >
-                    <Text className="text-primary font-comfortaa">
-                      View All
-                    </Text>
+                  <View className="flex-row items-center gap-2">
+                    {/* Test Coverage Notification Button */}
+                    {user?.role === "buddi" && (
+                      <TouchableOpacity
+                        onPress={async () => {
+                          try {
+                            console.log(
+                              "[SCHEDULE] Testing coverage request notification..."
+                            );
+                            await sendNotificationOnce(
+                              `test-coverage-${Date.now()}`,
+                              {
+                                title: "🧪 Test Coverage Notification",
+                                body: "This is a test notification for coverage requests. If you see this, notifications are working!",
+                                data: {
+                                  type: "test_coverage_notification",
+                                  timestamp: new Date().toISOString(),
+                                },
+                                priority: "default",
+                                sound: "default",
+                              }
+                            );
+                          } catch (error) {
+                            console.error(
+                              "[SCHEDULE] Test notification failed:",
+                              error
+                            );
+                          }
+                        }}
+                        style={{
+                          backgroundColor: "#F3F4F6",
+                          padding: 6,
+                          borderRadius: 6,
+                          borderWidth: 1,
+                          borderColor: "#E5E7EB",
+                        }}
+                      >
+                        <Ionicons
+                          name="notifications"
+                          size={16}
+                          color="#374151"
+                        />
+                      </TouchableOpacity>
+                    )}
 
-                    <Ionicons name="arrow-forward" size={16} color="#FF932E" />
-                  </TouchableOpacity>
+                    <TouchableOpacity
+                      className="flex-row items-center gap-1"
+                      onPress={() => router.push("/buddi/coverage-requests")}
+                    >
+                      <Text className="text-primary font-comfortaa">
+                        View All
+                      </Text>
+
+                      <Ionicons
+                        name="arrow-forward"
+                        size={16}
+                        color="#FF932E"
+                      />
+                    </TouchableOpacity>
+                  </View>
                 </View>
 
                 <View className="gap-4">
