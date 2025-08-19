@@ -21,7 +21,15 @@
     "production": {
       "autoIncrement": true,
       "android": {
-        "buildType": "app-bundle"
+        "buildType": "app-bundle",
+        "gradleCommand": ":app:bundleRelease",
+        
+        "env": {
+          "ANDROID_ENABLE_R8_FULL_MODE": "true",
+          "ANDROID_ENABLE_PROGUARD": "true",
+          "ANDROID_ENABLE_MINIFICATION": "true",
+          "ANDROID_ENABLE_SHRINK_RESOURCES": "true"
+        }
       }
     }
   },
