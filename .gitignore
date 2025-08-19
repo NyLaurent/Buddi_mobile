@@ -2,7 +2,6 @@
 
 # dependencies
 node_modules/
-.env
 
 # Expo
 .expo/
@@ -18,6 +17,11 @@ expo-env.d.ts
 *.p12
 *.key
 *.mobileprovision
+/android/build/
+/android/app/build/
+/android/.gradle/
+/android/*.apk
+/android/app/*.apk
 
 # Metro
 .metro-health-check*
@@ -39,3 +43,27 @@ yarn-error.*
 
 app-example
 google-services.json
+android/app/mapping.txt
+android/app/build/outputs/mapping/
+
+# Android build directories and files
+android/build/
+android/.gradle/
+android/app/build/
+android/app/mapping.txt
+android/app/*.apk
+android/app/*.aab
+
+# Generated assets and resources
+android/app/build/generated/
+android/app/build/intermediates/
+android/app/build/outputs/
+
+# Large media files that shouldn't be in git
+*.mp4
+*.mov
+*.avi
+branch_structure.json
+temp_auto_push.bat
+temp_interactive_push.bat
+config.bat
